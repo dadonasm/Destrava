@@ -1,0 +1,47 @@
+services:
+  # servidor da loja: entrega o programa e guarda fichas, históricos e termos (em servidor-dados/, fora do git)
+  servidor:
+    build: .
+    command: ["python", "servidor.py", "--host", "0.0.0.0", "--porta", "8080"]
+    ports:
+      # só neste computador; os outros chegam pelo túnel (HTTPS). Para testar na rede local sem túnel: "8080:8080"
+      - "127.0.0.1:8080:8080"
+    volumes:
+      # pasta do projeto montada: o pacote entregue é sempre o código atual
+      - .:/app
+    environment:
+      # endereço fixo para os scripts de início (deixe vazio para usar o endereço pelo qual cada um chegou)
+      - DESTRAVA_URL_PUBLICA=${DESTRAVA_URL_PUBLICA:-}
+    restart: unless-stopped
+
+  # acesso pela internet com endereço TEMPORÁRIO (muda a cada reinício):  docker compose --profile internet up -d
+  # o endereço aparece em:  docker compose logs tunel | grep trycloudflare
+  tunel:
+    image: cloudflare/cloudflared:2025.8.1
+    profiles: ["internet"]
+    command: ["tunnel", "--no-autoupdate", "--url", "http://servidor:8080"]
+    depends_on: [servidor]
+    restart: unless-stopped
+
+  # acesso pela internet com endereço FIXO (domínio na Cloudflare): ponha CLOUDFLARE_TUNNEL_TOKEN no arquivo .env
+  # e rode:  docker compose --profile internet-fixo up -d
+  tunel-fixo:
+    image: cloudflare/cloudflared:2025.8.1
+    profiles: ["internet-fixo"]
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on: [servidor]
+    restart: unless-stopped
+
+  # só para desenvolver a tela no Mac: o programa reproduzindo a coleta de um Windows (ações simuladas)
+  # docker compose --profile dev up -d   e abra http://localhost:8081
+  agente-demo:
+    build: .
+    profiles: ["dev"]
+    command: ["python", "dd_backup.py", "--host", "0.0.0.0", "--port", "8081", "--no-browser", "--token-na-pagina",
+              "--dados", "/app/_dev", "--coleta-salva", "tests/fixtures/win10_hd.json"]
+    ports:
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - .:/app

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-BKP Pro - Ficha da máquina (D&D Technology)
+Destrava! - Ficha da máquina (D&D Technology)
 Coleta hardware e desempenho, dá nota, sugere o sistema ideal, propõe melhorias e aplica (com desfazer).
 Só biblioteca padrão. Windows usa PowerShell nativo; Linux usa /proc, /sys, dmidecode, lsblk.
 Modelo "Outcome as a Service": o produto é o RESULTADO (nota antes -> depois), com prova guardada no pendrive.
@@ -18,10 +18,16 @@ import sys
 import tempfile
 import time
 
+import otimizacoes as OTIM
+
 IS_WIN = os.name == "nt"
 HERE = os.path.dirname(os.path.abspath(__file__))
-STORE = os.path.join(HERE, "maquinas")
+STORE = os.path.join(HERE, "maquinas")  # dd_backup --dados troca este caminho
 VERSAO_FICHA = 1
+REPLAY = {}  # coleta salva (dd_backup --coleta-salva): reproduz outra máquina e só SIMULA as ações
+ULTIMA = {}  # saída bruta da última coleta desta sessão, para "Exportar dados para suporte"
+SINCRONIA = None  # conexao.Conexao no modo servidor: maquinas/ vira um cache e cada gravação vai para o servidor
+_PUXADAS = set()  # máquinas já trazidas do servidor nesta sessão
 
 
 # ----------------------------------------------------------------------------------------------
@@ -175,7 +181,7 @@ def med_disco_escrita(live=False):
             break
     if not base:
         return None, None
-    d = tempfile.mkdtemp(prefix="bkppro_", dir=base)
+    d = tempfile.mkdtemp(prefix="destrava_", dir=base)
     try:
         blk = os.urandom(1024 * 1024)
         t = time.perf_counter()
@@ -379,18 +385,24 @@ def coletar_linux(cb):
                 for fn in sorted(os.listdir(dr)):
                     if fn.endswith(".desktop"):
                         d = _parse_desktop(os.path.join(dr, fn))
-                        if fn in seen or d.get("Hidden", "").lower() == "true":
-                            seen.setdefault(fn, None)
+                        if fn in seen:
                             continue
                         seen[fn] = True
-                        if d.get("X-GNOME-Autostart-enabled", "true").lower() == "false":
-                            continue
-                        f["inicializacao"].append({"nome": d.get("Name", fn), "comando": d.get("Exec", ""), "local": os.path.join(dr, fn), "usuario": "", "arquivo": fn})
+                        ativo = d.get("Hidden", "").lower() != "true" and d.get("X-GNOME-Autostart-enabled", "true").lower() != "false"
+                        e = {"nome": d.get("Name", fn), "comando": d.get("Exec", ""), "local": os.path.join(dr, fn), "usuario": "", "arquivo": fn, "fonte": "autostart",
+                             "ativo": ativo, "exe": OTIM.exe_de(d.get("Exec", "")), "id": OTIM._id("ini", "autostart", fn)}
+                        f.setdefault("inicializacao_todos", []).append(e)
+                        if ativo:
+                            f["inicializacao"].append(e)
     # pacotes
     cb("Contando programas", 88)
     cnt = run_out(["dpkg-query", "-W", "-f", "${Package}\n"]).count("\n") if shutil.which("dpkg-query") else (run_out(["rpm", "-qa"]).count("\n") if shutil.which("rpm") else None)
     m["prog_instalados"] = cnt
     f["uuid"] = uuid
+    try:
+        f["otim"] = OTIM.coletar_linux(live)
+    except Exception:
+        f["otim"] = {}
     return f
 
 
@@ -452,6 +464,13 @@ def coletar_mac(cb):
     f["pesados"] = [{"nome": k, "ram_mb": round(v[0] / 1024.0), "instancias": v[1]} for k, v in sorted(agg.items(), key=lambda kv: -kv[1][0])[:20]]
     m["prog_instalados"] = len([x for x in os.listdir("/Applications") if x.endswith(".app")]) if os.path.isdir("/Applications") else None
     f["uuid"] = identificadores().get("uuid") or sc("sysctl", "-n", "hw.model")
+    cb("Procurando otimizações", 90)
+    try:
+        ini, f["otim"] = OTIM.coletar_mac()
+        f["inicializacao_todos"] = ini
+        f["inicializacao"] = [x for x in ini if x["ativo"]]
+    except Exception:
+        pass
     return f
 
 
@@ -487,7 +506,8 @@ if($b){$r.bat=@{charge=$b.EstimatedChargeRemaining}
 $ds=Get-CimInstance -Namespace root\wmi -ClassName BatteryStaticData | Select-Object -First 1
 $fc=Get-CimInstance -Namespace root\wmi -ClassName BatteryFullChargedCapacity | Select-Object -First 1
 if($ds -and $fc){$r.bat.design=$ds.DesignedCapacity;$r.bat.full=$fc.FullChargedCapacity}}
-$r | ConvertTo-Json -Depth 5 -Compress
+""" + OTIM.PS_INI + OTIM.PS_OTIM + r"""
+$r | ConvertTo-Json -Depth 6 -Compress
 """
 
 MEMTIPO = {20: "DDR", 21: "DDR2", 24: "DDR3", 26: "DDR4", 34: "DDR5", 27: "LPDDR", 28: "LPDDR2", 29: "LPDDR3", 30: "LPDDR4", 35: "LPDDR5"}
@@ -545,12 +565,19 @@ def normalizar_windows(raw, med):
     f["pesados"] = [{"nome": p.get("n", "?"), "ram_mb": round(int(p.get("ram") or 0) / 1048576.0), "instancias": p.get("c", 1)} for p in aslist(raw.get("procs"))]
     for s in aslist(raw.get("start")):
         f["inicializacao"].append({"nome": s.get("Name", "?"), "comando": s.get("Command", ""), "local": s.get("Location", ""), "usuario": s.get("User", "")})
+    if raw.get("ini") is not None:
+        # a lista do Gerenciador de Tarefas (com apps da Store); a nota conta só o que está ATIVO
+        todos = OTIM.normalizar_ini_windows(aslist(raw.get("ini")))
+        f["inicializacao_todos"] = todos
+        f["inicializacao"] = [x for x in todos if x["ativo"]]
+    if raw.get("otim") is not None or raw.get("procpath") is not None:
+        f["otim"] = dict(raw.get("otim") or {}, procpath=aslist(raw.get("procpath")), deg=raw.get("deg") or {})
     return f
 
 
 def coletar_windows(cb):
     cb("Lendo hardware e programas (PowerShell)", 10)
-    raw = ps_json(PS_COLETA, timeout=120) or {}
+    raw = ps_json(PS_COLETA, timeout=240) or {}
     cb("Medindo processador", 40)
     med = {"cpu_ms": med_cpu()}
     cb("Medindo disco", 55)
@@ -559,20 +586,107 @@ def coletar_windows(cb):
     cb("Medindo tempo de resposta", 80)
     med["resposta_ms"] = med_resposta()
     cb("Organizando", 92)
+    ULTIMA.update(raw=raw, medidas=dict(med))
     return normalizar_windows(raw, med)
+
+
+def _coletar_replay(cb):
+    """Ficha da coleta salva: Windows é normalizado de novo a partir da saída bruta (testa a normalização atual)."""
+    cb("Lendo a coleta salva", 30)
+    if REPLAY.get("raw") is not None and REPLAY.get("familia") == "windows":
+        return normalizar_windows(REPLAY["raw"], REPLAY.get("medidas") or {})
+    f = copy.deepcopy(REPLAY.get("ficha") or {})
+    for k in ("host", "quando", "versao_ficha", "ids", "mid", "fase"):
+        f.pop(k, None)
+    return f
+
+
+def _host():
+    return REPLAY.get("host") or socket.gethostname() if REPLAY else socket.gethostname()
 
 
 def coletar(cb=None):
     cb = cb or (lambda e, p: None)
-    f = coletar_windows(cb) if IS_WIN else (coletar_mac(cb) if sys.platform == "darwin" else coletar_linux(cb))
-    f["host"] = socket.gethostname()
+    ULTIMA.clear()
+    if REPLAY:
+        f = _coletar_replay(cb)
+    else:
+        f = coletar_windows(cb) if IS_WIN else (coletar_mac(cb) if sys.platform == "darwin" else coletar_linux(cb))
+    f["host"] = _host()
     f["quando"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     f["versao_ficha"] = VERSAO_FICHA
     f["ids"] = identificadores()
     f["mid"] = resolver_mid(f["ids"], f["host"], (f.get("cpu") or {}).get("modelo", ""))
     migrar_legado(f["mid"])
+    if not REPLAY:
+        ULTIMA.update(familia=(f.get("so") or {}).get("familia", ""), host=f["host"], cpu=(f.get("cpu") or {}).get("modelo", ""), ids=f["ids"], ficha=copy.deepcopy(f))
     cb("Pronto", 100)
     return f
+
+
+# ----------------------------------------------------------------------------------------------
+# coleta salva: exportar daqui, reproduzir em outra máquina (desenvolvimento e suporte)
+# ----------------------------------------------------------------------------------------------
+def carregar_coleta(path):
+    with open(path, encoding="utf-8") as fh:
+        d = json.load(fh)
+    if not isinstance(d, dict) or d.get("formato") != "destrava-coleta" or not (d.get("raw") or d.get("ficha")):
+        raise ValueError("Isso não é uma coleta exportada pelo Destrava!.")
+    REPLAY.clear()
+    REPLAY.update(d)
+    _MID.clear()
+    return d
+
+
+def simulando():
+    return bool(REPLAY)
+
+
+def familia_atual():
+    """windows | mac | linux: o sistema da máquina que está sendo analisada (o da coleta salva, se houver)."""
+    if REPLAY:
+        return REPLAY.get("familia") or ((REPLAY.get("ficha") or {}).get("so") or {}).get("familia") or "windows"
+    return "windows" if IS_WIN else ("mac" if sys.platform == "darwin" else "linux")
+
+
+def montar_exportacao(versao_programa=""):
+    """Coleta desta sessão (ou, sem ela, a última ficha gravada) no formato que --coleta-salva lê."""
+    d = {"formato": "destrava-coleta", "versao": 1, "programa": versao_programa, "exportado_em": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+    if ULTIMA.get("ficha"):
+        d.update({k: ULTIMA.get(k) for k in ("familia", "host", "cpu", "ids", "ficha")})
+        d["raw"] = ULTIMA.get("raw")
+        d["medidas"] = ULTIMA.get("medidas")
+        return d
+    mid = machine_id_cache()
+    nomes = listar_fichas(mid)
+    f = ler_ficha(mid, nomes[-1]) if nomes else None
+    if not f:
+        raise ValueError("Analise a máquina antes de exportar.")
+    d.update({"familia": (f.get("so") or {}).get("familia", ""), "host": f.get("host", ""), "cpu": (f.get("cpu") or {}).get("modelo", ""),
+              "ids": f.get("ids") or identificadores(), "ficha": f, "raw": None, "medidas": None})
+    return d
+
+
+def pasta_exportacao():
+    """Área de Trabalho do usuário (fácil de achar e mandar); senão, a pasta pessoal."""
+    h = user_home()
+    cands = [os.path.join(h, "Desktop"), os.path.join(h, "Área de Trabalho"), os.path.join(h, "OneDrive", "Desktop"), os.path.join(h, "OneDrive", "Área de Trabalho")]
+    if IS_WIN and os.environ.get("USERPROFILE"):
+        cands.insert(0, os.path.join(os.environ["USERPROFILE"], "Desktop"))
+    for c in cands:
+        if os.path.isdir(c):
+            return c
+    return h
+
+
+def exportar_coleta(destino=None, versao_programa=""):
+    d = montar_exportacao(versao_programa)
+    if not destino:
+        nome = "destrava-coleta-%s-%s.json" % (safe_name(d.get("host") or "maquina")[:30], datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+        destino = os.path.join(pasta_exportacao(), nome)
+    with open(destino, "w", encoding="utf-8") as fh:
+        json.dump(d, fh, ensure_ascii=False, indent=1)
+    return destino
 
 
 # ----------------------------------------------------------------------------------------------
@@ -596,6 +710,8 @@ def _macs_linux():
     for n in nomes:
         if not os.path.exists(os.path.join(base, n, "device")) or n.startswith(("docker", "veth", "br-", "virbr", "tun", "tap")):
             continue
+        if "/usb" in os.path.realpath(os.path.join(base, n, "device")):
+            continue  # adaptador USB (o do técnico passa de máquina em máquina)
         m = rd(os.path.join(base, n, "address")).strip().lower()
         if re.fullmatch(r"([0-9a-f]{2}:){5}[0-9a-f]{2}", m) and m != "00:00:00:00:00:00":
             out.append(m)
@@ -604,13 +720,16 @@ def _macs_linux():
 
 def identificadores(refazer=False):
     """UUID de hardware, serial e MACs físicos: o que sobrevive a trocar o nome do PC ou formatar."""
+    if REPLAY:
+        r = REPLAY.get("ids") or {}
+        return {"uuid": r.get("uuid", ""), "serial": r.get("serial", ""), "macs": list(r.get("macs") or [])}
     if "ids" in _MID and not refazer:
         return _MID["ids"]
     ids = {"uuid": "", "serial": "", "macs": []}
     try:
         if IS_WIN:
             o = ps("$u=(Get-CimInstance Win32_ComputerSystemProduct).UUID; $s=(Get-CimInstance Win32_BIOS).SerialNumber; "
-                   "$m=(Get-NetAdapter -Physical -ErrorAction SilentlyContinue | ForEach-Object {$_.MacAddress}) -join ','; \"$u|$s|$m\"", 30).strip().splitlines()
+                   "$m=(Get-NetAdapter -Physical -ErrorAction SilentlyContinue | Where-Object { $_.PnPDeviceID -notlike 'USB*' } | ForEach-Object {$_.MacAddress}) -join ','; \"$u|$s|$m\"", 30).strip().splitlines()
             parts = (o[-1] if o else "").split("|")
             if len(parts) >= 3:
                 ids["uuid"], ids["serial"] = parts[0].strip(), parts[1].strip()
@@ -653,15 +772,29 @@ def _mids_conhecidos():
 
 
 def resolver_mid(ids, host="", cpu=""):
-    """Reaproveita o código de uma máquina já conhecida (mesmo UUID/serial/MAC) ou cria um novo."""
-    for mid in _mids_conhecidos():
-        mi = (meta_ler(mid).get("ids") or {})
-        if ids.get("uuid") and ids["uuid"] == mi.get("uuid"):
-            return mid
-        if ids.get("serial") and ids["serial"] == mi.get("serial"):
-            return mid
-        if set(ids.get("macs") or []) & set(mi.get("macs") or []):
-            return mid
+    """Reaproveita o código de uma máquina já conhecida ou cria um novo.
+    UUID e serial da placa valem primeiro; o MAC só decide quando NENHUM dos dois lados tem UUID/serial
+    (um adaptador de rede USB do técnico, usado em várias máquinas, não pode juntar clientes diferentes)."""
+    if SINCRONIA:
+        try:
+            return SINCRONIA.resolver(ids, host, cpu)
+        except Exception:
+            pass  # sem servidor agora: o código calculado aqui é o mesmo para UUID/serial
+    return resolver_local(ids, host, cpu)
+
+
+def resolver_local(ids, host="", cpu=""):
+    conhecidos = [(mid, meta_ler(mid).get("ids") or {}) for mid in _mids_conhecidos()]
+    for chave in ("uuid", "serial"):
+        if ids.get(chave):
+            for mid, mi in conhecidos:
+                if ids[chave] == mi.get(chave):
+                    return mid
+    if not ids.get("uuid") and not ids.get("serial"):
+        macs = set(ids.get("macs") or [])
+        for mid, mi in conhecidos:
+            if not mi.get("uuid") and not mi.get("serial") and macs & set(mi.get("macs") or []):
+                return mid
     base = ids.get("uuid") or ids.get("serial") or ((ids.get("macs") or [""])[0]) or (host + cpu)
     return _hash_id(base)
 
@@ -682,6 +815,8 @@ def _mid_legado():
 
 
 def migrar_legado(mid_novo):
+    if REPLAY:
+        return  # a fórmula antiga leria ESTA máquina, não a da coleta salva
     try:
         velho = _mid_legado()
     except Exception:
@@ -716,7 +851,7 @@ def migrar_legado(mid_novo):
 def machine_id(f=None):
     f = f or {}
     ids = f.get("ids") or identificadores()
-    return resolver_mid(ids, f.get("host") or socket.gethostname(), (f.get("cpu") or {}).get("modelo", ""))
+    return resolver_mid(ids, f.get("host") or _host(), (f.get("cpu") or {}).get("modelo", ""))
 
 
 def machine_id_rapido():
@@ -724,9 +859,12 @@ def machine_id_rapido():
     ids = identificadores()
     cpu = ""
     if not (ids.get("uuid") or ids.get("serial") or ids.get("macs")):
-        ci = rd("/proc/cpuinfo")
-        cpu = re.sub(r"\s+", " ", (re.search(r"model name\s*:\s*(.+)", ci) or [0, ""])[1].strip()) or (run_out(["sysctl", "-n", "machdep.cpu.brand_string"]).strip() if sys.platform == "darwin" else "")
-    mid = resolver_mid(ids, socket.gethostname(), cpu)
+        if REPLAY:
+            cpu = REPLAY.get("cpu", "")
+        else:
+            ci = rd("/proc/cpuinfo")
+            cpu = re.sub(r"\s+", " ", (re.search(r"model name\s*:\s*(.+)", ci) or [0, ""])[1].strip()) or (run_out(["sysctl", "-n", "machdep.cpu.brand_string"]).strip() if sys.platform == "darwin" else "")
+    mid = resolver_mid(ids, _host(), cpu)
     migrar_legado(mid)
     return mid
 
@@ -1045,28 +1183,6 @@ def dicas(f, tam_temp_mb=None):
         tip("programas", "Muitos programas instalados (%d)" % n, "Revise com o cliente e desinstale o que não usa.", "médio")
     if win and so.get("nome", "").startswith("Windows 10"):
         tip("win10", "Windows 10 sem suporte gratuito", "A Microsoft encerrou as atualizações gratuitas em 14/10/2025. Considere Windows 11 (se a máquina aceitar) ou um Linux leve. Veja 'Sistema ideal'.", "médio", tipo="alerta")
-    # ações aplicáveis
-    if not live:
-        for e in f.get("inicializacao", []):
-            nv = classificar_inicio(e)
-            e["nivel"] = nv
-            if nv in ("manter",):
-                continue
-            ap = False
-            acao = {"tipo": "startup_off", "nome": e.get("nome"), "local": e.get("local"), "arquivo": e.get("arquivo"), "usuario": e.get("usuario")}
-            if win:
-                loc = e.get("local", "")
-                ap = bool(re.match(r"HK(LM|CU|U)", loc, re.I)) and bool(re.search(r"\\Run$", loc))
-            else:
-                ap = bool(e.get("arquivo"))
-            tip(_id("startup", (e.get("nome") or "") + (e.get("local") or "")), "Não iniciar com o sistema: %s" % e.get("nome"), (e.get("comando") or "")[:140] + ("" if ap else "  (item de pasta/serviço: desative manualmente)"),
-                "médio" if nv == "dispensavel" else "baixo", ap, acao if ap else None, "baixo", marcado=(nv == "dispensavel" and ap), tipo="inicio")
-        if win:
-            gpu_int = any(re.search(r"Intel|UHD|HD Graphics|Vega|Radeon\(TM\) Graphics", g.get("nome", ""), re.I) for g in f.get("gpu", []))
-            if tot <= 8.2 or gpu_int:
-                tip("visual", "Reduzir efeitos visuais (transparência e animações)", "Desliga transparência e animações do Windows. Libera GPU/CPU em máquinas simples. Vale após sair e entrar de novo na conta.", "baixo", True, {"tipo": "visual"}, "baixo", marcado=True, tipo="visual")
-            if tam_temp_mb and tam_temp_mb > 800:
-                tip("temp", "Limpar arquivos temporários (%.1f GB)" % (tam_temp_mb / 1024.0), "Apaga só arquivos temporários com mais de 3 dias da pasta Temp do usuário. Não mexe em documentos.", "baixo", True, {"tipo": "temp"}, "baixo", marcado=True, tipo="limpeza")
     return out
 
 
@@ -1091,18 +1207,15 @@ def tamanho_temp_mb(limite=20000):
 # ----------------------------------------------------------------------------------------------
 # cenários ("e se...") e análise final
 # ----------------------------------------------------------------------------------------------
-def cenarios(f, dl):
+def cenarios(f, otim):
+    """E se... aplicar as otimizações recomendadas, trocar o HD por SSD, subir para 8 GB."""
     base = pontuar(f)["geral"]
     out = []
-    # otimizar
-    g = copy.deepcopy(f)
-    marc = {e.get("nome") for e in dl if e["tipo"] == "inicio" and e["marcado"] and e.get("acao")}
-    g["inicializacao"] = [e for e in g.get("inicializacao", []) if e.get("nome") not in {x["acao"]["nome"] for x in dl if x["tipo"] == "inicio" and x["marcado"] and x.get("acao")}]
-    if g["medidas"].get("boot_s"):
-        g["medidas"]["boot_s"] = round(g["medidas"]["boot_s"] * (0.85 if len(g["inicializacao"]) < len(f.get("inicializacao", [])) else 1), 1)
+    efeitos = [x["efeito"] for x in otim if x["recomendado"] and x.get("estado") != "desativado" and x["efeito"]]
+    g = OTIM.com_efeitos(f, efeitos)
     n_otim = pontuar(g)["geral"]
     if n_otim > base:
-        out.append({"id": "otimizar", "nome": "Aplicar as otimizações marcadas", "nota": n_otim, "delta": n_otim - base, "tipo": "software"})
+        out.append({"id": "otimizar", "nome": "Aplicar as otimizações recomendadas", "nota": n_otim, "delta": n_otim - base, "tipo": "software"})
     d = disco_principal(f) or {}
     if d.get("tipo") == "HDD":
         h = copy.deepcopy(g)
@@ -1125,15 +1238,19 @@ def cenarios(f, dl):
     return base, out
 
 
-def analise(f, tam_temp_mb=None):
-    dl = dicas(f, tam_temp_mb)
-    base, cen = cenarios(f, dl)
+def analise(f, extra=None):
+    """extra: tam_temp_mb (Windows) e limpavel_bytes (aba Dados), só para a máquina em uso."""
+    extra = extra or {}
+    dl = dicas(f, extra.get("tam_temp_mb"))
+    otim = OTIM.sugestoes(f, extra)
+    resumo = OTIM.com_pontos(f, otim)
+    base, cen = cenarios(f, otim)
     p = pontuar(f)
     pes = [x for x in f.get("pesados", []) if x["ram_mb"] >= 300 or (f["ram"].get("total_gb") and x["ram_mb"] / 1024.0 >= 0.1 * f["ram"]["total_gb"])]
     ini = f.get("inicializacao", [])
     for e in ini:
         e.setdefault("nivel", classificar_inicio(e))
-    return {"nota": p, "cenarios": cen, "sistemas": sistema_ideal(f), "dicas": dl, "pesados_n": len(pes), "pesados_limite": "≥ 300 MB ou ≥ 10% da RAM",
+    return {"nota": p, "cenarios": cen, "sistemas": sistema_ideal(f), "dicas": dl, "otimizacoes": otim, "otim_resumo": resumo, "pesados_n": len(pes), "pesados_limite": "≥ 300 MB ou ≥ 10% da RAM",
             "inicio_n": len(ini), "inicio_dispensavel": sum(1 for e in ini if e["nivel"] == "dispensavel")}
 
 
@@ -1144,14 +1261,39 @@ def pasta(mid):
     return os.path.join(STORE, safe_name(mid))
 
 
+def _gravou(path):
+    """Chamada depois de gravar um arquivo em maquinas/<mid>/: no modo servidor ele vai para o servidor."""
+    if not SINCRONIA:
+        return
+    rel = os.path.relpath(os.path.abspath(path), os.path.abspath(STORE)).replace("\\", "/").split("/")
+    if len(rel) == 2:
+        SINCRONIA.enviar(rel[0], rel[1], path)
+
+
+def _garantir(mid):
+    """Modo servidor: traz a pasta da máquina do servidor na primeira vez que ela é lida nesta sessão."""
+    if not SINCRONIA or not mid:
+        return
+    mid = safe_name(mid)
+    if mid in _PUXADAS:
+        return
+    _PUXADAS.add(mid)
+    try:
+        SINCRONIA.baixar_maquina(mid, pasta(mid))
+    except Exception:
+        _PUXADAS.discard(mid)
+
+
 def _json_atomico(path, obj):
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(obj, fh, ensure_ascii=False, indent=1)
     os.replace(tmp, path)
+    _gravou(path)
 
 
 def meta_ler(mid):
+    _garantir(mid)
     try:
         with open(os.path.join(pasta(mid), "meta.json"), encoding="utf-8") as fh:
             return json.load(fh)
@@ -1205,8 +1347,10 @@ def salvar_ficha(f, fase="antes"):
     os.makedirs(d, exist_ok=True)
     f = dict(f, fase=fase)
     ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    with open(os.path.join(d, "ficha-%s-%s.json" % (ts, fase)), "w", encoding="utf-8") as fh:
+    arq = os.path.join(d, "ficha-%s-%s.json" % (ts, fase))
+    with open(arq, "w", encoding="utf-8") as fh:
         json.dump(f, fh, ensure_ascii=False, indent=1)
+    _gravou(arq)
     meta_ids(f["mid"], f.get("ids") or {})
     p = pontuar(f)
     hist_add(f["mid"], "ficha" if fase == "antes" else "ficha_depois", "Ficha %s: nota %d (%s)" % ("coletada" if fase == "antes" else "após melhorias", p["geral"], p["classe"]),
@@ -1265,8 +1409,10 @@ def comparar(mid, a, b):
 
 
 def apagar_maquina(mid):
-    """Remove do pendrive tudo desta máquina (fichas, histórico, desfazer). O registro de consentimento fica."""
+    """Remove do pendrive (ou do servidor) tudo desta máquina (fichas, histórico, desfazer). O registro de consentimento fica."""
     import shutil as _sh
+    if SINCRONIA:
+        SINCRONIA.apagar(mid)
     d = pasta(mid)
     if os.path.isdir(d):
         _sh.rmtree(d)
@@ -1274,6 +1420,7 @@ def apagar_maquina(mid):
 
 
 def listar_fichas(mid):
+    _garantir(mid)
     d = pasta(mid)
     if not os.path.isdir(d):
         return []
@@ -1293,7 +1440,8 @@ def hist_add(mid, tipo, resumo, extra=None):
     os.makedirs(d, exist_ok=True)
     p = os.path.join(d, "historico.json")
     try:
-        h = json.load(open(p, encoding="utf-8"))
+        with open(p, encoding="utf-8") as fh:
+            h = json.load(fh)
     except (OSError, ValueError):
         h = []
     h.append({"quando": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "tipo": tipo, "resumo": resumo, "extra": extra or {}})
@@ -1301,11 +1449,14 @@ def hist_add(mid, tipo, resumo, extra=None):
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(h, fh, ensure_ascii=False, indent=1)
     os.replace(tmp, p)
+    _gravou(p)
 
 
 def hist_get(mid):
+    _garantir(mid)
     try:
-        return json.load(open(os.path.join(pasta(mid), "historico.json"), encoding="utf-8"))
+        with open(os.path.join(pasta(mid), "historico.json"), encoding="utf-8") as fh:
+            return json.load(fh)
     except (OSError, ValueError):
         return []
 
@@ -1321,8 +1472,7 @@ def visao(mid):
         return None
     antes = next((x for x in fichas if x.get("fase") == "antes"), fichas[0])
     ultima = fichas[-1]
-    tm = tamanho_temp_mb() if (mid == machine_id_cache()) else None
-    a = analise(ultima, tm)
+    a = analise(ultima, extra_analise(mid))
     out = {"mid": mid, "antes": {"quando": antes["quando"], "nota": pontuar(antes)["geral"], "classe": pontuar(antes)["classe"]},
            "ultima": ultima, "analise": a, "historico": hist_get(mid), "n_fichas": len(fichas), "fase_ultima": ultima.get("fase", "antes"),
            "meta": meta_ler(mid), "nome": nome_exibicao(mid, ultima), "modelo": modelo_comercial(ultima), "fichas": fichas_info(mid)}
@@ -1334,13 +1484,38 @@ def visao(mid):
     return out
 
 
+def extra_analise(mid):
+    """Medidas de agora que entram na Central (temporários do Windows e o limpável da aba Dados), só para esta máquina."""
+    if REPLAY or mid != machine_id_cache():
+        return {}
+    ex = {"tam_temp_mb": tamanho_temp_mb()}
+    try:
+        import dados
+        ck = dados.RES.get("cockpit") or {}
+        ex["limpavel_bytes"] = ck.get("limpavel") or 0
+    except Exception:
+        pass
+    return ex
+
+
 def machine_id_cache():
     if "v" not in _MID:
         _MID["v"] = machine_id_rapido()
     return _MID["v"]
 
 
-def listar_maquinas():
+def listar_maquinas(atual=None):
+    """Máquinas conhecidas. atual: código da máquina em uso (None = esta máquina; "" = nenhuma, usado no servidor)."""
+    if atual is None:
+        atual = machine_id_cache()
+    if SINCRONIA:
+        try:
+            lst = SINCRONIA.indice()
+            for x in lst:
+                x["atual"] = x.get("mid") == atual
+            return lst
+        except Exception:
+            pass  # sem servidor agora: mostra o que já está no cache
     out = []
     if not os.path.isdir(STORE):
         return out
@@ -1353,7 +1528,7 @@ def listar_maquinas():
         mt = meta_ler(mid)
         out.append({"mid": mid, "nome": nome_exibicao(mid, ult), "host": ult.get("host", mid), "modelo": modelo_comercial(ult),
                     "quando": ult.get("quando", ""), "nota": p["geral"], "classe": p["classe"], "nivel": p["trofeu"]["nivel"], "eventos": len(hist_get(mid)),
-                    "analises": len(nomes), "dono": mt.get("dono", ""), "terceiro_nome": mt.get("terceiro_nome", ""), "atual": mid == machine_id_cache()})
+                    "analises": len(nomes), "dono": mt.get("dono", ""), "terceiro_nome": mt.get("terceiro_nome", ""), "atual": mid == atual})
     return out
 
 
@@ -1366,14 +1541,15 @@ def _undo_path(mid):
 
 def _undo_load(mid):
     try:
-        return json.load(open(_undo_path(mid), encoding="utf-8"))
+        with open(_undo_path(mid), encoding="utf-8") as fh:
+            return json.load(fh)
     except (OSError, ValueError):
         return []
 
 
 def _undo_save(mid, lst):
     os.makedirs(pasta(mid), exist_ok=True)
-    json.dump(lst, open(_undo_path(mid), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    _json_atomico(_undo_path(mid), lst)
 
 
 def _ps_env(**kw):
@@ -1381,38 +1557,6 @@ def _ps_env(**kw):
     for k, v in kw.items():
         e["BKP_" + k.upper()] = str(v if v is not None else "")
     return e
-
-
-def _startup_win(acao):
-    loc = acao.get("local") or ""
-    nome = acao.get("nome") or ""
-    if re.match(r"HKLM", loc, re.I):
-        hive = "HKLM:"
-    elif re.match(r"HKU\\", loc, re.I) or re.match(r"HKCU", loc, re.I):
-        hive = "HKCU:"
-        if re.match(r"HKU\\", loc, re.I):
-            sid = ps("[System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value", 15).strip()
-            if sid and sid.lower() not in loc.lower():
-                return False, "Pertence a outro usuário do Windows: desative com ele logado.", None
-    else:
-        return False, "Local não suportado.", None
-    kind = "Run32" if re.search(r"WOW6432Node", loc, re.I) else "Run"
-    script = r"""
-$p=$env:BKP_HIVE+'\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\'+$env:BKP_KIND
-if(-not (Test-Path $p)){New-Item -Path $p -Force | Out-Null}
-$prev=$null; try{$prev=(Get-ItemProperty -Path $p -Name $env:BKP_NAME -ErrorAction Stop).($env:BKP_NAME)}catch{}
-Set-ItemProperty -Path $p -Name $env:BKP_NAME -Value ([byte[]](3,0,0,0,0,0,0,0,0,0,0,0)) -Type Binary
-$ok=(Get-ItemProperty -Path $p -Name $env:BKP_NAME).($env:BKP_NAME)[0] -eq 3
-@{ok=$ok;prev=$prev} | ConvertTo-Json -Compress
-"""
-    out = ps(script, 30, _ps_env(hive=hive, kind=kind, name=nome))
-    try:
-        j = json.loads(out[out.find("{"):])
-    except ValueError:
-        return False, "O Windows não respondeu.", None
-    if not j.get("ok"):
-        return False, "Não consegui gravar a configuração.", None
-    return True, "Desativado (reversível).", {"tipo": "startup_win", "hive": hive, "kind": kind, "nome": nome, "prev": j.get("prev")}
 
 
 def _startup_linux(acao):
@@ -1428,28 +1572,6 @@ def _startup_linux(acao):
         txt = "[Desktop Entry]\nType=Application\nName=%s\nHidden=true\n" % (acao.get("nome") or fn)
     open(p, "w", encoding="utf-8").write(txt)
     return True, "Desativado (reversível).", {"tipo": "startup_linux", "path": p, "prev": prev}
-
-
-def _visual_win():
-    script = r"""
-$r=@{}
-$k1='HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
-$k2='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
-$k3='HKCU:\Control Panel\Desktop\WindowMetrics'
-function G($k,$n){try{(Get-ItemProperty -Path $k -Name $n -ErrorAction Stop).$n}catch{$null}}
-$r.t=G $k1 'EnableTransparency'; $r.a=G $k2 'TaskbarAnimations'; $r.m=G $k3 'MinAnimate'
-if(-not (Test-Path $k1)){New-Item $k1 -Force|Out-Null}
-Set-ItemProperty -Path $k1 -Name 'EnableTransparency' -Value 0 -Type DWord
-Set-ItemProperty -Path $k2 -Name 'TaskbarAnimations' -Value 0 -Type DWord
-Set-ItemProperty -Path $k3 -Name 'MinAnimate' -Value '0' -Type String
-$r | ConvertTo-Json -Compress
-"""
-    out = ps(script, 30)
-    try:
-        j = json.loads(out[out.find("{"):])
-    except ValueError:
-        return False, "O Windows não respondeu.", None
-    return True, "Efeitos reduzidos (vale após sair e entrar na conta).", {"tipo": "visual_win", "prev": j}
 
 
 def _temp_win():
@@ -1471,29 +1593,24 @@ def _temp_win():
 
 
 def aplicar(mid, ids, ficha):
-    """Aplica as dicas marcadas. Retorna lista de resultados; guarda como desfazer."""
-    dl = {d["id"]: d for d in dicas(ficha, tamanho_temp_mb())}
+    """Aplica as otimizações escolhidas. Cada uma que deu certo guarda como desfazer."""
+    sug = {x["id"]: x for x in OTIM.sugestoes(ficha, extra_analise(mid))}
     undo = _undo_load(mid)
     res = []
     for i in ids:
-        d = dl.get(i)
+        d = sug.get(i)
         if not d or not d.get("aplicavel") or not d.get("acao"):
             res.append({"id": i, "ok": False, "msg": "Ação indisponível."})
             continue
-        a = d["acao"]
         try:
-            if a["tipo"] == "startup_off":
-                ok, msg, u = _startup_win(a) if IS_WIN else _startup_linux(a)
-            elif a["tipo"] == "visual" and IS_WIN:
-                ok, msg, u = _visual_win()
-            elif a["tipo"] == "temp" and IS_WIN:
-                ok, msg, u = _temp_win()
+            if REPLAY:
+                ok, msg, u = True, "Simulado: nada foi alterado neste computador.", {"tipo": "simulado"}
             else:
-                ok, msg, u = False, "Não suportado neste sistema.", None
+                ok, msg, u = OTIM.aplicar(d["acao"])
         except Exception as e:
             ok, msg, u = False, "Erro: %s" % e, None
         if ok and u:
-            undo.append(dict(u, quando=datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), titulo=d["titulo"]))
+            undo.append(dict(u, id=d["id"], quando=datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), titulo=d["titulo"]))
         res.append({"id": i, "titulo": d["titulo"], "ok": ok, "msg": msg})
     _undo_save(mid, undo)
     okn = sum(1 for r in res if r["ok"])
@@ -1501,41 +1618,65 @@ def aplicar(mid, ids, ficha):
     return res
 
 
-def desfazer(mid):
-    undo = _undo_load(mid)
-    n = 0
-    for u in reversed(undo):
-        try:
-            if u["tipo"] == "startup_linux":
-                if u.get("prev") is None:
-                    os.remove(u["path"])
-                else:
-                    open(u["path"], "w", encoding="utf-8").write(u["prev"])
-                n += 1
-            elif u["tipo"] == "startup_win" and IS_WIN:
-                bytes_ = u.get("prev")
-                script = r"""
+def _desfazer_um(u):
+    """Tipos de desfazer gravados até a 3.0 (e ainda usados pela inicialização)."""
+    if u["tipo"] == "startup_linux":
+        if u.get("prev") is None:
+            os.remove(u["path"])
+        else:
+            with open(u["path"], "w", encoding="utf-8") as fh:
+                fh.write(u["prev"])
+        return True
+    if u["tipo"] == "startup_win" and IS_WIN:
+        bytes_ = u.get("prev")
+        script = r"""
 $p=$env:BKP_HIVE+'\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\'+$env:BKP_KIND
 if($env:BKP_PREV){Set-ItemProperty -Path $p -Name $env:BKP_NAME -Value ([byte[]]($env:BKP_PREV -split ',')) -Type Binary}else{Remove-ItemProperty -Path $p -Name $env:BKP_NAME}
+@{ok=$true} | ConvertTo-Json -Compress
 """
-                ps(script, 30, _ps_env(hive=u["hive"], kind=u["kind"], name=u["nome"], prev=",".join(str(x) for x in bytes_) if bytes_ else ""))
-                n += 1
-            elif u["tipo"] == "visual_win" and IS_WIN:
-                pv = u.get("prev") or {}
-                script = r"""
-function S($k,$n,$v,$t){if($v -eq $null){Remove-ItemProperty -Path $k -Name $n -ErrorAction SilentlyContinue}else{Set-ItemProperty -Path $k -Name $n -Value $v -Type $t}}
+        out = ps(script, 30, _ps_env(hive=u["hive"], kind=u["kind"], name=u["nome"], prev=",".join(str(x) for x in bytes_) if bytes_ else ""))
+        return '"ok":true' in out.replace(" ", "")
+    if u["tipo"] == "visual_win" and IS_WIN:
+        pv = u.get("prev") or {}
+        script = r"""
+function S($k,$n,$v,$t){if($v -eq $null -or $v -eq ''){Remove-ItemProperty -Path $k -Name $n -ErrorAction SilentlyContinue}else{Set-ItemProperty -Path $k -Name $n -Value $v -Type $t}}
 S 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' 'EnableTransparency' $env:BKP_T 'DWord'
 S 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' 'TaskbarAnimations' $env:BKP_A 'DWord'
 S 'HKCU:\Control Panel\Desktop\WindowMetrics' 'MinAnimate' $env:BKP_M 'String'
+@{ok=$true} | ConvertTo-Json -Compress
 """
-                ps(script, 30, _ps_env(t=pv.get("t") if pv.get("t") is not None else "", a=pv.get("a") if pv.get("a") is not None else "", m=pv.get("m") if pv.get("m") is not None else ""))
-                n += 1
+        out = ps(script, 30, _ps_env(t=pv.get("t") if pv.get("t") is not None else "", a=pv.get("a") if pv.get("a") is not None else "", m=pv.get("m") if pv.get("m") is not None else ""))
+        return '"ok":true' in out.replace(" ", "")
+    return False
+
+
+def desfazer(mid, ids=None):
+    """Desfaz (todas ou só as ids). Um item só sai da lista se voltou como estava: se falhar, dá para tentar de novo."""
+    undo = _undo_load(mid)
+    fica, n, falhas = [], 0, []
+    for u in reversed(undo):
+        if ids and u.get("id") not in ids:
+            fica.append(u)
+            continue
+        try:
+            ok = True if REPLAY or u.get("tipo") == "simulado" else OTIM.desfazer(u)
         except Exception:
-            pass
-    _undo_save(mid, [])
+            ok = False
+        if ok:
+            n += 1
+        else:
+            fica.append(u)
+            falhas.append(u.get("titulo") or u.get("tipo"))
+    _undo_save(mid, list(reversed(fica)))
     if n:
         hist_add(mid, "desfazer", "Melhorias desfeitas: %d" % n)
+    if falhas:
+        hist_add(mid, "desfazer", "Não consegui desfazer: %s" % ", ".join(falhas))
     return n
+
+
+def aplicadas(mid):
+    return [{"id": u.get("id", ""), "titulo": u.get("titulo", u.get("tipo")), "quando": u.get("quando", "")} for u in _undo_load(mid)]
 
 
 def pode_desfazer(mid):

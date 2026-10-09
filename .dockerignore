@@ -1,0 +1,14 @@
+.git
+.DS_Store
+**/__pycache__
+# dados de clientes e do pendrive: nunca entram na imagem
+maquinas
+consentimentos.log
+_versoes
+_novo_tmp*
+runtime
+runtimes
+servidor-dados
+_dev
+_cache_servidor
+*.zip

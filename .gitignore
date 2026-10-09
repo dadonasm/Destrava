@@ -1,0 +1,20 @@
+# dados de clientes: nunca vão para o git
+maquinas/*
+!maquinas/LEIA-ME.txt
+consentimentos.log
+servidor-dados/
+_dev/
+_cache_servidor/
+
+# Python portátil do pendrive e runtimes do servidor
+runtime/*
+!runtime/LEIA-ME.txt
+runtimes/
+
+# atualizador
+_versoes/
+_novo_tmp*/
+_novo_upload.zip
+
+__pycache__/
+.DS_Store
