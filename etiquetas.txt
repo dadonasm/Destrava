@@ -1,0 +1,14 @@
+# Etiquetas por palavra-chave  -  D&D Backup
+# Formato:  Etiqueta: palavra1, palavra2, palavra com espaço, re:expressão
+# - A busca ignora maiúsculas e acentos e vale para PALAVRAS INTEIRAS no caminho completo
+#   (nome do arquivo + pastas). "rg" casa com "rg_frente.jpg", mas não com "burger".
+# - Use "re:" para expressão regular (ex.: re:\bwa\d{4}\b).
+# - Pode editar à vontade: uma linha por etiqueta. Linhas com # são comentários.
+
+Fiscal: nota, notas, nfe, nf-e, nfce, danfe, imposto, impostos, icms, ipi, das, darf, gnre, xml, sped, simples nacional, contador, contabilidade
+Contratos: contrato, contratos, aditivo, distrato, procuracao, termo
+Propostas: proposta, propostas, orcamento, orcamentos, cotacao, cotacoes, pedido, pedidos
+Clientes: cliente, clientes, lojista, lojistas, tecnico, tecnicos
+Financeiro: boleto, boletos, extrato, extratos, fatura, faturas, comprovante, comprovantes, pix, recibo, recibos, financeiro, pagamento, pagamentos
+Pessoal: rg, cpf, cnh, certidao, passaporte, titulo de eleitor, curriculo
+WhatsApp: whatsapp, re:\bwa\d{4}\b

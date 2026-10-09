@@ -1,0 +1,1 @@
+Coloque aqui o Python portatil do Windows (ver LEIA-ME.txt, passo 3). Linux nao precisa.

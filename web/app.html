@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BKP Pro · D&D Technology</title>
+<style>
+:root{--bg:#0e0f12;--panel:#16171c;--panel2:#1d1f26;--line:#2a2c35;--tx:#ececf1;--mut:#9a9cab;--gold:#e0b34a;--ok:#3fb27f;--warn:#e5a23a;--err:#e5534b;--acc:#e0b34a;--r:14px;--sh:0 1px 0 rgba(255,255,255,.03) inset,0 8px 24px rgba(0,0,0,.25);--btnpri:linear-gradient(180deg,#f0cd6b,#d4a62f);--btnpri-tx:#1b1400}
+:root[data-theme=light]{--bg:#f3f3f6;--panel:#fff;--panel2:#f0f0f4;--line:#dcdce3;--tx:#1b1b1f;--mut:#5d5e6a;--gold:#8a6612;--acc:#8a6612;--sh:0 1px 2px rgba(20,20,40,.06),0 8px 24px rgba(20,20,40,.06);--btnpri:linear-gradient(180deg,#f3d27a,#dcae35);--btnpri-tx:#241a00}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+header{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:15;min-height:58px}
+header h1{font-size:17px;letter-spacing:.4px}header small{color:var(--mut)}
+header .sp{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);font-size:12px;color:var(--mut);background:var(--panel2);cursor:default;white-space:nowrap}
+button.chip{cursor:pointer;font:inherit;font-size:12px}button.chip:hover{border-color:var(--acc);color:var(--tx)}
+.chip.own-p{color:var(--ok);border-color:var(--ok)}.chip.own-t{color:var(--warn);border-color:var(--warn)}
+.chip i.d{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+.upd{position:relative}.upd.nova:after{content:"";position:absolute;right:-2px;top:-2px;width:9px;height:9px;border-radius:50%;background:var(--err);border:2px solid var(--panel)}
+
+/* jornada */
+.journey{display:flex;gap:0;padding:16px 22px 4px;overflow:auto;align-items:flex-start;max-width:1500px;margin:0 auto}
+.jn{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:96px;flex:1;position:relative;color:var(--mut);font-size:12px;text-align:center}
+.jn .c{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;background:var(--panel);position:relative;z-index:1}
+.jn:not(:last-child):after{content:"";position:absolute;top:15px;left:calc(50% + 17px);right:calc(-50% + 17px);height:2px;background:var(--line)}
+.jn.done:not(:last-child):after{background:var(--ok)}
+.jn.done .c{background:var(--ok);border-color:var(--ok);color:#fff}.jn.on .c{border-color:var(--acc);color:var(--acc);box-shadow:0 0 0 4px rgba(224,179,74,.18)}.jn.on{color:var(--tx);font-weight:600}.jn.done{color:var(--ok)}
+
+main{max-width:1100px;margin:0 auto;padding:8px 22px 70px}main.wide{max-width:1500px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
+.card h2{font-size:18px;margin:0 0 4px}.card p.h{margin:0 0 14px;color:var(--mut);font-size:13.5px}
+.card h3{font-size:14px;margin:0 0 8px}
+label{display:block;font-size:12px;color:var(--mut);margin:10px 0 4px}
+input[type=text],select{width:100%;padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--tx);font:inherit}
+input[type=text]:focus,select:focus{outline:2px solid var(--acc);outline-offset:-1px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.grow{flex:1;min-width:180px}.sp1{flex:1}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--tx);padding:9px 15px;transition:border-color .15s,transform .05s}
+button:hover{border-color:var(--acc)}button:active{transform:translateY(1px)}button:disabled{opacity:.4;cursor:not-allowed}
+button.pri{background:var(--btnpri);color:var(--btnpri-tx);border-color:#b98a14;font-weight:700}
+button.dng{background:var(--err);border-color:var(--err);color:#fff;font-weight:700}
+button.gh{background:transparent}
+button.sm{padding:5px 10px;font-size:12.5px;border-radius:8px}
+.src{display:flex;gap:10px;align-items:center;padding:11px;border:1px solid var(--line);border-radius:12px;margin-top:8px;background:var(--panel2)}
+.src.sel{border-color:var(--acc)}.src .t{flex:1;min-width:0}.src .t b{display:block}.src .t span{color:var(--mut);font-size:12px;word-break:break-all}
+.src input.l{width:44px;text-align:center;padding:6px}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px;border:1px solid var(--line);color:var(--mut)}
+.tag.win{color:#5aa9ff;border-color:#5aa9ff}.tag.lin{color:var(--ok);border-color:var(--ok)}
+.bar{height:12px;background:var(--panel2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#9a7418,#f3d98b);transition:width .3s}
+.big{font-size:26px;font-weight:700;letter-spacing:-.3px}.mut{color:var(--mut)}.mono{font-family:ui-monospace,Menlo,Consolas,"DejaVu Sans Mono",monospace;font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{background:var(--panel2);border-radius:12px;padding:12px 14px;border:1px solid var(--line)}.kpi .big{font-size:22px}.kpi .mut{font-size:12px}
+.chk{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.chk:last-child{border:0}
+.dot{width:10px;height:10px;border-radius:50%;margin-top:6px;flex:none}.ok .dot,.dot.ok{background:var(--ok)}.aviso .dot{background:var(--warn)}.erro .dot{background:var(--err)}
+.cat{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;margin-top:8px;background:var(--panel2)}
+.cat .n{flex:1;min-width:0}.cat .n b{display:block}.cat .n span{color:var(--mut);font-size:12px}
+.cat .cb{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:6px}.cat .cb i{display:block;height:100%;background:var(--acc);border-radius:99px}
+.tg{position:relative;width:44px;height:24px;flex:none}.tg input{opacity:0;width:100%;height:100%;position:absolute;margin:0;cursor:pointer;z-index:2}
+.tg s{position:absolute;inset:0;background:var(--line);border-radius:99px;transition:.2s}.tg s:after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+.tg input:checked+s{background:var(--ok)}.tg input:checked+s:after{left:23px}
+.tg input:indeterminate+s{background:var(--warn)}.tg input:indeterminate+s:after{left:13px}
+.tg input:focus-visible+s{outline:2px solid var(--acc);outline-offset:2px}
+table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;color:var(--mut);font-weight:500;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top;word-break:break-word}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px;font-weight:600}
+.p-ok{background:#16382b;color:#6fe0a8}.p-falha{background:#4a1f1c;color:#ff9189}.p-ignorado{background:#2c2c33;color:#aaa}.p-revisar{background:#4a3a14;color:#ffd27a}.p-desmarcado{background:#2c2c33;color:#c9c9d6}.p-pendente{background:#26304a;color:#9bb8ff}
+:root[data-theme=light] .p-ok{background:#d9f3e6;color:#17714a}:root[data-theme=light] .p-falha{background:#fde0de;color:#a3241d}:root[data-theme=light] .p-ignorado,:root[data-theme=light] .p-desmarcado{background:#e8e8ee;color:#555}:root[data-theme=light] .p-revisar{background:#fdecc6;color:#7a5a05}:root[data-theme=light] .p-pendente{background:#dfe6fb;color:#2f4fa8}
+.log{max-height:150px;overflow:auto;background:var(--panel2);border-radius:10px;padding:8px;border:1px solid var(--line)}
+.browser{border:1px solid var(--line);border-radius:12px;margin-top:8px;background:var(--panel2)}
+.browser .path{padding:8px 10px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.browser ul{list-style:none;margin:0;padding:0;max-height:210px;overflow:auto}
+.browser li{padding:7px 12px;cursor:pointer;border-bottom:1px solid var(--line)}.browser li:hover{background:var(--panel)}
+.warnbox,.errbox,.okbox,.infobox{border-radius:12px;padding:11px 14px;margin:10px 0;border:1px solid}
+.warnbox{border-color:var(--warn);background:rgba(229,162,58,.1)}.errbox{border-color:var(--err);background:rgba(229,83,75,.1)}.okbox{border-color:var(--ok);background:rgba(63,178,127,.1)}.infobox{border-color:var(--line);background:var(--panel2)}
+.hide{display:none!important}
+.modal{position:fixed;inset:0;background:rgba(5,6,10,.7);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:50;padding:18px;overflow:auto}
+.modal .box{background:var(--panel);border:1px solid var(--line);border-radius:18px;max-width:560px;width:100%;padding:24px;box-shadow:0 30px 80px rgba(0,0,0,.5);max-height:94vh;overflow:auto}
+.modal h2{font-size:20px;margin:0 0 8px}
+.seal{width:84px;height:84px;flex:none}.seal svg{width:100%;height:100%;border-radius:50%}
+.pg{display:flex;gap:8px;align-items:center;margin-top:8px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:12px;padding:12px 18px;z-index:80;box-shadow:0 12px 40px rgba(0,0,0,.4);max-width:min(560px,92vw)}
+.toast.err{border-left-color:var(--err)}.toast.ok{border-left-color:var(--ok)}
+
+.shell{display:flex;min-height:calc(100vh - 58px)}
+#gaveta{width:200px;flex:none;background:var(--panel);border-right:1px solid var(--line);padding:12px 8px;display:flex;flex-direction:column;gap:4px;position:sticky;top:58px;height:calc(100vh - 58px);transition:width .2s;z-index:6}
+#gaveta .sp{flex:1}
+.gv{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:transparent;padding:11px 12px;border-radius:12px;color:var(--mut)}
+.gv:hover{background:var(--panel2);color:var(--tx)}.gv.on{background:var(--panel2);color:var(--tx);box-shadow:inset 3px 0 0 var(--acc);font-weight:600}
+.gv .ic{font-size:19px;width:24px;text-align:center;flex:none;display:inline-flex;justify-content:center}
+.row>select{width:auto;flex:1;min-width:150px}
+button>svg,button>span>svg{width:16px;height:16px;vertical-align:-3px}
+.gv .ic svg{width:21px;height:21px}
+.gv .bd{margin-left:auto;font-size:10px;padding:1px 7px;border-radius:99px;background:var(--warn);color:#1b1400;font-weight:700}
+.gvfoot{font-size:12px;color:var(--mut);padding:8px 10px;word-break:break-word;line-height:1.3}.gvfoot b{display:block;color:var(--tx);font-size:12.5px}.gvfoot small{opacity:.55;font-size:10.5px;letter-spacing:.5px}
+body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{display:none}
+.content{flex:1;min-width:0}
+.hero{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.ring{width:158px;height:158px;flex:none;position:relative}.ring svg{width:100%;height:100%}
+.ring .n{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}.ring .n b{font-size:44px;line-height:1;letter-spacing:-1px}.ring .n span{font-size:12px;color:var(--mut)}
+.ring circle.pr{transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1)}
+.heroT{display:flex;flex-direction:column;align-items:center;gap:2px;flex:none}
+.heroT small{font-size:11px;color:var(--mut);letter-spacing:.3px;text-align:center;max-width:120px}
+.eyebrow{font-size:11.5px;letter-spacing:1.6px;color:var(--mut);font-weight:600}
+.ttl{display:flex;align-items:center;gap:8px}.ttl h2{font-size:26px;letter-spacing:-.4px}
+.pen{border:0;background:transparent;color:var(--mut);padding:4px;border-radius:8px}.pen:hover{color:var(--acc);background:var(--panel2)}.pen svg{width:16px;height:16px;display:block}
+.ttl input{font-size:22px;font-weight:700;padding:6px 10px;max-width:420px}
+.mid{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;letter-spacing:.8px;color:var(--mut);opacity:.6;cursor:pointer;border:0;background:transparent;padding:0}
+.mid:hover{opacity:1}
+.badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:99px;font-weight:700;margin:0 4px 4px 0;border:1px solid}
+.b-gold{background:var(--btnpri);color:var(--btnpri-tx);border-color:#b98a14}.b-ok{color:var(--ok);border-color:var(--ok)}.b-bad{color:var(--err);border-color:var(--err)}.b-warn{color:var(--warn);border-color:var(--warn)}.b-mut{color:var(--mut);border-color:var(--line)}
+.delta{font-weight:700}.delta.up{color:var(--ok)}.delta.dn{color:var(--err)}.delta.eq{color:var(--mut)}
+.chars{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.ch{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:13px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.ch .ico{width:34px;height:34px;border-radius:10px;background:var(--panel);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--acc);margin-bottom:6px}.ch .ico svg{width:20px;height:20px}
+.ch .k{font-size:11px;letter-spacing:1px;color:var(--mut);font-weight:600;text-transform:uppercase}
+.ch .v{font-size:16px;font-weight:700;line-height:1.25;word-break:break-word}
+.ch .d{font-size:12px;color:var(--mut);line-height:1.35}
+.ch .m{display:flex;align-items:center;gap:8px;margin-top:8px}.ch .m b{font-size:13px;width:26px}
+.mini{flex:1;height:6px;background:var(--line);border-radius:99px;overflow:hidden}.mini i{display:block;height:100%;border-radius:99px}
+.spd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.spd{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px 10px 12px;text-align:center}
+.spd svg{width:100%;max-width:170px;height:auto;display:block;margin:0 auto}
+.spd .num{font-size:24px;font-weight:800;line-height:1;margin-top:-6px}.spd .nm{font-weight:600;font-size:13px;margin-top:4px}.spd .vl{font-size:11.5px;color:var(--mut);margin-top:2px;line-height:1.3}.spd .cl{font-size:11px;font-weight:700;margin-top:3px}
+.ndl{transform:rotate(var(--r));transform-origin:60px 62px;animation:ndl 1s cubic-bezier(.2,.8,.2,1)}
+@keyframes ndl{from{transform:rotate(0deg)}}
+.gst{opacity:.35}
+.shelf{display:flex;gap:6px;justify-content:space-between;align-items:flex-end;flex-wrap:wrap}
+.tr{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:84px;text-align:center}
+.tr.lock{filter:grayscale(1);opacity:.32}.tr.cur{filter:none}
+.tr small{font-size:11px;color:var(--mut);line-height:1.2}.tr b{font-size:12px}
+.tr.cur .tl2{color:var(--acc)}
+.ossel{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}
+.os{border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:13px;display:flex;gap:12px}
+.os.bad{opacity:.55}.os.best{border-color:var(--acc)}
+.os .sc{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;flex:none;border:3px solid}
+.os h4{margin:0 0 3px;font-size:15px}.os small{display:block;color:var(--mut);font-size:12px;line-height:1.35}
+.cen{display:flex;align-items:center;gap:10px;margin:8px 0}.cen .nm{width:290px;max-width:46%;font-size:13px}.cen .bar{flex:1}.cen b{width:96px;text-align:right}
+.tip{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);align-items:flex-start}.tip:last-child{border:0}
+.tip .tx{flex:1;min-width:0}.tip .tx b{display:block}.tip .tx span{color:var(--mut);font-size:12.5px;word-break:break-word}
+.empty{text-align:center;padding:34px 18px}
+.empty h2{font-size:26px;margin:12px 0 6px;letter-spacing:-.4px}.empty p{max-width:600px;margin:8px auto;color:var(--mut)}
+.shield{width:92px;height:92px;margin:0 auto;color:var(--acc)}
+.seals{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:20px 0 6px;text-align:left}
+.sealc{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:12px 13px}
+.sealc svg{width:26px;height:26px;color:var(--ok);flex:none;margin-top:1px}.sealc b{display:block;font-size:13.5px}.sealc span{font-size:12px;color:var(--mut);line-height:1.35;display:block}
+.walk{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;text-align:left;margin-top:14px}
+.wk{border:1px solid var(--line);border-radius:14px;padding:13px;background:var(--panel2);position:relative}
+.wk .nb{width:26px;height:26px;border-radius:50%;background:var(--btnpri);color:var(--btnpri-tx);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:13px;margin-bottom:8px}
+.wk b{display:block;font-size:14px}.wk span{font-size:12.5px;color:var(--mut);line-height:1.4;display:block;margin-top:2px}.wk em{font-style:normal;font-size:10.5px;color:var(--acc);font-weight:700;letter-spacing:.5px}
+.mk{display:flex;gap:14px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--panel2);margin-top:10px;cursor:pointer}.mk:hover{border-color:var(--acc)}
+.mk .sc{width:52px;height:52px;border-radius:50%;border:3px solid;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
+.ba{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:14px 0 0;padding-top:14px;border-top:1px dashed var(--line)}.ba .bx{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 18px;text-align:center}.ba .bx b{display:block;font-size:30px}
+.ba .ar{font-size:26px;color:var(--acc)}
+
+/* gaveta histórico (empurra a ficha) */
+.fw{display:flex;gap:16px;align-items:flex-start}.fm{flex:1;min-width:0}
+.dr{flex:none;width:0;opacity:0;overflow:hidden;transition:width .28s ease,opacity .2s;position:sticky;top:72px;max-height:calc(100vh - 90px);background:var(--panel);border:0 solid var(--line);border-radius:var(--r);box-shadow:var(--sh)}
+.dr.open{width:380px;opacity:1;border-width:1px}
+.dr .in{width:380px;padding:16px;overflow:auto;max-height:calc(100vh - 92px)}
+.tl{border-left:2px solid var(--line);margin-left:6px;padding-left:16px}.tl .ev{position:relative;margin:0 0 14px}.tl .ev:before{content:"";position:absolute;left:-23px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--panel);border:3px solid var(--acc)}
+.tl .ev.fi:before{background:var(--acc)}.tl small{color:var(--mut)}
+.tl .ev label{display:flex;gap:8px;align-items:flex-start;margin:0;font-size:inherit;color:inherit;cursor:pointer}
+.nt{display:inline-block;min-width:34px;text-align:center;font-weight:800;padding:0 6px;border-radius:8px;border:2px solid;font-size:12.5px;margin-right:4px}
+@media (max-width:1100px){.dr{position:fixed;right:12px;top:70px;bottom:12px;max-height:none;z-index:30;transform:translateX(calc(100% + 30px));width:min(400px,92vw);opacity:1;border-width:1px;transition:transform .25s;box-shadow:0 20px 60px rgba(0,0,0,.5)}.dr.open{transform:none;width:min(400px,92vw)}.dr .in{width:100%;max-height:none;height:100%}}
+
+/* dados */
+.cock{display:flex;height:34px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--panel2)}
+.cock i{display:block;height:100%;transition:width .5s}
+.lgd{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12.5px}.lgd span{display:flex;align-items:center;gap:6px}.lgd i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.zn{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.zc{border-radius:14px;padding:14px;border:1px solid var(--line);background:var(--panel2);border-top:4px solid}
+.zc b{display:block}.zc span{font-size:12.5px;color:var(--mut);line-height:1.4;display:block;margin-top:3px}
+.z-v{border-top-color:var(--ok)}.z-a{border-top-color:var(--warn)}.z-r{border-top-color:var(--err)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.tb{padding:7px 14px;border-radius:99px;border:1px solid var(--line);background:var(--panel2);font-size:13px;cursor:pointer}.tb.on{border-color:var(--acc);color:var(--tx);font-weight:700}
+.drow{display:flex;gap:10px;align-items:flex-start;padding:10px 4px;border-bottom:1px solid var(--line)}.drow:last-child{border:0}
+.drow .t{flex:1;min-width:0}.drow .t b{display:block;word-break:break-word}.drow .t span{font-size:12px;color:var(--mut);word-break:break-all;display:block}
+.drow .sz{font-weight:700;white-space:nowrap}
+.actbar{position:sticky;bottom:10px;background:var(--panel);border:1px solid var(--acc);border-radius:16px;padding:12px 16px;box-shadow:0 12px 40px rgba(0,0,0,.35);display:flex;gap:12px;align-items:center;flex-wrap:wrap;z-index:8}
+
+/* backup */
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+.side{position:sticky;top:72px}
+.ringp{width:170px;height:170px;position:relative;flex:none}.ringp svg{width:100%;height:100%}.ringp .n{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}.ringp .n b{font-size:34px;line-height:1}.ringp .n span{font-size:12px;color:var(--mut)}
+.chkl{list-style:none;margin:0;padding:0}.chkl li{display:flex;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}.chkl li:last-child{border:0}
+.ci{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;flex:none;color:var(--mut)}
+.chkl li.run .ci{border-color:var(--acc);border-top-color:transparent;animation:spin 1s linear infinite}.chkl li.ok .ci{background:var(--ok);border-color:var(--ok);color:#fff}.chkl li.wait{color:var(--mut)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rc{display:flex;gap:12px;border-radius:14px;padding:14px;border:1px solid;margin-bottom:10px}
+.rc.g{border-color:var(--ok);background:rgba(63,178,127,.09)}.rc.y{border-color:var(--warn);background:rgba(229,162,58,.09)}.rc.r{border-color:var(--err);background:rgba(229,83,75,.09)}
+.rc .ic2{font-size:22px}
+@media (max-width:1000px){.cols{grid-template-columns:1fr}.side{position:static}}
+@media (max-width:760px){#gaveta{width:60px}#gaveta .gv .lb,#gaveta .gvfoot,#gaveta .gv .bd{display:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.mA{display:inline-block}.mB{display:none}
+:root[data-theme=light] .mA{display:none}:root[data-theme=light] .mB{display:inline-block}
+</style>
+</head>
+<body>
+<header>
+  <span id="mono"></span><h1>BKP Pro</h1><small>by D&amp;D Technology</small>
+  <span class="sp"></span>
+  <span id="hown"></span>
+  <button class="chip upd" id="hver" title="Ver atualizações">v–</button>
+  <button class="sm" id="theme" aria-label="Alternar tema claro e escuro">Claro / Escuro</button>
+</header>
+<div class="shell">
+<aside id="gaveta" aria-label="Menu lateral"></aside>
+<div class="content"><div class="journey hide" id="steps"></div>
+<main id="main"></main></div>
+</div>
+<div id="layer"></div>
+<script src="/web/logo.js"></script>
+<script>
+"use strict";
+const TOKEN=(location.hash||"").slice(1);
+history.replaceState(null,"",location.pathname);
+const $=(s,e)=>(e||document).querySelector(s);
+const $$=(s,e)=>[...(e||document).querySelectorAll(s)];
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const nf=n=>(+n||0).toLocaleString("pt-BR");
+let FB=1024;
+function fmt(n){n=+n||0;const u=["B","KB","MB","GB","TB"];let i=0;while(n>=FB&&i<4){n/=FB;i++}return (i?n.toFixed(i>=3?2:1):n.toFixed(0)).replace(".",",")+" "+u[i]}
+function fdur(s){s=Math.round(s||0);const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?h+"h "+m+"min":m?m+"min "+(s%60)+"s":s+"s"}
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v==null?d:v}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+async function api(path,body){
+  const o={headers:{"X-DD-Token":TOKEN}};
+  if(body!==undefined){o.method="POST";o.body=JSON.stringify(body)}
+  const r=await fetch(path,o);const j=await r.json().catch(()=>({erro:"resposta inválida"}));
+  if(!r.ok){const e=new Error(j.erro||("HTTP "+r.status));e.codigo=j.codigo;e.escopo=j.escopo;e.status=r.status;throw e}
+  return j;
+}
+let toastT=null;
+function toast(m,kind){let t=$(".toast");if(t)t.remove();t=document.createElement("div");t.className="toast "+(kind||"");t.setAttribute("role","status");t.textContent=m;document.body.appendChild(t);clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),kind==="err"?9000:5000)}
+async function safe(fn){try{return await fn()}catch(e){onErr(e)}}
+function onErr(e){
+  if(e.codigo==="termo")return openGate();
+  if(e.codigo==="os")return dialog({titulo:"Falta a autorização do cliente",html:`<p>${esc(e.message)}</p><p class="mut">Esta máquina é de terceiros. Registre o nome de quem autoriza na aba <b>OS</b>.</p>`,ok:"Ir para a aba OS"}).then(r=>{if(r)nav("os")});
+  if(e.message==="ORFAOS")return;
+  toast(e.message||String(e),"err");
+}
+
+/* ---------- ícones, gauges e troféus ---------- */
+const IC={
+ home:'<path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/>',
+ backup:'<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-6h8v6"/>',
+ dados:'<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
+ maq:'<rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 20h20"/>',
+ os:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 10h7M8.5 14h7M8.5 17.5h4"/>',
+ shield:'<path d="M12 2.5l8 3v6c0 5-3.4 8.7-8 10.5-4.6-1.8-8-5.5-8-10.5v-6z"/><path d="M8.3 12l2.7 2.7 4.8-5"/>',
+ lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>',
+ eye:'<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+ doc:'<path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4M10 12h6M10 16h6"/>',
+ cpu:'<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>',
+ ram:'<rect x="2.5" y="8" width="19" height="8" rx="1.5"/><path d="M6 16v3M10 16v3M14 16v3M18 16v3M6 11.5h3M11 11.5h3M16 11.5h2"/>',
+ disk:'<rect x="3" y="6" width="18" height="12" rx="2.5"/><circle cx="17" cy="12" r="1.2"/><path d="M6 12h6"/>',
+ gpu:'<rect x="2.5" y="7" width="19" height="10" rx="1.5"/><circle cx="9" cy="12" r="2.8"/><path d="M15 10h4M15 14h4"/>',
+ sys:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+ bat:'<rect x="2.5" y="8" width="17" height="8" rx="2"/><path d="M21.5 11v2M6 12h6"/>',
+ pen:'<path d="M4 20l1-4L16.5 4.5a2 2 0 013 3L8 19z"/>',
+ hist:'<path d="M4 12a8 8 0 108-8"/><path d="M4 4v4h4M12 8v4l3 2"/>',
+ cmp:'<rect x="3" y="5" width="7" height="14" rx="1.5"/><rect x="14" y="5" width="7" height="14" rx="1.5"/>',
+ trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+ refresh:'<path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/>',
+ up:'<path d="M12 19V5M5 12l7-7 7 7"/>'
+};
+const ic=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||""}</svg>`;
+const FX=[[25,"#e5534b","Crítica"],[50,"#ff8a3d","Fraca"],[75,"#e5a23a","Regular"],[95,"#8bc34a","Muito boa"],[100,"#3fb27f","Excelente"]];
+const nivel=n=>n<=25?1:n<=50?2:n<=75?3:n<=95?4:5;
+const COR=n=>FX[nivel(n)-1][1];
+const CLS=n=>FX[nivel(n)-1][2];
+const TRN=["","Ábaco de Pedra","Era das Válvulas","PC Bege","Notebook Fino","A Pera"];
+const TRF=["","até 25","26 a 50","51 a 75","76 a 95","96 a 100"];
+function arcp(cx,cy,r,a0,a1){const p=a=>[cx+r*Math.cos(a*Math.PI/180),cy+r*Math.sin(a*Math.PI/180)];const [x0,y0]=p(a0),[x1,y1]=p(a1);return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`}
+function needle(n,cls,col){const deg=(Math.max(0,Math.min(100,n))*1.8).toFixed(1);return `<g class="ndl ${cls||""}" style="--r:${deg}deg"><line x1="60" y1="62" x2="20" y2="62" stroke="${col||"var(--tx)"}" stroke-width="2.6" stroke-linecap="round"/></g>`}
+/* velocímetro de 5 faixas (ponteiro = nota). n2 = segundo ponteiro opcional (comparação) */
+function speedo(n,o){o=o||{};let bands="",lo=0;FX.forEach(f=>{const a0=180+lo*1.8+.7,a1=180+f[0]*1.8-.7;bands+=`<path d="${arcp(60,62,46,a0,a1)}" stroke="${f[1]}" stroke-width="11" fill="none"/>`;lo=f[0]});
+  const sz=o.max?`style="max-width:${o.max}px"`:"";
+  return `<svg viewBox="0 0 120 74" ${sz} role="img" aria-label="${esc(o.label||"Nota")} ${n} de 100, ${CLS(n)}">${bands}${o.ghost!=null?needle(o.ghost,"gst"):""}${needle(n)}<circle cx="60" cy="62" r="5" fill="var(--tx)"/><circle cx="60" cy="62" r="2" fill="var(--panel)"/></svg>`}
+function ring(n,sz){const r=52,c=2*Math.PI*r,o=c*(1-n/100);return `<div class="ring" style="${sz?`width:${sz}px;height:${sz}px`:""}"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="${r}" fill="none" stroke="var(--line)" stroke-width="10"/><circle class="pr" cx="60" cy="60" r="${r}" fill="none" stroke="${COR(n)}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${o}" transform="rotate(-90 60 60)"/></svg><div class="n"><b>${n}</b><span>de 100</span></div></div>`}
+let TU=0;
+function trophy(nv,h){
+  const u="t"+(++TU),mats=[null,["#9b8a79","#5b4d41","#c4b49f"],["#e9a85f","#8a5524","#f6cf9a"],["#f1f4f8","#98a2b3","#ffffff"],["#ffe28a","#c28a12","#fff3bf"],["#f2fcff","#74d0f2","#ffffff"]][nv];
+  const emc=["","#f1e6d2","#3b240f","#2c3340","#4a3200","#073a52"][nv];
+  const sc=[0,.66,.74,.82,.91,1][nv];
+  const trim=nv===5?"#ffd35a":mats[1];
+  let em="";
+  if(nv===1)em=`<g fill="none" stroke="${emc}" stroke-width="2"><rect x="-20" y="-14" width="40" height="28" rx="2"/><path d="M-20 -5h40M-20 4h40"/></g><g fill="${emc}"><circle cx="-13" cy="-9.5" r="3"/><circle cx="-6" cy="-9.5" r="3"/><circle cx="7" cy="-0.5" r="3"/><circle cx="14" cy="-0.5" r="3"/><circle cx="-9" cy="8.5" r="3"/><circle cx="0" cy="8.5" r="3"/></g>`;
+  if(nv===2)em=`<g fill="none" stroke="${emc}" stroke-width="2"><rect x="-20" y="-14" width="40" height="28" rx="2"/><circle cx="-9" cy="-5" r="5"/><circle cx="9" cy="-5" r="5"/></g><g fill="${emc}"><rect x="-11" y="0" width="4" height="5"/><rect x="7" y="0" width="4" height="5"/><circle cx="0" cy="9" r="3"/></g>`;
+  if(nv===3)em=`<g fill="none" stroke="${emc}" stroke-width="2"><rect x="-21" y="-14" width="26" height="20" rx="2"/><rect x="9" y="-12" width="12" height="24" rx="1.5"/></g><g fill="${emc}"><rect x="-17" y="-10" width="18" height="12" opacity=".3"/><rect x="-12" y="8" width="10" height="3"/><rect x="11" y="-8" width="8" height="2"/><circle cx="15" cy="8" r="1.6"/></g>`;
+  if(nv>=4){em=`<g fill="none" stroke="${emc}" stroke-width="2"><rect x="-16" y="-15" width="32" height="20" rx="1.8"/></g><path d="M-23 9L23 9L18 5.5L-18 5.5Z" fill="${emc}"/><rect x="-16" y="-15" width="32" height="20" rx="1.8" fill="${emc}" opacity=".16"/>`;
+    if(nv===5)em+=`<g fill="${emc}"><circle cx="0" cy="-3.2" r="4.2"/><circle cx="0" cy="-8.2" r="2.7"/></g><path d="M1 -12.2c0-2.2 1.6-3.4 3.4-3.6 0 1.8-1.2 3.4-3.4 3.6z" fill="#3fb27f"/><path d="M0 -11v-2" stroke="${emc}" stroke-width="1"/>`}
+  const handles=nv>=2?`<path d="M27 32C9 31 6 60 31 66" fill="none" stroke="${mats[1]}" stroke-width="${nv>=4?7:5.5}" stroke-linecap="round"/><path d="M93 32C111 31 114 60 89 66" fill="none" stroke="${mats[1]}" stroke-width="${nv>=4?7:5.5}" stroke-linecap="round"/>`:"";
+  const extra=(nv>=3?`<path d="M60 117l1.8 3.7 4.1.6-3 2.9.7 4.1-3.6-1.9-3.6 1.9.7-4.1-3-2.9 4.1-.6z" fill="${nv>=4?"#ffd35a":"#7c8493"}"/>`:"")+
+   (nv>=4?`<g fill="${nv===5?"#ffd35a":mats[1]}" opacity=".95"><ellipse cx="22" cy="86" rx="4" ry="9" transform="rotate(-28 22 86)"/><ellipse cx="30" cy="96" rx="4" ry="9" transform="rotate(-50 30 96)"/><ellipse cx="98" cy="86" rx="4" ry="9" transform="rotate(28 98 86)"/><ellipse cx="90" cy="96" rx="4" ry="9" transform="rotate(50 90 96)"/></g>`:"")+
+   (nv===5?`<g fill="#fff"><path d="M12 14l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/><path d="M108 8l1.6 4 4 1.6-4 1.6-1.6 4-1.6-4-4-1.6 4-1.6z"/><path d="M104 48l1.2 3 3 1.2-3 1.2-1.2 3-1.2-3-3-1.2 3-1.2z" opacity=".8"/></g><path d="M44 13l6 6h20l6-6-6-3-4 4-6-6-6 6-4-4z" fill="#ffd35a" stroke="#c28a12" stroke-width="1"/>`:"");
+  const w=Math.round((h||110)*.86*sc),hh=Math.round((h||110)*sc);
+  return `<svg viewBox="0 0 120 140" style="width:${w}px;height:${hh}px" role="img" aria-label="Troféu ${TRN[nv]}"><defs><linearGradient id="${u}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${mats[2]}"/><stop offset=".45" stop-color="${mats[0]}"/><stop offset="1" stop-color="${mats[1]}"/></linearGradient></defs>
+  ${handles}<rect x="34" y="124" width="52" height="11" rx="3" fill="${nv===5?"#ffd35a":mats[1]}"/><rect x="42" y="113" width="36" height="13" rx="2" fill="url(#${u})"/><rect x="54" y="92" width="12" height="22" fill="url(#${u})"/><ellipse cx="60" cy="93" rx="12" ry="4" fill="${mats[1]}"/>
+  <path d="M26 28H94V47C94 75 78 94 60 94C42 94 26 75 26 47Z" fill="url(#${u})" stroke="${trim}" stroke-width="1.4"/><rect x="22" y="21" width="76" height="9" rx="3.5" fill="url(#${u})" stroke="${trim}" stroke-width="1.2"/>
+  <path d="M33 33c-2 14 1 28 10 38" stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none" opacity=".5"/>${extra}<g transform="translate(60 54) scale(${nv===1?.95:1})">${em}</g></svg>`}
+function trofeuBox(n,h){const nv=nivel(n);return `<div class="heroT">${trophy(nv,h||112)}<small><b style="color:var(--acc)">${esc(TRN[nv])}</b><br>troféu ${nv} de 5</small></div>`}
+
+/* ---------- diálogos ---------- */
+function dialog(o){
+  return new Promise(res=>{
+    const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
+    d.innerHTML=`<div class="box" style="max-width:${o.largura||560}px">${o.titulo?`<h2>${esc(o.titulo)}</h2>`:""}<div>${o.html||""}</div>
+    ${o.check?`<label style="display:flex;gap:9px;align-items:flex-start;font-size:13.5px;color:var(--tx);margin:14px 0 0;cursor:pointer"><input type="checkbox" id="dchk" style="margin-top:3px"><span>${esc(o.check)}</span></label>`:""}
+    ${o.texto?`<label for="dtxt">${esc(o.texto)}</label><input type="text" id="dtxt" autocomplete="off">`:""}
+    <div class="row" style="margin-top:18px;justify-content:flex-end">${o.semCancelar?"":`<button id="dcn">${esc(o.cancelar||"Cancelar")}</button>`}<button id="dok" class="${o.perigo?"dng":"pri"}">${esc(o.ok||"Confirmar")}</button></div></div>`;
+    $("#layer").appendChild(d);
+    const ok=$("#dok",d),chk=$("#dchk",d),tx=$("#dtxt",d);
+    const need=()=>{ok.disabled=!((!chk||chk.checked)&&(!tx||tx.value.trim().toUpperCase()===(o.exige||"").toUpperCase()))};
+    if(chk)chk.onchange=need;if(tx)tx.oninput=need;need();
+    const close=v=>{d.remove();document.removeEventListener("keydown",kd);res(v)};
+    const kd=e=>{if(e.key==="Escape"&&!o.semCancelar)close(null)};document.addEventListener("keydown",kd);
+    ok.onclick=()=>close({texto:tx?tx.value:""});const cn=$("#dcn",d);if(cn)cn.onclick=()=>close(null);
+    (tx||ok).focus();
+  });
+}
+function modalHtml(t,h,w){const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.innerHTML=`<div class="box" style="max-width:${w||820}px"><h2>${esc(t)}</h2>${h}<div style="margin-top:14px;text-align:right"><button class="pri">Fechar</button></div></div>`;d.querySelector("button.pri").onclick=()=>d.remove();$("#layer").appendChild(d);return d}
+
+/* ---------- contexto (máquina, termo, OS) ---------- */
+let CTX={t:null},view="home",info={};
+async function loadCtx(){try{CTX.t=await api("/api/termo")}catch(e){CTX.t=null}renderChrome()}
+const ownT=()=>CTX.t&&CTX.t.status&&CTX.t.status.dono==="terceiros";
+function renderChrome(){
+  const t=CTX.t,st=t&&t.status;
+  const items=[["home","Home","home"],["backup","Backup","backup"],["dados","Dados","dados"],["maq","Máquinas","maq"],["os","OS","os"]];
+  const need=ownT()&&!t.os;
+  $("#gaveta").innerHTML=items.map(i=>`<button class="gv ${view===i[0]?"on":""}" data-view="${i[0]}" title="${i[1]}"><span class="ic">${ic(i[2])}</span><span class="lb">${i[1]}</span>${i[0]==="os"&&need?'<span class="bd">falta</span>':""}</button>`).join("")+
+   `<span class="sp"></span><div class="gvfoot"><b>${esc(t?t.nome:info.host||"")}</b><button class="mid" id="midc" title="Copiar o código da máquina">${esc(t?t.mid:"")}</button></div><button class="gv" id="gvtoggle" title="Recolher"><span class="ic">☰</span><span class="lb">Recolher</span></button>`;
+  $$("#gaveta [data-view]").forEach(b=>b.onclick=()=>nav(b.dataset.view));
+  $("#gvtoggle").onclick=()=>document.body.classList.toggle("min");
+  const mc=$("#midc");if(mc)mc.onclick=()=>{try{navigator.clipboard.writeText(t.mid);toast("Código copiado: "+t.mid,"ok")}catch(e){}};
+  $("#hown").innerHTML=st&&st.aceito?(st.dono==="terceiros"?`<span class="chip own-t" title="Máquina de terceiros"><i class="d"></i>Terceiros${st.terceiro_nome?": "+esc(st.terceiro_nome):""}</span>`:`<span class="chip own-p" title="Máquina particular"><i class="d"></i>Particular</span>`):"";
+  $("#hver").textContent="v"+(info.versao||"–");
+}
+function markNav(){$$("#gaveta [data-view]").forEach(b=>b.classList.toggle("on",b.dataset.view===view))}
+function setWide(b){$("#main").classList.toggle("wide",!!b)}
+
+/* ---------- termo de responsabilidade (1ª vez em cada máquina) ---------- */
+let LASTDOC="";
+async function openGate(opt){
+  opt=opt||{};
+  const t=await api("/api/termo");CTX.t=t;
+  const corp=t.corporativa.corporativa,st=t.status;
+  const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
+  d.innerHTML=`<div class="box" style="max-width:760px">
+   <div style="text-align:center"><div class="shield">${ic("shield")}</div><h2 style="font-size:23px;margin-top:8px">${opt.reclass?"Reclassificar esta máquina":"Antes de começar"}</h2>
+   <p class="mut" style="margin:4px 0 0">Leva 1 minuto. <b style="color:var(--tx)">Nada é copiado, alterado ou apagado sem a sua permissão.</b></p></div>
+   <div class="seals">
+    <div class="sealc">${ic("lock")}<div><b>Fica só no seu computador</b><span>Sem internet, sem envio de dados. Tudo é gravado neste pendrive.</span></div></div>
+    <div class="sealc">${ic("eye")}<div><b>Só lê, não altera</b><span>Mudanças só com o seu “sim” e, quase sempre, com volta.</span></div></div>
+    <div class="sealc">${ic("doc")}<div><b>Tudo registrado</b><span>Quem aceitou o quê fica em um registro à prova de adulteração.</span></div></div></div>
+   <h3 style="margin-top:14px">Termo de responsabilidade pelo uso do software <span class="tag">v${esc(t.versao)}</span></h3>
+   <div class="infobox" style="max-height:200px;overflow:auto;margin:6px 0 4px;font-size:13px">${t.clausulas.map((c,i)=>`<p style="margin:0 0 8px"><b>${i+1}. ${esc(c[0])}.</b> ${esc(c[1])}</p>`).join("")}</div>
+   <p class="mut" style="font-size:11.5px;margin:0 0 6px">${esc(t.rodape)}</p>
+   <h3 style="margin-top:14px">De quem é este computador?</h3>
+   ${corp?`<div class="warnbox"><b>Esta máquina parece corporativa.</b><ul style="margin:6px 0 0;padding-left:18px">${t.corporativa.sinais.map(s=>`<li>${esc(s)}</li>`).join("")}</ul><div style="margin-top:6px;font-size:13px">Peça autorização por escrito ao responsável de TI da empresa antes de mexer. “Particular” fica bloqueado até você confirmar que o computador é seu.</div></div>`:""}
+   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+    <label class="cat" style="margin:0;cursor:pointer;color:var(--tx);font-size:14px"><input type="radio" name="dono" value="particular" ${corp?"disabled":""}><div class="n"><b>Particular</b><span>É meu (ou da minha família).</span></div></label>
+    <label class="cat" style="margin:0;cursor:pointer;color:var(--tx);font-size:14px"><input type="radio" name="dono" value="terceiros" ${corp?"checked":""}><div class="n"><b>De terceiros</b><span>Cliente, empresa ou outra pessoa.</span></div></label></div>
+   ${corp?`<label style="display:flex;gap:8px;align-items:flex-start;color:var(--tx);font-size:13px;margin-top:8px"><input type="checkbox" id="gcp" style="margin-top:3px"> Confirmo que este computador é meu e não pertence à empresa.</label>`:""}
+   <div id="gter" class="${corp?"":"hide"}"><label for="gtn">Nome do dono (cliente, empresa ou pessoa)</label><input type="text" id="gtn" value="${esc(st.terceiro_nome||"")}" autocomplete="off">
+    <label for="gta">Quem autorizou o serviço (opcional)</label><input type="text" id="gta" value="${esc(st.autorizado_por||"")}" autocomplete="off"></div>
+   <label for="gnm">Seu nome (quem opera o programa)</label><input type="text" id="gnm" value="${esc(st.tecnico||"")}" autocomplete="name">
+   <label style="display:flex;gap:9px;align-items:flex-start;color:var(--tx);font-size:14px;margin-top:14px;cursor:pointer"><input type="checkbox" id="gac" style="margin-top:3px"> Li e aceito o termo de responsabilidade.</label>
+   <div class="row" style="margin-top:16px;justify-content:flex-end">${opt.reclass?'<button id="gcn">Cancelar</button>':""}<button class="pri" id="gok" disabled>Aceitar e continuar</button></div>
+   <p class="mut" style="font-size:11px;margin:10px 0 0">Registro: consentimentos.log · selo do termo ${esc(t.selo)} · máquina ${esc(t.mid)}</p></div>`;
+  $("#layer").appendChild(d);
+  const v=()=>{const r=$("input[name=dono]:checked",d);return r?r.value:""};
+  const upd=()=>{
+    const dono=v();$("#gter",d).classList.toggle("hide",dono!=="terceiros");
+    let ok=$("#gac",d).checked&&$("#gnm",d).value.trim().length>=3&&!!dono;
+    if(dono==="terceiros")ok=ok&&$("#gtn",d).value.trim().length>=2;
+    if(dono==="particular"&&corp)ok=ok&&$("#gcp",d).checked;
+    $("#gok",d).disabled=!ok;
+  };
+  $$("input",d).forEach(i=>{i.oninput=upd;i.onchange=upd});upd();
+  if(corp){const g=$("#gcp",d);g.onchange=()=>{const p=$("input[value=particular]",d);p.disabled=!g.checked;if(!g.checked&&p.checked){p.checked=false;$("input[value=terceiros]",d).checked=true}upd()}}
+  const gc=$("#gcn",d);if(gc)gc.onclick=()=>d.remove();
+  $("#gok",d).onclick=async()=>{
+    try{
+      const r=await api("/api/termo/aceitar",{responsavel:$("#gnm",d).value,dono:v(),terceiro_nome:$("#gtn",d).value,autorizado_por:$("#gta",d).value,confirma_particular:corp&&v()==="particular"});
+      LASTDOC=(r.documento||"").split(/[\\/]/).pop();d.remove();await loadCtx();
+      if(opt.reclass){toast("Máquina reclassificada.","ok");nav(view)}else{await openPerm(true)}
+      if(view==="os")drawOS();
+    }catch(e){toast(e.message,"err")}
+  };
+  $("#gnm",d).focus();
+}
+
+/* ---------- permissões na entrada ---------- */
+async function openPerm(primeira){
+  const p=await api("/api/permissoes");
+  const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
+  const linha=(ok,t,s)=>`<li style="display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)"><span class="ci" style="${ok?"background:var(--ok);border-color:var(--ok);color:#fff":"border-color:var(--warn);color:var(--warn)"}">${ok?"✓":"!"}</span><div><b>${t}</b><div class="mut" style="font-size:13px;margin-top:2px">${s}</div></div></li>`;
+  let corpo="";
+  if(p.mac)corpo=linha(p.acesso_total,"Acesso Total ao Disco","Sem ele o macOS esconde algumas pastas (Mail, Safari, parte de Library) e a varredura enxerga menos. A permissão é do app que roda o BKP Pro: o <b>Terminal</b>.")+
+    (p.acesso_total?"":`<div class="infobox" style="font-size:13px"><b>Como liberar</b><ol style="margin:6px 0 0;padding-left:20px"><li>Clique em <b>Abrir Ajustes</b>.</li><li>Em <i>Privacidade e Segurança → Acesso Total ao Disco</i>, ligue o <b>Terminal</b> (ou clique em + e adicione).</li><li>Feche o Terminal, abra o BKP Pro de novo e clique em <b>Verificar de novo</b>.</li></ol></div>`);
+  else if(p.win)corpo=linha(p.admin,"Executar como administrador",p.admin?"Tudo certo: leitura de slots de RAM e saúde do disco liberada.":"Sem isso, slots de RAM e saúde do disco ficam sem leitura. Abra pelo <b>Iniciar-Windows.bat</b>, que pede a permissão.");
+  else corpo=linha(p.root,"Permissão de administrador (sudo)",p.root?"Tudo certo: leitura de slots de RAM e saúde do disco liberada.":"Sem isso, slots de RAM e saúde do disco ficam sem leitura. Abra o BKP Pro com <b>sudo</b>.");
+  const falta=p.mac?!p.acesso_total:p.win?!p.admin:!p.root;
+  d.innerHTML=`<div class="box" style="max-width:600px"><h2>${primeira?"Termo aceito. Só mais um passo":"Permissões"}</h2>
+   <p class="mut" style="margin:0 0 4px">Estas permissões são opcionais. Sem elas o programa funciona, só enxerga um pouco menos.</p><ul class="chkl" style="margin:0">${corpo}</ul>
+   ${primeira?`<p style="margin:12px 0 0"><button class="sm" id="pdoc">Abrir cópia do termo para imprimir ou salvar em PDF</button></p>`:""}
+   <div class="row" style="margin-top:16px;justify-content:flex-end">${p.mac&&falta?'<button id="pab">Abrir Ajustes</button>':""}<button id="pvf">Verificar de novo</button><button class="pri" id="pok">${falta?"Continuar assim mesmo":"Continuar"}</button></div></div>`;
+  $("#layer").appendChild(d);
+  const ab=$("#pab",d);if(ab)ab.onclick=()=>safe(()=>api("/api/permissoes/abrir",{}));
+  $("#pvf",d).onclick=()=>{d.remove();openPerm(primeira)};
+  $("#pok",d).onclick=()=>{d.remove();if(view==="home")drawHome()};
+  const pd=$("#pdoc",d);if(pd)pd.onclick=()=>safe(()=>api("/api/doc/abrir",{tipo:"termo"}));
+}
+
+/* ---------- atualizador ---------- */
+async function openUpdate(){
+  const r=await api("/api/atualizar/procurar");
+  const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
+  const nova=r.encontrados.filter(x=>x.mais_nova);
+  d.innerHTML=`<div class="box" style="max-width:640px"><h2>Atualizar o BKP Pro</h2>
+   <p class="mut" style="margin:0 0 8px">Você está na versão <b style="color:var(--tx)">${esc(r.versao)}</b>. A atualização troca <b>só o programa</b>. Suas fichas, históricos, termos, OS e o registro de consentimentos <b>não são tocados</b>, e a versão atual fica guardada para você voltar.</p>
+   <div id="uA">${nova.length?nova.map(x=>`<div class="okbox"><b>Versão ${esc(x.versao)} encontrada</b><div class="mono mut" style="margin:4px 0 8px;word-break:break-all">${esc(x.caminho)} · ${esc(x.quando)}</div><button class="pri" data-up="${esc(x.caminho)}">Atualizar agora</button></div>`).join(""):'<div class="infobox">Nenhuma versão mais nova encontrada em Downloads, Área de Trabalho ou no pendrive.</div>'}</div>
+   ${r.encontrados.filter(x=>!x.mais_nova).length?`<p class="mut" style="font-size:12.5px;margin:8px 0 2px">Outros arquivos encontrados: ${r.encontrados.filter(x=>!x.mais_nova).map(x=>`${esc(x.nome)} (v${esc(x.versao)}${x.igual?", igual à atual":""}) <button class="sm" data-up="${esc(x.caminho)}">usar</button>`).join(" · ")}</p>`:""}
+   <h3 style="margin-top:14px">Escolher o arquivo manualmente</h3>
+   <p class="mut" style="font-size:12.5px;margin:0 0 6px">Baixe o <b>BKP-Pro.zip</b> novo e selecione aqui. Não precisa descompactar nem apagar nada.</p>
+   <input type="file" id="uf" accept=".zip"><div id="uB" style="margin-top:8px"></div>
+   ${r.salvas.length?`<h3 style="margin-top:16px">Voltar para uma versão anterior</h3>${r.salvas.map(x=>`<div class="row" style="margin:4px 0"><span class="grow">Versão ${esc(x.versao)} <span class="mut mono">${esc(x.nome)}</span></span><button class="sm" data-rv="${esc(x.nome)}">Voltar para esta</button></div>`).join("")}`:""}
+   <div class="row" style="margin-top:16px;justify-content:flex-end"><button id="ucl">Fechar</button></div></div>`;
+  $("#layer").appendChild(d);
+  $("#ucl",d).onclick=()=>d.remove();
+  const aplicar=async(cam)=>{
+    $("#uB",d).innerHTML='<div class="infobox">Atualizando… não feche esta janela.</div>';
+    try{const x=await api("/api/atualizar/aplicar",{caminho:cam});
+      d.querySelector(".box").innerHTML=`<h2>Atualizado: v${esc(x.de)} → v${esc(x.para)}</h2><div class="okbox">${x.trocados} arquivo(s) do programa trocados. <b>Seus registros foram mantidos.</b> A versão anterior ficou guardada.${x.config_nova.length?`<br><span class="mut">Você tinha editado ${esc(x.config_nova.join(", "))}: a versão nova ficou ao lado como .novo.txt, sem sobrescrever a sua.</span>`:""}</div>
+       <p class="mut" style="font-size:12px;word-break:break-all">Selo do arquivo (SHA-256): ${esc(x.zip_sha256)}</p><div class="row" style="justify-content:flex-end"><button class="pri" id="urs">Reiniciar agora</button></div>`;
+      $("#urs",d).onclick=async()=>{await api("/api/atualizar/reiniciar",{}).catch(()=>{});document.body.innerHTML='<div style="max-width:520px;margin:18vh auto;padding:24px;text-align:center;font:16px system-ui"><h2>Reiniciando com a versão nova…</h2><p>Uma nova janela do BKP Pro abre em instantes. Pode fechar esta aba.</p></div>'};
+    }catch(e){$("#uB",d).innerHTML=`<div class="errbox">${esc(e.message)}</div>`}
+  };
+  $$("[data-up]",d).forEach(b=>b.onclick=()=>aplicar(b.dataset.up));
+  $$("[data-rv]",d).forEach(b=>b.onclick=async()=>{if(!await dialog({titulo:"Voltar de versão?",html:"<p>O programa volta para a versão escolhida. Seus registros continuam intactos.</p>",ok:"Voltar"}))return;
+    try{const x=await api("/api/atualizar/reverter",{nome:b.dataset.rv});d.querySelector(".box").innerHTML=`<h2>Versão restaurada: v${esc(x.para)}</h2><p class="mut">Reinicie para usar a versão restaurada.</p><div class="row" style="justify-content:flex-end"><button class="pri" id="urs">Reiniciar agora</button></div>`;
+      $("#urs",d).onclick=async()=>{await api("/api/atualizar/reiniciar",{}).catch(()=>{});document.body.innerHTML='<div style="max-width:520px;margin:18vh auto;padding:24px;text-align:center;font:16px system-ui"><h2>Reiniciando…</h2><p>Uma nova janela abre em instantes. Pode fechar esta aba.</p></div>'}}catch(e){toast(e.message,"err")}});
+  $("#uf",d).onchange=async e=>{const f=e.target.files[0];if(!f)return;$("#uB",d).innerHTML='<div class="infobox">Lendo o arquivo…</div>';
+    try{const res=await fetch("/api/atualizar/enviar?nome="+encodeURIComponent(f.name),{method:"POST",headers:{"X-DD-Token":TOKEN},body:f});const j=await res.json();if(!res.ok)throw new Error(j.erro);
+      $("#uB",d).innerHTML=`<div class="okbox"><b>Zip válido: versão ${esc(j.versao)}</b> (${j.arquivos} arquivos)<div class="mono mut" style="margin:4px 0 8px;word-break:break-all">SHA-256: ${esc(j.sha256)}</div><button class="pri" id="uGo">Atualizar para v${esc(j.versao)}</button></div>`;
+      $("#uGo",d).onclick=()=>aplicar(j.caminho)}catch(x){$("#uB",d).innerHTML=`<div class="errbox">${esc(x.message)}</div>`}};
+}
+async function checkUpdate(){try{const r=await api("/api/atualizar/procurar");if(r.encontrados.some(x=>x.mais_nova))$("#hver").classList.add("nova")}catch(e){}}
+
+/* ================= Home / ficha ================= */
+let hp=null;
+function nav(v,arg){
+  view=v;markNav();renderChrome();clearInterval(hp);
+  $("#steps").classList.toggle("hide",v!=="backup");
+  if(v==="home")drawHome();else if(v==="maq")drawMaq(arg);else if(v==="dados")drawDados();else if(v==="os")drawOS();else{setWide(false);renderSteps();draw()}
+}
+async function drawHome(){
+  clearInterval(hp);setWide(true);
+  const est=await api("/api/ficha/estado");
+  if(est.rodando)return drawFichaProg();
+  const r=await api("/api/ficha/atual");
+  if(view!=="home")return;
+  if(!r.visao)return drawHomeVazia(r,est);
+  renderFicha(r,true);
+}
+function trofeuStrip(cur){return `<div class="shelf">${[1,2,3,4,5].map(n=>`<div class="tr ${cur?(n===cur?"cur":n>cur?"lock":""):"lock"}">${trophy(n,96)}<b class="tl2">${esc(TRN[n])}</b><small>nota ${TRF[n]}</small></div>`).join("")}</div>`}
+function drawHomeVazia(r,est){
+  setWide(false);
+  const ok=CTX.t&&CTX.t.status.aceito;
+  $("#main").innerHTML=`<div class="card empty"><div class="shield">${ic("shield")}</div><h2>Conheça a saúde deste computador</h2>
+   <p>O BKP Pro mede o computador, dá uma <b>nota de 0 a 100</b> e mostra o que fazer para melhorar. A ficha fica guardada no seu pendrive, com histórico para comparar depois.</p>
+   <div class="seals">
+    <div class="sealc">${ic("lock")}<div><b>Fica só no seu computador</b><span>Sem internet e sem envio de dados.</span></div></div>
+    <div class="sealc">${ic("eye")}<div><b>Só lê, não altera</b><span>Mudanças só com o seu “sim”.</span></div></div>
+    <div class="sealc">${ic("doc")}<div><b>Tudo registrado</b><span>Quem aceitou o quê fica anotado.</span></div></div></div>
+   ${est.erro?`<div class="errbox" style="max-width:560px;margin:10px auto">A última tentativa falhou: ${esc(est.erro)}</div>`:""}
+   <p style="margin-top:18px"><button class="pri" id="perm" style="font-size:16px;padding:13px 28px">${ok?"Analisar esta máquina":"Aceitar o termo e analisar"}</button></p>
+   <p><button class="gh sm" id="pm">Ver permissões</button></p></div>
+  <div class="card"><h2>Como funciona, em 4 passos</h2><p class="h">Você decide cada um. Pode parar em qualquer ponto.</p>
+   <div class="walk">
+    <div class="wk"><div class="nb">1</div><b>Autorizar</b><span>Aceite o termo e diga se a máquina é sua ou de terceiros.</span><em>1 MINUTO</em></div>
+    <div class="wk"><div class="nb">2</div><b>Analisar</b><span>Mede velocidade, memória, disco e inicialização. Só lê.</span><em>15 A 60 SEGUNDOS</em></div>
+    <div class="wk"><div class="nb">3</div><b>Melhorar</b><span>Opcional. Ajustes simples, com botão de desfazer.</span><em>COM DESFAZER</em></div>
+    <div class="wk"><div class="nb">4</div><b>Backup e entrega</b><span>Copia o que importa, confere e gera o certificado.</span><em>CONFERIDO POR HASH</em></div></div></div>
+  <div class="card"><h2>Qual troféu a sua máquina vai ganhar?</h2><p class="h">Cada faixa de nota ganha um troféu maior, na evolução do computador.</p>${trofeuStrip(0)}</div>`;
+  $("#perm").onclick=()=>safe(async()=>{await api("/api/ficha/coletar",{fase:"antes"});drawFichaProg()});
+  $("#pm").onclick=()=>openPerm(false);
+}
+function drawFichaProg(){
+  setWide(false);
+  $("#main").innerHTML=`<div class="card"><h2 id="fp_t">Analisando a máquina…</h2><p class="h">Leva de 15 a 60 segundos. Não feche esta janela.</p><div class="bar"><i id="fp_b"></i></div><div class="mut" id="fp_e" style="margin-top:8px"></div></div>`;
+  clearInterval(hp);hp=setInterval(async()=>{
+    let e;try{e=await api("/api/ficha/estado")}catch(x){return}
+    if($("#fp_b")){$("#fp_b").style.width=e.pct+"%";$("#fp_e").textContent=e.etapa}
+    if(!e.rodando){clearInterval(hp);if(e.erro)toast("A análise falhou: "+e.erro,"err");if(view==="home")drawHome()}
+  },700)
+}
+const ICONS_CHAR={cpu:"cpu",ram:"ram",disco:"disk",gpu:"gpu",sys:"sys",bat:"bat"};
+function chCard(k,ico,valor,det,item){return `<div class="ch"><div class="ico">${ic(ico)}</div><div class="k">${esc(k)}</div><div class="v">${esc(valor)}</div><div class="d">${esc(det||"")}</div>${item?`<div class="m"><b style="color:${COR(item.nota)}">${item.nota}</b><div class="mini"><i style="width:${item.nota}%;background:${COR(item.nota)}"></i></div></div>`:""}</div>`}
+function dtxt(d,ruido){if(d==null)return '<span class="delta eq">—</span>';if(Math.abs(d)<=(ruido==null?0:ruido))return '<span class="delta eq">＝ estável</span>';return d>0?`<span class="delta up">▲ +${d}</span>`:`<span class="delta dn">▼ ${d}</span>`}
+function sparkline(f){
+  if(!f.length)return"";const W=348,H=54,p=8,xs=i=>f.length===1?W/2:p+i*(W-2*p)/(f.length-1),ys=n=>H-p-(n/100)*(H-2*p);
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" role="img" aria-label="Notas ao longo do tempo"><polyline points="${f.map((x,i)=>xs(i)+","+ys(x.nota)).join(" ")}" fill="none" stroke="var(--line)" stroke-width="2"/>${f.map((x,i)=>`<circle cx="${xs(i)}" cy="${ys(x.nota)}" r="4.5" fill="${COR(x.nota)}"><title>${x.nota} em ${esc(x.quando)}</title></circle>`).join("")}</svg>`}
+function drawerHtml(v){
+  const f=v.fichas||[],byA={};f.forEach(x=>byA[x.arquivo]=x);
+  const min=new Set(f.map(x=>(x.quando||"").slice(0,16)));
+  const evs=[];
+  f.forEach((x,i)=>evs.push({q:x.quando,ficha:x,prev:i?f[i-1]:null}));
+  (v.historico||[]).forEach(e=>{if(e.extra&&e.extra.arquivo&&byA[e.extra.arquivo])return;if((e.tipo==="ficha"||e.tipo==="ficha_depois")&&min.has((e.quando||"").slice(0,16)))return;evs.push({q:e.quando,e})});
+  evs.sort((a,b)=>(b.q||"").localeCompare(a.q||""));
+  return `<div class="in"><div class="row"><h3 style="font-size:16px;margin:0" class="grow">Histórico desta máquina</h3><button class="sm" id="drx" aria-label="Fechar histórico">Fechar ✕</button></div>
+   <p class="mut" style="font-size:12.5px;margin:4px 0 8px">${f.length} análise(s). Marque duas para comparar.</p>${sparkline(f)}
+   <div class="row" style="margin:8px 0 12px"><button class="sm pri" id="cmpsel" disabled>Comparar as 2 marcadas</button>${f.length>1?'<button class="sm" id="cmplast">Comparar as 2 últimas</button>':""}</div>
+   <div class="tl">${evs.map(o=>o.ficha?`<div class="ev fi"><label><input type="checkbox" class="fck" data-a="${esc(o.ficha.arquivo)}"><span><span class="nt" style="color:${COR(o.ficha.nota)};border-color:${COR(o.ficha.nota)}">${o.ficha.nota}</span><b>${o.ficha.fase==="depois"?"Depois das melhorias":"Análise"}</b> ${o.prev?dtxt(o.ficha.nota-o.prev.nota,2):""}<br><small>${esc(o.ficha.quando)} · ${esc(o.ficha.classe)}${o.ficha.cobertura<100?" · "+o.ficha.cobertura+"% dos critérios":""}</small></span></label></div>`:`<div class="ev"><b>${esc(o.e.resumo)}</b><br><small>${esc(o.e.quando)} · ${esc(o.e.tipo)}</small></div>`).join("")||'<span class="mut">Sem eventos.</span>'}</div>
+   <div class="row" style="margin-top:8px"><button class="sm" id="note">Anotar no histórico</button></div></div>`;
+}
+function renderFicha(r,atual){
+  setWide(true);
+  const v=r.visao,u=v.ultima,a=v.analise,n=a.nota,mid=v.mid,meta=v.meta||{};
+  const so=u.so||{},mq=u.maquina||{},cpu=u.cpu||{},ram=u.ram||{};
+  const IT={};n.itens.forEach(i=>IT[i.id]=i);
+  const open=lsGet("dd_drawer","0")==="1";
+  const own=meta.dono==="terceiros"?`<span class="badge b-warn">Terceiros${meta.terceiro_nome?": "+esc(meta.terceiro_nome):""}</span>`:meta.dono==="particular"?'<span class="badge b-ok">Particular</span>':"";
+  const NOMES={cpu:"Processador",ram:"Memória",disco:"Disco",resposta:"Tempo de resposta",boot:"Inicialização do sistema",inicio:"Programas ao ligar",espaco:"Espaço livre"};
+  const falt=Object.keys(NOMES).filter(k=>!IT[k]).map(k=>NOMES[k]);
+  const var_=v.variacao==null?"":`${dtxt(v.variacao,0).replace("estável","igual à anterior")}`;
+  const slots=ram.slots||[],us=slots.filter(x=>x.gb).length;
+  const disc=(u.discos||[]).slice().sort((x,y)=>(y.tam_gb||0)-(x.tam_gb||0))[0]||{};
+  const vol=(u.volumes||[]).slice().sort((x,y)=>(y.tam_gb||0)-(x.tam_gb||0))[0];
+  const cpuN=(cpu.modelo||"?").replace(/\((R|TM|tm|r)\)|CPU|Processor/g,"").replace(/\s+/g," ").trim();
+  const gpu=(u.gpu||[])[0];
+  let h=`<div class="fw"><div class="fm">`;
+  h+=`<div class="card"><div class="hero">${ring(n.geral)}${trofeuBox(n.geral)}<div class="grow" style="min-width:260px"><div class="eyebrow">FICHA DA MÁQUINA${atual?"":" · SOMENTE LEITURA"}</div>
+   <div class="ttl"><h2 id="tt">${esc(v.nome)}</h2><button class="pen" id="ren" aria-label="Renomear esta máquina" title="Renomear">${ic("pen")}</button></div>
+   <div class="mut">${esc(v.modelo)} · ${esc(so.nome||"")} · ${esc(u.host)}</div>
+   <div style="margin:8px 0 2px"><span class="badge" style="color:${COR(n.geral)};border-color:${COR(n.geral)}">${esc(n.classe)}</span>${own}${so.live?'<span class="badge b-warn">Modo Live</span>':""}${n.cobertura<100?`<span class="badge b-mut" title="Não medido: ${esc(falt.join(", "))}">nota sobre ${n.cobertura}% dos critérios</span>`:""}</div>
+   <div class="mut" style="font-size:12.5px">Análise nº ${v.fichas.length} · ${esc(u.quando)}${var_?" · "+var_:""} · <button class="mid" id="mid2" title="Copiar código">${esc(mid)}</button></div>
+   ${n.cobertura<100?`<div class="mut" style="font-size:12px;margin-top:2px">Não medido nesta máquina: ${esc(falt.join(", "))}.</div>`:""}
+   <div class="row" style="margin-top:12px">${atual?`<button id="again">${ic("refresh")}<span style="margin-left:6px">Analisar de novo</span></button>`:""}${v.fichas.length>1?'<button id="cmp">Comparar análises</button>':""}<button id="hbtn" class="${open?"pri":""}">Histórico ${open?"◂":"▸"}</button></div></div></div>
+   ${v.depois?`<div class="ba"><div class="bx"><span class="mut">ANTES</span><b style="color:${COR(v.antes.nota)}">${v.antes.nota}</b>${esc(v.antes.classe)}</div><div class="ar">➜</div><div class="bx"><span class="mut">DEPOIS</span><b style="color:${COR(v.depois.nota)}">${v.depois.nota}</b>${esc(v.depois.classe)}</div>
+    <div><b style="font-size:20px;color:${v.depois.nota>=v.antes.nota?"var(--ok)":"var(--err)"}">${v.depois.nota>=v.antes.nota?"+":""}${v.depois.nota-v.antes.nota} pontos</b>${nivel(v.depois.nota)>nivel(v.antes.nota)?`<div style="color:var(--acc);font-weight:700">Subiu de troféu: ${esc(TRN[nivel(v.depois.nota)])}!</div>`:""}<div class="mut" style="font-size:12px">Boot e inicialização só melhoram de vez após reiniciar.</div></div></div>`:""}</div>`;
+  // características
+  h+=`<div class="chars" style="margin-bottom:16px">`+
+   chCard("Processador","cpu",cpuN,`${cpu.nucleos||"?"} núcleos / ${cpu.threads||"?"} threads${cpu.mhz?" · "+(cpu.mhz/1000).toFixed(2)+" GHz":""}`,IT.cpu)+
+   chCard("Memória","ram",`${(ram.total_gb||0).toFixed(ram.total_gb%1?1:0)} GB`,ram.slots_total?`${us} de ${ram.slots_total} slots usados${slots[0]&&slots[0].tipo?" · "+slots[0].tipo:""}`:"slots não lidos (precisa de permissão)",IT.ram)+
+   chCard("Disco",disc.tipo==="SSD"||disc.tipo==="NVMe"?"disk":"disk",`${disc.tam_gb?Math.round(disc.tam_gb)+" GB ":""}${disc.tipo||"?"}`,vol?`${Math.round(vol.livre_gb)} GB livres de ${Math.round(vol.tam_gb)} GB · saúde ${disc.saude||"?"}`:`saúde ${disc.saude||"?"}`,IT.disco)+
+   (gpu?chCard("Vídeo","gpu",gpu.nome,gpu.vram_gb?gpu.vram_gb+" GB de memória":""):"")+
+   chCard("Sistema","sys",so.nome||"?",`${so.versao||""} ${so.arch||""} · ${so.uefi?"UEFI":"BIOS"}${so.secure_boot?" · Secure Boot":""}`)+
+   (u.bateria?chCard("Bateria","bat",(u.bateria.carga!=null?u.bateria.carga+"%":"?"),u.bateria.saude_pct!=null?`saúde ${u.bateria.saude_pct}% da original`:""):"")+`</div>`;
+  // velocímetros
+  h+=`<div class="card"><h2>Indicadores</h2><p class="h">Cada ponteiro vai de 0 a 100, nas mesmas faixas dos troféus. A nota geral é a média ponderada.</p><div class="spd-grid">${n.itens.map(i=>`<div class="spd">${speedo(i.nota,{label:i.nome})}<div class="num" style="color:${COR(i.nota)}">${i.nota}</div><div class="nm">${esc(i.nome)}</div><div class="cl" style="color:${COR(i.nota)}">${CLS(i.nota)}</div><div class="vl">${esc(i.valor)}</div></div>`).join("")}</div>
+   <details style="margin-top:14px"><summary class="mut" style="cursor:pointer;font-size:13px">Como as faixas funcionam</summary><div class="row" style="margin-top:8px">${FX.map((f,i)=>`<span class="badge" style="color:${f[1]};border-color:${f[1]}">${f[2]} · ${TRF[i+1]}</span>`).join("")}</div></details></div>`;
+  // troféus
+  const prox=nivel(n.geral)<5?[25,50,75,95,100][nivel(n.geral)-1]+1-n.geral:0;
+  h+=`<div class="card"><h2>Estante de troféus</h2><p class="h">${prox?`Faltam <b>${prox} ponto(s)</b> para o próximo troféu: ${esc(TRN[nivel(n.geral)+1])}.`:"Você chegou ao topo da evolução."}</p>${trofeuStrip(nivel(n.geral))}</div>`;
+  // detalhes técnicos
+  h+=`<div class="card"><details><summary style="cursor:pointer;font-weight:700">Detalhes técnicos</summary><table style="margin-top:10px">
+   <tr><th style="width:150px">Processador</th><td>${esc(cpu.modelo||"?")}</td></tr>
+   <tr><th>Memória</th><td>${(ram.total_gb||0).toFixed(1)} GB · ${ram.slots_total?`${us} de ${ram.slots_total} slots`:"slots não lidos"}${slots.length?`<table style="margin-top:6px"><tr><th>Slot</th><th>Pente</th><th>Tipo</th><th>Velocidade</th></tr>${slots.map(x=>`<tr><td>${esc(x.local)}</td><td>${x.gb?x.gb+" GB":'<span class="mut">vazio</span>'}</td><td>${esc(x.tipo||"")}</td><td>${x.mhz?x.mhz+" MHz":""}</td></tr>`).join("")}</table>`:""}</td></tr>
+   <tr><th>Discos</th><td>${(u.discos||[]).map(d=>`${esc(d.nome)} · <b>${esc(d.tipo)}</b> · ${d.tam_gb} GB · saúde: ${esc(d.saude)}`).join("<br>")||"—"}${(u.volumes||[]).length?`<div class="mut" style="margin-top:4px">${u.volumes.map(x=>`${esc(x.id)}: ${x.livre_gb} GB livres de ${x.tam_gb} GB`).join(" · ")}</div>`:""}</td></tr>
+   <tr><th>Firmware</th><td>${so.uefi?"UEFI":"BIOS Legacy"} · Secure Boot: ${so.secure_boot==null?"?":so.secure_boot?"ligado":"desligado"} · TPM: ${esc(so.tpm||"não detectado")} ${mq.bios?" · BIOS "+esc(mq.bios):""}</td></tr>
+   <tr><th>Sistema</th><td>${esc(so.nome||"")} · ${esc(so.versao||"")} ${esc(so.arch||"")}${u.medidas&&u.medidas.prog_instalados?` · ${u.medidas.prog_instalados} programas instalados`:""}</td></tr></table></details></div>`;
+  // pesados e início
+  const ph=u.pesados||[],mx=Math.max(1,...ph.map(x=>x.ram_mb));
+  h+=`<div class="card"><h2>Quem pesa na máquina</h2><p class="h"><b>${a.pesados_n}</b> programa(s) pesado(s) (${esc(a.pesados_limite)}) agora. ${a.inicio_n?`<b>${a.inicio_n}</b> iniciam junto com o sistema, <b>${a.inicio_dispensavel}</b> dispensáveis.`:""}</p>
+   <table><tr><th>Programa</th><th style="width:90px">RAM</th><th style="width:40%"></th></tr>${ph.slice(0,10).map(x=>`<tr><td>${esc(x.nome)}${x.instancias>1?` <span class="mut">×${x.instancias}</span>`:""}</td><td>${x.ram_mb} MB</td><td><div class="mini"><i style="width:${x.ram_mb/mx*100}%;background:var(--acc)"></i></div></td></tr>`).join("")}</table>
+   ${(u.inicializacao||[]).length?`<h3 style="margin:16px 0 4px">Programas que iniciam com o sistema</h3><table><tr><th>Nome</th><th>Classificação</th></tr>${u.inicializacao.map(e=>`<tr><td>${esc(e.nome)}<div class="mono mut">${esc((e.comando||"").slice(0,120))}</div></td><td>${({dispensavel:'<span class="badge b-bad">dispensável</span>',opcional:'<span class="badge b-warn">opcional</span>',manter:'<span class="badge b-ok">manter</span>',revisar:'<span class="badge b-mut">revisar</span>'})[e.nivel||"revisar"]}</td></tr>`).join("")}</table>`:""}</div>`;
+  // SO ideal
+  h+=`<div class="card"><h2>Sistema ideal para esta máquina</h2><p class="h">Nota estimada para o sistema recém-instalado, com o hardware atual. É uma projeção, não uma garantia.</p><div class="ossel">${a.sistemas.map(s=>`<div class="os ${s.compativel?"":"bad"} ${s.melhor_nota?"best":""}"><div class="sc" style="color:${COR(s.nota)};border-color:${COR(s.nota)}">${s.nota}</div><div><h4>${esc(s.nome)}</h4>
+    ${s.melhor_nota?'<span class="badge b-gold">MELHOR NOTA</span>':""}${s.melhor_windows?'<span class="badge b-ok">MELHOR MANTENDO PROGRAMAS WINDOWS</span>':""}${s.compativel?"":'<span class="badge b-bad">NÃO COMPATÍVEL</span>'}
+    <small>${esc(s.obs)}</small>${(s.motivos||[]).map(m=>`<small>• ${esc(m)}</small>`).join("")}</div></div>`).join("")}</div></div>`;
+  if(a.cenarios.length)h+=`<div class="card"><h2>E se…?</h2><p class="h">Quanto a nota sobe com cada melhoria (estimativa).</p>
+   <div class="cen"><div class="nm">Hoje</div><div class="bar"><i style="width:${n.geral}%;background:${COR(n.geral)}"></i></div><b>${n.geral}</b></div>
+   ${a.cenarios.map(c=>`<div class="cen"><div class="nm">${esc(c.nome)}</div><div class="bar"><i style="width:${c.nota}%;background:${COR(c.nota)}"></i></div><b style="color:${COR(c.nota)}">${c.nota} (+${c.delta})</b></div>`).join("")}</div>`;
+  const ap=a.dicas.filter(d=>d.aplicavel),man=a.dicas.filter(d=>!d.aplicavel);
+  h+=`<div class="card"><h2>Melhorias</h2>`;
+  if(ap.length){h+=`<p class="h">Estas o BKP Pro faz por você. Tudo é reversível (exceto limpeza de temporários). Desmarque o que não quiser.</p>${ap.map(d=>`<label class="tip" style="margin:0;color:var(--tx);font-size:inherit"><input type="checkbox" class="ck" data-id="${esc(d.id)}" ${d.marcado&&atual?"checked":""} ${atual?"":"disabled"}><div class="tx"><b>${esc(d.titulo)} <span class="badge ${d.ganho==="alto"?"b-bad":d.ganho==="médio"?"b-warn":"b-mut"}">ganho ${esc(d.ganho)}</span></b><span>${esc(d.detalhe)}</span></div></label>`).join("")}
+    ${atual?`<div class="row" style="margin-top:12px"><button class="pri" id="apply">Gostei, aplicar as marcadas</button>${r.pode_desfazer?`<button id="undo">Desfazer o que foi aplicado (${r.pode_desfazer})</button>`:""}</div>`:""}`}
+  else h+=`<p class="h">Nenhuma melhoria automática disponível${so.live?" no modo Live (rode com o Windows ligado)":""}.</p>`;
+  if(man.length)h+=`<h3 style="margin:16px 0 4px">Recomendações para o técnico (manuais)</h3>${man.map(d=>`<div class="tip"><span style="font-size:18px">${d.tipo==="alerta"?"⚠️":"🔧"}</span><div class="tx"><b>${esc(d.titulo)} <span class="badge ${d.ganho==="crítico"||d.ganho==="alto"?"b-bad":d.ganho==="médio"?"b-warn":"b-mut"}">${esc(d.ganho)}</span></b><span>${esc(d.detalhe)}</span></div></div>`).join("")}`;
+  h+=`</div><p class="mut" style="font-size:12px;text-align:center">Notas são indicadores comparativos medidos neste momento; variam com o que está aberto e com o estado do sistema. Dados guardados no pendrive (pasta maquinas/${esc(mid)}).</p>
+   <div class="card"><details><summary style="cursor:pointer;font-weight:700">Dados desta máquina no pendrive</summary><p class="h" style="margin-top:8px">Remove fichas, históricos e documentos desta máquina do pendrive (útil ao final do serviço de um cliente). O registro de consentimento é mantido por segurança.</p><button class="dng sm" id="wipe">Remover esta máquina do pendrive…</button></details></div></div>`;
+  h+=`<aside class="dr ${open?"open":""}" id="dr" aria-label="Histórico da máquina">${drawerHtml(v)}</aside></div>`;
+  $("#main").innerHTML=h;
+  wireFicha(r,atual,v,mid);
+}
+function wireFicha(r,atual,v,mid){
+  const setDr=o=>{lsSet("dd_drawer",o?"1":"0");const dr=$("#dr");dr.classList.toggle("open",o);const b=$("#hbtn");b.classList.toggle("pri",o);b.textContent="Histórico "+(o?"◂":"▸")};
+  $("#hbtn").onclick=()=>setDr(!$("#dr").classList.contains("open"));
+  const dx=$("#drx");if(dx)dx.onclick=()=>setDr(false);
+  const ag=$("#again");if(ag)ag.onclick=()=>safe(async()=>{await api("/api/ficha/coletar",{fase:"antes"});if(view==="maq")nav("home");else drawFichaProg()});
+  const cb=$("#cmp");if(cb)cb.onclick=()=>openCompare(mid);
+  const cl=$("#cmplast");if(cl)cl.onclick=()=>openCompare(mid);
+  const sync=()=>{const c=$$(".fck:checked");$("#cmpsel").disabled=c.length!==2;$$(".fck").forEach(x=>x.disabled=c.length>=2&&!x.checked)};
+  $$(".fck").forEach(c=>c.onchange=sync);
+  const cs=$("#cmpsel");if(cs)cs.onclick=()=>{const c=$$(".fck:checked").map(x=>x.dataset.a).sort();openCompare(mid,c[0],c[1])};
+  $("#note").onclick=async()=>{const d=document.createElement("div");d.className="modal";d.innerHTML=`<div class="box" style="max-width:480px"><h2>Anotar no histórico</h2><label for="ntx">O que anotar? (ex.: Entregue ao cliente, formatada com Zorin Lite)</label><input type="text" id="ntx"><div class="row" style="margin-top:16px;justify-content:flex-end"><button id="nc">Cancelar</button><button class="pri" id="nk">Anotar</button></div></div>`;$("#layer").appendChild(d);$("#ntx",d).focus();$("#nc",d).onclick=()=>d.remove();$("#nk",d).onclick=()=>safe(async()=>{const t=$("#ntx",d).value.trim();if(!t)return;await api("/api/hist",{tipo:"nota",resumo:t});d.remove();view==="maq"?drawMaq(mid):drawHome()})};
+  const cp=()=>{try{navigator.clipboard.writeText(mid);toast("Código copiado: "+mid,"ok")}catch(e){}};$("#mid2").onclick=cp;
+  $("#ren").onclick=()=>{const h2=$("#tt");const i=document.createElement("input");i.type="text";i.value=v.meta&&v.meta.nome||v.nome;i.setAttribute("aria-label","Nome da máquina");h2.replaceWith(i);$("#ren").classList.add("hide");i.focus();i.select();
+    const save=()=>safe(async()=>{await api("/api/maquina/nome",{mid,nome:i.value});await loadCtx();view==="maq"?drawMaq(mid):drawHome()});
+    i.onkeydown=e=>{if(e.key==="Enter")save();if(e.key==="Escape")view==="maq"?drawMaq(mid):drawHome()};i.onblur=save};
+  const apb=$("#apply");if(apb)apb.onclick=()=>safe(async()=>{
+    const ids=$$(".ck:checked").map(c=>c.dataset.id);if(!ids.length){toast("Marque pelo menos uma melhoria.");return}
+    if(!await dialog({titulo:"Aplicar "+ids.length+" melhoria(s)?",html:"<p>São ajustes reversíveis de inicialização e efeitos visuais (e limpeza de temporários, se marcada). Depois o BKP Pro mede de novo para mostrar o antes e depois.</p>",ok:"Aplicar"}))return;
+    await api("/api/ficha/aplicar",{ids,confirmo:true});nav("home")});
+  const ud=$("#undo");if(ud)ud.onclick=()=>safe(async()=>{if(!await dialog({titulo:"Desfazer as melhorias?",html:"<p>Os ajustes aplicados voltam como estavam.</p>",ok:"Desfazer"}))return;const x=await api("/api/ficha/desfazer",{});toast(x.desfeitos+" ajuste(s) desfeito(s). Analise de novo para atualizar a nota.","ok");drawHome()});
+  $("#wipe").onclick=()=>safe(async()=>{const r2=await dialog({titulo:"Remover esta máquina do pendrive?",html:`<p>Fichas, históricos e documentos de <b>${esc(v.nome)}</b> serão apagados do pendrive. Isso não tem volta.</p>`,texto:"Digite APAGAR para confirmar",exige:"APAGAR",ok:"Remover",perigo:true});if(!r2)return;
+    await api("/api/maquina/apagar",{mid,digitou:r2.texto});await loadCtx();toast("Dados removidos do pendrive.","ok");nav("maq")});
+}
+
+/* ---------- comparar (Versus) ---------- */
+async function openCompare(mid,a,b){
+  const L=await api("/api/ficha/lista?mid="+encodeURIComponent(mid));const f=L.fichas;
+  if(f.length<2)return toast("Precisa de pelo menos duas análises para comparar.");
+  a=a||f[f.length-2].arquivo;b=b||f[f.length-1].arquivo;
+  const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
+  const opt=s=>f.map(x=>`<option value="${esc(x.arquivo)}" ${x.arquivo===s?"selected":""}>${esc(x.quando)} · nota ${x.nota} · ${x.fase==="depois"?"depois das melhorias":"análise"}</option>`).join("");
+  d.innerHTML=`<div class="box" style="max-width:860px"><div class="row"><h2 class="grow" style="margin:0">Comparar análises</h2><button class="sm" id="cx">Fechar ✕</button></div>
+   <div class="row" style="margin:12px 0"><div class="grow"><label for="ca">Antes (referência)</label><select id="ca">${opt(a)}</select></div><div class="grow"><label for="cb">Depois (comparada)</label><select id="cb">${opt(b)}</select></div></div><div id="cbody"></div></div>`;
+  $("#layer").appendChild(d);$("#cx",d).onclick=()=>d.remove();
+  const go=async()=>{
+    const A=$("#ca",d).value,B=$("#cb",d).value;
+    if(A===B){$("#cbody",d).innerHTML='<div class="infobox">Escolha duas análises diferentes.</div>';return}
+    try{const c=await api("/api/ficha/comparar?mid="+encodeURIComponent(mid)+"&a="+encodeURIComponent(A)+"&b="+encodeURIComponent(B));
+      const sub=nivel(c.b.nota)>nivel(c.a.nota),desc=nivel(c.b.nota)<nivel(c.a.nota);
+      $("#cbody",d).innerHTML=`<div class="card" style="box-shadow:none;text-align:center"><div class="row" style="justify-content:center;gap:28px"><div><div class="mut" style="font-size:12px">ANTES · ${esc(c.a.quando)}</div><b style="font-size:34px;color:${COR(c.a.nota)}">${c.a.nota}</b><div class="mut">${esc(c.a.classe)}</div></div>
+       <div style="width:220px">${speedo(c.b.nota,{ghost:c.a.nota,label:"Comparação"})}<div style="margin-top:-4px;font-size:20px;font-weight:800">${c.delta===0?'<span class="delta eq">＝ mesma nota</span>':c.delta>0?`<span class="delta up">▲ +${c.delta} pontos</span>`:`<span class="delta dn">▼ ${c.delta} pontos</span>`}</div></div>
+       <div><div class="mut" style="font-size:12px">DEPOIS · ${esc(c.b.quando)}</div><b style="font-size:34px;color:${COR(c.b.nota)}">${c.b.nota}</b><div class="mut">${esc(c.b.classe)}</div></div></div>
+       ${sub||desc?`<p style="margin:10px 0 0;font-weight:700;color:${sub?"var(--ok)":"var(--err)"}">${sub?"Subiu":"Desceu"} de troféu: ${esc(TRN[nivel(c.a.nota)])} → ${esc(TRN[nivel(c.b.nota)])}</p>`:""}</div>
+       ${c.nada_mudou?'<div class="okbox"><b>Nada mudou</b> entre essas duas análises: mesma nota, mesmos indicadores e mesma configuração.</div>':""}
+       <h3>Indicadores</h3><table><tr><th>Indicador</th><th style="width:70px">Antes</th><th style="width:70px">Depois</th><th style="width:120px">Diferença</th><th>O que foi medido</th></tr>${c.itens.map(i=>`<tr><td><b>${esc(i.nome)}</b></td><td style="color:${i.a!=null?COR(i.a):"var(--mut)"}"><b>${i.a==null?"—":i.a}</b></td><td style="color:${i.b!=null?COR(i.b):"var(--mut)"}"><b>${i.b==null?"—":i.b}</b></td><td>${dtxt(i.delta,2)}</td><td class="mut" style="font-size:12px">${esc(i.va)}${i.va!==i.vb?" → "+esc(i.vb):""}</td></tr>`).join("")}</table>
+       ${!c.mesma_cobertura?'<p class="mut" style="font-size:12px">As duas análises mediram critérios diferentes, então a comparação da nota geral é aproximada.</p>':""}
+       ${c.mudancas.length||c.inicio_entrou.length||c.inicio_saiu.length?`<h3 style="margin-top:14px">O que mudou na máquina</h3><table>${c.mudancas.map(m=>`<tr><td><b>${esc(m.rotulo)}</b></td><td>${esc(m.a)} <span class="mut">→</span> <b>${esc(m.b)}</b></td></tr>`).join("")}${c.inicio_entrou.length?`<tr><td><b>Passaram a iniciar com o sistema</b></td><td>${c.inicio_entrou.map(esc).join(", ")}</td></tr>`:""}${c.inicio_saiu.length?`<tr><td><b>Deixaram de iniciar</b></td><td>${c.inicio_saiu.map(esc).join(", ")}</td></tr>`:""}</table>`:""}
+       <p class="mut" style="font-size:12px;margin-top:12px">Diferenças de até 2 pontos são variação normal da medição (o que está aberto no momento influencia a velocidade).</p>`;
+    }catch(e){$("#cbody",d).innerHTML=`<div class="errbox">${esc(e.message)}</div>`}};
+  $("#ca",d).onchange=go;$("#cb",d).onchange=go;go();
+}
+
+/* ---------- máquinas ---------- */
+async function drawMaq(mid){
+  setWide(!!mid);
+  if(mid){const r=await api("/api/maquina?mid="+encodeURIComponent(mid));
+    if(r.visao){renderFicha(r,r.atual);$(".fm").insertAdjacentHTML("afterbegin",'<div class="row" style="margin-bottom:10px"><button id="vm">← Todas as máquinas</button></div>');$("#vm").onclick=()=>drawMaq();return}}
+  const r=await api("/api/maquinas");
+  $("#main").innerHTML=`<div class="card"><h2>Máquinas no pendrive</h2><p class="h">Tudo que já passou por aqui, guardado em <span class="mono">${esc(r.pendrive)}/maquinas</span>. Cada máquina tem um código próprio, que não muda ao trocar o nome do computador.</p>
+   ${r.maquinas.map(m=>`<div class="mk" tabindex="0" role="button" data-mid="${esc(m.mid)}"><div>${trophy(m.nivel,64)}</div><div class="grow"><b style="font-size:16px">${esc(m.nome)}</b> ${m.atual?'<span class="badge b-gold">ESTA MÁQUINA</span>':""}${m.dono==="terceiros"?`<span class="badge b-warn">Terceiros${m.terceiro_nome?": "+esc(m.terceiro_nome):""}</span>`:m.dono==="particular"?'<span class="badge b-ok">Particular</span>':""}
+    <div class="mut" style="font-size:13px">${esc(m.modelo)} · ${m.analises} análise(s) · última em ${esc(m.quando)} · ${m.eventos} evento(s)</div><div class="mid" style="cursor:default">${esc(m.mid)}</div></div>
+    <div style="text-align:center"><b style="font-size:26px;color:${COR(m.nota)}">${m.nota}</b><div class="mut" style="font-size:11px">${esc(m.classe)}</div></div></div>`).join("")||'<p class="mut">Nenhuma máquina ainda. Rode a análise na Home.</p>'}</div>`;
+  $$(".mk").forEach(e=>{e.onclick=()=>drawMaq(e.dataset.mid);e.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" ")drawMaq(e.dataset.mid)}})
+}
+
+/* ---------- OS (ordem de serviço) ---------- */
+async function drawOS(){
+  setWide(false);await loadCtx();
+  const t=CTX.t,st=t.status,os=t.os;
+  if(!st.aceito){$("#main").innerHTML='<div class="card empty"><h2>Aceite o termo primeiro</h2><p>A ordem de serviço vem depois do termo de responsabilidade.</p><button class="pri" id="og">Abrir o termo</button></div>';$("#og").onclick=()=>openGate();return}
+  if(st.dono!=="terceiros"){
+    $("#main").innerHTML=`<div class="card empty"><div class="shield" style="color:var(--ok)">${ic("shield")}</div><h2>Esta máquina é particular</h2><p>Não precisa de ordem de serviço: o termo que você aceitou já vale para uso próprio.</p>
+     <p>Se esta máquina é de um cliente, reclassifique para registrar a autorização dele.</p><button id="orc">Reclassificar como de terceiros…</button></div>`;
+    $("#orc").onclick=()=>openGate({reclass:true});return}
+  const nomes={};t.escopos.forEach(e=>nomes[e.id]=e.nome);
+  let h=`<div class="card"><div class="row"><div class="grow"><div class="eyebrow">ORDEM DE SERVIÇO</div><h2 style="font-size:22px">${os?esc(os.os):"Sem OS aberta"}</h2>
+   <div class="mut">${esc(t.nome)} · dono: <b style="color:var(--tx)">${esc(st.terceiro_nome)}</b>${st.autorizado_por?" · autorizado por "+esc(st.autorizado_por):""}</div></div>${os?'<span class="badge b-ok">AUTORIZADA</span>':'<span class="badge b-warn">FALTA AUTORIZAÇÃO</span>'}</div>`;
+  if(t.corporativa.corporativa)h+=`<div class="warnbox" style="margin-top:12px"><b>Máquina corporativa detectada.</b> ${t.corporativa.sinais.map(esc).join("; ")}. Tenha a autorização do responsável de TI da empresa e cuide dos dados corporativos.</div>`;
+  if(os){
+    h+=`<div class="okbox"><b>${esc(os.cliente)}</b> autorizou em ${esc(os.quando)}:<div style="margin-top:6px">${os.escopos.map(s=>`<span class="badge b-ok">${esc(nomes[s]||s)}</span>`).join("")}</div></div>
+     <p class="mut" style="font-size:13px">Só o nome fica registrado, sem CPF nem outros documentos. O que não está marcado fica bloqueado no programa.</p>
+     <div class="row"><button id="odoc">Abrir documento para imprimir ou salvar em PDF</button><button id="oend" class="dng">Encerrar OS…</button></div>`}
+  else h+=`<p class="h" style="margin-top:12px">Para analisar, fazer backup, melhorar ou liberar espaço nesta máquina, registre quem autorizou e o que foi autorizado. <b>Só o nome</b>: sem CPF.</p>
+     <label for="ocl">Nome de quem autoriza</label><input type="text" id="ocl" autocomplete="off" value="${esc(st.autorizado_por||st.terceiro_nome||"")}">
+     <label>O que está autorizado</label>${t.escopos.map(e=>`<label class="cat" style="cursor:pointer;color:var(--tx);font-size:14px"><input type="checkbox" class="osc" value="${esc(e.id)}" ${e.id==="ficha"?"checked":""}><div class="n"><b>${esc(e.nome)}</b><span>${esc(e.desc)}</span></div></label>`).join("")}
+     <div class="row" style="margin-top:14px"><button class="pri" id="osave">Registrar autorização</button></div>`;
+  h+=`</div><div class="card"><h3>Integridade do registro</h3><p class="mut" style="margin:0">O arquivo <span class="mono">consentimentos.log</span> encadeia cada linha à anterior por hash. Estado agora: ${t.log.ok?`<b style="color:var(--ok)">íntegro</b> (${t.log.linhas} registros)`:`<b style="color:var(--err)">ALTERADO (${esc(t.log.motivo)})</b>`}. É uma prova local, não um documento notarial.</p></div>`;
+  $("#main").innerHTML=h;
+  const sv=$("#osave");if(sv)sv.onclick=()=>safe(async()=>{const esc2=$$(".osc:checked").map(x=>x.value);const r=await api("/api/os/registrar",{cliente:$("#ocl").value,escopos:esc2});LASTDOC=(r.documento||"").split(/[\\/]/).pop();toast("Autorização registrada: "+r.os.os,"ok");await loadCtx();drawOS()});
+  const dc=$("#odoc");if(dc)dc.onclick=()=>safe(()=>api("/api/doc/abrir",{tipo:"os"}));
+  const en=$("#oend");if(en)en.onclick=()=>encerrarOS(os);
+}
+async function encerrarOS(os){
+  const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
+  d.innerHTML=`<div class="box" style="max-width:520px"><h2>Encerrar a OS?</h2><p>A autorização de <b>${esc(os.cliente)}</b> deixa de valer e as ações voltam a ficar bloqueadas.</p>
+   <label style="display:flex;gap:9px;align-items:flex-start;color:var(--tx);font-size:14px;cursor:pointer"><input type="checkbox" id="ew" style="margin-top:3px"><span>Também apagar os dados desta máquina do pendrive (fichas, históricos e documentos). Recomendado ao final do serviço de um cliente.</span></label>
+   <div id="ewt" class="hide"><label for="ewx">Digite APAGAR para confirmar</label><input type="text" id="ewx" autocomplete="off"></div>
+   <div class="row" style="margin-top:18px;justify-content:flex-end"><button id="ec">Cancelar</button><button class="dng" id="ek">Encerrar OS</button></div></div>`;
+  $("#layer").appendChild(d);
+  const up=()=>{$("#ewt",d).classList.toggle("hide",!$("#ew",d).checked);$("#ek",d).disabled=$("#ew",d).checked&&$("#ewx",d).value.trim().toUpperCase()!=="APAGAR"};
+  $("#ew",d).onchange=up;$("#ewx",d).oninput=up;up();
+  $("#ec",d).onclick=()=>d.remove();
+  $("#ek",d).onclick=()=>safe(async()=>{const ap=$("#ew",d).checked;await api("/api/os/encerrar",{apagar_dados:ap,digitou:$("#ewx",d).value});d.remove();await loadCtx();toast(ap?"OS encerrada e dados removidos do pendrive.":"OS encerrada.","ok");nav(ap?"maq":"os")});
+}
+
+/* ================= Dados (gerenciamento de espaço) ================= */
+let DT=null;const DS={tab:"verde",sel:new Set(),init:false,q:"",modo:"limpar"};
+const ZN={verde:["Limpeza imediata","Zero risco: o sistema ou o app recria sozinho."],ambar:["Arquivos parados","Valor para você: backup antes de remover, e a decisão é sua."],vermelha:["Bloqueado","Sistema e credenciais: nunca aparecem como opção."]};
+async function drawDados(){
+  setWide(false);clearInterval(DT);
+  const e=await api("/api/dados/estado");
+  if(view!=="dados")return;
+  if(e.acao&&e.acao.rodando)return dadosAcao();
+  if(e.fase==="varrendo")return dadosVarrendo();
+  if(e.fase==="pronto"||e.fase==="cancelado")return dadosResultado(e);
+  dadosIntro(e);
+}
+async function dadosIntro(e){
+  const p=await api("/api/permissoes");
+  $("#main").innerHTML=`<div class="card"><div class="row" style="gap:16px;align-items:flex-start"><div style="width:54px;height:54px;border-radius:16px;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--acc);flex:none"><span style="width:28px;height:28px;display:block">${ic("dados")}</span></div>
+   <div class="grow"><h2 style="font-size:22px">Dados: o que está pesando nesta máquina</h2><p class="h" style="margin:4px 0 0">Faz uma varredura geral e separa o que dá para limpar sem risco do que está parado e ocupando espaço. Durante a varredura o programa <b>só lê</b>. Nada é removido até você revisar e confirmar.</p></div></div>
+   <div class="zn" style="margin-top:16px"><div class="zc z-v"><b>Limpeza imediata</b><span>Caches, instaladores já usados e resíduos que se recriam. Zero risco.</span></div>
+    <div class="zc z-a"><b>Arquivos parados</b><span>Projetos, gravações, downloads e arquivos grandes sem uso. Você decide, com backup antes se quiser.</span></div>
+    <div class="zc z-r"><b>Bloqueado</b><span>Sistema, senhas, chaves e perfis ativos. Nunca viram opção de remoção.</span></div></div>
+   ${p.mac&&!p.acesso_total?`<div class="warnbox" style="margin-top:14px"><b>Acesso Total ao Disco desligado.</b> A varredura vai enxergar menos no Mac. <button class="sm" id="dperm" style="margin-left:6px">Liberar agora</button></div>`:""}
+   <div class="row" style="margin-top:16px"><div><label for="did">Considerar parado após</label><select id="did"><option value="60">60 dias</option><option value="90" selected>90 dias</option><option value="180">180 dias</option></select></div>
+    <div><label for="dmb">Arquivos grandes a partir de</label><select id="dmb"><option value="50">50 MB</option><option value="100" selected>100 MB</option><option value="500">500 MB</option></select></div></div>
+   <div class="row" style="margin-top:16px"><button class="pri" id="dgo" style="font-size:15px;padding:11px 24px">Varrer esta máquina</button></div></div>`;
+  const dp=$("#dperm");if(dp)dp.onclick=()=>openPerm(false);
+  $("#dgo").onclick=()=>safe(async()=>{DS.init=false;DS.sel=new Set();await api("/api/dados/varrer",{idle_dias:+$("#did").value,min_mb:+$("#dmb").value});drawDados()});
+}
+function dadosVarrendo(){
+  $("#main").innerHTML=`<div class="card"><h2>Varrendo a máquina…</h2><p class="h">Só leitura. Pode levar alguns minutos em discos grandes.</p><div class="bar"><i id="dpb"></i></div>
+   <div class="grid" style="margin-top:12px"><div class="kpi"><div class="mut">Arquivos vistos</div><div class="big" id="df">0</div></div><div class="kpi"><div class="mut">Pastas</div><div class="big" id="dd">0</div></div><div class="kpi"><div class="mut">Tamanho visto</div><div class="big" id="dz">0</div></div><div class="kpi"><div class="mut">Pastas sem permissão</div><div class="big" id="db">0</div></div></div>
+   <div class="mono mut" id="dc" style="margin:10px 0;word-break:break-all;min-height:18px"></div><button class="sm" id="dcn">Cancelar</button></div>`;
+  $("#dcn").onclick=()=>api("/api/dados/cancelar",{});
+  clearInterval(DT);DT=setInterval(async()=>{let e;try{e=await api("/api/dados/estado")}catch(x){return}
+    if(!$("#dpb")){clearInterval(DT);return}
+    $("#dpb").style.width=e.pct+"%";$("#df").textContent=nf(e.arquivos);$("#dd").textContent=nf(e.pastas);$("#dz").textContent=fmt(e.bytes);$("#db").textContent=nf(e.bloqueados);$("#dc").textContent=e.atual;
+    if(e.fase!=="varrendo"){clearInterval(DT);if(e.fase==="erro")toast("A varredura falhou: "+e.erro,"err");drawDados()}},700);
+}
+async function dadosResultado(e){
+  const ck=e.cockpit||{total:0,livre:0,usado:0,midias:0,documentos:0,limpavel:0,sistema:0,parado:0};
+  const R=await api("/api/dados/resultado?limit=1");
+  const nz=z=>R.cats.filter(c=>c.zona===z),sz=z=>nz(z).reduce((a,c)=>a+c.bytes,0),nn=z=>nz(z).reduce((a,c)=>a+c.n,0);
+  const T=ck.total||1,pc=x=>Math.max(0,x/T*100);
+  const seg=[["Mídias",ck.midias,"#5aa9ff"],["Documentos",ck.documentos,"#a78bfa"],["Dados de apps e outros",ck.apps||0,"#6b7280"],["Sistema e fora da sua pasta",ck.sistema,"#3b4252"],["Limpável",ck.limpavel,"#3fb27f"],["Livre",ck.livre,"var(--line)"]];
+  if(!DS.init){DS.init=true;DS.tab=nn("verde")?"verde":"ambar";DS.sel=new Set();const v=await api("/api/dados/resultado?zona=verde&limit=1000");v.rows.forEach(r=>{if(r.pre)DS.sel.add(r.id)})}
+  $("#main").innerHTML=`<div class="card"><div class="row"><h2 class="grow" style="margin:0">Cockpit do disco</h2><button class="sm" id="dre">${ic("refresh")}<span style="margin-left:6px">Varrer de novo</span></button></div>
+   <p class="h" style="margin-top:2px">${fmt(ck.usado)} usados de ${fmt(ck.total)} · <b>${fmt(ck.livre)} livres</b> (${Math.round(pc(ck.livre))}%)</p>
+   <div class="cock" role="img" aria-label="Uso do disco">${seg.map(s=>`<i style="width:${pc(s[1])}%;background:${s[2]}" title="${s[0]}: ${fmt(s[1])}"></i>`).join("")}</div>
+   <div class="lgd">${seg.map(s=>`<span><i style="background:${s[2]}"></i>${s[0]} <b>${fmt(s[1])}</b></span>`).join("")}</div>
+   <p class="mut" style="font-size:12px;margin:10px 0 0">Medido pelo espaço <b>real</b> que cada arquivo ocupa no disco, só na sua pasta pessoal. O restante aparece como “Sistema e fora da sua pasta”. O macOS ainda soma snapshots e itens removíveis, então o Ajustes pode mostrar um pouco mais ou menos.</p>
+   ${ck.nuvem_n?`<div class="infobox">${nf(ck.nuvem_n)} arquivo(s) estão só na nuvem (iCloud/OneDrive) e <b>não ocupam espaço aqui</b>: foram ignorados, e o programa nunca baixa nem mexe neles.</div>`:""}${ck.aviso?`<div class="warnbox">${esc(ck.aviso)}</div>`:""}${e.fase==="cancelado"?'<div class="warnbox">A varredura foi cancelada: o resultado é parcial.</div>':""}${e.bloqueados?`<div class="infobox">${nf(e.bloqueados)} pasta(s) não puderam ser lidas por falta de permissão.</div>`:""}</div>
+  <div class="zn" style="margin-bottom:16px">
+   <div class="zc z-v"><b style="font-size:20px">${fmt(sz("verde"))}</b><b>Limpeza imediata</b><span>${nf(nn("verde"))} item(ns) que se recriam. Zero risco.</span><button class="sm pri" style="margin-top:8px" data-t="verde">Revisar e limpar</button></div>
+   <div class="zc z-a"><b style="font-size:20px">${fmt(sz("ambar"))}</b><b>Arquivos parados</b><span>${nf(nn("ambar"))} item(ns) sem uso. Backup antes, se quiser.</span><button class="sm" style="margin-top:8px" data-t="ambar">Revisar</button></div>
+   <div class="zc z-r"><b style="font-size:20px">${fmt(sz("vermelha"))}</b><b>Bloqueado</b><span>${nf(nn("vermelha"))} item(ns) protegidos. Só informativo.</span><button class="sm gh" style="margin-top:8px" data-t="vermelha">Ver</button></div></div>
+  <div class="card"><div class="tabs" role="tablist">${["verde","ambar","vermelha"].map(z=>`<button class="tb ${DS.tab===z?"on":""}" role="tab" data-t="${z}">${ZN[z][0]} (${nn(z)})</button>`).join("")}</div>
+   <p class="h" style="margin-top:0">${ZN[DS.tab][1]}</p><input type="text" id="dq" placeholder="Filtrar pelo caminho…" value="${esc(DS.q)}" style="margin-bottom:8px"><div id="dlist"></div></div>
+  <div class="actbar ${DS.tab==="vermelha"?"hide":""}" id="dbar"><div class="grow"><b id="dsel">0 selecionados</b><div class="mut" style="font-size:12px" id="dnote"></div></div>
+   <label style="display:flex;gap:6px;align-items:center;margin:0;color:var(--tx);font-size:13px"><input type="checkbox" id="ddef"> Apagar de vez <span class="mut">(sem Lixeira)</span></label>
+   <button class="pri" id="dclean">Limpar selecionados</button><button id="doff">Mover para disco externo…</button></div>`;
+  $$("[data-t]").forEach(b=>b.onclick=()=>{DS.tab=b.dataset.t;dadosResultado(e)});
+  $("#dre").onclick=()=>safe(async()=>{await api("/api/dados/reset",{});DS.init=false;drawDados()});
+  let tq;$("#dq").oninput=()=>{clearTimeout(tq);tq=setTimeout(()=>{DS.q=$("#dq").value;dadosLista()},250)};
+  $("#dclean").onclick=()=>dadosConfirmar("limpar");$("#doff").onclick=()=>dadosConfirmar("offload");
+  $("#ddef").onchange=dadosSel;
+  dadosLista();
+}
+let DROWS=[];
+async function dadosLista(){
+  const r=await api("/api/dados/resultado?zona="+DS.tab+"&q="+encodeURIComponent(DS.q)+"&limit=800");DROWS=r.rows;
+  const g={};r.rows.forEach(x=>{(g[x.cat]=g[x.cat]||[]).push(x)});
+  const bloq=DS.tab==="vermelha";
+  $("#dlist").innerHTML=Object.keys(g).map(c=>{const it=g[c],tot=it.reduce((a,x)=>a+x.bytes,0);const all=it.every(x=>DS.sel.has(x.id));
+    return `<div class="cat" style="margin-top:12px"><div class="n"><b>${esc(c)}</b><span>${it.length} item(ns) · ${fmt(tot)}</span></div>${bloq?"":`<label class="tg" aria-label="Marcar todos de ${esc(c)}"><input type="checkbox" data-cat="${esc(c)}" ${all?"checked":""}><s></s></label>`}</div>`+
+     it.map(x=>`<div class="drow">${bloq?'<span class="badge b-bad" style="margin-top:2px">🔒</span>':`<input type="checkbox" class="dsk" data-id="${x.id}" ${DS.sel.has(x.id)?"checked":""} aria-label="Marcar ${esc(x.titulo)}" style="margin-top:4px">`}<div class="t"><b>${esc(x.titulo)}${x.orfao?' <span class="badge b-warn">provável sem uso · precisa da sua aprovação</span>':""}</b><span>${esc(x.motivo)}</span><span class="mono">${esc(x.path)}</span></div><div class="sz">${fmt(x.bytes)}${x.dias!=null&&DS.tab==="ambar"?`<div class="mut" style="font-size:11px;font-weight:400;text-align:right">${x.dias} d parado</div>`:""}</div></div>`).join("")}).join("")||'<p class="mut">Nada nesta faixa.</p>';
+  $$(".dsk").forEach(c=>c.onchange=()=>{const id=+c.dataset.id;c.checked?DS.sel.add(id):DS.sel.delete(id);dadosSel();dadosLista.keep=1});
+  $$("[data-cat]").forEach(c=>c.onchange=()=>{(g[c.dataset.cat]||[]).forEach(x=>c.checked?DS.sel.add(x.id):DS.sel.delete(x.id));dadosLista()});
+  dadosSel();
+}
+function dadosSel(){
+  const ids=DROWS.length?[...DS.sel]:[...DS.sel];const bytes=DROWS.filter(x=>DS.sel.has(x.id)).reduce((a,x)=>a+x.bytes,0);
+  const el=$("#dsel");if(!el)return;
+  el.textContent=`${DS.sel.size} selecionado(s) · ${fmt(bytes)}`;
+  const def=$("#ddef").checked;
+  $("#dnote").textContent=def?"Vão ser apagados de vez, sem volta.":"Vão para a Lixeira: dá para restaurar, e o espaço volta ao esvaziar.";
+  $("#dclean").disabled=!DS.sel.size;$("#doff").disabled=!DS.sel.size;
+  $("#dclean").className=def?"dng":"pri";
+}
+async function dadosConfirmar(tipo){
+  const sel=DROWS.filter(x=>DS.sel.has(x.id));
+  const ids=[...DS.sel];if(!ids.length)return;
+  const all=await api("/api/dados/resultado?limit=2000");const mapa={};all.rows.forEach(x=>mapa[x.id]=x);
+  const itens=ids.map(i=>mapa[i]).filter(Boolean),bytes=itens.reduce((a,x)=>a+x.bytes,0),orf=itens.some(x=>x.orfao);
+  const def=$("#ddef").checked;
+  const lista=itens.slice().sort((a,b)=>b.bytes-a.bytes).slice(0,8).map(x=>`<li>${esc(x.titulo)} <span class="mut">· ${fmt(x.bytes)}</span></li>`).join("");
+  const base=`<p><b>${itens.length} item(ns)</b>, ${fmt(bytes)}.</p><ul style="margin:6px 0;padding-left:18px;font-size:13px">${lista}${itens.length>8?`<li class="mut">e mais ${itens.length-8}…</li>`:""}</ul>`;
+  const chk=orf?"Entendo que alguns itens são dados de programas que não encontrei instalados. Provavelmente não são mais usados, mas quero remover mesmo assim.":null;
+  if(tipo==="limpar"){
+    const r=await dialog({titulo:def?"Apagar de vez?":"Enviar para a Lixeira?",html:base+(def?'<div class="errbox">Sem Lixeira: não dá para desfazer.</div>':'<div class="infobox">Os arquivos vão para a Lixeira. O espaço só volta quando você esvaziar a Lixeira. Dá para restaurar de lá.</div>'),
+      check:chk,texto:def?"Digite APAGAR para confirmar":null,exige:def?"APAGAR":null,ok:def?"Apagar de vez":"Enviar para a Lixeira",perigo:def});
+    if(!r)return;
+    safe(async()=>{await api("/api/dados/limpar",{ids,confirmo:true,definitivo:def,confirma_orfaos:orf});DS.acao="limpar";drawDados()});
+  }else{
+    const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
+    d.innerHTML=`<div class="box" style="max-width:640px"><h2>Mover para disco externo</h2>${base}
+     <p class="mut" style="font-size:13px">Cada arquivo é copiado, <b>relido e conferido (SHA-256)</b>. Só depois o original sai do computador (${def?"apagado de vez":"vai para a Lixeira"}). Se a conferência falhar, o original fica.</p>
+     <label for="odst">Pasta de destino (em outro disco)</label><div class="row"><input type="text" id="odst" class="grow" placeholder="Ex.: /Volumes/Meu HD ou D:\\"><button id="opk">Escolher…</button></div><div id="obr"></div><div id="opf" class="mut" style="margin-top:6px;font-size:13px"></div>
+     ${orf?`<label style="display:flex;gap:9px;align-items:flex-start;color:var(--tx);font-size:13.5px;margin-top:12px"><input type="checkbox" id="oorf" style="margin-top:3px"><span>${esc(chk)}</span></label>`:""}
+     <div class="row" style="margin-top:16px;justify-content:flex-end"><button id="oc">Cancelar</button><button class="pri" id="ok2" disabled>Copiar, conferir e liberar espaço</button></div></div>`;
+    $("#layer").appendChild(d);
+    const upd=async()=>{const v=$("#odst",d).value.trim();let ok=false;
+      if(v){try{const p=await api("/api/dados/preflight",{ids,dest:v,confirma_orfaos:true});$("#opf",d).innerHTML=p.ok?`<span style="color:var(--ok)">✓ Destino ok · ${fmt(p.bytes)} a copiar</span>`:`<span style="color:var(--err)">${p.erros.map(esc).join("<br>")}</span>`;ok=p.ok}catch(x){$("#opf",d).innerHTML=`<span style="color:var(--err)">${esc(x.message)}</span>`}}
+      if(orf&&!$("#oorf",d).checked)ok=false;$("#ok2",d).disabled=!ok};
+    $("#odst",d).oninput=()=>{clearTimeout(upd.t);upd.t=setTimeout(upd,350)};const oo=$("#oorf",d);if(oo)oo.onchange=upd;
+    $("#opk",d).onclick=()=>pickFolder($("#odst",d),$("#obr",d),upd);
+    $("#oc",d).onclick=()=>d.remove();
+    $("#ok2",d).onclick=()=>safe(async()=>{await api("/api/dados/offload",{ids,dest:$("#odst",d).value.trim(),confirmo:true,definitivo:def,confirma_orfaos:orf});d.remove();DS.acao="offload";drawDados()});
+  }
+}
+function dadosAcao(){
+  $("#main").innerHTML=`<div class="card"><h2 id="at">Trabalhando…</h2><p class="h" id="ah">Não feche esta janela.</p><div class="bar"><i id="apb"></i></div>
+   <div class="grid" style="margin-top:12px"><div class="kpi"><div class="mut">Itens</div><div class="big" id="ai">0</div></div><div class="kpi"><div class="mut">Dados</div><div class="big" id="ab">0</div></div></div>
+   <div class="mono mut" id="ac" style="margin:10px 0;word-break:break-all"></div><div id="ar"></div></div>`;
+  clearInterval(DT);DT=setInterval(async()=>{let e;try{e=await api("/api/dados/estado")}catch(x){return}
+    const a=e.acao;if(!$("#apb")){clearInterval(DT);return}
+    $("#apb").style.width=(a.bytes_total?Math.min(100,a.bytes_feito/a.bytes_total*100):100)+"%";$("#ai").textContent=`${a.feito} / ${a.total}`;$("#ab").textContent=`${fmt(a.bytes_feito)} / ${fmt(a.bytes_total)}`;$("#ac").textContent=a.atual;
+    if(!a.rodando){clearInterval(DT);dadosFim(a)}},600);
+}
+function dadosFim(a){
+  const r=a.resultado||{itens:0,falhas:a.erros.length};const lixo=r.modo==="lixeira",mov=(r.bytes_lixeira||0)+(r.bytes_removidos||0)+(r.bytes_movidos||0);
+  $("#at").textContent=a.tipo==="offload"?"Offload concluído":"Limpeza concluída";$("#ah").textContent="";$("#apb").style.width="100%";
+  $("#ar").innerHTML=`<div class="${r.falhas?"warnbox":"okbox"}"><b>${r.itens} item(ns) · ${fmt(mov)}</b> ${a.tipo==="offload"?`copiados, conferidos e removidos do computador. Destino: <span class="mono">${esc(r.destino||"")}</span>`:lixo?"enviados para a Lixeira.":"apagados de vez."}${lixo?'<div style="margin-top:6px">O espaço só volta quando a Lixeira for esvaziada.</div>':'<div style="margin-top:6px">Espaço já devolvido ao disco.</div>'}</div>
+   ${a.erros.length?`<div class="errbox"><b>${a.erros.length} problema(s)</b> (os originais foram mantidos):<ul style="margin:6px 0 0;padding-left:18px;font-size:13px">${a.erros.slice(0,10).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}
+   <div class="row" style="margin-top:12px">${lixo&&r.itens?'<button class="pri" id="aem">Esvaziar a Lixeira (devolver o espaço)</button>':""}<button id="anv">Ver o que sobrou</button><button id="aha">Analisar a máquina de novo</button></div>`;
+  const em=$("#aem");if(em)em.onclick=()=>safe(async()=>{const x=await dialog({titulo:"Esvaziar a Lixeira?",html:"<p>Tudo que está na Lixeira do usuário é apagado de vez, inclusive o que já estava lá antes. Não tem volta.</p>",ok:"Esvaziar a Lixeira",perigo:true});if(!x)return;const q=await api("/api/dados/esvaziar_lixeira",{confirmo:true});toast("Lixeira esvaziada"+(q.bytes?": "+fmt(q.bytes)+" liberados.":"."),"ok");em.disabled=true});
+  $("#anv").onclick=()=>drawDados();$("#aha").onclick=()=>nav("home");
+}
+
+/* ================= Backup (jornada) ================= */
+const STEPS=["Origem e destino","Checagens","Seleção","Cópia","Verificação","Conclusão"];
+let step=0,S={sources:[],chosen:{},dest:"",folder:"",cliente:"",tecnico:"",equip:""},st=null,timer=null;
+let fl={cat:"",act:"",local:"",q:"",offset:0};
+function renderSteps(){
+  const el=$("#steps");if(view!=="backup"){el.innerHTML="";return}
+  el.innerHTML=`<div class="jn done" title="Termo aceito"><span class="c">✓</span>Termo</div>`+STEPS.map((t,i)=>`<div class="jn ${i===step?"on":i<step?"done":""}" ${i===step?'aria-current="step"':""}><span class="c">${i<step?"✓":i+1}</span>${esc(t)}</div>`).join("");
+}
+function go(n){step=n;view="backup";markNav();$("#steps").classList.remove("hide");renderSteps();draw();window.scrollTo(0,0)}
+function draw(){clearInterval(timer);[draw1,draw2,draw3,draw4,draw5,draw6][step]()}
+const CATORD=["Fotos","Videos","Audios","Documentos","Projetos","Email_Contatos","Conversas","Contas_Senhas","Outros","Navegadores"];
+const CATNAME={Fotos:"Fotos",Videos:"Vídeos",Audios:"Áudios",Documentos:"Documentos",Projetos:"Projetos (Photoshop, CAD…)",Email_Contatos:"E-mail e contatos",Conversas:"Conversas (WhatsApp)",Contas_Senhas:"Contas e senhas",Outros:"Outros (por extensão)",Navegadores:"Favoritos dos navegadores"};
+
+/* seletor de pasta reutilizável */
+async function pickFolder(input,box,onUse,start){
+  const r=await api("/api/ls?path="+encodeURIComponent(start!=null?start:(input.value||"")));
+  box.innerHTML=`<div class="browser"><div class="path"><button class="sm" data-a="up" ${r.path?"":"disabled"}>↑ Subir</button><span class="mono grow">${esc(r.path||"Locais disponíveis")}</span><button class="sm" data-a="mk" ${r.path?"":"disabled"}>Nova pasta</button><button class="sm pri" data-a="use" ${r.path?"":"disabled"}>Usar esta pasta</button></div>
+   <ul>${r.dirs.map(d=>`<li data-p="${esc(d.path)}">📁 ${esc(d.name)}</li>`).join("")||'<li class="mut">(sem subpastas)</li>'}</ul></div>`;
+  $$("li[data-p]",box).forEach(li=>li.onclick=()=>pickFolder(input,box,onUse,li.dataset.p));
+  if(r.path){
+    $('[data-a=up]',box).onclick=()=>pickFolder(input,box,onUse,r.parent);
+    $('[data-a=use]',box).onclick=()=>{input.value=r.path;box.innerHTML="";input.dispatchEvent(new Event("input"));if(onUse)onUse()};
+    $('[data-a=mk]',box).onclick=()=>safe(async()=>{const x=await dialog({titulo:"Nova pasta",texto:"Nome da pasta",exige:"",ok:"Criar"});if(!x||!x.texto.trim())return;await api("/api/mkdir",{path:r.path,name:x.texto.trim()});pickFolder(input,box,onUse,r.path)});
+  }
+}
+
+/* ---- 1 origem e destino ---- */
+async function draw1(){
+  setWide(false);
+  if(!S.sources.length){S.sources=(await api("/api/sources")).sources;S.sources.forEach(s=>{if(s.kind==="windows"||s.kind==="linux")S.chosen[s.path]=true})}
+  const t=CTX.t,nome=t?t.nome:info.host||"PC";
+  $("#main").innerHTML=`<div class="card"><h2>De onde vamos copiar?</h2><p class="h">Marque os discos ou pastas de origem. O programa só <b>lê</b> deles: nada é apagado ou alterado.</p><div id="srcs"></div>
+   <div class="row" style="margin-top:10px"><input type="text" id="manual" class="grow" placeholder="Outra pasta ou disco (ex.: /media/zorin/Windows ou D:\\)" aria-label="Outra origem"><button id="addm">Adicionar</button></div></div>
+  <div class="card"><h2>Para onde vai o backup?</h2><p class="h">Qualquer disco ou pasta com espaço. Para poder formatar depois, escolha um disco <b>diferente</b> do que será formatado.</p>
+   <div class="row"><input type="text" id="dest" class="grow" value="${esc(S.dest)}" placeholder="Pasta de destino" aria-label="Pasta de destino"><button id="pick">Escolher…</button></div><div id="br"></div><div id="destinfo" class="mut" style="margin-top:6px"></div>
+   <label for="folder">Nome da pasta do backup</label><input type="text" id="folder" value="${esc(S.folder||("Backup_"+nome.replace(/[^\w\-]+/g,"_")))}"></div>
+  <div class="card"><h2>Identificação <span class="tag">opcional</span></h2><p class="h">Aparece no certificado.</p>
+   <div class="row"><div class="grow"><label for="cli">Cliente</label><input type="text" id="cli" value="${esc(S.cliente||(ownT()?t.status.terceiro_nome||"":""))}"></div><div class="grow"><label for="tec">Técnico</label><input type="text" id="tec" value="${esc(S.tecnico)}"></div><div class="grow"><label for="eq">Equipamento</label><input type="text" id="eq" value="${esc(S.equip||nome)}"></div></div></div>
+  <div class="row"><span class="grow"></span><button class="pri" id="next1">Continuar →</button></div>`;
+  drawSrcs();
+  $("#addm").onclick=()=>safe(async()=>{const p=$("#manual").value.trim();if(!p)return;const r=await api("/api/ls?path="+encodeURIComponent(p));
+    S.sources.push({path:r.path,label:r.path,fs:r.fs,kind:r.kind||"folder",users:r.users||[],total:r.total,free:r.free,letter:r.kind==="windows"?"C":""});S.chosen[r.path]=true;$("#manual").value="";drawSrcs()});
+  $("#pick").onclick=()=>pickFolder($("#dest"),$("#br"),destInfo);
+  $("#dest").oninput=e=>{S.dest=e.target.value;destInfo()};
+  $("#next1").onclick=()=>safe(async()=>{
+    S.dest=$("#dest").value.trim();S.folder=$("#folder").value.trim();S.cliente=$("#cli").value.trim();S.tecnico=$("#tec").value.trim();S.equip=$("#eq").value.trim();
+    const sources=S.sources.filter(s=>S.chosen[s.path]).map(s=>({path:s.path,kind:s.kind,letter:s.letter||"C",label:s.label}));
+    if(!sources.length)return toast("Marque pelo menos uma origem.","err");
+    if(!S.dest)return toast("Escolha o destino do backup.","err");
+    await api("/api/config",{sources,dest:S.dest,folder:S.folder,cliente:S.cliente,tecnico:S.tecnico,equip:S.equip});go(1)});
+  destInfo();
+}
+function drawSrcs(){
+  $("#srcs").innerHTML=S.sources.map((s,i)=>`<label class="src ${S.chosen[s.path]?"sel":""}"><input type="checkbox" data-i="${i}" ${S.chosen[s.path]?"checked":""}>
+   <div class="t"><b>${esc(s.label)} ${s.kind==="windows"?'<span class="tag win">Windows</span>':s.kind==="linux"?'<span class="tag lin">Linux</span>':'<span class="tag">pasta</span>'} ${s.fs?`<span class="tag">${esc(s.fs)}</span>`:""}</b><span>${esc(s.path)} · ${fmt(s.total-s.free)} usados de ${fmt(s.total)}${s.users&&s.users.length?" · usuários: "+esc(s.users.join(", ")):""}</span></div>
+   ${s.kind==="windows"?`<div class="mut" style="font-size:12px">Letra<br><input type="text" class="l" data-l="${i}" value="${esc(s.letter||"C")}" maxlength="1" aria-label="Letra do disco"></div>`:""}</label>`).join("")||'<p class="mut">Nenhum disco encontrado. Digite o caminho abaixo.</p>';
+  $$("#srcs input[type=checkbox]").forEach(c=>c.onchange=()=>{S.chosen[S.sources[+c.dataset.i].path]=c.checked;drawSrcs()});
+  $$("#srcs input.l").forEach(c=>{c.onclick=e=>e.stopPropagation();c.oninput=()=>{S.sources[+c.dataset.l].letter=c.value.toUpperCase()}});
+}
+async function destInfo(){
+  const el=$("#destinfo");if(!el)return;if(!S.dest){el.textContent="";return}
+  try{const r=await api("/api/ls?path="+encodeURIComponent(S.dest));el.textContent=r.path?`${fmt(r.free)} livres de ${fmt(r.total)} · ${r.fs||"sistema de arquivos desconhecido"}`:""}catch(e){el.textContent="Pasta não encontrada."}
+}
+
+/* ---- 2 checagens e escaneamento ---- */
+async function draw2(){
+  setWide(false);
+  $("#main").innerHTML=`<div class="card"><h2>Checagens de segurança</h2><p class="h">Antes de mexer em qualquer coisa.</p><div id="checks" class="mut">Verificando…</div></div>
+  <div class="card"><h2>Escanear o computador</h2><p class="h">Varre todos os usuários, pastas ocultas e discos escolhidos. Só lê; nada é copiado ainda.</p>
+   <div class="row"><button class="pri" id="scan" disabled>Escanear agora</button><button id="back2">← Voltar</button></div>
+   <div id="scanbox" class="hide" style="margin-top:14px"><div class="bar"><i id="sb" style="width:100%;opacity:.5"></i></div>
+    <div class="grid" style="margin-top:10px"><div class="kpi"><div class="mut">Arquivos</div><div class="big" id="sf">0</div></div><div class="kpi"><div class="mut">Pastas</div><div class="big" id="sd">0</div></div><div class="kpi"><div class="mut">Tamanho</div><div class="big" id="sz">0</div></div></div>
+    <div class="mono mut" id="scur" style="margin-top:8px;word-break:break-all"></div><div class="row" style="margin-top:8px"><button class="sm" id="scancel">Cancelar</button></div></div></div>`;
+  $("#back2").onclick=()=>go(0);
+  const r=await api("/api/preflight",{});
+  $("#checks").innerHTML=r.checks.map(c=>`<div class="chk ${c.nivel}"><span class="dot"></span><div><b>${esc(c.titulo)}</b><div class="mut">${esc(c.detalhe)}</div></div></div>`).join("");
+  const bad=r.checks.some(c=>c.nivel==="erro");$("#scan").disabled=bad;
+  if(bad)$("#checks").insertAdjacentHTML("beforeend",'<div class="errbox">Há um erro acima. Corrija antes de continuar.</div>');
+  $("#scan").onclick=()=>safe(async()=>{await api("/api/scan",{});$("#scanbox").classList.remove("hide");$("#scan").disabled=true;poll()});
+  $("#scancel").onclick=()=>api("/api/cancel",{});
+  const s=await api("/api/status");if(s.phase==="scanning"){$("#scanbox").classList.remove("hide");$("#scan").disabled=true;poll()}
+}
+function poll(){clearInterval(timer);timer=setInterval(tick,700);tick()}
+async function tick(){
+  try{st=await api("/api/status")}catch(e){return}
+  if(step===1&&$("#sf")){
+    $("#sf").textContent=nf(st.scan.files);$("#sd").textContent=nf(st.scan.dirs);$("#sz").textContent=fmt(st.scan.bytes);$("#scur").textContent=st.scan.current;
+    if(st.phase==="scanned"){clearInterval(timer);go(2)}
+    if(st.phase==="error"){clearInterval(timer);toast("Erro: "+st.error,"err")}
+    if(st.phase==="idle"){clearInterval(timer);$("#scan").disabled=false;$("#scanbox").classList.add("hide")}
+  }else if(step===3)tick4();else if(step===4)tick5();
+}
+
+/* ---- 3 seleção ---- */
+async function draw3(){
+  setWide(true);
+  const g=await api("/api/groups"),t=await api("/api/totals");
+  const cats=g.cats.slice().sort((a,b)=>CATORD.indexOf(a.cat)-CATORD.indexOf(b.cat)),locals={};g.groups.forEach(x=>{locals[x.local]=1});const acts=g.acts;
+  const maxb=Math.max(1,...cats.map(c=>c.bytes));
+  $("#main").innerHTML=`<div class="cols"><div>
+  <div class="card"><h2>O que vai para o backup?</h2><p class="h">Já deixei marcado o que é pessoal. Use as chaves para marcar ou desmarcar categorias inteiras. O que não for copiado fica listado no final.</p>
+   <div id="cats">${cats.map(c=>{const all=c.sel_n===c.n,none=c.sel_n===0;return `<div class="cat"><label class="tg"><input type="checkbox" data-c="${esc(c.cat)}" ${all?"checked":""} data-ind="${!all&&!none?1:0}" aria-label="${esc(CATNAME[c.cat]||c.cat)}"><s></s></label>
+    <div class="n"><b>${esc(CATNAME[c.cat]||c.cat)}</b><span>${nf(c.n)} arquivos · ${fmt(c.bytes)} · marcados: ${nf(c.sel_n)} (${fmt(c.sel_bytes)})</span><div class="cb"><i style="width:${c.bytes/maxb*100}%"></i></div></div><button class="sm" data-v="${esc(c.cat)}">Ver lista</button></div>`}).join("")}</div>
+   <div class="cat" style="margin-top:14px"><div class="n"><b>Não pessoais / ignorados</b><span>${nf((acts.ignorar||{n:0}).n)} arquivos (programas, sistema, temporários, vazios) · ${fmt((acts.ignorar||{bytes:0}).bytes)}. Não são copiados, mas ficam no relatório.</span></div><button class="sm" data-va="ignorar">Ver</button></div>
+   <div class="cat"><div class="n"><b>Para revisar (tipo desconhecido)</b><span>${nf((acts.revisar||{n:0}).n)} arquivos · ${fmt((acts.revisar||{bytes:0}).bytes)}. Marque se quiser levar.</span></div><button class="sm" data-va="revisar">Ver</button><button class="sm" id="revall">Marcar todos</button></div>
+   <div class="cat"><div class="n"><b>Pastas inteiras ignoradas</b><span>${nf(g.ign_dirs_total)} pastas (Windows, Program Files, AppData, cache…)</span></div><button class="sm" id="vdirs">Ver</button></div></div>
+  <div class="card" id="listcard"><h2>Lista de arquivos</h2>
+   <div class="row"><select id="fcat" aria-label="Categoria"><option value="">Todas as categorias</option>${cats.map(c=>`<option value="${esc(c.cat)}">${esc(CATNAME[c.cat]||c.cat)}</option>`).join("")}</select>
+   <select id="fact" aria-label="Situação"><option value="">Qualquer situação</option><option value="copiar">Pessoais</option><option value="revisar">Revisar</option><option value="ignorar">Ignorados</option></select>
+   <select id="floc" aria-label="Usuário"><option value="">Todos os usuários</option>${Object.keys(locals).sort().map(l=>`<option>${esc(l)}</option>`).join("")}</select>
+   <input type="text" id="fq" class="grow" placeholder="Buscar no caminho…" aria-label="Buscar"><button class="sm" id="selF">Marcar filtro</button><button class="sm" id="unF">Desmarcar filtro</button></div><div id="flist" style="margin-top:10px"></div></div></div>
+  <aside class="side card" id="tot" aria-label="Resumo da seleção"></aside></div>`;
+  $$("#cats input[type=checkbox]").forEach(c=>{if(c.dataset.ind==="1")c.indeterminate=true;c.onchange=()=>safe(async()=>{await api("/api/select",{filter:{cat:c.dataset.c,act:""},on:c.checked});draw3()})});
+  const lst=()=>$("#listcard").scrollIntoView({behavior:"smooth"});
+  $$("[data-v]").forEach(b=>b.onclick=()=>{fl={cat:b.dataset.v,act:"",local:"",q:"",offset:0};syncF();loadList();lst()});
+  $$("[data-va]").forEach(b=>b.onclick=()=>{fl={cat:"",act:b.dataset.va,local:"",q:"",offset:0};syncF();loadList();lst()});
+  $("#revall").onclick=()=>safe(async()=>{await api("/api/select",{filter:{act:"revisar"},on:true});draw3()});
+  $("#vdirs").onclick=()=>safe(async()=>{const r=await api("/api/left");modalHtml("Pastas ignoradas",`<div class="mono" style="max-height:60vh;overflow:auto">${r.ign_dirs.map(d=>`<div><b>${esc(d[0])}</b><br><span class="mut">${esc(d[1])}</span></div>`).join("<br>")}</div>`)});
+  ["fcat","fact","floc"].forEach(id=>$("#"+id).onchange=()=>{fl.cat=$("#fcat").value;fl.act=$("#fact").value;fl.local=$("#floc").value;fl.offset=0;loadList()});
+  let tq;$("#fq").oninput=()=>{clearTimeout(tq);tq=setTimeout(()=>{fl.q=$("#fq").value;fl.offset=0;loadList()},300)};
+  $("#selF").onclick=()=>safe(async()=>{await api("/api/select",{filter:fl,on:true});draw3()});
+  $("#unF").onclick=()=>safe(async()=>{await api("/api/select",{filter:fl,on:false});draw3()});
+  drawTot(t);loadList();
+}
+function syncF(){$("#fcat").value=fl.cat;$("#fact").value=fl.act;$("#floc").value=fl.local;$("#fq").value=fl.q}
+function drawTot(t){
+  const pct=t.free?Math.min(100,t.sel_bytes/t.free*100):0;
+  let w="";if(!t.cabe)w+=`<div class="errbox">Não cabe no destino: precisa de ${fmt(t.sel_bytes)} e há ${fmt(t.free)} livres.</div>`;
+  if(t.fat32_problema)w+=`<div class="errbox">O destino é FAT32 e há arquivo maior que 4 GB. Escolha outro destino.</div>`;
+  $("#tot").innerHTML=`<h3 style="margin:0 0 10px">Resumo</h3><div class="kpi"><div class="mut">Arquivos marcados</div><div class="big">${nf(t.sel_n)}</div></div>
+   <div class="kpi" style="margin-top:8px"><div class="mut">Tamanho a copiar</div><div class="big">${fmt(t.sel_bytes)}</div></div>
+   <div style="margin-top:12px" class="mut">Ocupa ${pct.toFixed(pct<10?1:0)}% do espaço livre no destino (${fmt(t.free)})</div><div class="bar"><i style="width:${pct}%;${pct>90?"background:var(--err)":""}"></i></div>${w}
+   <div class="row" style="margin-top:14px"><button id="back3">← Voltar</button><button class="pri grow" id="go3">Iniciar cópia →</button></div>`;
+  $("#go3").disabled=!t.cabe||t.fat32_problema||t.sel_n===0;
+  $("#back3").onclick=()=>go(1);$("#go3").onclick=()=>safe(async()=>{await api("/api/copy",{});go(3)});
+}
+async function loadList(){
+  const q=new URLSearchParams({cat:fl.cat,act:fl.act,local:fl.local,q:fl.q,offset:fl.offset,limit:100});const r=await api("/api/files?"+q);
+  $("#flist").innerHTML=`<table><tr><th></th><th>Arquivo (onde estava)</th><th>Tam.</th><th>Data</th><th>Categoria</th><th>Situação</th></tr>
+  ${r.rows.map(x=>`<tr><td><input type="checkbox" data-i="${x[0]}" ${x[6]?"checked":""} aria-label="Marcar arquivo"></td><td class="mono">${esc(x[1])}${x[9]?" "+x[9].split("|").map(t=>`<span class="tag">${esc(t)}</span>`).join(" "):""}<div class="mut">${esc(x[7])}</div></td><td>${fmt(x[2])}</td><td>${esc(x[3])}</td><td>${esc(x[4])}</td><td><span class="pill p-${x[5]==="copiar"?"ok":x[5]}">${esc(x[5])}</span></td></tr>`).join("")||'<tr><td colspan="6" class="mut">Nada com esse filtro.</td></tr>'}</table>
+  <div class="pg"><button class="sm" id="pv" ${fl.offset<=0?"disabled":""}>← Anterior</button><span class="mut">${nf(r.total)} arquivos · ${r.total?fl.offset+1:0}–${Math.min(fl.offset+100,r.total)}</span><button class="sm" id="nx" ${fl.offset+100>=r.total?"disabled":""}>Próxima →</button></div>`;
+  $$("#flist input[type=checkbox]").forEach(c=>c.onchange=()=>safe(async()=>{await api("/api/select",{idx:[+c.dataset.i],on:c.checked});drawTot(await api("/api/totals"))}));
+  $("#pv").onclick=()=>{fl.offset=Math.max(0,fl.offset-100);loadList()};$("#nx").onclick=()=>{fl.offset+=100;loadList()};
+}
+
+/* ---- 4 cópia ---- */
+function ringP(p,txt,sub){const r=70,c=2*Math.PI*r;return `<div class="ringp"><svg viewBox="0 0 170 170"><circle cx="85" cy="85" r="${r}" fill="none" stroke="var(--line)" stroke-width="12"/><circle id="rgc" cx="85" cy="85" r="${r}" fill="none" stroke="var(--acc)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-p/100)}" transform="rotate(-90 85 85)" style="transition:stroke-dashoffset .5s"/></svg><div class="n"><b id="rgt">${txt}</b><span id="rgs">${sub||""}</span></div></div>`}
+function setRing(p,txt,sub){const c=2*Math.PI*70,e=$("#rgc");if(!e)return;e.setAttribute("stroke-dashoffset",c*(1-Math.min(100,p)/100));$("#rgt").textContent=txt;$("#rgs").textContent=sub||""}
+function draw4(){
+  setWide(false);
+  $("#main").innerHTML=`<div class="card"><div class="row" style="gap:24px;align-items:center">${ringP(0,"0%","copiado")}
+   <div class="grow"><h2 id="t4" style="margin-top:0">Copiando…</h2><p class="h">Cada arquivo é gravado, conferido e catalogado. Você pode pausar ou cancelar; o que já foi copiado fica.</p><div class="mono mut" id="cur4" style="word-break:break-all;min-height:18px"></div>
+   <div class="row" style="margin-top:10px"><button id="pz">Pausar</button><button class="dng" id="cn">Cancelar</button></div></div></div>
+   <div class="grid" style="margin-top:14px"><div class="kpi"><div class="mut">Arquivos</div><div class="big" id="k1">0</div></div><div class="kpi"><div class="mut">Copiado</div><div class="big" id="k2">0</div></div><div class="kpi"><div class="mut">Velocidade</div><div class="big" id="k3">–</div></div><div class="kpi"><div class="mut">Tempo restante</div><div class="big" id="k4">–</div></div><div class="kpi"><div class="mut">Falhas</div><div class="big" id="k5">0</div></div></div>
+   <h3 style="margin:16px 0 6px;font-size:14px">Registro</h3><div class="log mono" id="lg" aria-live="off"></div></div>
+   <div id="after4" class="hide row"><span class="grow"></span><button class="pri" id="to5">Ir para a verificação →</button></div>`;
+  $("#pz").onclick=()=>safe(async()=>{await api(st&&st.paused?"/api/resume":"/api/pause",{})});
+  $("#cn").onclick=()=>safe(async()=>{const x=await dialog({titulo:"Cancelar a cópia?",html:"<p>O que já foi copiado continua no destino.</p>",ok:"Cancelar a cópia",cancelar:"Continuar copiando",perigo:true});if(x)api("/api/cancel",{})});
+  $("#to5").onclick=()=>go(4);poll();
+}
+function tick4(){
+  if(!st||!$("#k1"))return;const c=st.copy,p=c.total_bytes?Math.min(100,c.done_bytes/c.total_bytes*100):100;
+  setRing(p,Math.floor(p)+"%",st.eta?"faltam "+fdur(st.eta):"copiado");
+  $("#k1").textContent=`${nf(c.done_files)} / ${nf(c.total_files)}`;$("#k2").textContent=fmt(c.done_bytes);$("#k3").textContent=st.speed?fmt(st.speed)+"/s":"–";$("#k4").textContent=st.eta?fdur(st.eta):"–";$("#k5").textContent=c.errors;
+  $("#cur4").textContent=c.current;$("#pz").textContent=st.paused?"Continuar":"Pausar";$("#lg").innerHTML=st.log.map(esc).join("<br>");$("#lg").scrollTop=1e9;
+  if(st.phase==="copied"){clearInterval(timer);$("#t4").textContent="Cópia terminada";setRing(100,"100%","copiado");$("#after4").classList.remove("hide");$("#pz").disabled=$("#cn").disabled=true}
+  if(st.phase==="error"){clearInterval(timer);toast("Erro: "+st.error,"err")}
+}
+
+/* ---- 5 verificação ---- */
+const VPASSOS=[["Conferindo cada arquivo copiado","comp"],["Nova varredura na origem","sweep"],["Fechando o relatório","fim"]];
+function draw5(){
+  setWide(false);
+  $("#main").innerHTML=`<div class="card"><h2>Verificação final</h2><p class="h">Confere cada arquivo copiado contra o original e faz uma nova varredura para achar o que mudou, apareceu ou sumiu.</p>
+   <div class="row" id="vopt"><label style="margin:0;display:flex;gap:6px;align-items:center;color:var(--tx)"><input type="radio" name="vm" value="completa" checked> <b>Completa</b> (SHA-256, recomendado)</label><label style="margin:0;display:flex;gap:6px;align-items:center;color:var(--tx)"><input type="radio" name="vm" value="rapida"> Rápida (só tamanho)</label></div>
+   <div class="row" style="margin-top:12px"><button class="pri" id="vgo">Verificar agora</button><button id="b5">← Voltar</button></div>
+   <div id="vbox" class="hide" style="margin-top:16px"><div class="row" style="gap:24px;align-items:center">${ringP(0,"0%","conferido")}
+    <ul class="chkl grow" id="vl"><li class="run" id="vl1"><span class="ci"></span><div><b>Conferindo cada arquivo copiado</b><div class="mut" id="cur5" style="word-break:break-all;font-size:12px"></div></div></li><li class="wait" id="vl2"><span class="ci"></span><b>Nova varredura na origem</b></li><li class="wait" id="vl3"><span class="ci"></span><b>Resultado</b></li></ul></div>
+    <div class="grid" style="margin-top:12px"><div class="kpi"><div class="mut">Conferidos</div><div class="big" id="v1">0</div></div><div class="kpi"><div class="mut">Divergências</div><div class="big" id="v2">0</div></div><div class="kpi"><div class="mut">Tempo restante</div><div class="big" id="v3">–</div></div></div>
+    <div class="row" style="margin-top:8px"><button class="sm" id="vc">Cancelar</button></div></div></div><div id="res5"></div>`;
+  $("#b5").onclick=()=>go(2);$("#vc").onclick=()=>api("/api/cancel",{});
+  $("#vgo").onclick=()=>safe(async()=>{const m=document.querySelector("input[name=vm]:checked").value;await api("/api/verify",{mode:m});$("#vbox").classList.remove("hide");$("#vgo").disabled=true;poll()});
+  api("/api/status").then(s=>{st=s;if(s.phase==="verifying"){$("#vbox").classList.remove("hide");$("#vgo").disabled=true;poll()}else if(s.phase==="verified"||s.phase==="done")showRes5();else if(s.n_failures)$("#res5").innerHTML=`<div class="warnbox">${s.n_failures} arquivo(s) falharam na cópia. Verifique e depois veja o que fazer.</div>`});
+}
+function vMark(i,cls){const e=$("#vl"+i);if(e)e.className=cls;const c=e&&e.querySelector(".ci");if(c)c.textContent=cls==="ok"?"✓":""}
+function tick5(){
+  if(!st||!$("#v1"))return;const v=st.verify;
+  const p=v.bytes_total?v.bytes_done/v.bytes_total*100:(v.total?v.done/v.total*100:100);
+  setRing(p,Math.floor(Math.min(100,p))+"%",st.eta?"faltam "+fdur(st.eta):"conferido");
+  $("#v1").textContent=`${nf(v.done)} / ${nf(v.total)}`;$("#v2").textContent=v.fail;$("#v3").textContent=st.eta?fdur(st.eta):"–";$("#cur5").textContent=v.current||"";
+  if(v.done>=v.total&&v.total){vMark(1,"ok");vMark(2,"run")}
+  if(st.phase==="verified"){clearInterval(timer);vMark(1,"ok");vMark(2,"ok");vMark(3,"ok");setTimeout(()=>{$("#vbox").classList.add("hide");showRes5()},500)}
+  if(st.phase==="copied"){clearInterval(timer);$("#vbox").classList.add("hide");$("#vgo").disabled=false}
+  if(st.phase==="error"){clearInterval(timer);toast("Erro: "+st.error,"err")}
+}
+const FIX={sumiu:"O arquivo foi apagado ou movido enquanto o backup rodava. Normalmente não precisa fazer nada; se precisar dele, restaure na origem e use “Refazer”.",
+ em_uso:"Feche o programa que usa o arquivo (ou reinicie e rode de novo) e use “Refazer só os que falharam”.",
+ permissao:"Abra o BKP Pro como administrador (no Linux, com sudo; no Mac, libere o Acesso Total ao Disco). Em disco do Windows, desligue o Windows de verdade (sem Inicialização rápida).",
+ espaco:"Libere espaço no destino ou escolha outro, depois “Refazer”.",caminho_longo:"O caminho é longo demais. Copie esse arquivo manualmente para uma pasta mais curta.",
+ io:"Possível setor defeituoso no dispositivo. Tente de novo; se persistir, o arquivo pode estar corrompido na origem.",
+ divergente:"A cópia não confere com o original. Use “Refazer só os que falharam”: ele apaga a cópia ruim e copia de novo.",somente_leitura:"O destino está somente leitura. Remonte com escrita ou escolha outro.",outro:"Veja a mensagem e tente refazer."};
+async function showRes5(){
+  st=await api("/api/status");const f=st.failures||[],sw=st.sweep||{},nsw=(sw.n_novos||0)+(sw.n_alterados||0)+(sw.n_sumiram||0);
+  let h="";
+  if(!f.length&&!nsw)h+=`<div class="rc g"><span class="ic2">✅</span><div><b>Tudo conferido.</b><div class="mut">Nenhuma falha, e a varredura final não encontrou diferenças.</div></div></div>`;
+  if(f.length)h+=`<div class="rc r"><span class="ic2">⛔</span><div class="grow"><b>${nf(st.n_failures)} arquivo(s) com problema</b><div class="mut">Cada um mostra o motivo e como resolver.</div></div></div>
+   <div class="card"><table><tr><th>Arquivo</th><th>Por quê</th><th>Como resolver</th></tr>${f.map(x=>`<tr><td class="mono">${esc(x.disp)}<br><span class="mut">${fmt(x.size)}</span></td><td>${esc(x.err)}</td><td>${esc(FIX[x.cause]||FIX.outro)}</td></tr>`).join("")}</table><div class="row" style="margin-top:10px"><button class="pri" id="retry">Refazer só os que falharam</button></div></div>`;
+  if(nsw){h+=`<div class="rc y"><span class="ic2">⚠️</span><div><b>Varredura final</b><div class="mut">${nf(sw.n_novos)} novo(s), ${nf(sw.n_alterados)} alterado(s) e ${nf(sw.n_sumiram)} que sumiram da origem desde o escaneamento.</div></div></div>`;
+    const rows=[...(sw.novos||[]).map(x=>[x,"Novo"]),...(sw.alterados||[]).map(x=>[x,"Alterado"])];
+    if(rows.length)h+=`<div class="card"><table><tr><th>Arquivo</th><th>Situação</th></tr>${rows.slice(0,80).map(r=>`<tr><td class="mono">${esc(r[0][0])}</td><td>${r[1]}: ${esc(r[0][2])}</td></tr>`).join("")}</table>${sw.n_novos?'<p class="mut">Para incluir os novos, volte ao passo 2 e escaneie de novo (o que já foi copiado é reaproveitado).</p>':""}</div>`}
+  h+=`<div class="row"><span class="grow"></span><button class="pri" id="fin">Concluir e gerar certificado →</button></div>`;
+  $("#res5").innerHTML=h;
+  const r=$("#retry");if(r)r.onclick=()=>safe(async()=>{await api("/api/retry",{});go(3)});
+  $("#fin").onclick=()=>safe(async()=>{await api("/api/finish",{});go(5)});
+}
+
+/* ---- 6 conclusão ---- */
+async function draw6(){
+  setWide(false);st=await api("/api/status");const c=st.cert;
+  if(!c){$("#main").innerHTML=`<div class="card">Gere o certificado no passo anterior.</div>`;return}
+  const ok=c.status==="sem_falhas",g=await api("/api/firmware_gate",{}),terc=ownT();
+  const rec=c.recuperado_bytes?`<div class="kpi"><div class="mut">Espaço recuperado (Dados)</div><div class="big">${fmt(c.recuperado_bytes)}</div></div>`:"";
+  $("#main").innerHTML=`<div class="card"><div class="row" style="gap:18px"><div class="seal">${DD.seal({variant:"ouro",bottom:"flat",bottomText:ok?"BACKUP VERIFICADO":"COM RESSALVAS",size:92})}</div>
+   <div class="grow"><h2 style="font-size:22px">${ok?"Backup concluído. Do jeito D&amp;D.":"Backup concluído com ressalvas, e a gente mostra cada uma."}</h2><p class="h">Código ${esc(c.codigo)} · ${esc(c.metodo)}${c.maquina_nome?" · "+esc(c.maquina_nome):""}</p></div></div>
+   <div class="grid"><div class="kpi"><div class="mut">Copiados e conferidos</div><div class="big">${nf(c.copiados)}</div></div><div class="kpi"><div class="mut">Tamanho</div><div class="big">${fmt(c.bytes)}</div></div><div class="kpi"><div class="mut">Falhas</div><div class="big">${c.falhas}</div></div><div class="kpi"><div class="mut">Ficaram de fora (listados)</div><div class="big">${nf(c.ficaram)}</div></div>${rec}</div>
+   ${c.motivos.length?`<h3 style="font-size:14px">O que ficou de fora e por quê</h3><table>${c.motivos.map(x=>`<tr><td>${esc(x.motivo)}</td><td>${nf(x.n)}</td><td>${fmt(x.bytes)}</td></tr>`).join("")}</table>`:""}
+   <p class="mono mut">Pasta do backup: ${esc(st.dest_root)}<br>Mapa: ${esc(st.dest_root)}/Mapa/visualizador.html</p>
+   <div class="row"><button class="pri" id="om">Abrir o mapa (certificado e navegação)</button><button id="newb">Novo backup</button>${terc?'<button id="os6">Encerrar a OS</button>':""}</div></div>
+  <div class="card"><h2>Formatar a máquina</h2>${g.ok?`<p class="h">Tudo certo para seguir. O computador reinicia direto na tela de firmware (BIOS/UEFI) para você escolher o boot e formatar.</p>
+   <label style="display:flex;gap:8px;align-items:center;margin:0 0 12px;color:var(--tx)"><input type="checkbox" id="cf"> Confirmo que o backup foi conferido e que posso formatar.</label><button class="dng" id="fw" disabled>Reiniciar para a BIOS/UEFI</button>`:`<div class="warnbox">Formatação bloqueada: ${esc(g.motivo)}</div>`}</div>`;
+  $("#om").onclick=()=>safe(()=>api("/api/open_mapa",{}));
+  $("#newb").onclick=()=>safe(async()=>{await api("/api/reset",{});S.sources=[];S.chosen={};S.dest="";S.folder="";go(0)});
+  const o6=$("#os6");if(o6)o6.onclick=()=>nav("os");
+  const cf=$("#cf");if(cf){cf.onchange=()=>$("#fw").disabled=!cf.checked;
+   $("#fw").onclick=()=>safe(async()=>{
+    const x=await dialog({titulo:"Último aviso",html:"<p>O computador vai reiniciar em instantes para a tela de firmware.</p>"+(terc?'<div class="warnbox">Máquina de terceiros: confirme que o cliente autorizou a formatação.</div>':""),texto:terc?"Digite FORMATAR para confirmar":null,exige:terc?"FORMATAR":null,ok:"Reiniciar agora",perigo:true});
+    if(!x)return;const r=await api("/api/firmware",{confirmo:true,digitou:x.texto||""});toast(r.simulado?"(Teste) reinício simulado.":"Reiniciando para a BIOS/UEFI em alguns segundos…","ok")})}
+}
+
+/* ================= início ================= */
+(async()=>{
+  const th=lsGet("dd_tema","");if(th)document.documentElement.dataset.theme=th;
+  $("#theme").onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==="light"?"dark":"light";lsSet("dd_tema",r.dataset.theme)};
+  try{$("#mono").innerHTML='<span class="mA">'+DD.mono({variant:"ouro",size:44,bg:true})+'</span><span class="mB">'+DD.mono({variant:"claro",size:44,bg:false})+'</span>'}catch(e){}
+  try{info=await api("/api/info")}catch(e){document.body.innerHTML='<p style="padding:30px">Sessão inválida. Feche e abra o BKP Pro de novo.</p>';return}
+  FB=/darwin|mac/i.test(info.os||"")?1000:1024;
+  $("#hver").onclick=()=>safe(openUpdate);
+  await loadCtx();
+  let s;try{s=await api("/api/status")}catch(e){s={phase:"idle"}}
+  st=s;
+  const map={idle:0,scanning:1,scanned:2,copying:3,copied:4,verifying:4,verified:4,finishing:5,done:5,error:0};
+  step=map[s.phase]||0;
+  if(s.phase==="idle"){nav("home")}else{view="backup";nav("backup");}
+  if(["scanning","copying","verifying"].includes(s.phase))poll();
+  const t=CTX.t;
+  if(t&&t.status&&!t.status.aceito)openGate();
+  checkUpdate();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+BKP PRO  -  D&D Technology  -  Somos únicos. Somos diferentes. Somos D&D.
+==========================================================================
+Um pendrive só. Ele faz: FICHA da máquina (nota, hardware, programas pesados, sistema ideal, melhorias com
+"aplicar"), BACKUP organizado com certificado, e guarda o HISTÓRICO de cada máquina atendida.
+
+PREPARAR O PENDRIVE (uma vez)
+  1) Instale o Ventoy no pendrive (ventoy.net). Use 16 GB ou mais.
+  2) Copie para ele, como arquivos comuns:  o ISO do Zorin OS  e esta pasta  BKP-Pro  (descompactada).
+  3) Para o Windows rodar SEM instalar nada: baixe "Windows embeddable package (64-bit)" em
+     python.org/downloads/windows e extraia dentro de  BKP-Pro\runtime  (precisa existir runtime\python.exe).
+  Resultado: o pendrive serve para (a) iniciar o Zorin e (b) rodar o BKP Pro direto no Windows.
+
+USAR
+  A) Windows LIGADO (ficha completa: boot, programas de inicialização, programas pesados, aplicar melhorias):
+     abra o pendrive > BKP-Pro > duplo clique em  Iniciar-Windows.bat  (pede administrador).
+     Home > "Permitir e analisar esta máquina". As fichas vão para  BKP-Pro\maquinas  no pendrive.
+  B) Backup seguro: inicie o PC pelo pendrive no Zorin ("Experimentar"), monte os discos (clique neles no
+     gerenciador de arquivos) e rode  sudo sh Iniciar-Linux.sh  dentro da pasta BKP-Pro.
+     Na Home dá para rodar a ficha também (hardware e disco; boot e inicialização do Windows não são medidos no Live).
+  O mesmo botão "Backup" (gaveta lateral) leva aos 6 passos: origem/destino, checagens, seleção, cópia, verificação, certificado.
+
+NOTA E "OUTCOME": a nota (0 a 100) resume CPU, memória, disco, tempo de resposta, boot e programas ao ligar.
+  Depois de "aplicar melhorias", o programa mede de novo e mostra ANTES -> DEPOIS (boot e inicialização só melhoram
+  de vez após reiniciar). É a prova do resultado entregue ao cliente.
+
+O QUE "APLICAR" FAZ (sempre com sua confirmação, e com Desfazer)
+  Windows: desativa programas de inicialização marcados (mesmo método do Gerenciador de Tarefas), reduz transparência e
+  animações, limpa temporários com mais de 3 dias. Linux: oculta itens de autostart. NADA toca em documentos.
+  Trocar HDD por SSD, RAM e bateria aparecem como recomendações para o técnico (hardware).
+
+SISTEMA IDEAL: nota ESTIMADA do sistema recém-instalado nesta máquina (Windows 10/11, Zorin Core/Lite, Mint XFCE,
+  Lubuntu), com compatibilidade (Windows 11: UEFI, Secure Boot, TPM 2.0, 4 GB, geração do processador - heurística).
+  Windows 10 aparece com o aviso de fim do suporte gratuito (14/10/2025).
+
+LIMITES HONESTOS
+  * Testado em Linux real e com dados de Windows SIMULADOS. NÃO testado em Windows real: a coleta usa PowerShell nativo;
+    se algum campo vier vazio, a nota é calculada só com o que foi medido (aparece "nota sobre X% dos critérios").
+  * Tempo de boot do Windows vem do log de desempenho do próprio Windows (precisa de administrador e do log ativo).
+  * Medições de velocidade são indicativas e variam com o que está aberto. Notas servem para comparar antes/depois.
+  * Slots de RAM e saúde do disco exigem administrador/root.
+  * Veja também as notas de backup: BitLocker, Inicialização rápida, OneDrive só na nuvem.
+
+NOVIDADES DA VERSÃO 3.0
+  TERMO E AUTORIZAÇÃO: na primeira vez em cada máquina aparece o termo de responsabilidade (aceite registrado em
+    consentimentos.log, com encadeamento de hash, e cópia imprimível na pasta da máquina). Máquina de TERCEIROS: registre na aba
+    OS o nome de quem autoriza e o que foi autorizado (só o nome, sem CPF). Sem isso o programa bloqueia analisar/copiar/melhorar.
+    Máquinas com sinais de uso corporativo (domínio, MDM) não podem ser marcadas como "particular" sem confirmação explícita.
+    O termo segue princípios da LGPD, mas NÃO é garantia jurídica: peça revisão a um advogado antes de usar comercialmente.
+  CÓDIGO DA MÁQUINA: cada computador ganha um código fixo (DD-XXXX-XXXX) calculado do hardware; o nome amigável pode ser trocado.
+    Cada análise vai para o histórico e dá para COMPARAR duas análises (Home > Histórico > Comparar).
+  TROFÉUS: 5 níveis pela nota (0-25, 26-50, 51-75, 76-95, 96-100). A nota agora inclui "Espaço livre": a nota de máquinas já
+    analisadas pode mudar.
+  DADOS (aba Dados): varredura só de leitura que separa LIMPEZA IMEDIATA (caches e instaladores), ARQUIVOS PARADOS (você decide)
+    e BLOQUEADO (sistema/senhas, nunca vira opção). Remoção vai para a LIXEIRA; o espaço só volta ao esvaziá-la. "Restos de
+    programas" sem app instalado aparecem como "provável sem uso" e exigem sua aprovação. Mover para disco externo copia,
+    relê e confere SHA-256 antes de tirar o original.
+  ATUALIZAR: clique em "v3.0" no topo. Baixe o BKP-Pro.zip novo; o programa o encontra (Downloads, Área de Trabalho) ou você
+    escolhe o arquivo. Só os arquivos do programa são trocados; maquinas/, consentimentos.log e runtime/ nunca são tocados.
+    A versão anterior fica em _versoes/ (volta com um clique). A primeira instalação da 3.0 é manual (a versão antiga não tem atualizador):
+    unzip -oq ~/Downloads/BKP-Pro.zip -d "/Volumes/BKP Pro/"
+  NÃO TESTADO em Windows/macOS reais nesta versão: Lixeira (Mac/Windows), detecção de máquina corporativa e leitura do código de hardware.
