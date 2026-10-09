@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BKP Pro · D&D Technology</title>
+<title>Destrava! · D&D Technology</title>
 <style>
 :root{--bg:#0e0f12;--panel:#16171c;--panel2:#1d1f26;--line:#2a2c35;--tx:#ececf1;--mut:#9a9cab;--gold:#e0b34a;--ok:#3fb27f;--warn:#e5a23a;--err:#e5534b;--acc:#e0b34a;--r:14px;--sh:0 1px 0 rgba(255,255,255,.03) inset,0 8px 24px rgba(0,0,0,.25);--btnpri:linear-gradient(180deg,#f0cd6b,#d4a62f);--btnpri-tx:#1b1400}
 :root[data-theme=light]{--bg:#f3f3f6;--panel:#fff;--panel2:#f0f0f4;--line:#dcdce3;--tx:#1b1b1f;--mut:#5d5e6a;--gold:#8a6612;--acc:#8a6612;--sh:0 1px 2px rgba(20,20,40,.06),0 8px 24px rgba(20,20,40,.06);--btnpri:linear-gradient(180deg,#f3d27a,#dcae35);--btnpri-tx:#241a00}
@@ -199,9 +199,9 @@ body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{d
 </head>
 <body>
 <header>
-  <span id="mono"></span><h1>BKP Pro</h1><small>by D&amp;D Technology</small>
+  <span id="mono"></span><h1>Destrava!</h1><small>by D&amp;D Technology</small>
   <span class="sp"></span>
-  <span id="hown"></span>
+  <span id="hown"></span><span id="hsrv"></span>
   <button class="chip upd" id="hver" title="Ver atualizações">v–</button>
   <button class="sm" id="theme" aria-label="Alternar tema claro e escuro">Claro / Escuro</button>
 </header>
@@ -214,7 +214,7 @@ body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{d
 <script src="/web/logo.js"></script>
 <script>
 "use strict";
-const TOKEN=(location.hash||"").slice(1);
+const TOKEN=(location.hash||"").slice(1)||"__DD_TOKEN__";
 history.replaceState(null,"",location.pathname);
 const $=(s,e)=>(e||document).querySelector(s);
 const $$=(s,e)=>[...(e||document).querySelectorAll(s)];
@@ -337,8 +337,28 @@ function renderChrome(){
   $("#gvtoggle").onclick=()=>document.body.classList.toggle("min");
   const mc=$("#midc");if(mc)mc.onclick=()=>{try{navigator.clipboard.writeText(t.mid);toast("Código copiado: "+t.mid,"ok")}catch(e){}};
   $("#hown").innerHTML=st&&st.aceito?(st.dono==="terceiros"?`<span class="chip own-t" title="Máquina de terceiros"><i class="d"></i>Terceiros${st.terceiro_nome?": "+esc(st.terceiro_nome):""}</span>`:`<span class="chip own-p" title="Máquina particular"><i class="d"></i>Particular</span>`):"";
+  if(info.simulacao)$("#hown").innerHTML+=`<span class="chip own-t" title="Reproduzindo uma coleta salva: as ações são só simuladas, nada muda neste computador"><i class="d"></i>SIMULAÇÃO</span>`;
   $("#hver").textContent="v"+(info.versao||"–");
+  srvChip();
 }
+/* modo servidor: quem está conectado, o que falta enviar e o botão de encerrar (apaga tudo deste computador) */
+function srvChip(){
+  const sv=info.servidor,el=$("#hsrv");if(!el)return;
+  if(!sv){el.innerHTML="";return}
+  $("#hver").title="No modo servidor o programa já vem atualizado";
+  el.innerHTML=`<span class="chip ${sv.pendentes?"own-t":"own-p"}" title="Fichas, históricos e termos ficam no servidor ${esc(sv.url)}"><i class="d"></i>Servidor${sv.tecnico?" · "+esc(sv.tecnico):""}${sv.pendentes?` · ${sv.pendentes} pendente(s)`:""}</span><button class="chip" id="henc" title="Envia o que falta, apaga os arquivos deste computador e fecha o programa">Encerrar</button>`;
+  $("#henc").onclick=()=>safe(encerrar);
+}
+async function encerrar(descartar){
+  if(!descartar&&!await dialog({titulo:"Encerrar o Destrava!?",html:"<p>O que falta é enviado ao servidor e os arquivos temporários são apagados deste computador. Depois, pode fechar esta aba.</p>",ok:"Encerrar"}))return;
+  const r=await api("/api/encerrar",{descartar:!!descartar});
+  if(!r.ok){
+    if(await dialog({titulo:"Sem conexão com o servidor",html:`<p><b>${r.pendentes} alteração(ões)</b> ainda não chegaram ao servidor. Se encerrar agora, elas se perdem.</p><p>Verifique a internet e tente de novo, ou encerre mesmo assim.</p>`,ok:"Encerrar e perder",perigo:true}))return encerrar(true);
+    return;
+  }
+  document.body.innerHTML='<p style="padding:30px;font:16px system-ui">Destrava! encerrado. Os arquivos temporários foram apagados deste computador. Pode fechar esta aba.</p>';
+}
+setInterval(async()=>{if(!info.servidor)return;try{const i=await api("/api/info");if(i.servidor){info.servidor=i.servidor;srvChip()}}catch(e){}},20000);
 function markNav(){$$("#gaveta [data-view]").forEach(b=>b.classList.toggle("on",b.dataset.view===view))}
 function setWide(b){$("#main").classList.toggle("wide",!!b)}
 
@@ -400,10 +420,10 @@ async function openPerm(primeira){
   const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
   const linha=(ok,t,s)=>`<li style="display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)"><span class="ci" style="${ok?"background:var(--ok);border-color:var(--ok);color:#fff":"border-color:var(--warn);color:var(--warn)"}">${ok?"✓":"!"}</span><div><b>${t}</b><div class="mut" style="font-size:13px;margin-top:2px">${s}</div></div></li>`;
   let corpo="";
-  if(p.mac)corpo=linha(p.acesso_total,"Acesso Total ao Disco","Sem ele o macOS esconde algumas pastas (Mail, Safari, parte de Library) e a varredura enxerga menos. A permissão é do app que roda o BKP Pro: o <b>Terminal</b>.")+
-    (p.acesso_total?"":`<div class="infobox" style="font-size:13px"><b>Como liberar</b><ol style="margin:6px 0 0;padding-left:20px"><li>Clique em <b>Abrir Ajustes</b>.</li><li>Em <i>Privacidade e Segurança → Acesso Total ao Disco</i>, ligue o <b>Terminal</b> (ou clique em + e adicione).</li><li>Feche o Terminal, abra o BKP Pro de novo e clique em <b>Verificar de novo</b>.</li></ol></div>`);
+  if(p.mac)corpo=linha(p.acesso_total,"Acesso Total ao Disco","Sem ele o macOS esconde algumas pastas (Mail, Safari, parte de Library) e a varredura enxerga menos. A permissão é do app que roda o Destrava!: o <b>Terminal</b>.")+
+    (p.acesso_total?"":`<div class="infobox" style="font-size:13px"><b>Como liberar</b><ol style="margin:6px 0 0;padding-left:20px"><li>Clique em <b>Abrir Ajustes</b>.</li><li>Em <i>Privacidade e Segurança → Acesso Total ao Disco</i>, ligue o <b>Terminal</b> (ou clique em + e adicione).</li><li>Feche o Terminal, abra o Destrava! de novo e clique em <b>Verificar de novo</b>.</li></ol></div>`);
   else if(p.win)corpo=linha(p.admin,"Executar como administrador",p.admin?"Tudo certo: leitura de slots de RAM e saúde do disco liberada.":"Sem isso, slots de RAM e saúde do disco ficam sem leitura. Abra pelo <b>Iniciar-Windows.bat</b>, que pede a permissão.");
-  else corpo=linha(p.root,"Permissão de administrador (sudo)",p.root?"Tudo certo: leitura de slots de RAM e saúde do disco liberada.":"Sem isso, slots de RAM e saúde do disco ficam sem leitura. Abra o BKP Pro com <b>sudo</b>.");
+  else corpo=linha(p.root,"Permissão de administrador (sudo)",p.root?"Tudo certo: leitura de slots de RAM e saúde do disco liberada.":"Sem isso, slots de RAM e saúde do disco ficam sem leitura. Abra o Destrava! com <b>sudo</b>.");
   const falta=p.mac?!p.acesso_total:p.win?!p.admin:!p.root;
   d.innerHTML=`<div class="box" style="max-width:600px"><h2>${primeira?"Termo aceito. Só mais um passo":"Permissões"}</h2>
    <p class="mut" style="margin:0 0 4px">Estas permissões são opcionais. Sem elas o programa funciona, só enxerga um pouco menos.</p><ul class="chkl" style="margin:0">${corpo}</ul>
@@ -421,12 +441,12 @@ async function openUpdate(){
   const r=await api("/api/atualizar/procurar");
   const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
   const nova=r.encontrados.filter(x=>x.mais_nova);
-  d.innerHTML=`<div class="box" style="max-width:640px"><h2>Atualizar o BKP Pro</h2>
+  d.innerHTML=`<div class="box" style="max-width:640px"><h2>Atualizar o Destrava!</h2>
    <p class="mut" style="margin:0 0 8px">Você está na versão <b style="color:var(--tx)">${esc(r.versao)}</b>. A atualização troca <b>só o programa</b>. Suas fichas, históricos, termos, OS e o registro de consentimentos <b>não são tocados</b>, e a versão atual fica guardada para você voltar.</p>
    <div id="uA">${nova.length?nova.map(x=>`<div class="okbox"><b>Versão ${esc(x.versao)} encontrada</b><div class="mono mut" style="margin:4px 0 8px;word-break:break-all">${esc(x.caminho)} · ${esc(x.quando)}</div><button class="pri" data-up="${esc(x.caminho)}">Atualizar agora</button></div>`).join(""):'<div class="infobox">Nenhuma versão mais nova encontrada em Downloads, Área de Trabalho ou no pendrive.</div>'}</div>
    ${r.encontrados.filter(x=>!x.mais_nova).length?`<p class="mut" style="font-size:12.5px;margin:8px 0 2px">Outros arquivos encontrados: ${r.encontrados.filter(x=>!x.mais_nova).map(x=>`${esc(x.nome)} (v${esc(x.versao)}${x.igual?", igual à atual":""}) <button class="sm" data-up="${esc(x.caminho)}">usar</button>`).join(" · ")}</p>`:""}
    <h3 style="margin-top:14px">Escolher o arquivo manualmente</h3>
-   <p class="mut" style="font-size:12.5px;margin:0 0 6px">Baixe o <b>BKP-Pro.zip</b> novo e selecione aqui. Não precisa descompactar nem apagar nada.</p>
+   <p class="mut" style="font-size:12.5px;margin:0 0 6px">Baixe o <b>Destrava.zip</b> novo e selecione aqui. Não precisa descompactar nem apagar nada.</p>
    <input type="file" id="uf" accept=".zip"><div id="uB" style="margin-top:8px"></div>
    ${r.salvas.length?`<h3 style="margin-top:16px">Voltar para uma versão anterior</h3>${r.salvas.map(x=>`<div class="row" style="margin:4px 0"><span class="grow">Versão ${esc(x.versao)} <span class="mut mono">${esc(x.nome)}</span></span><button class="sm" data-rv="${esc(x.nome)}">Voltar para esta</button></div>`).join("")}`:""}
    <div class="row" style="margin-top:16px;justify-content:flex-end"><button id="ucl">Fechar</button></div></div>`;
@@ -437,7 +457,7 @@ async function openUpdate(){
     try{const x=await api("/api/atualizar/aplicar",{caminho:cam});
       d.querySelector(".box").innerHTML=`<h2>Atualizado: v${esc(x.de)} → v${esc(x.para)}</h2><div class="okbox">${x.trocados} arquivo(s) do programa trocados. <b>Seus registros foram mantidos.</b> A versão anterior ficou guardada.${x.config_nova.length?`<br><span class="mut">Você tinha editado ${esc(x.config_nova.join(", "))}: a versão nova ficou ao lado como .novo.txt, sem sobrescrever a sua.</span>`:""}</div>
        <p class="mut" style="font-size:12px;word-break:break-all">Selo do arquivo (SHA-256): ${esc(x.zip_sha256)}</p><div class="row" style="justify-content:flex-end"><button class="pri" id="urs">Reiniciar agora</button></div>`;
-      $("#urs",d).onclick=async()=>{await api("/api/atualizar/reiniciar",{}).catch(()=>{});document.body.innerHTML='<div style="max-width:520px;margin:18vh auto;padding:24px;text-align:center;font:16px system-ui"><h2>Reiniciando com a versão nova…</h2><p>Uma nova janela do BKP Pro abre em instantes. Pode fechar esta aba.</p></div>'};
+      $("#urs",d).onclick=async()=>{await api("/api/atualizar/reiniciar",{}).catch(()=>{});document.body.innerHTML='<div style="max-width:520px;margin:18vh auto;padding:24px;text-align:center;font:16px system-ui"><h2>Reiniciando com a versão nova…</h2><p>Uma nova janela do Destrava! abre em instantes. Pode fechar esta aba.</p></div>'};
     }catch(e){$("#uB",d).innerHTML=`<div class="errbox">${esc(e.message)}</div>`}
   };
   $$("[data-up]",d).forEach(b=>b.onclick=()=>aplicar(b.dataset.up));
@@ -449,7 +469,7 @@ async function openUpdate(){
       $("#uB",d).innerHTML=`<div class="okbox"><b>Zip válido: versão ${esc(j.versao)}</b> (${j.arquivos} arquivos)<div class="mono mut" style="margin:4px 0 8px;word-break:break-all">SHA-256: ${esc(j.sha256)}</div><button class="pri" id="uGo">Atualizar para v${esc(j.versao)}</button></div>`;
       $("#uGo",d).onclick=()=>aplicar(j.caminho)}catch(x){$("#uB",d).innerHTML=`<div class="errbox">${esc(x.message)}</div>`}};
 }
-async function checkUpdate(){try{const r=await api("/api/atualizar/procurar");if(r.encontrados.some(x=>x.mais_nova))$("#hver").classList.add("nova")}catch(e){}}
+async function checkUpdate(){if(info.servidor)return;try{const r=await api("/api/atualizar/procurar");if(r.encontrados.some(x=>x.mais_nova))$("#hver").classList.add("nova")}catch(e){}}
 
 /* ================= Home / ficha ================= */
 let hp=null;
@@ -472,7 +492,7 @@ function drawHomeVazia(r,est){
   setWide(false);
   const ok=CTX.t&&CTX.t.status.aceito;
   $("#main").innerHTML=`<div class="card empty"><div class="shield">${ic("shield")}</div><h2>Conheça a saúde deste computador</h2>
-   <p>O BKP Pro mede o computador, dá uma <b>nota de 0 a 100</b> e mostra o que fazer para melhorar. A ficha fica guardada no seu pendrive, com histórico para comparar depois.</p>
+   <p>O Destrava! mede o computador, dá uma <b>nota de 0 a 100</b> e mostra o que fazer para melhorar. A ficha fica guardada no seu pendrive, com histórico para comparar depois.</p>
    <div class="seals">
     <div class="sealc">${ic("lock")}<div><b>Fica só no seu computador</b><span>Sem internet e sem envio de dados.</span></div></div>
     <div class="sealc">${ic("eye")}<div><b>Só lê, não altera</b><span>Mudanças só com o seu “sim”.</span></div></div>
@@ -518,6 +538,43 @@ function drawerHtml(v){
    <div class="tl">${evs.map(o=>o.ficha?`<div class="ev fi"><label><input type="checkbox" class="fck" data-a="${esc(o.ficha.arquivo)}"><span><span class="nt" style="color:${COR(o.ficha.nota)};border-color:${COR(o.ficha.nota)}">${o.ficha.nota}</span><b>${o.ficha.fase==="depois"?"Depois das melhorias":"Análise"}</b> ${o.prev?dtxt(o.ficha.nota-o.prev.nota,2):""}<br><small>${esc(o.ficha.quando)} · ${esc(o.ficha.classe)}${o.ficha.cobertura<100?" · "+o.ficha.cobertura+"% dos critérios":""}</small></span></label></div>`:`<div class="ev"><b>${esc(o.e.resumo)}</b><br><small>${esc(o.e.quando)} · ${esc(o.e.tipo)}</small></div>`).join("")||'<span class="mut">Sem eventos.</span>'}</div>
    <div class="row" style="margin-top:8px"><button class="sm" id="note">Anotar no histórico</button></div></div>`;
 }
+/* ---------- Central de Otimizações ---------- */
+const OCAT=["Inicialização","Memória","Espaço","Visual","Energia","Segundo plano","Disco","Sistema"];
+function onusBtn(o){return o?`<button class="sm gh onus" data-onus="${esc(o)}" title="${esc(o)}" aria-label="Ônus: ${esc(o)}" style="padding:2px 8px">⚠</button>`:""}
+function voltaTag(s){return s.reversivel===true?'<span class="badge b-ok" title="Dá para desfazer">↺ reversível</span>':s.reversivel===false?'<span class="badge b-mut" title="Não dá para desfazer">sem volta</span>':""}
+function ganhoTag(g){return g?`<span class="mut" style="font-size:12.5px">Ganho${g.origem==="medido"?" (medido)":g.origem==="estimado"?" (estimado)":""}: ${esc(g.texto)}</span>`:""}
+function otimHtml(a,r,atual){
+  const todas=a.otimizacoes||[],res=a.otim_resumo||{},filtro=lsGet("dd_otim","rec");
+  const ini=todas.filter(s=>s.categoria==="Inicialização");
+  const outras=todas.filter(s=>s.categoria!=="Inicialização"&&(filtro==="todas"||s.recomendado||!s.aplicavel&&s.botao));
+  let h=`<div class="card" id="otim"><div class="row"><h2 class="grow" style="margin:0">Otimizações</h2><div class="tabs" role="tablist" style="margin:0">${[["rec","Recomendadas"],["todas","Todas"]].map(t=>`<button class="tb ${filtro===t[0]?"on":""}" data-of="${t[0]}" role="tab">${t[1]}</button>`).join("")}</div></div>
+   <p class="h">${res.n?`<b>${res.n}</b> recomendada(s)${res.pontos?` · até <b>+${res.pontos} pontos</b>`:""}. `:""}Cada item mostra o ganho; ⚠ indica um ônus (passe o mouse ou toque). Vêm marcadas só as recomendadas sem ônus.</p>`;
+  if(ini.length){
+    h+=`<h3 style="margin:14px 0 4px">Inicialização</h3><p class="mut" style="font-size:12.5px;margin:0 0 6px">O mesmo que o Gerenciador de Tarefas mostra. O interruptor liga ou desliga na hora (reversível).</p>
+    <table><tr><th>Programa</th><th style="width:80px">RAM</th><th style="width:80px">Boot</th><th style="width:130px">Recomendação</th><th style="width:70px">Ao ligar</th></tr>${ini.map(s=>{const it=s.item||{},on=s.estado!=="desativado";
+      return `<tr><td><b>${esc(it.nome||s.titulo)}</b> ${onusBtn(s.onus)}<div class="mono mut" style="font-size:11.5px">${esc((it.comando||"").slice(0,110))}</div><div class="mut" style="font-size:11.5px">${esc(it.local||"")}${s.pontos>0&&on?` · <span style="color:var(--ok)">+${s.pontos} na nota</span>`:""}</div></td>
+      <td>${it.ram_mb?it.ram_mb+" MB":"—"}</td><td>${it.boot_s?"+"+it.boot_s+" s":"—"}</td><td>${({dispensavel:'<span class="badge b-bad">desligar</span>',opcional:'<span class="badge b-warn">opcional</span>',manter:'<span class="badge b-ok">manter</span>',revisar:'<span class="badge b-mut">revisar</span>'})[it.nivel||"revisar"]||""}</td>
+      <td>${s.aplicavel&&atual?`<label class="tg" aria-label="${on?"Desligar":"Ligar"} ${esc(it.nome||"")} ao iniciar"><input type="checkbox" class="tgini" data-id="${esc(s.id)}" ${on?"checked":""}><s></s></label>`:`<span class="mut" style="font-size:12px" title="${esc(s.detalhe)}">${on?"ligado":"desligado"}</span>`}</td></tr>`}).join("")}</table>`;
+  }
+  OCAT.filter(c=>c!=="Inicialização").forEach(c=>{const it=outras.filter(s=>s.categoria===c);if(!it.length)return;
+    h+=`<h3 style="margin:16px 0 4px">${esc(c)}</h3>`+it.map(s=>s.aplicavel?`<label class="tip" style="margin:0;color:var(--tx);font-size:inherit"><input type="checkbox" class="ck" data-id="${esc(s.id)}" ${s.marcado&&atual?"checked":""} ${atual?"":"disabled"}><div class="tx"><b>${esc(s.titulo)} ${s.recomendado?'<span class="badge b-gold">recomendado</span>':""} ${onusBtn(s.onus)} ${voltaTag(s)}</b><span>${esc(s.detalhe)}</span>${ganhoTag(s.ganho)}${s.por_que?`<span class="mut" style="font-size:12px">Por quê: ${esc(s.por_que)}</span>`:""}</div></label>`
+      :`<div class="tip"><span style="font-size:18px">${s.botao?"➜":"ℹ️"}</span><div class="tx"><b>${esc(s.titulo)} ${onusBtn(s.onus)}</b><span>${esc(s.detalhe)}</span>${ganhoTag(s.ganho)}${s.botao?`<div style="margin-top:6px"><button class="sm" data-bnav="${esc(s.botao.nav||"")}" data-babr="${esc(s.botao.abrir||"")}">${esc(s.botao.texto)}</button></div>`:""}</div></div>`).join("")});
+  if(filtro==="rec"&&todas.some(s=>s.categoria!=="Inicialização"&&!s.recomendado&&s.aplicavel))h+=`<p class="mut" style="font-size:12.5px;margin-top:10px">Há mais opções em <b>Todas</b> (não recomendadas para esta máquina, ou com ônus).</p>`;
+  if(atual)h+=`<div class="row" style="margin-top:12px"><button class="pri" id="apply">Aplicar as marcadas</button><span class="mut" style="font-size:12px">Depois o programa mede de novo para mostrar o antes e depois.</span></div>`;
+  const ap=r.aplicadas||[];
+  if(ap.length)h+=`<h3 style="margin:18px 0 4px">Aplicadas (${ap.length})</h3>${ap.map(x=>`<div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding:6px 0"><span>${esc(x.titulo)} <span class="mut" style="font-size:12px">${esc(x.quando)}</span></span>${atual?`<button class="sm" data-und="${esc(x.id)}">Desfazer</button>`:""}</div>`).join("")}${atual&&ap.length>1?'<div class="row" style="margin-top:8px"><button class="sm" id="undo">Desfazer todas</button></div>':""}`;
+  return h+`</div>`;
+}
+function wireOtim(){
+  $$("[data-of]").forEach(b=>b.onclick=()=>{lsSet("dd_otim",b.dataset.of);view==="maq"?drawMaq(CTX.t&&CTX.t.mid):drawHome()});
+  $$(".onus").forEach(b=>b.onclick=ev=>{ev.preventDefault();ev.stopPropagation();toast("⚠ "+b.dataset.onus)});
+  $$("[data-bnav],[data-babr]").forEach(b=>b.onclick=()=>{if(b.dataset.bnav)nav(b.dataset.bnav);else if(b.dataset.babr)safe(async()=>{await api("/api/ficha/abrir_ajustes",{qual:b.dataset.babr});toast("Abrindo os Ajustes…","ok")})});
+  $$(".tgini").forEach(c=>c.onchange=()=>safe(async()=>{c.disabled=true;
+    const x=await api("/api/ficha/aplicar",{ids:[c.dataset.id],confirmo:true,medir:false});const r0=(x.aplicadas||[])[0]||{};
+    toast((r0.ok?"":"Não deu: ")+(r0.msg||""),r0.ok?"ok":"");drawHome()}));
+  $$("[data-und]").forEach(b=>b.onclick=()=>safe(async()=>{const x=await api("/api/ficha/desfazer",{ids:[b.dataset.und]});toast(x.desfeitos?"Desfeito.":"Não consegui desfazer agora; tente de novo.",x.desfeitos?"ok":"");drawHome()}));
+  const vo=$("#verotim");if(vo)vo.onclick=()=>{const o=$("#otim");if(o)o.scrollIntoView({behavior:"smooth"})};
+}
 function renderFicha(r,atual){
   setWide(true);
   const v=r.visao,u=v.ultima,a=v.analise,n=a.nota,mid=v.mid,meta=v.meta||{};
@@ -540,6 +597,7 @@ function renderFicha(r,atual){
    <div style="margin:8px 0 2px"><span class="badge" style="color:${COR(n.geral)};border-color:${COR(n.geral)}">${esc(n.classe)}</span>${own}${so.live?'<span class="badge b-warn">Modo Live</span>':""}${n.cobertura<100?`<span class="badge b-mut" title="Não medido: ${esc(falt.join(", "))}">nota sobre ${n.cobertura}% dos critérios</span>`:""}</div>
    <div class="mut" style="font-size:12.5px">Análise nº ${v.fichas.length} · ${esc(u.quando)}${var_?" · "+var_:""} · <button class="mid" id="mid2" title="Copiar código">${esc(mid)}</button></div>
    ${n.cobertura<100?`<div class="mut" style="font-size:12px;margin-top:2px">Não medido nesta máquina: ${esc(falt.join(", "))}.</div>`:""}
+   ${a.otim_resumo&&a.otim_resumo.n?`<div style="margin-top:10px"><b>${a.otim_resumo.n} sugest${a.otim_resumo.n>1?"ões":"ão"}</b> para melhorar${a.otim_resumo.pontos?` · até <b style="color:var(--ok)">+${a.otim_resumo.pontos} pontos</b> na nota`:""} <button class="sm" id="verotim">Ver otimizações</button></div>`:""}
    <div class="row" style="margin-top:12px">${atual?`<button id="again">${ic("refresh")}<span style="margin-left:6px">Analisar de novo</span></button>`:""}${v.fichas.length>1?'<button id="cmp">Comparar análises</button>':""}<button id="hbtn" class="${open?"pri":""}">Histórico ${open?"◂":"▸"}</button></div></div></div>
    ${v.depois?`<div class="ba"><div class="bx"><span class="mut">ANTES</span><b style="color:${COR(v.antes.nota)}">${v.antes.nota}</b>${esc(v.antes.classe)}</div><div class="ar">➜</div><div class="bx"><span class="mut">DEPOIS</span><b style="color:${COR(v.depois.nota)}">${v.depois.nota}</b>${esc(v.depois.classe)}</div>
     <div><b style="font-size:20px;color:${v.depois.nota>=v.antes.nota?"var(--ok)":"var(--err)"}">${v.depois.nota>=v.antes.nota?"+":""}${v.depois.nota-v.antes.nota} pontos</b>${nivel(v.depois.nota)>nivel(v.antes.nota)?`<div style="color:var(--acc);font-weight:700">Subiu de troféu: ${esc(TRN[nivel(v.depois.nota)])}!</div>`:""}<div class="mut" style="font-size:12px">Boot e inicialização só melhoram de vez após reiniciar.</div></div></div>`:""}</div>`;
@@ -563,12 +621,12 @@ function renderFicha(r,atual){
    <tr><th>Memória</th><td>${(ram.total_gb||0).toFixed(1)} GB · ${ram.slots_total?`${us} de ${ram.slots_total} slots`:"slots não lidos"}${slots.length?`<table style="margin-top:6px"><tr><th>Slot</th><th>Pente</th><th>Tipo</th><th>Velocidade</th></tr>${slots.map(x=>`<tr><td>${esc(x.local)}</td><td>${x.gb?x.gb+" GB":'<span class="mut">vazio</span>'}</td><td>${esc(x.tipo||"")}</td><td>${x.mhz?x.mhz+" MHz":""}</td></tr>`).join("")}</table>`:""}</td></tr>
    <tr><th>Discos</th><td>${(u.discos||[]).map(d=>`${esc(d.nome)} · <b>${esc(d.tipo)}</b> · ${d.tam_gb} GB · saúde: ${esc(d.saude)}`).join("<br>")||"—"}${(u.volumes||[]).length?`<div class="mut" style="margin-top:4px">${u.volumes.map(x=>`${esc(x.id)}: ${x.livre_gb} GB livres de ${x.tam_gb} GB`).join(" · ")}</div>`:""}</td></tr>
    <tr><th>Firmware</th><td>${so.uefi?"UEFI":"BIOS Legacy"} · Secure Boot: ${so.secure_boot==null?"?":so.secure_boot?"ligado":"desligado"} · TPM: ${esc(so.tpm||"não detectado")} ${mq.bios?" · BIOS "+esc(mq.bios):""}</td></tr>
-   <tr><th>Sistema</th><td>${esc(so.nome||"")} · ${esc(so.versao||"")} ${esc(so.arch||"")}${u.medidas&&u.medidas.prog_instalados?` · ${u.medidas.prog_instalados} programas instalados`:""}</td></tr></table></details></div>`;
-  // pesados e início
+   <tr><th>Sistema</th><td>${esc(so.nome||"")} · ${esc(so.versao||"")} ${esc(so.arch||"")}${u.medidas&&u.medidas.prog_instalados?` · ${u.medidas.prog_instalados} programas instalados`:""}</td></tr></table>
+   ${atual?`<div class="row" style="margin-top:10px"><button class="sm" id="exp">Exportar dados para suporte</button><span class="mut" style="font-size:12px">Grava a coleta desta análise num arquivo na Área de Trabalho, para reproduzir e investigar em outro computador.</span></div>`:""}</details></div>`;
+  // pesados agora
   const ph=u.pesados||[],mx=Math.max(1,...ph.map(x=>x.ram_mb));
-  h+=`<div class="card"><h2>Quem pesa na máquina</h2><p class="h"><b>${a.pesados_n}</b> programa(s) pesado(s) (${esc(a.pesados_limite)}) agora. ${a.inicio_n?`<b>${a.inicio_n}</b> iniciam junto com o sistema, <b>${a.inicio_dispensavel}</b> dispensáveis.`:""}</p>
-   <table><tr><th>Programa</th><th style="width:90px">RAM</th><th style="width:40%"></th></tr>${ph.slice(0,10).map(x=>`<tr><td>${esc(x.nome)}${x.instancias>1?` <span class="mut">×${x.instancias}</span>`:""}</td><td>${x.ram_mb} MB</td><td><div class="mini"><i style="width:${x.ram_mb/mx*100}%;background:var(--acc)"></i></div></td></tr>`).join("")}</table>
-   ${(u.inicializacao||[]).length?`<h3 style="margin:16px 0 4px">Programas que iniciam com o sistema</h3><table><tr><th>Nome</th><th>Classificação</th></tr>${u.inicializacao.map(e=>`<tr><td>${esc(e.nome)}<div class="mono mut">${esc((e.comando||"").slice(0,120))}</div></td><td>${({dispensavel:'<span class="badge b-bad">dispensável</span>',opcional:'<span class="badge b-warn">opcional</span>',manter:'<span class="badge b-ok">manter</span>',revisar:'<span class="badge b-mut">revisar</span>'})[e.nivel||"revisar"]}</td></tr>`).join("")}</table>`:""}</div>`;
+  h+=`<div class="card"><h2>Quem pesa na máquina agora</h2><p class="h"><b>${a.pesados_n}</b> programa(s) pesado(s) (${esc(a.pesados_limite)}). ${a.inicio_n?`<b>${a.inicio_n}</b> iniciam junto com o sistema: veja em Otimizações › Inicialização.`:""}</p>
+   <table><tr><th>Programa</th><th style="width:90px">RAM</th><th style="width:40%"></th></tr>${ph.slice(0,10).map(x=>`<tr><td>${esc(x.nome)}${x.instancias>1?` <span class="mut">×${x.instancias}</span>`:""}</td><td>${x.ram_mb} MB</td><td><div class="mini"><i style="width:${x.ram_mb/mx*100}%;background:var(--acc)"></i></div></td></tr>`).join("")}</table></div>`;
   // SO ideal
   h+=`<div class="card"><h2>Sistema ideal para esta máquina</h2><p class="h">Nota estimada para o sistema recém-instalado, com o hardware atual. É uma projeção, não uma garantia.</p><div class="ossel">${a.sistemas.map(s=>`<div class="os ${s.compativel?"":"bad"} ${s.melhor_nota?"best":""}"><div class="sc" style="color:${COR(s.nota)};border-color:${COR(s.nota)}">${s.nota}</div><div><h4>${esc(s.nome)}</h4>
     ${s.melhor_nota?'<span class="badge b-gold">MELHOR NOTA</span>':""}${s.melhor_windows?'<span class="badge b-ok">MELHOR MANTENDO PROGRAMAS WINDOWS</span>':""}${s.compativel?"":'<span class="badge b-bad">NÃO COMPATÍVEL</span>'}
@@ -576,17 +634,17 @@ function renderFicha(r,atual){
   if(a.cenarios.length)h+=`<div class="card"><h2>E se…?</h2><p class="h">Quanto a nota sobe com cada melhoria (estimativa).</p>
    <div class="cen"><div class="nm">Hoje</div><div class="bar"><i style="width:${n.geral}%;background:${COR(n.geral)}"></i></div><b>${n.geral}</b></div>
    ${a.cenarios.map(c=>`<div class="cen"><div class="nm">${esc(c.nome)}</div><div class="bar"><i style="width:${c.nota}%;background:${COR(c.nota)}"></i></div><b style="color:${COR(c.nota)}">${c.nota} (+${c.delta})</b></div>`).join("")}</div>`;
-  const ap=a.dicas.filter(d=>d.aplicavel),man=a.dicas.filter(d=>!d.aplicavel);
-  h+=`<div class="card"><h2>Melhorias</h2>`;
-  if(ap.length){h+=`<p class="h">Estas o BKP Pro faz por você. Tudo é reversível (exceto limpeza de temporários). Desmarque o que não quiser.</p>${ap.map(d=>`<label class="tip" style="margin:0;color:var(--tx);font-size:inherit"><input type="checkbox" class="ck" data-id="${esc(d.id)}" ${d.marcado&&atual?"checked":""} ${atual?"":"disabled"}><div class="tx"><b>${esc(d.titulo)} <span class="badge ${d.ganho==="alto"?"b-bad":d.ganho==="médio"?"b-warn":"b-mut"}">ganho ${esc(d.ganho)}</span></b><span>${esc(d.detalhe)}</span></div></label>`).join("")}
-    ${atual?`<div class="row" style="margin-top:12px"><button class="pri" id="apply">Gostei, aplicar as marcadas</button>${r.pode_desfazer?`<button id="undo">Desfazer o que foi aplicado (${r.pode_desfazer})</button>`:""}</div>`:""}`}
-  else h+=`<p class="h">Nenhuma melhoria automática disponível${so.live?" no modo Live (rode com o Windows ligado)":""}.</p>`;
-  if(man.length)h+=`<h3 style="margin:16px 0 4px">Recomendações para o técnico (manuais)</h3>${man.map(d=>`<div class="tip"><span style="font-size:18px">${d.tipo==="alerta"?"⚠️":"🔧"}</span><div class="tx"><b>${esc(d.titulo)} <span class="badge ${d.ganho==="crítico"||d.ganho==="alto"?"b-bad":d.ganho==="médio"?"b-warn":"b-mut"}">${esc(d.ganho)}</span></b><span>${esc(d.detalhe)}</span></div></div>`).join("")}`;
+  h+=otimHtml(a,r,atual);
+  const man=a.dicas.filter(d=>!d.aplicavel);
+  h+=`<div class="card">`;
+  if(man.length)h+=`<h3 style="margin:0 0 4px">Recomendações para o técnico (hardware e alertas)</h3>${man.map(d=>`<div class="tip"><span style="font-size:18px">${d.tipo==="alerta"?"⚠️":"🔧"}</span><div class="tx"><b>${esc(d.titulo)} <span class="badge ${d.ganho==="crítico"||d.ganho==="alto"?"b-bad":d.ganho==="médio"?"b-warn":"b-mut"}">${esc(d.ganho)}</span></b><span>${esc(d.detalhe)}</span></div></div>`).join("")}`;
+  else h+=`<p class="mut" style="margin:0">Nenhuma recomendação de hardware.</p>`;
   h+=`</div><p class="mut" style="font-size:12px;text-align:center">Notas são indicadores comparativos medidos neste momento; variam com o que está aberto e com o estado do sistema. Dados guardados no pendrive (pasta maquinas/${esc(mid)}).</p>
    <div class="card"><details><summary style="cursor:pointer;font-weight:700">Dados desta máquina no pendrive</summary><p class="h" style="margin-top:8px">Remove fichas, históricos e documentos desta máquina do pendrive (útil ao final do serviço de um cliente). O registro de consentimento é mantido por segurança.</p><button class="dng sm" id="wipe">Remover esta máquina do pendrive…</button></details></div></div>`;
   h+=`<aside class="dr ${open?"open":""}" id="dr" aria-label="Histórico da máquina">${drawerHtml(v)}</aside></div>`;
   $("#main").innerHTML=h;
   wireFicha(r,atual,v,mid);
+  wireOtim();
 }
 function wireFicha(r,atual,v,mid){
   const setDr=o=>{lsSet("dd_drawer",o?"1":"0");const dr=$("#dr");dr.classList.toggle("open",o);const b=$("#hbtn");b.classList.toggle("pri",o);b.textContent="Histórico "+(o?"◂":"▸")};
@@ -600,12 +658,14 @@ function wireFicha(r,atual,v,mid){
   const cs=$("#cmpsel");if(cs)cs.onclick=()=>{const c=$$(".fck:checked").map(x=>x.dataset.a).sort();openCompare(mid,c[0],c[1])};
   $("#note").onclick=async()=>{const d=document.createElement("div");d.className="modal";d.innerHTML=`<div class="box" style="max-width:480px"><h2>Anotar no histórico</h2><label for="ntx">O que anotar? (ex.: Entregue ao cliente, formatada com Zorin Lite)</label><input type="text" id="ntx"><div class="row" style="margin-top:16px;justify-content:flex-end"><button id="nc">Cancelar</button><button class="pri" id="nk">Anotar</button></div></div>`;$("#layer").appendChild(d);$("#ntx",d).focus();$("#nc",d).onclick=()=>d.remove();$("#nk",d).onclick=()=>safe(async()=>{const t=$("#ntx",d).value.trim();if(!t)return;await api("/api/hist",{tipo:"nota",resumo:t});d.remove();view==="maq"?drawMaq(mid):drawHome()})};
   const cp=()=>{try{navigator.clipboard.writeText(mid);toast("Código copiado: "+mid,"ok")}catch(e){}};$("#mid2").onclick=cp;
+  const ex=$("#exp");if(ex)ex.onclick=()=>safe(async()=>{const x=await api("/api/ficha/exportar",{});toast("Coleta gravada: "+x.arquivo,"ok")});
   $("#ren").onclick=()=>{const h2=$("#tt");const i=document.createElement("input");i.type="text";i.value=v.meta&&v.meta.nome||v.nome;i.setAttribute("aria-label","Nome da máquina");h2.replaceWith(i);$("#ren").classList.add("hide");i.focus();i.select();
     const save=()=>safe(async()=>{await api("/api/maquina/nome",{mid,nome:i.value});await loadCtx();view==="maq"?drawMaq(mid):drawHome()});
     i.onkeydown=e=>{if(e.key==="Enter")save();if(e.key==="Escape")view==="maq"?drawMaq(mid):drawHome()};i.onblur=save};
   const apb=$("#apply");if(apb)apb.onclick=()=>safe(async()=>{
     const ids=$$(".ck:checked").map(c=>c.dataset.id);if(!ids.length){toast("Marque pelo menos uma melhoria.");return}
-    if(!await dialog({titulo:"Aplicar "+ids.length+" melhoria(s)?",html:"<p>São ajustes reversíveis de inicialização e efeitos visuais (e limpeza de temporários, se marcada). Depois o BKP Pro mede de novo para mostrar o antes e depois.</p>",ok:"Aplicar"}))return;
+    const S={};(v.analise.otimizacoes||[]).forEach(s=>S[s.id]=s);const sv=ids.filter(i=>S[i]&&S[i].reversivel===false);
+    if(!await dialog({titulo:"Aplicar "+ids.length+" otimização(ões)?",html:`<ul style="margin:0;padding-left:18px;font-size:13.5px">${ids.map(i=>`<li>${esc(S[i]?S[i].titulo:i)}${S[i]&&S[i].onus?` <span class="mut">⚠ ${esc(S[i].onus)}</span>`:""}</li>`).join("")}</ul>${sv.length?`<p style="margin-top:8px"><b>${sv.length}</b> não tem volta (marcado como “sem volta”).</p>`:""}<p class="mut" style="margin-top:8px">Depois o programa mede de novo para mostrar o antes e depois.</p>`,ok:"Aplicar"}))return;
     await api("/api/ficha/aplicar",{ids,confirmo:true});nav("home")});
   const ud=$("#undo");if(ud)ud.onclick=()=>safe(async()=>{if(!await dialog({titulo:"Desfazer as melhorias?",html:"<p>Os ajustes aplicados voltam como estavam.</p>",ok:"Desfazer"}))return;const x=await api("/api/ficha/desfazer",{});toast(x.desfeitos+" ajuste(s) desfeito(s). Analise de novo para atualizar a nota.","ok");drawHome()});
   $("#wipe").onclick=()=>safe(async()=>{const r2=await dialog({titulo:"Remover esta máquina do pendrive?",html:`<p>Fichas, históricos e documentos de <b>${esc(v.nome)}</b> serão apagados do pendrive. Isso não tem volta.</p>`,texto:"Digite APAGAR para confirmar",exige:"APAGAR",ok:"Remover",perigo:true});if(!r2)return;
@@ -646,7 +706,7 @@ async function drawMaq(mid){
   if(mid){const r=await api("/api/maquina?mid="+encodeURIComponent(mid));
     if(r.visao){renderFicha(r,r.atual);$(".fm").insertAdjacentHTML("afterbegin",'<div class="row" style="margin-bottom:10px"><button id="vm">← Todas as máquinas</button></div>');$("#vm").onclick=()=>drawMaq();return}}
   const r=await api("/api/maquinas");
-  $("#main").innerHTML=`<div class="card"><h2>Máquinas no pendrive</h2><p class="h">Tudo que já passou por aqui, guardado em <span class="mono">${esc(r.pendrive)}/maquinas</span>. Cada máquina tem um código próprio, que não muda ao trocar o nome do computador.</p>
+  $("#main").innerHTML=`<div class="card"><h2>${info.servidor?"Máquinas no servidor":"Máquinas no pendrive"}</h2><p class="h">Tudo que já passou por aqui, guardado ${info.servidor?`no servidor <span class="mono">${esc(info.servidor.url)}</span>`:`em <span class="mono">${esc(r.pendrive)}/maquinas</span>`}. Cada máquina tem um código próprio, que não muda ao trocar o nome do computador.</p>
    ${r.maquinas.map(m=>`<div class="mk" tabindex="0" role="button" data-mid="${esc(m.mid)}"><div>${trophy(m.nivel,64)}</div><div class="grow"><b style="font-size:16px">${esc(m.nome)}</b> ${m.atual?'<span class="badge b-gold">ESTA MÁQUINA</span>':""}${m.dono==="terceiros"?`<span class="badge b-warn">Terceiros${m.terceiro_nome?": "+esc(m.terceiro_nome):""}</span>`:m.dono==="particular"?'<span class="badge b-ok">Particular</span>':""}
     <div class="mut" style="font-size:13px">${esc(m.modelo)} · ${m.analises} análise(s) · última em ${esc(m.quando)} · ${m.eventos} evento(s)</div><div class="mid" style="cursor:default">${esc(m.mid)}</div></div>
     <div style="text-align:center"><b style="font-size:26px;color:${COR(m.nota)}">${m.nota}</b><div class="mut" style="font-size:11px">${esc(m.classe)}</div></div></div>`).join("")||'<p class="mut">Nenhuma máquina ainda. Rode a análise na Home.</p>'}</div>`;
@@ -694,15 +754,15 @@ async function encerrarOS(os){
 }
 
 /* ================= Dados (gerenciamento de espaço) ================= */
-let DT=null;const DS={tab:"verde",sel:new Set(),init:false,q:"",modo:"limpar"};
-const ZN={verde:["Limpeza imediata","Zero risco: o sistema ou o app recria sozinho."],ambar:["Arquivos parados","Valor para você: backup antes de remover, e a decisão é sua."],vermelha:["Bloqueado","Sistema e credenciais: nunca aparecem como opção."]};
+let DT=null;const DS={tab:"verde",sel:new Set(),init:false,q:"",modo:"limpar",usr:"",usrAtual:"",exp:null,expT:null,marc:{}};
+const ZN={verde:["Limpeza imediata","Zero risco: o sistema ou o app recria sozinho."],ambar:["Arquivos parados","Valor para você: backup antes de remover, e a decisão é sua."],vermelha:["Bloqueado","Sistema, bibliotecas de apps e credenciais: dá para ver o que tem dentro, mas nunca limpar por aqui."]};
 async function drawDados(){
-  setWide(false);clearInterval(DT);
+  setWide(false);clearInterval(DT);DS.exp=null;clearTimeout(DS.expT);
   const e=await api("/api/dados/estado");
   if(view!=="dados")return;
   if(e.acao&&e.acao.rodando)return dadosAcao();
   if(e.fase==="varrendo")return dadosVarrendo();
-  if(e.fase==="pronto"||e.fase==="cancelado")return dadosResultado(e);
+  if(e.fase==="pronto"||e.fase==="cancelado"||e.n_itens)return dadosResultado(e);  // n_itens: marcados ao explorar, mesmo sem varredura
   dadosIntro(e);
 }
 async function dadosIntro(e){
@@ -715,9 +775,10 @@ async function dadosIntro(e){
    ${p.mac&&!p.acesso_total?`<div class="warnbox" style="margin-top:14px"><b>Acesso Total ao Disco desligado.</b> A varredura vai enxergar menos no Mac. <button class="sm" id="dperm" style="margin-left:6px">Liberar agora</button></div>`:""}
    <div class="row" style="margin-top:16px"><div><label for="did">Considerar parado após</label><select id="did"><option value="60">60 dias</option><option value="90" selected>90 dias</option><option value="180">180 dias</option></select></div>
     <div><label for="dmb">Arquivos grandes a partir de</label><select id="dmb"><option value="50">50 MB</option><option value="100" selected>100 MB</option><option value="500">500 MB</option></select></div></div>
-   <div class="row" style="margin-top:16px"><button class="pri" id="dgo" style="font-size:15px;padding:11px 24px">Varrer esta máquina</button></div></div>`;
+   <div class="row" style="margin-top:16px"><button class="pri" id="dgo" style="font-size:15px;padding:11px 24px">Varrer esta máquina</button><button id="dexp0">Explorar pastas</button></div></div>`;
   const dp=$("#dperm");if(dp)dp.onclick=()=>openPerm(false);
   $("#dgo").onclick=()=>safe(async()=>{DS.init=false;DS.sel=new Set();await api("/api/dados/varrer",{idle_dias:+$("#did").value,min_mb:+$("#dmb").value});drawDados()});
+  $("#dexp0").onclick=()=>safe(()=>dadosExplorar(0));
 }
 function dadosVarrendo(){
   $("#main").innerHTML=`<div class="card"><h2>Varrendo a máquina…</h2><p class="h">Só leitura. Pode levar alguns minutos em discos grandes.</p><div class="bar"><i id="dpb"></i></div>
@@ -735,24 +796,30 @@ async function dadosResultado(e){
   const nz=z=>R.cats.filter(c=>c.zona===z),sz=z=>nz(z).reduce((a,c)=>a+c.bytes,0),nn=z=>nz(z).reduce((a,c)=>a+c.n,0);
   const T=ck.total||1,pc=x=>Math.max(0,x/T*100);
   const seg=[["Mídias",ck.midias,"#5aa9ff"],["Documentos",ck.documentos,"#a78bfa"],["Dados de apps e outros",ck.apps||0,"#6b7280"],["Sistema e fora da sua pasta",ck.sistema,"#3b4252"],["Limpável",ck.limpavel,"#3fb27f"],["Livre",ck.livre,"var(--line)"]];
-  if(!DS.init){DS.init=true;DS.tab=nn("verde")?"verde":"ambar";DS.sel=new Set();const v=await api("/api/dados/resultado?zona=verde&limit=1000");v.rows.forEach(r=>{if(r.pre)DS.sel.add(r.id)})}
-  $("#main").innerHTML=`<div class="card"><div class="row"><h2 class="grow" style="margin:0">Cockpit do disco</h2><button class="sm" id="dre">${ic("refresh")}<span style="margin-left:6px">Varrer de novo</span></button></div>
+  if(!DS.init){DS.init=true;DS.tab=nn("verde")?"verde":"ambar";const v=await api("/api/dados/resultado?zona=verde&limit=1000");v.rows.forEach(r=>{if(r.pre)DS.sel.add(r.id)})}
+  DS.usrAtual=e.usuario_atual||"";
+  const pu=Object.entries(ck.por_usuario||{}).sort((a,b)=>b[1]-a[1]);
+  $("#main").innerHTML=(!e.cockpit?`<div class="card"><div class="row"><h2 class="grow" style="margin:0">Itens escolhidos ao explorar</h2><button class="sm" id="dexp">Explorar pastas</button><button class="sm" id="dre">Varrer esta máquina</button></div><p class="h" style="margin-top:6px">Ainda sem varredura: aparecem só os arquivos e pastas que você marcou. A varredura mostra o resto (caches, parados, bloqueados).</p></div>`:`<div class="card"><div class="row"><h2 class="grow" style="margin:0">Cockpit do disco</h2><button class="sm" id="dexp">Explorar pastas</button><button class="sm" id="dre">${ic("refresh")}<span style="margin-left:6px">Varrer de novo</span></button></div>
    <p class="h" style="margin-top:2px">${fmt(ck.usado)} usados de ${fmt(ck.total)} · <b>${fmt(ck.livre)} livres</b> (${Math.round(pc(ck.livre))}%)</p>
    <div class="cock" role="img" aria-label="Uso do disco">${seg.map(s=>`<i style="width:${pc(s[1])}%;background:${s[2]}" title="${s[0]}: ${fmt(s[1])}"></i>`).join("")}</div>
    <div class="lgd">${seg.map(s=>`<span><i style="background:${s[2]}"></i>${s[0]} <b>${fmt(s[1])}</b></span>`).join("")}</div>
+   ${pu.length>1?`<p class="mut" style="font-size:12.5px;margin:8px 0 0">Por usuário: ${pu.map(x=>`${esc(x[0])} <b>${fmt(x[1])}</b>`).join(" · ")}</p>`:""}
+   ${(e.sem_acesso||[]).length?`<div class="infobox">Sem permissão para ler a pasta de: <b>${e.sem_acesso.map(esc).join(", ")}</b>. Rode como administrador (no Mac e no Linux, com sudo) para incluir esses usuários.</div>`:""}
    <p class="mut" style="font-size:12px;margin:10px 0 0">Medido pelo espaço <b>real</b> que cada arquivo ocupa no disco, só na sua pasta pessoal. O restante aparece como “Sistema e fora da sua pasta”. O macOS ainda soma snapshots e itens removíveis, então o Ajustes pode mostrar um pouco mais ou menos.</p>
-   ${ck.nuvem_n?`<div class="infobox">${nf(ck.nuvem_n)} arquivo(s) estão só na nuvem (iCloud/OneDrive) e <b>não ocupam espaço aqui</b>: foram ignorados, e o programa nunca baixa nem mexe neles.</div>`:""}${ck.aviso?`<div class="warnbox">${esc(ck.aviso)}</div>`:""}${e.fase==="cancelado"?'<div class="warnbox">A varredura foi cancelada: o resultado é parcial.</div>':""}${e.bloqueados?`<div class="infobox">${nf(e.bloqueados)} pasta(s) não puderam ser lidas por falta de permissão.</div>`:""}</div>
+   ${ck.nuvem_n?`<div class="infobox">${nf(ck.nuvem_n)} arquivo(s) estão só na nuvem (iCloud/OneDrive) e <b>não ocupam espaço aqui</b>: foram ignorados, e o programa nunca baixa nem mexe neles.</div>`:""}${ck.aviso?`<div class="warnbox">${esc(ck.aviso)}</div>`:""}${e.fase==="cancelado"?'<div class="warnbox">A varredura foi cancelada: o resultado é parcial.</div>':""}${e.bloqueados?`<div class="infobox">${nf(e.bloqueados)} pasta(s) não puderam ser lidas por falta de permissão.</div>`:""}</div>`)+`
   <div class="zn" style="margin-bottom:16px">
    <div class="zc z-v"><b style="font-size:20px">${fmt(sz("verde"))}</b><b>Limpeza imediata</b><span>${nf(nn("verde"))} item(ns) que se recriam. Zero risco.</span><button class="sm pri" style="margin-top:8px" data-t="verde">Revisar e limpar</button></div>
    <div class="zc z-a"><b style="font-size:20px">${fmt(sz("ambar"))}</b><b>Arquivos parados</b><span>${nf(nn("ambar"))} item(ns) sem uso. Backup antes, se quiser.</span><button class="sm" style="margin-top:8px" data-t="ambar">Revisar</button></div>
    <div class="zc z-r"><b style="font-size:20px">${fmt(sz("vermelha"))}</b><b>Bloqueado</b><span>${nf(nn("vermelha"))} item(ns) protegidos. Só informativo.</span><button class="sm gh" style="margin-top:8px" data-t="vermelha">Ver</button></div></div>
   <div class="card"><div class="tabs" role="tablist">${["verde","ambar","vermelha"].map(z=>`<button class="tb ${DS.tab===z?"on":""}" role="tab" data-t="${z}">${ZN[z][0]} (${nn(z)})</button>`).join("")}</div>
-   <p class="h" style="margin-top:0">${ZN[DS.tab][1]}</p><input type="text" id="dq" placeholder="Filtrar pelo caminho…" value="${esc(DS.q)}" style="margin-bottom:8px"><div id="dlist"></div></div>
+   <p class="h" style="margin-top:0">${ZN[DS.tab][1]}</p><div class="row" style="gap:8px;margin-bottom:8px"><input type="text" id="dq" placeholder="Filtrar pelo caminho…" value="${esc(DS.q)}" class="grow" style="margin:0">${(R.usuarios||[]).length>1?`<select id="dusr" aria-label="Filtrar por usuário" style="width:auto;margin:0"><option value="">Todos os usuários</option>${R.usuarios.map(u=>`<option value="${esc(u)}" ${DS.usr===u?"selected":""}>${esc(u)}</option>`).join("")}</select>`:""}</div><div id="dlist"></div></div>
   <div class="actbar ${DS.tab==="vermelha"?"hide":""}" id="dbar"><div class="grow"><b id="dsel">0 selecionados</b><div class="mut" style="font-size:12px" id="dnote"></div></div>
    <label style="display:flex;gap:6px;align-items:center;margin:0;color:var(--tx);font-size:13px"><input type="checkbox" id="ddef"> Apagar de vez <span class="mut">(sem Lixeira)</span></label>
    <button class="pri" id="dclean">Limpar selecionados</button><button id="doff">Mover para disco externo…</button></div>`;
   $$("[data-t]").forEach(b=>b.onclick=()=>{DS.tab=b.dataset.t;dadosResultado(e)});
   $("#dre").onclick=()=>safe(async()=>{await api("/api/dados/reset",{});DS.init=false;drawDados()});
+  $("#dexp").onclick=()=>safe(()=>dadosExplorar(0));
+  const du=$("#dusr");if(du)du.onchange=()=>{DS.usr=du.value;dadosLista()};
   let tq;$("#dq").oninput=()=>{clearTimeout(tq);tq=setTimeout(()=>{DS.q=$("#dq").value;dadosLista()},250)};
   $("#dclean").onclick=()=>dadosConfirmar("limpar");$("#doff").onclick=()=>dadosConfirmar("offload");
   $("#ddef").onchange=dadosSel;
@@ -760,15 +827,67 @@ async function dadosResultado(e){
 }
 let DROWS=[];
 async function dadosLista(){
-  const r=await api("/api/dados/resultado?zona="+DS.tab+"&q="+encodeURIComponent(DS.q)+"&limit=800");DROWS=r.rows;
+  const r=await api("/api/dados/resultado?zona="+DS.tab+"&q="+encodeURIComponent(DS.q)+"&usuario="+encodeURIComponent(DS.usr)+"&limit=800");DROWS=r.rows;
+  const varios=(r.usuarios||[]).length>1;
   const g={};r.rows.forEach(x=>{(g[x.cat]=g[x.cat]||[]).push(x)});
   const bloq=DS.tab==="vermelha";
   $("#dlist").innerHTML=Object.keys(g).map(c=>{const it=g[c],tot=it.reduce((a,x)=>a+x.bytes,0);const all=it.every(x=>DS.sel.has(x.id));
     return `<div class="cat" style="margin-top:12px"><div class="n"><b>${esc(c)}</b><span>${it.length} item(ns) · ${fmt(tot)}</span></div>${bloq?"":`<label class="tg" aria-label="Marcar todos de ${esc(c)}"><input type="checkbox" data-cat="${esc(c)}" ${all?"checked":""}><s></s></label>`}</div>`+
-     it.map(x=>`<div class="drow">${bloq?'<span class="badge b-bad" style="margin-top:2px">🔒</span>':`<input type="checkbox" class="dsk" data-id="${x.id}" ${DS.sel.has(x.id)?"checked":""} aria-label="Marcar ${esc(x.titulo)}" style="margin-top:4px">`}<div class="t"><b>${esc(x.titulo)}${x.orfao?' <span class="badge b-warn">provável sem uso · precisa da sua aprovação</span>':""}</b><span>${esc(x.motivo)}</span><span class="mono">${esc(x.path)}</span></div><div class="sz">${fmt(x.bytes)}${x.dias!=null&&DS.tab==="ambar"?`<div class="mut" style="font-size:11px;font-weight:400;text-align:right">${x.dias} d parado</div>`:""}</div></div>`).join("")}).join("")||'<p class="mut">Nada nesta faixa.</p>';
+     it.map(x=>`<div class="drow">${bloq?'<span class="badge b-bad" style="margin-top:2px">🔒</span>':`<input type="checkbox" class="dsk" data-id="${x.id}" ${DS.sel.has(x.id)?"checked":""} aria-label="Marcar ${esc(x.titulo)}" style="margin-top:4px">`}<div class="t"><b>${esc(x.titulo)}${x.orfao?' <span class="badge b-warn">provável sem uso · precisa da sua aprovação</span>':""}${varios&&x.usuario?` <span class="badge b-mut">${esc(x.usuario)}</span>`:""}</b><span>${esc(x.motivo)}</span><span class="mono">${esc(x.path)}</span>${acoesArq(x)}</div><div class="sz">${fmt(x.bytes)}${x.dias!=null&&DS.tab==="ambar"?`<div class="mut" style="font-size:11px;font-weight:400;text-align:right">${x.dias} d parado</div>`:""}</div></div>`).join("")}).join("")||'<p class="mut">Nada nesta faixa.</p>';
   $$(".dsk").forEach(c=>c.onchange=()=>{const id=+c.dataset.id;c.checked?DS.sel.add(id):DS.sel.delete(id);dadosSel();dadosLista.keep=1});
+  ligarAcoesArq($("#dlist"));
   $$("[data-cat]").forEach(c=>c.onchange=()=>{(g[c.dataset.cat]||[]).forEach(x=>c.checked?DS.sel.add(x.id):DS.sel.delete(x.id));dadosLista()});
   dadosSel();
+}
+/* ver / abrir / mostrar na pasta / entrar: valem nas três zonas (a vermelha é só para ver) */
+function acoesArq(x){
+  return `<div class="row" style="gap:6px;margin-top:6px">${x.previa?`<button class="sm" data-ver="${x.no}" data-tp="${esc(x.previa)}" data-nm="${esc(x.titulo||x.nome)}">👁 Ver</button>`:""}${x.tipo==="pasta"?`<button class="sm" data-ent="${x.no}">Entrar</button>`:""}${x.pode_abrir&&x.tipo==="arquivo"?`<button class="sm" data-abr="${x.no}">Abrir</button>`:""}<button class="sm gh" data-pas="${x.no}">Mostrar na pasta</button></div>`;
+}
+function ligarAcoesArq(el){
+  $$("[data-ver]",el).forEach(b=>b.onclick=()=>verArquivo(+b.dataset.ver,b.dataset.tp,b.dataset.nm));
+  $$("[data-ent]",el).forEach(b=>b.onclick=()=>safe(()=>dadosExplorar(+b.dataset.ent)));
+  $$("[data-abr]",el).forEach(b=>b.onclick=()=>abrirNo(+b.dataset.abr,"abrir"));
+  $$("[data-pas]",el).forEach(b=>b.onclick=()=>abrirNo(+b.dataset.pas,"pasta"));
+}
+function abrirNo(no,modo){safe(async()=>{await api("/api/dados/abrir",{no,modo});toast(modo==="pasta"?"Abrindo a pasta…":"Abrindo no programa padrão…","ok")})}
+function verArquivo(no,tipo,nome){
+  const url="/api/dados/ver?no="+no+"&t="+encodeURIComponent(TOKEN);
+  if(tipo==="pdf"){window.open(url,"_blank","noopener");return}
+  const sty="max-width:100%;max-height:70vh;display:block;margin:auto";
+  const corpo=tipo==="imagem"?`<img src="${url}" alt="${esc(nome)}" style="${sty}">`:tipo==="video"?`<video src="${url}" controls autoplay style="${sty}"></video>`:tipo==="audio"?`<audio src="${url}" controls autoplay style="width:100%"></audio>`:'<pre class="mono" id="vtx" style="max-height:65vh;overflow:auto;white-space:pre-wrap;font-size:12.5px;margin:0">Carregando…</pre>';
+  const d=document.createElement("div");d.className="modal";
+  d.innerHTML=`<div class="box" style="max-width:900px;width:calc(100% - 32px)"><div class="row"><h2 class="grow" style="margin:0;font-size:16px;word-break:break-all">${esc(nome)}</h2><button class="sm" id="vx">Fechar ✕</button></div><div style="margin:12px 0">${corpo}</div><div class="row" style="justify-content:flex-end;gap:8px"><button class="sm" id="vab">Abrir no programa</button><button class="sm gh" id="vpa">Mostrar na pasta</button></div></div>`;
+  $("#layer").appendChild(d);
+  const tecla=ev=>{if(ev.key==="Escape")fechar()};
+  const fechar=()=>{const m=$("video,audio",d);if(m)m.pause();d.remove();document.removeEventListener("keydown",tecla)};
+  document.addEventListener("keydown",tecla);
+  $("#vx",d).onclick=fechar;d.onclick=ev=>{if(ev.target===d)fechar()};
+  $("#vab",d).onclick=()=>abrirNo(no,"abrir");$("#vpa",d).onclick=()=>abrirNo(no,"pasta");
+  if(tipo==="texto")fetch(url).then(r=>r.ok?r.text():Promise.reject()).then(t=>{$("#vtx",d).textContent=t+(t.length>=200*1024?"\n\n… (mostrando só o começo)":"")}).catch(()=>{$("#vtx",d).textContent="Não consegui ler este arquivo."});
+}
+/* explorar: pastas de cada usuário, até o arquivo; marcar o que quiser limpar ou mover */
+async function dadosExplorar(no,soLista){
+  DS.exp=no||0;clearTimeout(DS.expT);setWide(false);
+  const r=await api("/api/dados/explorar?no="+(no||""));
+  if(view!=="dados"||DS.exp!==(no||0))return;
+  const lista=r.filhos.map(x=>`<div class="drow">${x.pode_marcar?`<input type="checkbox" class="xmk" data-no="${x.no}" ${DS.marc[x.no]&&DS.sel.has(DS.marc[x.no])?"checked":""} aria-label="Marcar ${esc(x.nome)}" style="margin-top:4px">`:`<span class="badge ${x.raiz?"b-mut":"b-bad"}" style="margin-top:2px" title="${esc(x.motivo)}">${x.raiz?"👤":"🔒"}</span>`}<div class="t"><b>${x.tipo==="pasta"?"📁":"📄"} ${esc(x.nome)}</b>${x.motivo&&!x.raiz?`<span>${esc(x.motivo)}</span>`:""}${acoesArq(x)}</div><div class="sz">${x.bytes==null?'<span class="mut" style="font-weight:400">medindo…</span>':x.nuvem?'<span class="mut" style="font-weight:400">só na nuvem</span>':fmt(x.bytes)}${x.dias!=null?`<div class="mut" style="font-size:11px;font-weight:400;text-align:right">${x.dias} d sem uso</div>`:""}</div></div>`).join("")||'<p class="mut">Pasta vazia.</p>';
+  const ligar=()=>{
+    ligarAcoesArq($("#xlist"));
+    $$(".xmk").forEach(c=>c.onchange=()=>safe(async()=>{const k=+c.dataset.no;if(c.checked){const x=await api("/api/dados/marcar",{no:k});DS.marc[k]=x.id;DS.sel.add(x.id)}else if(DS.marc[k])DS.sel.delete(DS.marc[k]);$("#xn").textContent=DS.sel.size+" selecionado(s)"}));
+  };
+  if(r.medindo)DS.expT=setTimeout(()=>{if(view==="dados"&&DS.exp===(no||0))dadosExplorar(no,true)},1500);
+  if(soLista&&$("#xlist")){$("#xlist").innerHTML=lista;$("#xmed").classList.toggle("hide",!r.medindo);ligar();return}
+  const mig=r.migalhas.map((m,i)=>i===r.migalhas.length-1?`<b>${esc(m.nome)}</b>`:`<button class="sm gh" data-exp="${m.no}">${esc(m.nome)}</button>`).join(" › ");
+  $("#main").innerHTML=`<div class="card"><div class="row"><h2 class="grow" style="margin:0">Explorar</h2><button class="sm" id="xvolta">Voltar ao resultado</button></div>
+   <p class="h" style="margin-top:6px">${mig||"As pastas de cada usuário do computador. Entre até o arquivo, veja e marque o que quiser limpar ou mover."}${r.zona==="vermelha"?' <span class="badge b-bad">🔒 zona vermelha: só para ver</span>':""}</p>
+   ${(r.sem_acesso||[]).length?`<div class="infobox">Sem permissão para ler: <b>${r.sem_acesso.map(esc).join(", ")}</b>. Rode como administrador (no Mac e no Linux, com sudo).</div>`:""}
+   <p class="mut ${r.medindo?"":"hide"}" id="xmed" style="font-size:12px">Medindo o tamanho das pastas…</p>
+   <div id="xlist">${lista}</div>${r.total>r.filhos.length?`<p class="mut">Mostrando os ${r.filhos.length} maiores de ${r.total}.</p>`:""}</div>
+   <div class="actbar"><div class="grow"><b id="xn">${DS.sel.size} selecionado(s)</b><div class="mut" style="font-size:12px">O que você marcar aparece em “Arquivos parados”, para limpar ou mover para um disco externo.</div></div><button class="pri" id="xsel">Ir para a seleção</button></div>`;
+  $$("[data-exp]").forEach(b=>b.onclick=()=>safe(()=>dadosExplorar(+b.dataset.exp)));
+  $("#xvolta").onclick=()=>{DS.exp=null;drawDados()};
+  $("#xsel").onclick=()=>{DS.exp=null;DS.tab="ambar";drawDados()};
+  ligar();
 }
 function dadosSel(){
   const ids=DROWS.length?[...DS.sel]:[...DS.sel];const bytes=DROWS.filter(x=>DS.sel.has(x.id)).reduce((a,x)=>a+x.bytes,0);
@@ -786,7 +905,8 @@ async function dadosConfirmar(tipo){
   const itens=ids.map(i=>mapa[i]).filter(Boolean),bytes=itens.reduce((a,x)=>a+x.bytes,0),orf=itens.some(x=>x.orfao);
   const def=$("#ddef").checked;
   const lista=itens.slice().sort((a,b)=>b.bytes-a.bytes).slice(0,8).map(x=>`<li>${esc(x.titulo)} <span class="mut">· ${fmt(x.bytes)}</span></li>`).join("");
-  const base=`<p><b>${itens.length} item(ns)</b>, ${fmt(bytes)}.</p><ul style="margin:6px 0;padding-left:18px;font-size:13px">${lista}${itens.length>8?`<li class="mut">e mais ${itens.length-8}…</li>`:""}</ul>`;
+  const outros=/windows/i.test(info.os||"")&&!def&&tipo==="limpar"&&itens.some(x=>x.usuario&&x.usuario!==DS.usrAtual);
+  const base=`${outros?'<div class="infobox" style="font-size:13px">Arquivos de outros usuários vão para a Lixeira de quem está rodando o programa (o administrador): restaure por lá, se precisar.</div>':""}<p><b>${itens.length} item(ns)</b>, ${fmt(bytes)}.</p><ul style="margin:6px 0;padding-left:18px;font-size:13px">${lista}${itens.length>8?`<li class="mut">e mais ${itens.length-8}…</li>`:""}</ul>`;
   const chk=orf?"Entendo que alguns itens são dados de programas que não encontrei instalados. Provavelmente não são mais usados, mas quero remover mesmo assim.":null;
   if(tipo==="limpar"){
     const r=await dialog({titulo:def?"Apagar de vez?":"Enviar para a Lixeira?",html:base+(def?'<div class="errbox">Sem Lixeira: não dá para desfazer.</div>':'<div class="infobox">Os arquivos vão para a Lixeira. O espaço só volta quando você esvaziar a Lixeira. Dá para restaurar de lá.</div>'),
@@ -1026,7 +1146,7 @@ function tick5(){
 }
 const FIX={sumiu:"O arquivo foi apagado ou movido enquanto o backup rodava. Normalmente não precisa fazer nada; se precisar dele, restaure na origem e use “Refazer”.",
  em_uso:"Feche o programa que usa o arquivo (ou reinicie e rode de novo) e use “Refazer só os que falharam”.",
- permissao:"Abra o BKP Pro como administrador (no Linux, com sudo; no Mac, libere o Acesso Total ao Disco). Em disco do Windows, desligue o Windows de verdade (sem Inicialização rápida).",
+ permissao:"Abra o Destrava! como administrador (no Linux, com sudo; no Mac, libere o Acesso Total ao Disco). Em disco do Windows, desligue o Windows de verdade (sem Inicialização rápida).",
  espaco:"Libere espaço no destino ou escolha outro, depois “Refazer”.",caminho_longo:"O caminho é longo demais. Copie esse arquivo manualmente para uma pasta mais curta.",
  io:"Possível setor defeituoso no dispositivo. Tente de novo; se persistir, o arquivo pode estar corrompido na origem.",
  divergente:"A cópia não confere com o original. Use “Refazer só os que falharam”: ele apaga a cópia ruim e copia de novo.",somente_leitura:"O destino está somente leitura. Remonte com escrita ou escolha outro.",outro:"Veja a mensagem e tente refazer."};
@@ -1073,9 +1193,9 @@ async function draw6(){
   const th=lsGet("dd_tema","");if(th)document.documentElement.dataset.theme=th;
   $("#theme").onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==="light"?"dark":"light";lsSet("dd_tema",r.dataset.theme)};
   try{$("#mono").innerHTML='<span class="mA">'+DD.mono({variant:"ouro",size:44,bg:true})+'</span><span class="mB">'+DD.mono({variant:"claro",size:44,bg:false})+'</span>'}catch(e){}
-  try{info=await api("/api/info")}catch(e){document.body.innerHTML='<p style="padding:30px">Sessão inválida. Feche e abra o BKP Pro de novo.</p>';return}
+  try{info=await api("/api/info")}catch(e){document.body.innerHTML='<p style="padding:30px">Sessão inválida. Feche e abra o Destrava! de novo.</p>';return}
   FB=/darwin|mac/i.test(info.os||"")?1000:1024;
-  $("#hver").onclick=()=>safe(openUpdate);
+  $("#hver").onclick=()=>{if(info.servidor){toast("No modo servidor o programa já vem na versão do servidor.");return}safe(openUpdate)};
   await loadCtx();
   let s;try{s=await api("/api/status")}catch(e){s={phase:"idle"}}
   st=s;

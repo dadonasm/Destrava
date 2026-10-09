@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-title BKP Pro - D&D Technology
+title Destrava! - D&D Technology
 cd /d "%~dp0"
 net session >nul 2>&1
 if %errorlevel% neq 0 (

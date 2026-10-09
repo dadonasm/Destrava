@@ -1,5 +1,5 @@
 #!/bin/sh
-# BKP Pro - Linux/macOS.   Uso:  sudo sh Iniciar-Linux.sh
+# Destrava! - Linux/macOS.   Uso:  sudo sh Iniciar-Linux.sh
 cd "$(dirname "$0")" || exit 1
 PY=""
 for c in python3 python; do command -v "$c" >/dev/null 2>&1 && PY="$c" && break; done

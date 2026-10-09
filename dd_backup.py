@@ -12,6 +12,7 @@ Uso:
     python3 dd_backup.py --rehash PASTA       relê os arquivos do backup e compara com os hashes do mapa
 """
 import argparse
+import atexit
 import collections
 import csv
 import datetime
@@ -35,7 +36,12 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "3.0"
+# o Python portátil do Windows (embeddable, com arquivo ._pth) não põe a pasta do script no caminho de importação:
+# sem isto ficha, termo, dados e atualizador não carregariam
+if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+VERSION = "3.1"
 try:
     import ficha as FICHA
 except Exception:  # o backup continua funcionando mesmo sem a ficha
@@ -56,6 +62,8 @@ REC = {"bytes": 0}  # espaço liberado nesta sessão (para o certificado)
 IS_WIN = os.name == "nt"
 HERE = os.path.dirname(os.path.abspath(__file__))
 WEB = os.path.join(HERE, "web")
+DADOS_DIR = [HERE]  # onde ficam maquinas/ e consentimentos.log (ao lado do programa, ou --dados)
+SERVIDOR = {"con": None, "cache_proprio": False}  # modo servidor (--servidor): conexao.Conexao com o servidor da loja
 CHUNK = 4 * 1024 * 1024
 MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
 
@@ -551,6 +559,7 @@ def build_rel(local, cat, date, name, ext):
 class App(object):
     def __init__(self):
         self.token = secrets.token_urlsafe(18)
+        self.token_na_pagina = False
         self.allowed_hosts = set()
         self.lock = threading.RLock()
         self.rules = load_tag_rules(os.path.join(HERE, "etiquetas.txt"))
@@ -1550,7 +1559,7 @@ Somos únicos. Somos diferentes. Somos D&D.
 
 
 # ----------------------------------------------------------------------------------------------
-# Ficha da máquina (BKP Pro)
+# Ficha da máquina (Destrava!)
 # ----------------------------------------------------------------------------------------------
 FT = {"rodando": False, "etapa": "", "pct": 0, "erro": "", "o_que": "", "resultado": None}
 FT_LOCK = threading.Lock()
@@ -1649,7 +1658,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    def _static(self, base, name):
+    def _static(self, base, name, troca=None):
         name = os.path.basename(name)
         p = os.path.join(base, name)
         if not name or not os.path.isfile(p):
@@ -1657,12 +1666,58 @@ class Handler(BaseHTTPRequestHandler):
             return
         with open(p, "rb") as fh:
             data = fh.read()
+        for a, b in (troca or {}).items():
+            data = data.replace(a, b)
         self.send_response(200)
         self.send_header("Content-Type", MIME.get(os.path.splitext(name)[1].lower(), "application/octet-stream"))
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(data)
+
+    def _arquivo(self, path, mime, limite=None, pagina=False):
+        """Envia um arquivo do cliente para a prévia. Nunca vira página do programa: nosniff e CSP sandbox."""
+        tam = os.path.getsize(lp(path))
+        if limite:
+            tam = min(tam, limite)
+        ini, fim, code = 0, max(0, tam - 1), 200
+        m = re.match(r"^bytes=(\d*)-(\d*)$", (self.headers.get("Range") or "").strip())
+        if m and tam and not limite and (m.group(1) or m.group(2)):
+            a, b = m.groups()
+            if a:
+                ini, fim = int(a), min(int(b), tam - 1) if b else tam - 1
+            else:
+                ini = max(0, tam - int(b))
+            if ini > fim:
+                self.send_response(416)
+                self.send_header("Content-Range", "bytes */%d" % tam)
+                self.end_headers()
+                return
+            code = 206
+        n = fim - ini + 1 if tam else 0
+        self.send_response(code)
+        self.send_header("Content-Type", mime)
+        self.send_header("Content-Length", str(n))
+        self.send_header("Accept-Ranges", "bytes")
+        if code == 206:
+            self.send_header("Content-Range", "bytes %d-%d/%d" % (ini, fim, tam))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Content-Disposition", "inline")
+        if not pagina:
+            self.send_header("Content-Security-Policy", "sandbox; default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'")
+        self.end_headers()
+        try:
+            with open(lp(path), "rb") as fh:
+                fh.seek(ini)
+                while n > 0:
+                    b = fh.read(min(CHUNK, n))
+                    if not b:
+                        break
+                    self.wfile.write(b)
+                    n -= len(b)
+        except (BrokenPipeError, ConnectionResetError):
+            pass  # o navegador cancela pedidos de vídeo o tempo todo (ao avançar)
 
     def _auth(self, q):
         tok = self.headers.get("X-DD-Token") or (q.get("t") or [""])[0]
@@ -1676,7 +1731,9 @@ class Handler(BaseHTTPRequestHandler):
         q = parse_qs(u.query)
         path = u.path
         if path in ("/", "/index.html"):
-            return self._static(WEB, "app.html")
+            # no Docker o endereço é só http://localhost:8080 (sem #token): a página já vem com o token
+            tok = APP.token if APP.token_na_pagina else ""
+            return self._static(WEB, "app.html", {b"__DD_TOKEN__": tok.encode("ascii")})
         if path.startswith("/web/"):
             return self._static(WEB, path[5:])
         if path.startswith("/mapa/"):
@@ -1693,6 +1750,12 @@ class Handler(BaseHTTPRequestHandler):
             return
         if not self._auth(q):
             return self._json({"erro": "não autorizado"}, 401)
+        if path == "/api/dados/ver":  # <img>/<video> não mandam cabeçalho: o token vem em ?t=
+            try:
+                arq, mime, tipo, limite = DADOS.previa((q.get("no") or [""])[0])
+            except ValueError as e:
+                return self._json({"erro": str(e)}, 400)
+            return self._arquivo(arq, mime, limite, pagina=(tipo == "pdf"))
         try:
             return self._json(self.api_get(path, q))
         except Exception as e:
@@ -1728,6 +1791,8 @@ class Handler(BaseHTTPRequestHandler):
         except (Busy, ValueError) as e:
             return self._json({"erro": str(e)}, 400)
         except Exception as e:
+            if type(e).__name__ in ("SemConexao", "ErroServidor"):
+                return self._json({"erro": str(e)}, 503)
             APP.log("ERRO interno: %s" % e)
             return self._json({"erro": "Erro interno: %s" % e}, 500)
 
@@ -1739,6 +1804,8 @@ class Handler(BaseHTTPRequestHandler):
     def upload_zip(self, n, q):
         if not ATUAL:
             raise ValueError("Atualizador ausente.")
+        if SERVIDOR["con"]:
+            raise ValueError("No modo servidor o programa já vem atualizado do servidor.")
         if n <= 0 or n > ATUAL.MAX_ZIP:
             raise ValueError("Arquivo inválido ou grande demais.")
         dest = os.path.join(HERE, "_novo_upload.zip")
@@ -1758,7 +1825,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/termo":
             mid = FICHA.machine_id_cache()
             return {"mid": mid, "host": socket.gethostname(), "nome": FICHA.nome_exibicao(mid), "status": TERMO.status(mid), "corporativa": TERMO.detectar_corporativa(),
-                    "clausulas": TERMO.TERMO, "rodape": TERMO.RODAPE, "versao": TERMO.TERMO_VERSAO, "selo": TERMO.termo_hash()[:16],
+                    "clausulas": TERMO.clausulas(), "rodape": TERMO.RODAPE, "versao": TERMO.TERMO_VERSAO, "selo": TERMO.termo_hash()[:16],
                     "escopos": [{"id": a, "nome": b, "desc": c} for a, b, c in TERMO.ESCOPOS], "os": TERMO.os_atual(mid), "log": TERMO.log_verificar()}
         if path == "/api/ficha/lista":
             mid = (q.get("mid") or [""])[0] or FICHA.machine_id_cache()
@@ -1767,6 +1834,9 @@ class Handler(BaseHTTPRequestHandler):
             mid = (q.get("mid") or [""])[0] or FICHA.machine_id_cache()
             return FICHA.comparar(mid, (q.get("a") or [""])[0], (q.get("b") or [""])[0])
         if path == "/api/permissoes":
+            if FICHA and FICHA.simulando():  # coleta salva: as permissões são as da máquina reproduzida
+                fam = FICHA.familia_atual()
+                return {"mac": fam == "mac", "win": fam == "windows", "linux": fam == "linux", "root": True, "admin": True, "acesso_total": True, "simulacao": True}
             mac = sys.platform == "darwin"
             adm = False
             if IS_WIN:
@@ -1781,12 +1851,20 @@ class Handler(BaseHTTPRequestHandler):
             return DADOS.estado()
         if path == "/api/dados/resultado":
             g = lambda k: (q.get(k) or [""])[0]
-            return DADOS.resultado(g("zona"), g("cat"), g("q"), int(g("offset") or 0), int(g("limit") or 200))
+            return DADOS.resultado(g("zona"), g("cat"), g("q"), int(g("offset") or 0), int(g("limit") or 200), g("usuario"))
+        if path == "/api/dados/explorar":
+            self.exigir(None)
+            g = lambda k: (q.get(k) or [""])[0]
+            return DADOS.explorar(g("no") or None, g("item") or None)
         if path == "/api/atualizar/procurar":
+            if SERVIDOR["con"]:  # no modo servidor o programa já vem na versão do servidor
+                return {"versao": VERSION, "encontrados": [], "salvas": [], "servidor": True}
             return {"versao": VERSION, "encontrados": ATUAL.procurar(VERSION), "salvas": ATUAL.versoes_salvas()}
         if path == "/api/info":
             return {"host": socket.gethostname(), "os": "%s %s" % (platform.system(), platform.release()), "win": IS_WIN, "versao": VERSION,
-                    "home": os.path.expanduser("~"), "uefi": (os.path.exists("/sys/firmware/efi") if not IS_WIN else None)}
+                    "home": os.path.expanduser("~"), "uefi": (os.path.exists("/sys/firmware/efi") if not IS_WIN else None),
+                    "simulacao": bool(FICHA and FICHA.simulando()), "dados": DADOS_DIR[0],
+                    "servidor": SERVIDOR["con"].estado() if SERVIDOR["con"] else None}
         if path == "/api/sources":
             return {"sources": list_sources()}
         if path == "/api/ls":
@@ -1818,14 +1896,19 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError("Módulo da ficha ausente (ficha.py).")
             mid = (q.get("mid") or [""])[0] or FICHA.machine_id_cache()
             v = FICHA.visao(mid)
-            return {"mid": mid, "atual": mid == FICHA.machine_id_cache(), "visao": v, "pode_desfazer": FICHA.pode_desfazer(mid), "root": FICHA.is_root(), "win": IS_WIN}
+            return {"mid": mid, "atual": mid == FICHA.machine_id_cache(), "visao": v, "pode_desfazer": FICHA.pode_desfazer(mid), "aplicadas": FICHA.aplicadas(mid), "root": FICHA.is_root() or FICHA.simulando(),
+                    "win": FICHA.familia_atual() == "windows", "simulacao": FICHA.simulando()}
         if path == "/api/maquinas":
-            return {"maquinas": FICHA.listar_maquinas() if FICHA else [], "pendrive": os.path.dirname(os.path.abspath(__file__))}
+            return {"maquinas": FICHA.listar_maquinas() if FICHA else [], "pendrive": DADOS_DIR[0]}
         if path == "/api/left":
             return {"left": APP.left_behind(), "ign_dirs": APP.ign_dirs[:1000], "ign_dirs_total": APP.ign_dirs_total}
         raise ValueError("rota desconhecida")
 
     def api_post(self, path, b):
+        if path.startswith("/api/atualizar/") and SERVIDOR["con"]:
+            raise ValueError("No modo servidor o programa já vem atualizado do servidor.")
+        if path == "/api/encerrar":
+            return encerrar_servidor(bool(b.get("descartar")))
         if path == "/api/config":
             return {"cfg": APP.set_config(b)}
         if path == "/api/mkdir":
@@ -1888,11 +1971,25 @@ class Handler(BaseHTTPRequestHandler):
             if not b.get("confirmo"):
                 raise ValueError("Confirmação ausente.")
             self.exigir("melhorias")
-            ficha_aplicar([str(x) for x in b.get("ids", [])])
+            ids = [str(x) for x in b.get("ids", [])]
+            if b.get("medir") is False:  # interruptor da tabela de inicialização: aplica na hora, sem medir de novo
+                mid = FICHA.machine_id_cache()
+                v = FICHA.visao(mid)
+                if not v:
+                    raise ValueError("Colete a ficha antes de aplicar melhorias.")
+                return {"aplicadas": FICHA.aplicar(mid, ids, v["ultima"])}
+            ficha_aplicar(ids)
             return {"ok": True}
+        if path == "/api/ficha/exportar":
+            arq = FICHA.exportar_coleta(versao_programa=VERSION)
+            abrir_no_sistema(arq, revelar=True)
+            return {"arquivo": arq}
         if path == "/api/ficha/desfazer":
             self.exigir("melhorias")
-            return {"desfeitos": FICHA.desfazer(FICHA.machine_id_cache())}
+            return {"desfeitos": FICHA.desfazer(FICHA.machine_id_cache(), [str(x) for x in b.get("ids") or []] or None)}
+        if path == "/api/ficha/abrir_ajustes":
+            import otimizacoes
+            return {"ok": otimizacoes.abrir_ajustes(str(b.get("qual", "")))}
         if path == "/api/hist":
             FICHA.hist_add(FICHA.machine_id_cache(), str(b.get("tipo", "nota"))[:20], str(b.get("resumo", ""))[:300])
             return {"ok": True}
@@ -1941,6 +2038,17 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/dados/cancelar":
             DADOS.cancelar()
             return {"ok": True}
+        if path == "/api/dados/abrir":
+            self.exigir(None)
+            cam = DADOS.caminho_no(b.get("no"))
+            revelar = b.get("modo") == "pasta"
+            if not revelar and not DADOS.pode_abrir(cam):
+                raise ValueError("Por segurança este arquivo não abre daqui (programa, script, atalho ou senha). Use Mostrar na pasta.")
+            if not abrir_no_sistema(cam, revelar):
+                raise ValueError("O sistema não conseguiu abrir.")
+            return {"ok": True}
+        if path == "/api/dados/marcar":
+            return {"id": DADOS.marcar(b.get("no"))}
         if path == "/api/dados/reset":
             DADOS.reset()
             return {"ok": True}
@@ -2004,6 +2112,98 @@ class Handler(BaseHTTPRequestHandler):
         raise ValueError("rota desconhecida")
 
 
+def _como_usuario(cmd):
+    """Rodando com sudo (Linux/Mac): executa como quem chamou, não como root."""
+    if not IS_WIN and hasattr(os, "geteuid") and os.geteuid() == 0 and os.environ.get("SUDO_USER") and shutil.which("sudo"):
+        return ["sudo", "-u", os.environ["SUDO_USER"]] + cmd
+    return cmd
+
+
+def abrir_no_sistema(path, revelar=False):
+    """Abre o arquivo no programa padrão ou, com revelar, mostra ele selecionado na pasta."""
+    path = os.path.abspath(path)
+    try:
+        if IS_WIN:
+            # pelo explorer.exe o pedido vai para o Explorer já aberto: o arquivo abre SEM privilégio de administrador
+            subprocess.Popen('explorer.exe /select,"%s"' % path if revelar else 'explorer.exe "%s"' % path)
+        elif sys.platform == "darwin":
+            subprocess.Popen(_como_usuario(["open", "-R", path] if revelar else ["open", path]), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            alvo = os.path.dirname(path) if revelar and not os.path.isdir(path) else path
+            subprocess.Popen(_como_usuario(["xdg-open", alvo]), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except OSError:
+        return False
+
+
+def encerrar_servidor(descartar=False):
+    con = SERVIDOR["con"]
+    if not con:
+        raise ValueError("Encerrar por aqui só existe no modo servidor.")
+    if APP.busy():
+        raise Busy("Aguarde o processo atual terminar.")
+    pend = con.enviar_pendentes()
+    if pend and not descartar:
+        return {"ok": False, "pendentes": pend}
+
+    def _go():
+        time.sleep(0.8)
+        if SERVIDOR["cache_proprio"]:
+            shutil.rmtree(DADOS_DIR[0], ignore_errors=True)
+        os._exit(0)
+    threading.Thread(target=_go, daemon=True).start()
+    return {"ok": True}
+
+
+def usar_pasta_dados(p):
+    """Fichas, históricos e consentimentos em outra pasta (testes no próprio computador sem misturar com o pendrive)."""
+    p = os.path.abspath(os.path.expanduser(p))
+    os.makedirs(p, exist_ok=True)
+    DADOS_DIR[0] = p
+    if FICHA:
+        FICHA.STORE = os.path.join(p, "maquinas")
+    if TERMO:
+        TERMO.LOG = os.path.join(p, "consentimentos.log")
+
+
+def conectar_servidor(url, chave_arquivo=None, dados=None):
+    """Modo servidor: o programa roda aqui, mas fichas, históricos e termos ficam no servidor da loja.
+    maquinas/ vira um cache temporário, apagado ao encerrar."""
+    import conexao
+    chave = os.environ.pop("DESTRAVA_CHAVE", "")  # fora do ambiente: os programas que abrimos (PowerShell etc.) não herdam
+    if chave_arquivo:
+        try:
+            with open(chave_arquivo, encoding="utf-8") as fh:
+                chave = fh.read().strip()
+        finally:
+            try:
+                os.remove(chave_arquivo)
+            except OSError:
+                pass
+    if not chave:
+        import getpass
+        chave = getpass.getpass("Chave do técnico: ").strip()
+    con = conexao.Conexao(url, chave, VERSION)
+    try:
+        con.testar()
+    except Exception as e:
+        print("Não consegui entrar no servidor %s: %s" % (url, e), flush=True)
+        sys.exit(2)
+    proprio = not dados
+    cache = dados or os.path.join(HERE, "_cache_servidor")
+    if proprio:
+        shutil.rmtree(cache, ignore_errors=True)  # nunca reaproveita dados de outra sessão
+        atexit.register(shutil.rmtree, cache, True)
+    usar_pasta_dados(cache)
+    FICHA.SINCRONIA = con
+    TERMO.REMOTO = con
+    TERMO.MODO = "servidor"
+    SERVIDOR.update(con=con, cache_proprio=proprio)
+    FICHA._garantir(FICHA.machine_id_cache())
+    print("Conectado ao servidor %s como %s." % (con.url, con.tecnico or "?"), flush=True)
+    return con
+
+
 def open_in_browser(url):
     # rodando com sudo: abre o navegador como o usuário que chamou (navegadores recusam rodar como root)
     if not IS_WIN and hasattr(os, "geteuid") and os.geteuid() == 0 and os.environ.get("SUDO_USER") and shutil.which("sudo"):
@@ -2029,13 +2229,14 @@ def open_in_browser(url):
     return False
 
 
-def serve(port=0, open_browser=True):
-    srv = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+def serve(port=0, open_browser=True, host="127.0.0.1", token_na_pagina=False):
+    srv = ThreadingHTTPServer((host, port), Handler)
     p = srv.server_address[1]
     APP.allowed_hosts = {"127.0.0.1:%d" % p, "localhost:%d" % p}
-    url = "http://127.0.0.1:%d/#%s" % (p, APP.token)
+    APP.token_na_pagina = token_na_pagina
+    url = "http://localhost:%d/" % p if token_na_pagina else "http://127.0.0.1:%d/#%s" % (p, APP.token)
     print("DD_URL=%s" % url, flush=True)
-    print("\nD&D Backup rodando. Se o navegador não abrir sozinho, copie o endereço acima.\nPara encerrar: Ctrl+C nesta janela.\n", flush=True)
+    print("\nDestrava! rodando. Se o navegador não abrir sozinho, copie o endereço acima.\nPara encerrar: Ctrl+C nesta janela%s.\n" % (" ou o botão Encerrar" if SERVIDOR["con"] else ""), flush=True)
     if open_browser:
         open_in_browser(url)
     try:
@@ -2099,16 +2300,34 @@ def cli_rehash(pasta):
 
 def main():
     ap = argparse.ArgumentParser(description="D&D Backup")
+    ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=0)
     ap.add_argument("--no-browser", action="store_true")
+    ap.add_argument("--token-na-pagina", action="store_true", help="entrega o token junto com a página (Docker; publique a porta só em 127.0.0.1)")
     ap.add_argument("--verificar", metavar="PASTA_MAPA")
     ap.add_argument("--rehash", metavar="PASTA_MAPA")
+    ap.add_argument("--dados", metavar="PASTA", default=os.environ.get("DESTRAVA_DADOS"), help="onde guardar fichas e consentimentos (padrão: ao lado do programa)")
+    ap.add_argument("--exportar-coleta", metavar="ARQUIVO", help="analisa esta máquina, grava a coleta em ARQUIVO e sai")
+    ap.add_argument("--coleta-salva", metavar="ARQUIVO", help="reproduz uma coleta exportada; as ações só são simuladas")
+    ap.add_argument("--servidor", metavar="URL", help="roda pelo servidor da loja: fichas, históricos e termos ficam lá")
+    ap.add_argument("--chave-arquivo", metavar="ARQUIVO", help=argparse.SUPPRESS)
     a = ap.parse_args()
     if a.verificar:
         sys.exit(cli_verificar(a.verificar))
     if a.rehash:
         sys.exit(cli_rehash(a.rehash))
-    serve(a.port, not a.no_browser)
+    if a.dados:
+        usar_pasta_dados(a.dados)
+    if a.exportar_coleta:
+        FICHA.coletar(lambda e, p: print("  %3d%%  %s" % (p, e), flush=True))
+        print("Coleta gravada em", FICHA.exportar_coleta(a.exportar_coleta, VERSION))
+        return
+    if a.servidor:
+        conectar_servidor(a.servidor, a.chave_arquivo, a.dados)
+    if a.coleta_salva:
+        FICHA.carregar_coleta(a.coleta_salva)
+        print("SIMULAÇÃO: reproduzindo a coleta de %s (%s). Nada é alterado neste computador." % (FICHA.REPLAY.get("host", "?"), FICHA.familia_atual()), flush=True)
+    serve(a.port, not a.no_browser, a.host, a.token_na_pagina)
 
 
 if __name__ == "__main__":

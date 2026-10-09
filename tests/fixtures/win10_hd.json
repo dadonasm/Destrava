@@ -1,0 +1,263 @@
+{
+ "formato": "destrava-coleta",
+ "versao": 1,
+ "_nota": "SINTÉTICO: montado no formato da saída do PS_COLETA para testes. Troque por uma coleta real exportada no Windows.",
+ "programa": "3.1",
+ "familia": "windows",
+ "host": "PC-RECEPCAO",
+ "cpu": "Intel(R) Core(TM) i5-4210U CPU @ 1.70GHz",
+ "ids": {
+  "uuid": "4C4C4544-0042-3510-8051-B4C04F4A5A31",
+  "serial": "5BQ4ZJ1",
+  "macs": [
+   "a4:4c:c8:11:22:33"
+  ]
+ },
+ "medidas": {
+  "cpu_ms": 820.5,
+  "disco_mb_s": 61.2,
+  "disco_metodo": "escrita em pasta temporária",
+  "arquivos_ms": 9.8,
+  "resposta_ms": 145.0
+ },
+ "raw": {
+  "cs": {
+   "Manufacturer": "Dell Inc.",
+   "Model": "Inspiron 5448",
+   "TotalPhysicalMemory": 4294967296
+  },
+  "uuid": "4C4C4544-0042-3510-8051-B4C04F4A5A31",
+  "bios": {
+   "SMBIOSBIOSVersion": "A07"
+  },
+  "cpu": {
+   "Name": "Intel(R) Core(TM) i5-4210U CPU @ 1.70GHz",
+   "NumberOfCores": 2,
+   "NumberOfLogicalProcessors": 4,
+   "MaxClockSpeed": 2401
+  },
+  "mem": [
+   {
+    "DeviceLocator": "DIMM A",
+    "Capacity": 4294967296,
+    "Speed": 1600,
+    "ConfiguredClockSpeed": 1600,
+    "SMBIOSMemoryType": 24
+   }
+  ],
+  "memarr": {
+   "MemoryDevices": 2
+  },
+  "pd": [
+   {
+    "FriendlyName": "ST500LM000-1EJ162",
+    "MediaType": 3,
+    "BusType": 11,
+    "Size": 500107862016,
+    "HealthStatus": 0
+   }
+  ],
+  "ld": [
+   {
+    "DeviceID": "C:",
+    "Size": 499337621504,
+    "FreeSpace": 38654705664
+   }
+  ],
+  "gpu": [
+   {
+    "Name": "Intel(R) HD Graphics Family",
+    "AdapterRAM": 1073741824
+   }
+  ],
+  "os": {
+   "caption": "Microsoft Windows 10 Home Single Language",
+   "version": "10.0.19045",
+   "build": "19045",
+   "arch": "64 bits",
+   "free": 524288,
+   "total": 4096000,
+   "boot": "2026-10-01T08:12:00"
+  },
+  "nproc": 168,
+  "procs": [
+   {
+    "n": "chrome",
+    "ram": 1288490188,
+    "c": 14
+   },
+   {
+    "n": "MsMpEng",
+    "ram": 209715200,
+    "c": 1
+   },
+   {
+    "n": "Teams",
+    "ram": 461373440,
+    "c": 5
+   },
+   {
+    "n": "OneDrive",
+    "ram": 125829120,
+    "c": 1
+   },
+   {
+    "n": "explorer",
+    "ram": 104857600,
+    "c": 1
+   }
+  ],
+  "start": [
+   {
+    "Name": "OneDrive",
+    "Command": "\"C:\\Users\\Recepcao\\AppData\\Local\\Microsoft\\OneDrive\\OneDrive.exe\" /background",
+    "Location": "HKU\\S-1-5-21-1111111111-2222222222-3333333333-1001\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+    "User": "PC-RECEPCAO\\Recepcao"
+   },
+   {
+    "Name": "Spotify",
+    "Command": "\"C:\\Users\\Recepcao\\AppData\\Roaming\\Spotify\\Spotify.exe\" --autostart --minimized",
+    "Location": "HKU\\S-1-5-21-1111111111-2222222222-3333333333-1001\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+    "User": "PC-RECEPCAO\\Recepcao"
+   },
+   {
+    "Name": "SecurityHealth",
+    "Command": "%windir%\\system32\\SecurityHealthSystray.exe",
+    "Location": "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+    "User": "Público"
+   },
+   {
+    "Name": "RtkAudUService",
+    "Command": "\"C:\\Windows\\System32\\DriverStore\\FileRepository\\realtekservice.inf_amd64\\RtkAudUService64.exe\" -background",
+    "Location": "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+    "User": "Público"
+   },
+   {
+    "Name": "Adobe Acrobat Update",
+    "Command": "\"C:\\Program Files (x86)\\Common Files\\Adobe\\ARM\\1.0\\AdobeARM.exe\"",
+    "Location": "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Run",
+    "User": "Público"
+   },
+   {
+    "Name": "Send to OneNote",
+    "Command": "Send to OneNote.lnk",
+    "Location": "Startup",
+    "User": "PC-RECEPCAO\\Recepcao"
+   }
+  ],
+  "nprog": 74,
+  "bootev": {
+   "boot": "98500",
+   "main": "61000",
+   "when": "2026-10-01T08:14:00"
+  },
+  "uefi": true,
+  "sb": false,
+  "bat": {
+   "charge": 87,
+   "design": 41440,
+   "full": 22790
+  },
+  "ini": [
+   {
+    "fonte": "run",
+    "hive": "HKCU:",
+    "kind": "Run",
+    "nome": "OneDrive",
+    "cmd": "\"C:\\Users\\Recepcao\\AppData\\Local\\Microsoft\\OneDrive\\OneDrive.exe\" /background",
+    "ativo": true
+   },
+   {
+    "fonte": "run",
+    "hive": "HKCU:",
+    "kind": "Run",
+    "nome": "Spotify",
+    "cmd": "\"C:\\Users\\Recepcao\\AppData\\Roaming\\Spotify\\Spotify.exe\" --autostart",
+    "ativo": true
+   },
+   {
+    "fonte": "run",
+    "hive": "HKLM:",
+    "kind": "Run",
+    "nome": "SecurityHealth",
+    "cmd": "%windir%\\system32\\SecurityHealthSystray.exe",
+    "ativo": true
+   },
+   {
+    "fonte": "run",
+    "hive": "HKLM:",
+    "kind": "Run32",
+    "nome": "Adobe Acrobat Update",
+    "cmd": "\"C:\\Program Files (x86)\\Common Files\\Adobe\\ARM\\1.0\\AdobeARM.exe\"",
+    "ativo": false
+   },
+   {
+    "fonte": "pasta",
+    "hive": "HKCU:",
+    "kind": "StartupFolder",
+    "nome": "Send to OneNote.lnk",
+    "cmd": "C:\\Program Files\\Microsoft Office\\root\\Office16\\ONENOTEM.EXE",
+    "ativo": true
+   },
+   {
+    "fonte": "store",
+    "pacote": "MSTeams_8wekyb3d8bbwe",
+    "tarefa": "TeamsTfwStartupTask",
+    "nome": "MSTeams",
+    "cmd": "MSTeams_8wekyb3d8bbwe",
+    "ativo": true,
+    "estado": 2
+   }
+  ],
+  "procpath": [
+   {
+    "p": "C:\\Users\\Recepcao\\AppData\\Local\\Microsoft\\OneDrive\\OneDrive.exe",
+    "ram": 125829120
+   },
+   {
+    "p": "C:\\Users\\Recepcao\\AppData\\Roaming\\Spotify\\Spotify.exe",
+    "ram": 314572800
+   }
+  ],
+  "deg": {
+   "Spotify.exe": 4200,
+   "OneDrive.exe": 1800
+  },
+  "otim": {
+   "vfx": 0,
+   "transp": 1,
+   "anim": 1,
+   "plano": "GUID do esquema de energia: 381b4222-f694-41f0-9685-ff5bb260df2e  (Equilibrado)",
+   "hiber": 1,
+   "hiberfil": 3221225472,
+   "SysMain": {
+    "status": "Running",
+    "start": "Automatic"
+   },
+   "WSearch": {
+    "status": "Running",
+    "start": "Automatic"
+   },
+   "bgapps": null,
+   "cdm": {
+    "SystemPaneSuggestionsEnabled": 1,
+    "SilentInstalledAppsEnabled": 1
+   },
+   "gamedvr": 1,
+   "appcap": null,
+   "domode": null,
+   "storsense": null,
+   "tarefas": [
+    {
+     "nome": "GoogleUpdateTaskMachineUA",
+     "pasta": "\\"
+    }
+   ],
+   "onedrive": {
+    "pasta": "C:\\Users\\Recepcao\\OneDrive",
+    "bytes": 2147483648,
+    "arquivos": 812
+   }
+  }
+ }
+}

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""BKP Pro - atualizador offline.
+"""Destrava! - atualizador offline.
 
 Troca SÓ os arquivos do programa. Seus registros nunca são tocados:
   maquinas/ (fichas, históricos, termos, OS), consentimentos.log, runtime/ e _versoes/ ficam exatamente como estão.
 Antes de trocar, guarda uma cópia da versão atual em _versoes/ (dá para voltar com um clique).
-Sem internet: você baixa o BKP-Pro.zip novo e o programa encontra (Downloads, Área de Trabalho, pendrive) ou você o escolhe.
+Sem internet: você baixa o Destrava.zip novo e o programa encontra (Downloads, Área de Trabalho, pendrive) ou você o escolhe.
 """
 import datetime
 import hashlib
@@ -50,11 +50,11 @@ def sha256(path):
 
 
 def inspecionar(zpath):
-    """(prefixo, versao, arquivos_de_codigo) de um zip do BKP Pro; levanta ValueError se não for válido."""
+    """(prefixo, versao, arquivos_de_codigo) de um zip do Destrava!; levanta ValueError se não for válido."""
     if not os.path.isfile(zpath):
         raise ValueError("Arquivo não encontrado.")
     if os.path.getsize(zpath) > MAX_ZIP:
-        raise ValueError("Arquivo grande demais para ser o BKP Pro.")
+        raise ValueError("Arquivo grande demais para ser o Destrava!.")
     try:
         z = zipfile.ZipFile(zpath)
     except zipfile.BadZipFile:
@@ -65,7 +65,7 @@ def inspecionar(zpath):
             raise ValueError("O zip tem caminhos inseguros. Não vou usar.")
         cand = sorted([n for n in nomes if n.replace("\\", "/").endswith("dd_backup.py")], key=lambda n: n.count("/"))
         if not cand:
-            raise ValueError("Isso não parece ser o BKP Pro (não achei dd_backup.py).")
+            raise ValueError("Isso não parece ser o Destrava! (não achei dd_backup.py).")
         pref = cand[0].replace("\\", "/")[:-len("dd_backup.py")]
         for obrig in ("ficha.py", "web/app.html"):
             if (pref + obrig) not in [n.replace("\\", "/") for n in nomes]:
@@ -79,7 +79,7 @@ def inspecionar(zpath):
 
 
 def procurar(versao_atual):
-    """Procura BKP-Pro*.zip nos lugares usuais. Devolve os válidos, mais novos primeiro."""
+    """Procura Destrava*.zip (e BKP-Pro*.zip, nome antigo) nos lugares usuais. Devolve os válidos, mais novos primeiro."""
     home = os.path.expanduser("~")
     pastas = [os.path.join(home, "Downloads"), os.path.join(home, "Transferências"), os.path.join(home, "Desktop"), os.path.join(home, "Área de Trabalho"), os.path.dirname(HERE), HERE]
     vistos, out = set(), []
@@ -90,7 +90,7 @@ def procurar(versao_atual):
             continue
         for n in nomes:
             p = os.path.join(d, n)
-            if p in vistos or not re.match(r"(?i)^bkp[-_ ]?pro.*\.zip$", n):
+            if p in vistos or not re.match(r"(?i)^(destrava|bkp[-_ ]?pro).*\.zip$", n):
                 continue
             vistos.add(p)
             try:

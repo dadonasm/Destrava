@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""BKP Pro - Dados: varredura de espaço, limpeza segura e offload verificado (SHA-256).
+"""Destrava! - Dados: varredura de espaço, limpeza segura e offload verificado (SHA-256).
 
 Regras de segurança (valem no servidor, não só na tela):
   * só enxerga e mexe dentro da pasta do usuário; sistema, credenciais e perfis ativos são ZONA VERMELHA (bloqueio total);
@@ -18,6 +18,7 @@ import subprocess
 import sys
 import threading
 import time
+import unicodedata
 import urllib.parse
 
 IS_WIN = os.name == "nt"
@@ -30,6 +31,8 @@ CHUNK = 4 * 1024 * 1024
 
 def set_helpers(**kw):
     H.update(kw)
+    if "user_home" in kw:
+        redefinir_usuarios()
 
 
 def home():
@@ -70,12 +73,13 @@ def _nuvem(st):
 _HL = set()  # (dev, inode) já contados nesta varredura (hard links não contam duas vezes)
 
 
-def _repetido(st):
+def _repetido(st, hl=None):
+    hl = _HL if hl is None else hl
     if getattr(st, "st_nlink", 1) > 1:
         k = (st.st_dev, st.st_ino)
-        if k in _HL:
+        if k in hl:
             return True
-        _HL.add(k)
+        hl.add(k)
     return False
 
 
@@ -83,7 +87,7 @@ def _repetido(st):
 # zona vermelha (bloqueio total)
 # ----------------------------------------------------------------------------------------------
 _VERM_SEG = {".ssh", ".gnupg", ".aws", ".azure", ".kube", ".password-store", "keychains", ".git", "credentials", "wallets"}
-_VERM_PARTES = ("library/keychains", "library/mail", "library/messages", "library/safari", "library/application support/addressbook", "library/application support/mobilesync",
+_VERM_PARTES = ("library/keychains", "library/mail", "library/messages", "library/safari", "library/application support/addressbook",
                 "library/containers/com.apple", "library/group containers", ".config/gcloud", "appdata/roaming/microsoft/credentials", "appdata/local/microsoft/credentials",
                 "appdata/roaming/microsoft/protect", ".local/share/keyrings", "library/accounts", "library/cookies", "library/preferences")
 _VERM_EXT = {".pem", ".key", ".p12", ".pfx", ".kdbx", ".gpg", ".keychain", ".keychain-db", ".ppk"}
@@ -94,15 +98,88 @@ def _norm(p):
     return os.path.normcase(os.path.abspath(p)).replace("\\", "/")
 
 
+# ----------------------------------------------------------------------------------------------
+# usuários do computador: a varredura passa pela pasta de cada um
+# ----------------------------------------------------------------------------------------------
+_HOMES = []  # [(usuário, pasta)] da última varredura; o primeiro é quem está usando o computador
+SEM_ACESSO = []  # usuários cuja pasta não deu para ler (falta administrador/sudo)
+_USR = [""]  # usuário da pasta sendo varrida agora (vai em cada item)
+
+
+def pastas_usuarios():
+    """[(usuário, pasta)] de todos os usuários do computador que dá para ler, começando por quem está usando."""
+    atual = os.path.abspath(home())
+    out, vistos, sem = [], set(), []
+
+    def add(nome, p):
+        k = _norm(p)
+        if k in vistos:
+            return
+        vistos.add(k)
+        try:
+            os.listdir(p)
+        except OSError:
+            sem.append(nome)
+            return
+        out.append((nome, os.path.abspath(p)))
+    add(os.path.basename(atual.rstrip("/\\")) or atual, atual)
+    if IS_WIN:
+        drv = os.path.splitdrive(atual)[0] or os.environ.get("SystemDrive", "C:")
+        base, pular = os.path.join(drv + os.sep, "Users"), {"default", "default user", "all users", "defaultapppool"}
+    elif IS_MAC:
+        base, pular = "/Users", {"shared", "guest"}
+    else:
+        base, pular = "/home", set()
+    try:
+        nomes = sorted(os.listdir(base))
+    except OSError:
+        nomes = []
+    for n in nomes:
+        p = os.path.join(base, n)
+        if n.startswith(".") or n.lower() in pular or re.match(r"^defaultuser\d+$", n, re.I) or os.path.islink(p) or not os.path.isdir(p):
+            continue
+        add(n, p)
+    if not IS_WIN and not IS_MAC and os.path.isdir("/root") and hasattr(os, "geteuid") and os.geteuid() == 0:
+        add("root", "/root")
+    SEM_ACESSO[:] = sem
+    return out
+
+
+def homes():
+    if not _HOMES:
+        _HOMES[:] = pastas_usuarios()
+    return _HOMES
+
+
+def redefinir_usuarios():
+    del _HOMES[:]
+
+
+def dono(path):
+    """(usuário, pasta do usuário) que contém path, ou (None, None)."""
+    p = _norm(path)
+    best = (None, None)
+    for nome, h in homes():
+        hn = _norm(h)
+        if (p == hn or p.startswith(hn.rstrip("/") + "/")) and (best[1] is None or len(hn) > len(_norm(best[1]))):
+            best = (nome, h)
+    return best
+
+
 def zona_vermelha(path):
     """Motivo do bloqueio (str) ou None se pode ser considerado."""
-    h = _norm(home())
     p = _norm(path)
     if os.path.islink(path):
         return "atalho/link simbólico: não seguimos"
-    if p == h or not (p == h or p.startswith(h + "/")):
-        return "fora da sua pasta de usuário"
-    rel = p[len(h) + 1:]
+    _, dh = dono(path)
+    if dh is None:
+        return "fora das pastas de usuário"
+    h = _norm(dh).rstrip("/")
+    if p == h:
+        return "pasta do usuário (não removemos a pasta inteira)"
+    # as regras são em minúsculas: no Mac e no Linux as pastas reais são "Documents", "Library/Keychains"...
+    # NFC porque o macOS pode devolver acentos decompostos ("Área de Trabalho")
+    rel = unicodedata.normalize("NFC", p[len(h) + 1:]).lower()
     if rel in ("desktop", "documents", "downloads", "pictures", "movies", "music", "videos", "library", "appdata", "área de trabalho", "documentos", "imagens", "vídeos", "música"):
         return "pasta principal do usuário (não removemos a pasta inteira)"
     segs = set(rel.split("/"))
@@ -111,12 +188,12 @@ def zona_vermelha(path):
     for parte in _VERM_PARTES:
         if rel == parte or rel.startswith(parte + "/"):
             return "dados de sistema, contas ou credenciais"
-    ext = os.path.splitext(p)[1]
+    ext = os.path.splitext(rel)[1]
     if ext in _VERM_EXT:
         return "arquivo de chave/credencial"
     if rel.endswith(_VERM_BIBLIO) or any(("/" + b + "/") in ("/" + rel + "/") for b in _VERM_BIBLIO):
         return "biblioteca de um aplicativo (use o próprio aplicativo para gerenciar)"
-    if "/login data" in p or p.endswith("/cookies") or p.endswith("/key4.db") or p.endswith("/logins.json"):
+    if "/login data" in rel or rel.endswith("/cookies") or rel.endswith("/key4.db") or rel.endswith("/logins.json"):
         return "senhas/cookies de navegador"
     return None
 
@@ -124,8 +201,7 @@ def zona_vermelha(path):
 # ----------------------------------------------------------------------------------------------
 # alvos conhecidos (zona verde): caches que o sistema/app recria
 # ----------------------------------------------------------------------------------------------
-def _alvos_verdes():
-    h = home()
+def _alvos_verdes(h):
     out = []  # (caminho, titulo, motivo, agrupar_filhos)
 
     def add(p, t, m, filhos=False):
@@ -137,7 +213,7 @@ def _alvos_verdes():
         add(os.path.join(h, "Library/Caches"), "Cache de aplicativos", "Cada aplicativo recria o seu cache.", True)
         add(os.path.join(h, "Library/Logs"), "Registros (logs) de aplicativos", "Só histórico de funcionamento.", True)
     elif IS_WIN:
-        la = os.environ.get("LOCALAPPDATA") or os.path.join(h, "AppData", "Local")
+        la = os.path.join(h, "AppData", "Local")
         add(os.path.join(la, "CapCut", "User Data", "Cache"), "Cache do CapCut", "Arquivos temporários de prévia/render que o CapCut recria.")
         for nav, rel in (("Chrome", "Google/Chrome/User Data"), ("Edge", "Microsoft/Edge/User Data"), ("Brave", "BraveSoftware/Brave-Browser/User Data")):
             base = os.path.join(la, *rel.split("/"))
@@ -167,14 +243,12 @@ def _alvos_verdes():
     return out
 
 
-def _pastas_capcut():
-    h = home()
+def _pastas_capcut(h):
     bases = []
     if IS_MAC:
         bases += [os.path.join(h, "Movies/CapCut/User Data/Projects")]
     elif IS_WIN:
-        la = os.environ.get("LOCALAPPDATA") or os.path.join(h, "AppData", "Local")
-        bases += [os.path.join(la, "CapCut", "User Data", "Projects")]
+        bases += [os.path.join(h, "AppData", "Local", "CapCut", "User Data", "Projects")]
     else:
         bases += [os.path.join(h, ".local/share/CapCut/User Data/Projects")]
     out = []
@@ -279,12 +353,11 @@ _ORF_PULAR = {"apple", "addressbook", "clouddocs", "knowledge", "icloud", "dock"
               "recentdocuments", "sharedlibrary", "nvidia", "intel", "amd", "windows", "wsl", "pip", "npm", "node", "python", "java", "code", "vscode", "jetbrains", "docker", "kubernetes"}
 
 
-def _orfaos(agora, idle_dias, pular):
-    h = home()
+def _orfaos(agora, idle_dias, pular, h):
     if IS_MAC:
         bases = [os.path.join(h, "Library/Application Support")]
     elif IS_WIN:
-        bases = [os.environ.get("APPDATA") or os.path.join(h, "AppData", "Roaming"), os.environ.get("LOCALAPPDATA") or os.path.join(h, "AppData", "Local")]
+        bases = [os.path.join(h, "AppData", "Roaming"), os.path.join(h, "AppData", "Local")]
     else:
         bases = [os.path.join(h, ".config"), os.path.join(h, ".local/share")]
     inst = None
@@ -372,8 +445,10 @@ def tamanho_logico(path):
     return tot
 
 
-def tamanho_dir(path, cancel=None):
-    """(bytes, arquivos, ultimo_uso_epoch) de uma pasta, sem seguir links."""
+def tamanho_dir(path, cancel=None, hl=None):
+    """(bytes, arquivos, ultimo_uso_epoch) de uma pasta, sem seguir links. hl: conjunto de hard links já contados
+    (padrão: o da varredura)."""
+    hl = _HL if hl is None else hl
     tot = n = 0
     ult = 0
     stack = [path]
@@ -391,7 +466,7 @@ def tamanho_dir(path, cancel=None):
                             stack.append(e.path)
                         else:
                             st = e.stat(follow_symlinks=False)
-                            if _nuvem(st) or _repetido(st):
+                            if _nuvem(st) or _repetido(st, hl):
                                 continue
                             tot += _aloc(st)
                             n += 1
@@ -413,164 +488,216 @@ def iniciar_varredura(idle_dias=90, min_mb=100):
     threading.Thread(target=_varrer, args=(int(idle_dias), int(min_mb)), daemon=True).start()
 
 
+_SEQ = [0]
+
+
 def _novo_id():
-    return len(ITENS) + 1
+    # contador que só cresce: depois de limpar alguns itens, um item novo não pode herdar o id de outro
+    _SEQ[0] += 1
+    return _SEQ[0]
 
 
 def _add(it):
+    it.setdefault("usuario", _USR[0])
     it["id"] = _novo_id()
     ITENS[it["id"]] = it
     return it
 
 
+def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
+    """Passos 1 a 3 numa pasta de usuário. Devolve os bytes da zona verde encontrados nela."""
+    try:
+        dev_home = os.stat(h).st_dev
+    except OSError:
+        dev_home = None
+    pular = set()
+    verde_bytes = 0
+    alvos = _alvos_verdes(h)
+
+    # 1) zona verde: caches conhecidos
+    ST["atual"] = "Procurando caches conhecidos"
+    ST["pct"] = 3
+    for i, (p, tit, mot, filhos) in enumerate(alvos):
+        if CANCEL.is_set():
+            break
+        pular.add(_norm(p))
+        ST["atual"] = p
+        if filhos:
+            try:
+                subs = sorted(os.listdir(p))
+            except OSError:
+                continue
+            for s in subs:
+                q = os.path.join(p, s)
+                if not os.path.isdir(q) or os.path.islink(q):
+                    continue
+                b, n, ult = tamanho_dir(q, CANCEL)
+                ST["arquivos"] += n
+                ST["bytes"] += b
+                if b >= 20 * 1024 * 1024:
+                    _add({"path": q, "tipo": "pasta", "zona": "verde", "cat": "Limpeza imediata", "titulo": "%s › %s" % (tit, s), "motivo": mot, "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": True})
+                    verde_bytes += b
+        else:
+            b, n, ult = tamanho_dir(p, CANCEL)
+            ST["arquivos"] += n
+            ST["bytes"] += b
+            if b >= 5 * 1024 * 1024:
+                _add({"path": p, "tipo": "pasta", "zona": "verde", "cat": "Limpeza imediata", "titulo": tit, "motivo": mot, "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": True})
+                verde_bytes += b
+        ST["pct"] = 3 + int(12.0 * (i + 1) / max(1, len(alvos)))
+
+    # 1b) backups de iPhone/iPad (Mac): grandes e muitas vezes esquecidos; mover para HD externo é o caminho
+    mb = os.path.join(h, "Library", "Application Support", "MobileSync", "Backup")
+    if IS_MAC and os.path.isdir(mb):
+        pular.add(_norm(mb))
+        try:
+            bks = sorted(os.listdir(mb))
+        except OSError:
+            bks = []
+        for d in bks:
+            q = os.path.join(mb, d)
+            if not os.path.isdir(q) or CANCEL.is_set():
+                continue
+            info = {}
+            try:
+                import plistlib
+                with open(os.path.join(q, "Info.plist"), "rb") as fh:
+                    info = plistlib.load(fh)
+            except Exception:
+                pass
+            b, n, ult = tamanho_dir(q, CANCEL)
+            ST["bytes"] += b
+            ST["arquivos"] += n
+            data = info.get("Last Backup Date")
+            _add({"path": q, "tipo": "pasta", "zona": "ambar", "cat": "Backups de iPhone/iPad", "titulo": "Backup de %s" % (info.get("Device Name") or d[:12]),
+                  "motivo": "Último backup em %s. Pode ser o único backup do aparelho: prefira mover para um HD externo." % (data.strftime("%d/%m/%Y") if hasattr(data, "strftime") else "?"),
+                  "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": False})
+
+    # 2) projetos CapCut parados (âmbar)
+    ST["atual"] = "Procurando projetos do CapCut"
+    for q in _pastas_capcut(h):
+        if CANCEL.is_set():
+            break
+        pular.add(_norm(q))
+        b, n, ult = tamanho_dir(q, CANCEL)
+        ST["bytes"] += b
+        ST["arquivos"] += n
+        dias = int((agora - ult) / 86400) if ult else 9999
+        if dias >= 30 and b >= 20 * 1024 * 1024:
+            _add({"path": q, "tipo": "pasta", "zona": "ambar", "cat": "Projetos do CapCut", "titulo": "Projeto CapCut: %s" % os.path.basename(q), "motivo": "Sem edição há %d dias." % dias,
+                  "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": False})
+    ST["pct"] = 16
+    _orfaos(agora, idle_dias, pular, h)
+    ST["pct"] = 20
+
+    # 3) varredura geral por arquivos grandes e parados
+    raizes = [h]
+    nomes_dl = {"downloads", "transferências"}
+    stack = list(raizes)
+    visitados = 0
+    while stack and not CANCEL.is_set():
+        d = stack.pop()
+        if _norm(d) in pular:
+            continue
+        try:
+            it = os.scandir(d)
+        except PermissionError:
+            ST["bloqueados"] += 1
+            continue
+        except OSError:
+            continue
+        ST["pastas"] += 1
+        em_dl = os.path.basename(d).lower() in nomes_dl and _norm(os.path.dirname(d)) == _norm(h)
+        with it:
+            for e in it:
+                if CANCEL.is_set():
+                    break
+                try:
+                    if e.is_symlink():
+                        continue
+                    nome = e.name
+                    if e.is_dir(follow_symlinks=False):
+                        ln = nome.lower()
+                        if ln in (".git", "node_modules", ".trash", ".trashes", "$recycle.bin") or ln.endswith(_VERM_BIBLIO) or zona_vermelha(e.path) and ln in _VERM_SEG:
+                            if ln.endswith(_VERM_BIBLIO):
+                                b, n, ult = tamanho_dir(e.path, CANCEL)
+                                ST["bytes"] += b
+                                if b >= min_b:
+                                    _add({"path": e.path, "tipo": "pasta", "zona": "vermelha", "cat": "Bibliotecas e apps", "titulo": nome, "motivo": zona_vermelha(e.path) or "biblioteca de aplicativo", "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": False})
+                            continue
+                        if os.path.basename(os.path.dirname(e.path)).lower() == "library" and ln in ("keychains", "mail", "messages", "safari", "cookies", "preferences"):
+                            continue
+                        try:
+                            if dev_home is not None and e.stat(follow_symlinks=False).st_dev != dev_home:
+                                continue  # outro disco/volume montado dentro da pasta: não entra
+                        except OSError:
+                            continue
+                        stack.append(e.path)
+                        continue
+                    st = e.stat(follow_symlinks=False)
+                except PermissionError:
+                    ST["bloqueados"] += 1
+                    continue
+                except OSError:
+                    continue
+                if _nuvem(st):
+                    ST["nuvem_n"] += 1
+                    ST["nuvem_bytes"] += st.st_size
+                    continue
+                if _repetido(st):
+                    continue
+                tam = _aloc(st)
+                ST["arquivos"] += 1
+                ST["bytes"] += tam
+                ST["atual"] = e.path
+                cat = categoria(nome)
+                cat_bytes[cat] = cat_bytes.get(cat, 0) + tam
+                ult = max(st.st_mtime, st.st_atime)
+                dias = int((agora - ult) / 86400)
+                ext = os.path.splitext(nome.lower())[1]
+                # instaladores residuais em Downloads/Desktop: zona verde
+                if ext in INSTAL and tam >= 5 * 1024 * 1024 and dias >= 14 and (em_dl or os.path.basename(d).lower() in ("desktop", "área de trabalho")) and not zona_vermelha(e.path):
+                    _add({"path": e.path, "tipo": "arquivo", "zona": "verde", "cat": "Limpeza imediata", "titulo": "Instalador: %s" % nome, "motivo": "Instalador já usado (parado há %d dias)." % dias, "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": True})
+                    verde_bytes += tam
+                    continue
+                if zona_vermelha(e.path):
+                    continue
+                if _gravacao_tela(nome) and dias >= 30 and tam >= 20 * 1024 * 1024:
+                    _add({"path": e.path, "tipo": "arquivo", "zona": "ambar", "cat": "Gravações de tela", "titulo": nome, "motivo": "Gravação de tela parada há %d dias." % dias, "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": False})
+                elif em_dl and dias >= 90 and tam >= 5 * 1024 * 1024:
+                    _add({"path": e.path, "tipo": "arquivo", "zona": "ambar", "cat": "Downloads antigos", "titulo": nome, "motivo": "Baixado e parado há %d dias." % dias, "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": False})
+                elif tam >= min_b and dias >= idle_dias:
+                    _add({"path": e.path, "tipo": "arquivo", "zona": "ambar", "cat": cat if cat != "Outros" else "Outros arquivos grandes", "titulo": nome, "motivo": "%s parado há %d dias." % (fmt(tam), dias), "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": False})
+        visitados += 1
+        if visitados % 40 == 0:
+            ST["pct"] = min(95, 18 + int(77.0 * (1 - 1.0 / (1 + visitados / 3000.0))))
+    return verde_bytes
+
+
 def _varrer(idle_dias, min_mb):
     try:
         agora = time.time()
-        h = home()
         ST["acesso_total"] = acesso_total_mac()
         min_b = min_mb * 1000 * 1000 if IS_MAC else min_mb * 1024 * 1024
         _HL.clear()
         ST["nuvem_n"] = 0
         ST["nuvem_bytes"] = 0
-        try:
-            dev_home = os.stat(h).st_dev
-        except OSError:
-            dev_home = None
-        alvos = _alvos_verdes()
-        pular = set()
+        redefinir_usuarios()
+        usuarios = homes()
+        ST["usuarios"] = [u for u, _ in usuarios]
+        ST["usuario_atual"] = usuarios[0][0] if usuarios else ""
+        ST["sem_acesso"] = list(SEM_ACESSO)
         cat_bytes = {}
+        por_usuario = {}
         verde_bytes = 0
-
-        # 1) zona verde: caches conhecidos
-        ST["atual"] = "Procurando caches conhecidos"
-        ST["pct"] = 3
-        for i, (p, tit, mot, filhos) in enumerate(alvos):
+        for usr, h in usuarios:
             if CANCEL.is_set():
                 break
-            pular.add(_norm(p))
-            ST["atual"] = p
-            if filhos:
-                try:
-                    subs = sorted(os.listdir(p))
-                except OSError:
-                    continue
-                for s in subs:
-                    q = os.path.join(p, s)
-                    if not os.path.isdir(q) or os.path.islink(q):
-                        continue
-                    b, n, ult = tamanho_dir(q, CANCEL)
-                    ST["arquivos"] += n
-                    ST["bytes"] += b
-                    if b >= 20 * 1024 * 1024:
-                        _add({"path": q, "tipo": "pasta", "zona": "verde", "cat": "Limpeza imediata", "titulo": "%s › %s" % (tit, s), "motivo": mot, "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": True})
-                        verde_bytes += b
-            else:
-                b, n, ult = tamanho_dir(p, CANCEL)
-                ST["arquivos"] += n
-                ST["bytes"] += b
-                if b >= 5 * 1024 * 1024:
-                    _add({"path": p, "tipo": "pasta", "zona": "verde", "cat": "Limpeza imediata", "titulo": tit, "motivo": mot, "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": True})
-                    verde_bytes += b
-            ST["pct"] = 3 + int(12.0 * (i + 1) / max(1, len(alvos)))
-
-        # 2) projetos CapCut parados (âmbar)
-        ST["atual"] = "Procurando projetos do CapCut"
-        for q in _pastas_capcut():
-            if CANCEL.is_set():
-                break
-            pular.add(_norm(q))
-            b, n, ult = tamanho_dir(q, CANCEL)
-            ST["bytes"] += b
-            ST["arquivos"] += n
-            dias = int((agora - ult) / 86400) if ult else 9999
-            if dias >= 30 and b >= 20 * 1024 * 1024:
-                _add({"path": q, "tipo": "pasta", "zona": "ambar", "cat": "Projetos do CapCut", "titulo": "Projeto CapCut: %s" % os.path.basename(q), "motivo": "Sem edição há %d dias." % dias,
-                      "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": False})
-        ST["pct"] = 16
-        _orfaos(agora, idle_dias, pular)
-        ST["pct"] = 20
-
-        # 3) varredura geral por arquivos grandes e parados
-        raizes = [h]
-        nomes_dl = {"downloads", "transferências"}
-        stack = list(raizes)
-        visitados = 0
-        while stack and not CANCEL.is_set():
-            d = stack.pop()
-            if _norm(d) in pular:
-                continue
-            try:
-                it = os.scandir(d)
-            except PermissionError:
-                ST["bloqueados"] += 1
-                continue
-            except OSError:
-                continue
-            ST["pastas"] += 1
-            em_dl = os.path.basename(d).lower() in nomes_dl and _norm(os.path.dirname(d)) == _norm(h)
-            with it:
-                for e in it:
-                    if CANCEL.is_set():
-                        break
-                    try:
-                        if e.is_symlink():
-                            continue
-                        nome = e.name
-                        if e.is_dir(follow_symlinks=False):
-                            ln = nome.lower()
-                            if ln in (".git", "node_modules", ".trash", ".trashes", "$recycle.bin") or ln.endswith(_VERM_BIBLIO) or zona_vermelha(e.path) and ln in _VERM_SEG:
-                                if ln.endswith(_VERM_BIBLIO):
-                                    b, n, ult = tamanho_dir(e.path, CANCEL)
-                                    ST["bytes"] += b
-                                    if b >= min_b:
-                                        _add({"path": e.path, "tipo": "pasta", "zona": "vermelha", "cat": "Bibliotecas e apps", "titulo": nome, "motivo": zona_vermelha(e.path) or "biblioteca de aplicativo", "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": False})
-                                continue
-                            if os.path.basename(os.path.dirname(e.path)).lower() == "library" and ln in ("keychains", "mail", "messages", "safari", "cookies", "preferences"):
-                                continue
-                            try:
-                                if dev_home is not None and e.stat(follow_symlinks=False).st_dev != dev_home:
-                                    continue  # outro disco/volume montado dentro da pasta: não entra
-                            except OSError:
-                                continue
-                            stack.append(e.path)
-                            continue
-                        st = e.stat(follow_symlinks=False)
-                    except PermissionError:
-                        ST["bloqueados"] += 1
-                        continue
-                    except OSError:
-                        continue
-                    if _nuvem(st):
-                        ST["nuvem_n"] += 1
-                        ST["nuvem_bytes"] += st.st_size
-                        continue
-                    if _repetido(st):
-                        continue
-                    tam = _aloc(st)
-                    ST["arquivos"] += 1
-                    ST["bytes"] += tam
-                    ST["atual"] = e.path
-                    cat = categoria(nome)
-                    cat_bytes[cat] = cat_bytes.get(cat, 0) + tam
-                    ult = max(st.st_mtime, st.st_atime)
-                    dias = int((agora - ult) / 86400)
-                    ext = os.path.splitext(nome.lower())[1]
-                    # instaladores residuais em Downloads/Desktop: zona verde
-                    if ext in INSTAL and tam >= 5 * 1024 * 1024 and dias >= 14 and (em_dl or os.path.basename(d).lower() in ("desktop", "área de trabalho")) and not zona_vermelha(e.path):
-                        _add({"path": e.path, "tipo": "arquivo", "zona": "verde", "cat": "Limpeza imediata", "titulo": "Instalador: %s" % nome, "motivo": "Instalador já usado (parado há %d dias)." % dias, "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": True})
-                        verde_bytes += tam
-                        continue
-                    if zona_vermelha(e.path):
-                        continue
-                    if _gravacao_tela(nome) and dias >= 30 and tam >= 20 * 1024 * 1024:
-                        _add({"path": e.path, "tipo": "arquivo", "zona": "ambar", "cat": "Gravações de tela", "titulo": nome, "motivo": "Gravação de tela parada há %d dias." % dias, "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": False})
-                    elif em_dl and dias >= 90 and tam >= 5 * 1024 * 1024:
-                        _add({"path": e.path, "tipo": "arquivo", "zona": "ambar", "cat": "Downloads antigos", "titulo": nome, "motivo": "Baixado e parado há %d dias." % dias, "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": False})
-                    elif tam >= min_b and dias >= idle_dias:
-                        _add({"path": e.path, "tipo": "arquivo", "zona": "ambar", "cat": cat if cat != "Outros" else "Outros arquivos grandes", "titulo": nome, "motivo": "%s parado há %d dias." % (fmt(tam), dias), "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": False})
-            visitados += 1
-            if visitados % 40 == 0:
-                ST["pct"] = min(95, 18 + int(77.0 * (1 - 1.0 / (1 + visitados / 3000.0))))
+            _USR[0] = usr
+            antes = ST["bytes"]
+            verde_bytes += _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes)
+            por_usuario[usr] = ST["bytes"] - antes
+        h = usuarios[0][1] if usuarios else home()
         # 4) cockpit
         try:
             u = shutil.disk_usage(h)
@@ -591,7 +718,7 @@ def _varrer(idle_dias, min_mb):
             aviso = "A soma dos arquivos lidos passou do espaço usado (clones e compressão do sistema de arquivos). Os valores foram ajustados proporcionalmente: trate como estimativa."
         sistema = max(0, usado - midia - docs - apps - limpavel)
         ambar = sum(i["bytes"] for i in ITENS.values() if i["zona"] == "ambar")
-        RES["cockpit"] = {"total": total, "livre": livre, "usado": usado, "midias": midia, "documentos": docs, "apps": apps, "limpavel": limpavel, "parado": ambar,
+        RES["cockpit"] = {"por_usuario": por_usuario, "total": total, "livre": livre, "usado": usado, "midias": midia, "documentos": docs, "apps": apps, "limpavel": limpavel, "parado": ambar,
                           "sistema": sistema, "medido": medido, "aviso": aviso, "nuvem_n": ST["nuvem_n"], "nuvem_bytes": ST["nuvem_bytes"], "por_tipo": cat_bytes, "base": int(base_unidade())}
         ST["pct"] = 100
         ST["fase"] = "cancelado" if CANCEL.is_set() else "pronto"
@@ -611,22 +738,236 @@ def estado():
     return d
 
 
-def resultado(zona=None, cat=None, q="", offset=0, limit=200):
-    itens = [i for i in ITENS.values() if (not zona or i["zona"] == zona) and (not cat or i["cat"] == cat) and (not q or q.lower() in i["path"].lower())]
+def resultado(zona=None, cat=None, q="", offset=0, limit=200, usuario=""):
+    base = [i for i in ITENS.values() if not usuario or i.get("usuario") == usuario]
+    itens = [i for i in base if (not zona or i["zona"] == zona) and (not cat or i["cat"] == cat) and (not q or q.lower() in i["path"].lower())]
     itens.sort(key=lambda i: -i["bytes"])
     cats = {}
-    for i in ITENS.values():
+    for i in base:
         c = cats.setdefault((i["zona"], i["cat"]), {"zona": i["zona"], "cat": i["cat"], "n": 0, "bytes": 0})
         c["n"] += 1
         c["bytes"] += i["bytes"]
     agora = time.time()
     rows = [{"id": i["id"], "titulo": i["titulo"], "path": i["path"], "tipo": i["tipo"], "zona": i["zona"], "cat": i["cat"], "motivo": i["motivo"], "bytes": i["bytes"],
-             "arquivos": i["arquivos"], "dias": int((agora - i["ultimo_uso"]) / 86400) if i["ultimo_uso"] else None, "pre": i["pre"], "orfao": bool(i.get("orfao"))} for i in itens[offset:offset + limit]]
-    return {"rows": rows, "total": len(itens), "cats": sorted(cats.values(), key=lambda c: (-{"verde": 3, "ambar": 2, "vermelha": 1}[c["zona"]], -c["bytes"]))}
+             "arquivos": i["arquivos"], "dias": int((agora - i["ultimo_uso"]) / 86400) if i["ultimo_uso"] else None, "pre": i["pre"], "orfao": bool(i.get("orfao")),
+             "usuario": i.get("usuario", ""), "no": no_de(i["path"], i.get("usuario")), "previa": tipo_previa(i["path"]) if i["tipo"] == "arquivo" else None,
+             "pode_abrir": pode_abrir(i["path"])} for i in itens[offset:offset + limit]]
+    return {"rows": rows, "total": len(itens), "usuarios": ST.get("usuarios", []), "cats": sorted(cats.values(), key=lambda c: (-{"verde": 3, "ambar": 2, "vermelha": 1}[c["zona"]], -c["bytes"]))}
 
 
 def cancelar():
     CANCEL.set()
+
+
+# ----------------------------------------------------------------------------------------------
+# explorar, ver e abrir: qualquer zona, qualquer profundidade, todos os usuários. A tela só manda ids (nós).
+# ----------------------------------------------------------------------------------------------
+NOS = {}  # id -> {"path", "usuario"}
+_NOS_IDX = {}  # caminho normalizado -> id
+_TAM = {}  # caminho normalizado -> (bytes, arquivos, ultimo_uso, mtime da pasta) medidos pelo explorador
+MEDIR = {"cancel": threading.Event(), "ativo": False}
+PREVIA = {
+    ".jpg": ("imagem", "image/jpeg"), ".jpeg": ("imagem", "image/jpeg"), ".png": ("imagem", "image/png"), ".gif": ("imagem", "image/gif"),
+    ".webp": ("imagem", "image/webp"), ".bmp": ("imagem", "image/bmp"),
+    ".mp4": ("video", "video/mp4"), ".m4v": ("video", "video/mp4"), ".mov": ("video", "video/mp4"), ".webm": ("video", "video/webm"),
+    ".mp3": ("audio", "audio/mpeg"), ".m4a": ("audio", "audio/mp4"), ".wav": ("audio", "audio/wav"), ".ogg": ("audio", "audio/ogg"),
+    ".opus": ("audio", "audio/ogg"), ".flac": ("audio", "audio/flac"), ".aac": ("audio", "audio/aac"),
+    ".pdf": ("pdf", "application/pdf"),
+}
+# texto: sempre como text/plain (html, svg e xml aparecem como código, nunca viram página dentro do programa)
+for _x in (".txt", ".csv", ".log", ".md", ".json", ".ini", ".cfg", ".conf", ".yml", ".yaml", ".xml", ".html", ".htm", ".svg", ".srt", ".tsv"):
+    PREVIA[_x] = ("texto", "text/plain; charset=utf-8")
+SEM_ABRIR = {".exe", ".msi", ".bat", ".cmd", ".ps1", ".vbs", ".vbe", ".js", ".jse", ".wsf", ".hta", ".lnk", ".url", ".scr", ".com", ".pif", ".cpl",
+             ".msc", ".reg", ".jar", ".sh", ".command", ".app", ".appimage", ".deb", ".rpm", ".pkg", ".dmg", ".run"}
+_CRED_SEG = {".ssh", ".gnupg", ".aws", ".azure", ".kube", ".password-store", "keychains", "credentials", "wallets", "keyrings", "protect"}
+
+
+def no_de(path, usuario=None):
+    k = _norm(path)
+    nid = _NOS_IDX.get(k)
+    if nid is None:
+        nid = len(NOS) + 1
+        NOS[nid] = {"path": os.path.abspath(path), "usuario": usuario if usuario is not None else (dono(path)[0] or "")}
+        _NOS_IDX[k] = nid
+    return nid
+
+
+def _rel_dono(path):
+    _, h = dono(path)
+    if not h:
+        return None
+    return unicodedata.normalize("NFC", _norm(path)[len(_norm(h).rstrip("/")) + 1:]).lower()
+
+
+def e_credencial(path):
+    """Senhas, chaves e cookies: nunca têm prévia nem abrem; só "mostrar na pasta"."""
+    rel = _rel_dono(path)
+    if rel is None:
+        return False
+    if set(rel.split("/")) & _CRED_SEG or os.path.splitext(rel)[1] in _VERM_EXT or rel.endswith(".keychain-db"):
+        return True
+    r = "/" + rel
+    return "/login data" in r or r.endswith(("/cookies", "/key4.db", "/logins.json")) or rel.startswith(("library/accounts", "library/cookies"))
+
+
+def tipo_previa(path):
+    t = PREVIA.get(os.path.splitext(path)[1].lower())
+    return t[0] if t and not e_credencial(path) else None
+
+
+def pode_abrir(path):
+    return not e_credencial(path) and os.path.splitext(path.rstrip("/\\"))[1].lower() not in SEM_ABRIR
+
+
+def caminho_no(nid):
+    """Caminho de um nó, conferido de novo: existe, não é link e está numa pasta de usuário."""
+    try:
+        n = NOS.get(int(nid))
+    except (TypeError, ValueError):
+        n = None
+    if not n:
+        raise ValueError("Item não encontrado; atualize a lista.")
+    p = n["path"]
+    if not os.path.lexists(p):
+        raise ValueError("Já não existe: %s" % p)
+    if os.path.islink(p):
+        raise ValueError("Atalho/link simbólico: não seguimos.")
+    if dono(p)[1] is None:
+        raise ValueError("Fora das pastas de usuário.")
+    return p
+
+
+def previa(nid):
+    """(caminho, mime, tipo, limite de bytes) para mostrar o arquivo dentro do programa."""
+    p = caminho_no(nid)
+    if os.path.isdir(p):
+        raise ValueError("Pasta não tem prévia: use Entrar.")
+    t = PREVIA.get(os.path.splitext(p)[1].lower())
+    if not t or e_credencial(p):
+        raise ValueError("Sem prévia para este arquivo: use Abrir ou Mostrar na pasta.")
+    return p, t[1], t[0], (200 * 1024 if t[0] == "texto" else None)
+
+
+def _medir_fundo(paths):
+    """Mede o tamanho das subpastas em segundo plano; a tela pergunta de novo enquanto 'medindo' for verdadeiro."""
+    MEDIR["cancel"].set()
+    ev = threading.Event()
+    MEDIR["cancel"] = ev
+    MEDIR["ativo"] = True
+
+    def work():
+        try:
+            for p in paths:
+                if ev.is_set():
+                    return
+                try:
+                    mt = os.stat(p).st_mtime
+                except OSError:
+                    continue
+                b, n, ult = tamanho_dir(p, ev, set())
+                if ev.is_set():
+                    return
+                _TAM[_norm(p)] = (b, n, ult, mt)
+        finally:
+            if MEDIR["cancel"] is ev:
+                MEDIR["ativo"] = False
+    threading.Thread(target=work, daemon=True).start()
+
+
+def _info_filho(path, nome, st, d, usr, agora, pend):
+    k = _norm(path)
+    nuvem = False
+    if d:
+        t = _TAM.get(k)
+        tam, ult = (t[0], t[2]) if t and t[3] == st.st_mtime else (None, None)
+        if tam is None:
+            pend.append(path)
+    else:
+        nuvem = _nuvem(st)
+        tam, ult = (0 if nuvem else _aloc(st)), max(st.st_mtime, st.st_atime)
+    mot = zona_vermelha(path)
+    return {"no": no_de(path, usr), "nome": nome, "tipo": "pasta" if d else "arquivo", "bytes": tam, "nuvem": nuvem,
+            "dias": int((agora - ult) / 86400) if ult else None, "zona": "vermelha" if mot else "", "motivo": mot or "",
+            "previa": None if d else tipo_previa(path), "pode_abrir": pode_abrir(path), "pode_marcar": not mot, "credencial": e_credencial(path)}
+
+
+def explorar(nid=None, item=None, limite=1500):
+    """Conteúdo de uma pasta (ou, sem nó, as pastas de cada usuário), maiores primeiro."""
+    agora = time.time()
+    if item:
+        it = ITENS.get(int(item))
+        if not it:
+            raise ValueError("Item não existe mais; faça a varredura de novo.")
+        nid = no_de(it["path"], it.get("usuario"))
+    if not nid:
+        por_usr = (RES.get("cockpit") or {}).get("por_usuario") or {}
+        out, pend = [], []
+        for usr, h in homes():
+            t = _TAM.get(_norm(h))
+            tam = t[0] if t else por_usr.get(usr)
+            if tam is None:
+                pend.append(h)
+            out.append({"no": no_de(h, usr), "nome": usr, "tipo": "pasta", "bytes": tam, "nuvem": False, "dias": None, "zona": "", "motivo": "",
+                        "previa": None, "pode_abrir": True, "pode_marcar": False, "credencial": False, "raiz": True})
+        if pend:
+            _medir_fundo(pend)
+        return {"no": 0, "path": "", "migalhas": [], "filhos": out, "total": len(out), "medindo": bool(pend) and MEDIR["ativo"], "sem_acesso": list(SEM_ACESSO)}
+    p = caminho_no(nid)
+    usr, h = dono(p)
+    migalhas = [{"no": 0, "nome": "Usuários"}]
+    hn = os.path.abspath(h)
+    cur = hn
+    migalhas.append({"no": no_de(cur, usr), "nome": usr})
+    for parte in [x for x in os.path.relpath(os.path.abspath(p), hn).replace("\\", "/").split("/") if x not in ("", ".")]:
+        cur = os.path.join(cur, parte)
+        migalhas.append({"no": no_de(cur, usr), "nome": parte})
+    if not os.path.isdir(p):
+        st = os.lstat(p)
+        return {"no": int(nid), "path": p, "migalhas": migalhas, "filhos": [], "total": 0, "medindo": False, "arquivo": _info_filho(p, os.path.basename(p), st, False, usr, agora, [])}
+    filhos, pend = [], []
+    try:
+        with os.scandir(p) as it:
+            for e in it:
+                try:
+                    if e.is_symlink():
+                        continue
+                    d = e.is_dir(follow_symlinks=False)
+                    st = e.stat(follow_symlinks=False)
+                except OSError:
+                    continue
+                filhos.append(_info_filho(e.path, e.name, st, d, usr, agora, pend))
+    except PermissionError:
+        raise ValueError("Sem permissão para abrir esta pasta (rode como administrador; no Mac, com Acesso Total ao Disco).")
+    filhos.sort(key=lambda x: (x["bytes"] is None and x["tipo"] == "pasta", -(x["bytes"] or 0), x["nome"].lower()))
+    if pend:
+        _medir_fundo(pend)
+    return {"no": int(nid), "path": p, "usuario": usr, "zona": "vermelha" if zona_vermelha(p) else "", "migalhas": migalhas,
+            "filhos": filhos[:limite], "total": len(filhos), "medindo": bool(pend) and MEDIR["ativo"], "sem_acesso": list(SEM_ACESSO)}
+
+
+def marcar(nid):
+    """Põe um arquivo/pasta achado ao explorar na lista de ações (âmbar). Devolve o id do item."""
+    p = caminho_no(nid)
+    mot = zona_vermelha(p)
+    if mot:
+        raise ValueError("Bloqueado (%s)." % mot)
+    k = _norm(p)
+    for it in ITENS.values():
+        if _norm(it["path"]) == k:
+            return it["id"]
+    usr = NOS[int(nid)]["usuario"]
+    if os.path.isdir(p):
+        b, n, ult = tamanho_dir(p, None, set())
+        it = {"tipo": "pasta"}
+    else:
+        st = os.lstat(p)
+        b, n, ult = _aloc(st), 1, max(st.st_mtime, st.st_atime)
+        it = {"tipo": "arquivo", "logico": st.st_size}
+    it.update({"path": p, "zona": "ambar", "cat": "Escolhido pelo técnico", "titulo": os.path.basename(p), "motivo": "Marcado por você ao explorar.",
+               "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": False, "usuario": usr, "escolhido": True})
+    with LOCK:
+        _add(it)
+    return it["id"]
 
 
 # ----------------------------------------------------------------------------------------------
@@ -652,9 +993,15 @@ def _unico(dirp, nome):
 
 
 def _lixeira_linux(path):
-    h = home()
-    uid = os.getuid()
-    base = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.join(h, ".local", "share"), "Trash")
+    """Lixeira do DONO do arquivo (rodando com sudo, cada usuário recebe na própria lixeira)."""
+    h = dono(path)[1] or home()
+    try:
+        st_h = os.stat(h)
+    except OSError:
+        st_h = None
+    uid = st_h.st_uid if st_h else os.getuid()
+    xdg = os.environ.get("XDG_DATA_HOME") if _norm(h) == _norm(home()) else None
+    base = os.path.join(xdg or os.path.join(h, ".local", "share"), "Trash")
     try:
         mesmo = os.stat(path).st_dev == os.stat(h).st_dev
     except OSError:
@@ -662,11 +1009,19 @@ def _lixeira_linux(path):
     if not mesmo:
         base = os.path.join(_mount_point(path), ".Trash-%d" % uid)
     fdir, idir = os.path.join(base, "files"), os.path.join(base, "info")
+    novos = [d for d in (os.path.dirname(base), base, fdir, idir) if not os.path.isdir(d)]
     os.makedirs(fdir, exist_ok=True)
     os.makedirs(idir, exist_ok=True)
     nome = _unico(fdir, os.path.basename(path))
-    with open(os.path.join(idir, nome + ".trashinfo"), "w", encoding="utf-8") as fh:
+    info = os.path.join(idir, nome + ".trashinfo")
+    with open(info, "w", encoding="utf-8") as fh:
         fh.write("[Trash Info]\nPath=%s\nDeletionDate=%s\n" % (urllib.parse.quote(os.path.abspath(path)), datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")))
+    if st_h and hasattr(os, "geteuid") and os.geteuid() == 0:
+        for d in novos + [info]:  # criados como root: devolve ao dono, senão ele não consegue esvaziar
+            try:
+                os.chown(d, st_h.st_uid, st_h.st_gid)
+            except OSError:
+                pass
     destino = os.path.join(fdir, nome)
     try:
         os.rename(path, destino)
@@ -676,7 +1031,7 @@ def _lixeira_linux(path):
 
 
 def _lixeira_mac(path):
-    t = os.path.join(home(), ".Trash")
+    t = os.path.join(dono(path)[1] or home(), ".Trash")  # lixeira do dono do arquivo
     try:
         if os.stat(path).st_dev == os.stat(t).st_dev:
             destino = os.path.join(t, _unico(t, os.path.basename(path)))
@@ -932,9 +1287,12 @@ def offload(ids, dest, definitivo=False, depois=None, confirma_orfaos=False):
 
 
 def _rel_home(p):
-    h = os.path.abspath(home())
+    """Caminho no destino do offload: <usuário>/<caminho dentro da pasta dele> (usuários não se misturam)."""
+    usr, h = dono(p)
     p = os.path.abspath(p)
-    return os.path.relpath(p, h) if p.startswith(h) else os.path.basename(p)
+    if not h:
+        return os.path.basename(p)
+    return os.path.join(re.sub(r"[^0-9A-Za-z_. -]+", "_", usr or "usuario"), os.path.relpath(p, os.path.abspath(h)))
 
 
 def _offload_thread(itens, dest, definitivo, depois):

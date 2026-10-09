@@ -1,23 +1,49 @@
-BKP PRO  -  D&D Technology  -  Somos únicos. Somos diferentes. Somos D&D.
+DESTRAVA!  -  D&D Technology  -  Somos únicos. Somos diferentes. Somos D&D.
 ==========================================================================
 Um pendrive só. Ele faz: FICHA da máquina (nota, hardware, programas pesados, sistema ideal, melhorias com
 "aplicar"), BACKUP organizado com certificado, e guarda o HISTÓRICO de cada máquina atendida.
 
 PREPARAR O PENDRIVE (uma vez)
   1) Instale o Ventoy no pendrive (ventoy.net). Use 16 GB ou mais.
-  2) Copie para ele, como arquivos comuns:  o ISO do Zorin OS  e esta pasta  BKP-Pro  (descompactada).
+  2) Copie para ele, como arquivos comuns:  o ISO do Zorin OS  e esta pasta  Destrava  (descompactada).
   3) Para o Windows rodar SEM instalar nada: baixe "Windows embeddable package (64-bit)" em
-     python.org/downloads/windows e extraia dentro de  BKP-Pro\runtime  (precisa existir runtime\python.exe).
-  Resultado: o pendrive serve para (a) iniciar o Zorin e (b) rodar o BKP Pro direto no Windows.
+     python.org/downloads/windows e extraia dentro de  Destrava\runtime  (precisa existir runtime\python.exe).
+  Resultado: o pendrive serve para (a) iniciar o Zorin e (b) rodar o Destrava! direto no Windows.
 
 USAR
   A) Windows LIGADO (ficha completa: boot, programas de inicialização, programas pesados, aplicar melhorias):
-     abra o pendrive > BKP-Pro > duplo clique em  Iniciar-Windows.bat  (pede administrador).
-     Home > "Permitir e analisar esta máquina". As fichas vão para  BKP-Pro\maquinas  no pendrive.
+     abra o pendrive > Destrava > duplo clique em  Iniciar-Windows.bat  (pede administrador).
+     Home > "Permitir e analisar esta máquina". As fichas vão para  Destrava\maquinas  no pendrive.
   B) Backup seguro: inicie o PC pelo pendrive no Zorin ("Experimentar"), monte os discos (clique neles no
-     gerenciador de arquivos) e rode  sudo sh Iniciar-Linux.sh  dentro da pasta BKP-Pro.
+     gerenciador de arquivos) e rode  sudo sh Iniciar-Linux.sh  dentro da pasta Destrava.
      Na Home dá para rodar a ficha também (hardware e disco; boot e inicialização do Windows não são medidos no Live).
   O mesmo botão "Backup" (gaveta lateral) leva aos 6 passos: origem/destino, checagens, seleção, cópia, verificação, certificado.
+
+RODAR SEM PENDRIVE (servidor da loja)
+  Um computador da loja roda o servidor (Docker) e entrega o programa a qualquer computador, na bancada ou no cliente.
+  Fichas, históricos e termos ficam NO SERVIDOR; o computador atendido não guarda nada.
+  PREPARAR (uma vez, no computador do servidor, dentro da pasta do projeto):
+    1) python3 baixar_runtimes.py            baixa o Python fixo (3.12.10) para Windows, Mac e Linux
+    2) docker compose up -d servidor         sobe o servidor (porta 8080, só neste computador)
+    3) docker compose exec servidor python servidor.py --nova-chave "Seu nome"
+       cria a chave do técnico. GUARDE: ela aparece uma única vez. (--listar-chaves e --revogar "Nome" também existem)
+    4) Pela internet:  docker compose --profile internet up -d   e o endereço sai em
+       docker compose logs tunel | grep trycloudflare      (temporário: muda a cada reinício)
+       Endereço fixo: crie um túnel na Cloudflare (precisa de domínio), ponha CLOUDFLARE_TUNNEL_TOKEN e DESTRAVA_URL_PUBLICA
+       num arquivo .env e use --profile internet-fixo.
+  USAR: abra o endereço do servidor no navegador do computador atendido e siga a página:
+    Windows (PowerShell):    irm <endereço>/iniciar.ps1 | iex
+    Mac e Linux (Terminal):  curl -fsSL <endereço>/iniciar.sh | sh
+    Digite a chave do técnico. Ao terminar, clique em "Encerrar" no topo: envia o que faltar e apaga tudo do computador.
+    Sem internet no meio do serviço, as alterações ficam "pendentes" e vão sozinhas quando a conexão voltar.
+  ATENÇÃO: o servidor só funciona com o computador dele ligado e acordado. Faça backup da pasta servidor-dados/
+    (dados dos clientes e chaves). O termo no modo servidor avisa o cliente de que os dados ficam no servidor da D&D.
+
+TESTAR NO PRÓPRIO COMPUTADOR (desenvolvimento)
+  Mac/Linux: sh testar-local.sh       Windows: Testar-Windows.bat       (os dados de teste ficam fora do pendrive)
+  Reproduzir outra máquina: na ficha, Detalhes técnicos > "Exportar dados para suporte" grava um arquivo na Área de
+    Trabalho. Em outro computador:  sh testar-local.sh --coleta-salva arquivo.json   (as ações são só simuladas)
+  Testes automáticos:  python3 -m unittest discover tests
 
 NOTA E "OUTCOME": a nota (0 a 100) resume CPU, memória, disco, tempo de resposta, boot e programas ao ligar.
   Depois de "aplicar melhorias", o programa mede de novo e mostra ANTES -> DEPOIS (boot e inicialização só melhoram
@@ -40,6 +66,23 @@ LIMITES HONESTOS
   * Slots de RAM e saúde do disco exigem administrador/root.
   * Veja também as notas de backup: BitLocker, Inicialização rápida, OneDrive só na nuvem.
 
+NOVIDADES DA VERSÃO 3.1
+  NOVO NOME: o BKP Pro agora se chama Destrava!. O atualizador encontra tanto Destrava.zip quanto BKP-Pro.zip.
+  TERMO 1.1: o texto mudou (nome novo e aviso de que o registro de autorização é mantido como prova). Cada máquina
+    pede um novo aceite; os aceites antigos continuam no consentimentos.log.
+  SEM PENDRIVE: servidor da loja (veja "RODAR SEM PENDRIVE"). Código da máquina não junta mais clientes diferentes por
+    causa de um adaptador de rede USB do técnico.
+  DADOS EM TODOS OS NÍVEIS: varre a pasta de TODOS os usuários do computador; "Explorar pastas" entra pasta por pasta
+    até o arquivo, nas três zonas (a vermelha é só para ver). Cada item tem Ver (prévia de imagem, vídeo, áudio, PDF e
+    texto), Abrir, Mostrar na pasta e Entrar. Programas, scripts e senhas nunca abrem por aqui. Marque qualquer subitem
+    para limpar ou mover para um disco externo.
+  CENTRAL DE OTIMIZAÇÕES (Home): todas as otimizações do Windows, Mac e Zorin com o ganho explícito (medido, +N pontos
+    simulados ou qualitativo), ⚠ com o ônus ao passar o mouse e "reversível"/"sem volta". Inicialização igual ao
+    Gerenciador de Tarefas (inclusive apps da Store e pasta Inicializar), com interruptor por programa. Desfazer por item.
+    A nota de "Programas ao ligar" conta só os ativos. NÃO TESTADO em Windows/Mac/Zorin reais: confira cada item antes.
+  CORREÇÕES: o Python portátil do Windows (runtime\python.exe) não carregava a ficha, o termo e a aba Dados; no Mac e no
+    Linux a proteção da zona vermelha (senhas, chaves, Mail, Mensagens) não reconhecia as pastas com letra maiúscula.
+
 NOVIDADES DA VERSÃO 3.0
   TERMO E AUTORIZAÇÃO: na primeira vez em cada máquina aparece o termo de responsabilidade (aceite registrado em
     consentimentos.log, com encadeamento de hash, e cópia imprimível na pasta da máquina). Máquina de TERCEIROS: registre na aba
@@ -54,8 +97,8 @@ NOVIDADES DA VERSÃO 3.0
     e BLOQUEADO (sistema/senhas, nunca vira opção). Remoção vai para a LIXEIRA; o espaço só volta ao esvaziá-la. "Restos de
     programas" sem app instalado aparecem como "provável sem uso" e exigem sua aprovação. Mover para disco externo copia,
     relê e confere SHA-256 antes de tirar o original.
-  ATUALIZAR: clique em "v3.0" no topo. Baixe o BKP-Pro.zip novo; o programa o encontra (Downloads, Área de Trabalho) ou você
+  ATUALIZAR: clique na versão ("v3.1") no topo. Baixe o Destrava.zip novo; o programa o encontra (Downloads, Área de Trabalho) ou você
     escolhe o arquivo. Só os arquivos do programa são trocados; maquinas/, consentimentos.log e runtime/ nunca são tocados.
     A versão anterior fica em _versoes/ (volta com um clique). A primeira instalação da 3.0 é manual (a versão antiga não tem atualizador):
-    unzip -oq ~/Downloads/BKP-Pro.zip -d "/Volumes/BKP Pro/"
+    unzip -oq ~/Downloads/Destrava.zip -d "/Volumes/<seu pendrive>/"
   NÃO TESTADO em Windows/macOS reais nesta versão: Lixeira (Mac/Windows), detecção de máquina corporativa e leitura do código de hardware.
