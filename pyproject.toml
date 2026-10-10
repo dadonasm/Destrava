@@ -1,0 +1,10 @@
+[project]
+name = "destrava-servidor"
+version = "3.1"
+description = "Destrava! - servidor da loja (Django). O agente em nucleo/ não usa estas dependências."
+requires-python = ">=3.10"
+dependencies = [
+    "Django>=5.2,<5.3",
+    "gunicorn>=23,<24",
+    "whitenoise>=6.9,<7",
+]

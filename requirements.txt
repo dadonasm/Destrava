@@ -1,0 +1,8 @@
+# travado a partir do pyproject.toml (pip freeze no python:3.13-slim). Só o SERVIDOR da loja usa isto;
+# o motor (nucleo/) continua só com a biblioteca padrão.
+asgiref==3.12.1
+Django==5.2.18
+gunicorn==23.0.0
+packaging==26.3
+sqlparse==0.6.0
+whitenoise==6.12.0
