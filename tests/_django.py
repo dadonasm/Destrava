@@ -5,6 +5,7 @@ import os
 try:
     import django
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+    os.environ["DESTRAVA_TESTE"] = "1"
     django.setup()
     from django.test.utils import setup_test_environment
     try:

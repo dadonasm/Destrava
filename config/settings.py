@@ -74,7 +74,8 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STORAGES = {"staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"}}
-WHITENOISE_MANIFEST_STRICT = False  # sem collectstatic (testes, dev) usa o nome sem hash em vez de quebrar
+if os.environ.get("DESTRAVA_TESTE") == "1":  # testes rodam sem collectstatic: estáticos sem manifesto
+    STORAGES = {"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
 
 # o PUT de arquivos de máquina vai até 10 MiB (MAX_ARQ); o limite de verdade é checado na view antes de ler o corpo
 DATA_UPLOAD_MAX_MEMORY_SIZE = 11 * 1024 * 1024
