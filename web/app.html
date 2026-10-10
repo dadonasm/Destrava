@@ -244,6 +244,7 @@ function onErr(e){
 
 /* ---------- ícones, gauges e troféus ---------- */
 const IC={
+ mapa:'<path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/>',
  home:'<path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/>',
  backup:'<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-6h8v6"/>',
  dados:'<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
@@ -329,7 +330,7 @@ async function loadCtx(){try{CTX.t=await api("/api/termo")}catch(e){CTX.t=null}r
 const ownT=()=>CTX.t&&CTX.t.status&&CTX.t.status.dono==="terceiros";
 function renderChrome(){
   const t=CTX.t,st=t&&t.status;
-  const items=[["home","Home","home"],["backup","Backup","backup"],["dados","Dados","dados"],["maq","Máquinas","maq"],["os","OS","os"]];
+  const items=[["home","Home","home"],["backup","Backup","backup"],["mapas","Mapas","mapa"],["dados","Dados","dados"],["maq","Máquinas","maq"],["os","OS","os"]];
   const need=ownT()&&!t.os;
   $("#gaveta").innerHTML=items.map(i=>`<button class="gv ${view===i[0]?"on":""}" data-view="${i[0]}" title="${i[1]}"><span class="ic">${ic(i[2])}</span><span class="lb">${i[1]}</span>${i[0]==="os"&&need?'<span class="bd">falta</span>':""}</button>`).join("")+
    `<span class="sp"></span><div class="gvfoot"><b>${esc(t?t.nome:info.host||"")}</b><button class="mid" id="midc" title="Copiar o código da máquina">${esc(t?t.mid:"")}</button></div><button class="gv" id="gvtoggle" title="Recolher"><span class="ic">☰</span><span class="lb">Recolher</span></button>`;
@@ -476,7 +477,7 @@ let hp=null;
 function nav(v,arg){
   view=v;markNav();renderChrome();clearInterval(hp);
   $("#steps").classList.toggle("hide",v!=="backup");
-  if(v==="home")drawHome();else if(v==="maq")drawMaq(arg);else if(v==="dados")drawDados();else if(v==="os")drawOS();else{setWide(false);renderSteps();draw()}
+  if(v==="home")drawHome();else if(v==="maq")drawMaq(arg);else if(v==="dados")drawDados();else if(v==="mapas")drawMapas();else if(v==="os")drawOS();else{setWide(false);renderSteps();draw()}
 }
 async function drawHome(){
   clearInterval(hp);setWide(true);
@@ -538,6 +539,88 @@ function drawerHtml(v){
    <div class="tl">${evs.map(o=>o.ficha?`<div class="ev fi"><label><input type="checkbox" class="fck" data-a="${esc(o.ficha.arquivo)}"><span><span class="nt" style="color:${COR(o.ficha.nota)};border-color:${COR(o.ficha.nota)}">${o.ficha.nota}</span><b>${o.ficha.fase==="depois"?"Depois das melhorias":"Análise"}</b> ${o.prev?dtxt(o.ficha.nota-o.prev.nota,2):""}<br><small>${esc(o.ficha.quando)} · ${esc(o.ficha.classe)}${o.ficha.cobertura<100?" · "+o.ficha.cobertura+"% dos critérios":""}</small></span></label></div>`:`<div class="ev"><b>${esc(o.e.resumo)}</b><br><small>${esc(o.e.quando)} · ${esc(o.e.tipo)}</small></div>`).join("")||'<span class="mut">Sem eventos.</span>'}</div>
    <div class="row" style="margin-top:8px"><button class="sm" id="note">Anotar no histórico</button></div></div>`;
 }
+/* ---------- Mapas: o backup como gestão de arquivos ---------- */
+const MP={aba:"maquina",pasta:"",q:"",sit:"",T:null};
+const SITU={ok:["copiado","b-ok"],falha:["falhou","b-bad"],ignorado:["ignorado","b-mut"],revisar:["revisar","b-warn"],desmarcado:["desmarcado","b-warn"]};
+async function drawMapas(){
+  setWide(true);clearTimeout(MP.T);
+  const r=await api("/api/mapa/lista");if(view!=="mapas")return;
+  if(!r.aberto)return mapasEscolher(r.mapas);
+  mapaAberto(r.aberto);
+}
+function mapasEscolher(lista){
+  $("#main").innerHTML=`<div class="card"><h2>Mapas de backup</h2><p class="h">Abra o Mapa de um backup para ver tudo o que foi copiado (como era na máquina), o que ficou para trás e por quê, abrir os arquivos do backup e conferir se nada mudou.</p>
+   ${lista.length?`<table><tr><th>Backup</th><th>Quando</th><th>Código</th><th></th></tr>${lista.map((m,i)=>`<tr><td class="mono">${esc(m.pasta)}${m.cliente?`<div class="mut">${esc(m.cliente)}</div>`:""}</td><td>${esc(m.quando)}</td><td class="mono">${esc(m.codigo||"")}</td><td><button class="sm pri" data-mi="${i}">Abrir</button></td></tr>`).join("")}</table>`:'<p class="mut">Nenhum backup desta máquina encontrado (ou o disco do backup não está conectado).</p>'}
+   <h3 style="margin:16px 0 6px">Abrir outro Mapa</h3><p class="mut" style="font-size:12.5px;margin:0 0 6px">Escolha a pasta do backup (a que tem a pasta <b>Mapa</b> dentro), ou a própria pasta Mapa.</p>
+   <div class="row" style="gap:8px"><input type="text" id="mpp" class="grow" placeholder="Pasta do backup" style="margin:0"><button id="mpb">Procurar…</button><button class="pri" id="mpo">Abrir</button></div><div id="mpbox"></div></div>`;
+  const abre=p=>safe(async()=>{await api("/api/mapa/abrir",{pasta:p});MP.pasta="";MP.aba="maquina";drawMapas()});
+  $$("[data-mi]").forEach(b=>b.onclick=()=>abre(lista[+b.dataset.mi].pasta));
+  $("#mpo").onclick=()=>{const v=$("#mpp").value.trim();if(v)abre(v)};
+  $("#mpb").onclick=()=>safe(()=>pickFolder($("#mpp"),$("#mpbox"),()=>abre($("#mpp").value)));
+}
+function linhaMapa(x){
+  const s=SITU[x.situacao]||[x.situacao,"b-mut"];
+  return `<div class="drow"><span class="badge ${s[1]}" style="margin-top:2px">${esc(s[0])}</span><div class="t"><b>${esc(x.nome)}</b>${x.situacao!=="ok"&&x.motivo?`<span>${esc(x.motivo)}</span>`:""}<span class="mono">${esc(x.origem)}</span>${x.destino?`<span class="mono mut">→ ${esc(x.destino)}</span>`:""}
+   <div class="row" style="gap:6px;margin-top:6px">${x.previa?`<button class="sm" data-mv="${x.i}" data-tp="${esc(x.previa)}" data-nm="${esc(x.nome)}">👁 Ver</button>`:""}${x.pode_abrir?`<button class="sm" data-ma="${x.i}">Abrir</button>`:""}${x.no_backup?`<button class="sm gh" data-mpa="${x.i}">Mostrar na pasta</button>`:x.situacao==="ok"?'<span class="mut" style="font-size:12px">o disco do backup não está conectado</span>':""}</div></div><div class="sz">${fmt(x.bytes)}${x.data?`<div class="mut" style="font-size:11px;font-weight:400;text-align:right">${esc(x.data)}</div>`:""}</div></div>`;
+}
+function ligarMapa(el){
+  $$("[data-mv]",el).forEach(b=>b.onclick=()=>verArquivoMapa(+b.dataset.mv,b.dataset.tp,b.dataset.nm));
+  $$("[data-ma]",el).forEach(b=>b.onclick=()=>safe(async()=>{await api("/api/mapa/arquivo",{i:+b.dataset.ma,modo:"abrir"});toast("Abrindo…","ok")}));
+  $$("[data-mpa]",el).forEach(b=>b.onclick=()=>safe(async()=>{await api("/api/mapa/arquivo",{i:+b.dataset.mpa,modo:"pasta"});toast("Abrindo a pasta…","ok")}));
+}
+function verArquivoMapa(i,tipo,nome){
+  const url="/api/mapa/ver?i="+i+"&t="+encodeURIComponent(TOKEN);
+  if(tipo==="pdf"){window.open(url,"_blank","noopener");return}
+  const sty="max-width:100%;max-height:70vh;display:block;margin:auto";
+  const corpo=tipo==="imagem"?`<img src="${url}" alt="${esc(nome)}" style="${sty}">`:tipo==="video"?`<video src="${url}" controls autoplay style="${sty}"></video>`:tipo==="audio"?`<audio src="${url}" controls autoplay style="width:100%"></audio>`:'<pre class="mono" id="vtx" style="max-height:65vh;overflow:auto;white-space:pre-wrap;font-size:12.5px;margin:0">Carregando…</pre>';
+  const d=document.createElement("div");d.className="modal";
+  d.innerHTML=`<div class="box" style="max-width:900px;width:calc(100% - 32px)"><div class="row"><h2 class="grow" style="margin:0;font-size:16px;word-break:break-all">${esc(nome)} <span class="mut" style="font-size:12px">(do backup)</span></h2><button class="sm" id="vx">Fechar ✕</button></div><div style="margin:12px 0">${corpo}</div></div>`;
+  $("#layer").appendChild(d);
+  const tecla=ev=>{if(ev.key==="Escape")fechar()};
+  const fechar=()=>{const m=$("video,audio",d);if(m)m.pause();d.remove();document.removeEventListener("keydown",tecla)};
+  document.addEventListener("keydown",tecla);$("#vx",d).onclick=fechar;d.onclick=ev=>{if(ev.target===d)fechar()};
+  if(tipo==="texto")fetch(url).then(r=>r.ok?r.text():Promise.reject()).then(t=>{$("#vtx",d).textContent=t}).catch(()=>{$("#vtx",d).textContent="Não consegui ler este arquivo."});
+}
+async function mapaAberto(m){
+  const c=m.contagem,ce=m.cert||{};
+  let corpo="";
+  if(MP.aba==="maquina"){
+    const r=await api("/api/mapa/arvore?pasta="+encodeURIComponent(MP.pasta));
+    const mig=[`<button class="sm gh" data-mg="">Máquina</button>`].concat(r.migalhas.map((p,i)=>i===r.migalhas.length-1?`<b>${esc(p)}</b>`:`<button class="sm gh" data-mg="${esc(r.migalhas.slice(0,i+1).join("/"))}">${esc(p)}</button>`)).join(" › ");
+    corpo=`<p class="h">${mig}</p>${r.pastas.map(p=>`<div class="drow"><span class="badge b-mut" style="margin-top:2px">📁</span><div class="t"><b>${esc(p.nome)}</b><span>${p.n} arquivo(s): ${p.ok} copiado(s)${p.falha?`, <b style="color:var(--err)">${p.falha} falha(s)</b>`:""}${p.fora?`, ${p.fora} ficaram para trás`:""}</span><div class="row" style="margin-top:6px"><button class="sm" data-mg="${esc((r.pasta?r.pasta+"/":"")+p.nome)}">Entrar</button></div></div><div class="sz">${fmt(p.bytes)}</div></div>`).join("")}${r.arquivos.map(linhaMapa).join("")}${!r.pastas.length&&!r.arquivos.length?'<p class="mut">Pasta vazia.</p>':""}${r.total_arquivos>r.arquivos.length?`<p class="mut">Mostrando ${r.arquivos.length} de ${r.total_arquivos}.</p>`:""}`;
+  }else{
+    const sit=MP.aba==="fora"?"fora":MP.sit;
+    const r=await api("/api/mapa/buscar?q="+encodeURIComponent(MP.q)+"&situacao="+encodeURIComponent(sit));
+    corpo=`${MP.aba==="busca"?`<div class="row" style="gap:8px;margin-bottom:8px"><input type="text" id="mpq" class="grow" placeholder="Nome, pasta, etiqueta… (ex.: contrato, .pdf, Fiscal)" value="${esc(MP.q)}" style="margin:0"><select id="mps" style="width:auto;margin:0">${[["","Tudo"],["ok","Copiados"],["falha","Falhas"],["fora","Ficaram para trás"]].map(o=>`<option value="${o[0]}" ${MP.sit===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></div>`:'<p class="h">Tudo que NÃO foi copiado, com o motivo. Confira se nada importante ficou aqui.</p>'}
+     <p class="mut" style="font-size:12.5px">${r.total} resultado(s)${r.total>r.linhas.length?` (mostrando ${r.linhas.length})`:""}</p>${r.linhas.map(linhaMapa).join("")}`;
+  }
+  if(view!=="mapas")return;
+  const ok=ce.status==="sem_falhas";
+  $("#main").innerHTML=`<div class="card"><div class="row"><h2 class="grow" style="margin:0">Mapa do backup</h2><button class="sm" id="mpconf">Conferir integridade</button><button class="sm" id="mpoff">Visualizador offline</button><button class="sm" id="mptroca">Trocar de Mapa</button></div>
+   <p class="h" style="margin-top:6px"><span class="badge ${ok?"b-ok":"b-warn"}">${ok?"sem falhas":"com ressalvas"}</span> Código <b class="mono">${esc(m.codigo||"—")}</b> · ${esc(m.pc||"")} · ${esc(m.data||"")}${ce.cliente?" · "+esc(ce.cliente):""}</p>
+   <p class="mut" style="font-size:12.5px;margin:0"><b>${nf(c.ok)}</b> copiado(s) (${fmt(c.bytes)}) · <b>${nf(c.falha)}</b> falha(s) · <b>${nf(c.fora)}</b> ficaram para trás · conferência: ${esc(m.verificacao||"?")}</p>
+   <p class="mono mut" style="font-size:11.5px;margin:4px 0 0">${esc(m.raiz)}${m.raiz_existe?"":' <b style="color:var(--err)">(não encontrada: conecte o disco do backup)</b>'}</p>
+   <div id="mpcf"></div></div>
+   <div class="card"><div class="tabs" role="tablist">${[["maquina","Como era na máquina"],["fora","Ficou para trás ("+nf(c.fora)+")"],["busca","Buscar"]].map(t=>`<button class="tb ${MP.aba===t[0]?"on":""}" data-ab="${t[0]}" role="tab">${t[1]}</button>`).join("")}</div><div id="mpc">${corpo}</div></div>`;
+  $$("[data-ab]").forEach(b=>b.onclick=()=>{MP.aba=b.dataset.ab;drawMapas()});
+  $$("[data-mg]").forEach(b=>b.onclick=()=>{MP.pasta=b.dataset.mg;drawMapas()});
+  ligarMapa($("#mpc"));
+  const q=$("#mpq");if(q){let tq;q.oninput=()=>{clearTimeout(tq);tq=setTimeout(()=>{MP.q=q.value;drawMapas().then(()=>{const n=$("#mpq");if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}})},350)};$("#mps").onchange=()=>{MP.sit=$("#mps").value;drawMapas()}}
+  $("#mptroca").onclick=()=>safe(async()=>{const r=await api("/api/mapa/lista");mapasEscolher(r.mapas)});
+  $("#mpoff").onclick=()=>safe(()=>api("/api/mapa/offline",{}));
+  $("#mpconf").onclick=()=>safe(async()=>{await api("/api/mapa/conferir",{});conferindo()});
+  conferindo(true);
+}
+async function conferindo(soSeRodando){
+  const s=await api("/api/mapa/conferencia");const el=$("#mpcf");if(!el||view!=="mapas")return;
+  if(!s.total&&soSeRodando)return;
+  const pct=s.total?Math.round(s.feitos*100/s.total):0;
+  el.innerHTML=s.rodando?`<div class="infobox">Conferindo (${esc(s.metodo||"")}): ${nf(s.feitos)} de ${nf(s.total)} (${pct}%)…</div>`
+    :s.fim?(s.n_diferentes||s.n_faltando?`<div class="warnbox"><b>Atenção:</b> ${s.n_diferentes} arquivo(s) diferente(s) do original e ${s.n_faltando} faltando no backup.${(s.diferentes.concat(s.faltando)).slice(0,10).map(x=>`<div class="mono" style="font-size:12px">${esc(x)}</div>`).join("")}</div>`
+      :`<div class="okbox">Tudo confere: ${nf(s.ok)} arquivo(s) relidos (${esc(s.metodo||"")}) e iguais ao original.</div>`):"";
+  if(s.rodando)MP.T=setTimeout(()=>conferindo(),1000);
+}
+
 /* ---------- Central de Otimizações ---------- */
 const OCAT=["Inicialização","Memória","Espaço","Visual","Energia","Segundo plano","Disco","Sistema"];
 function onusBtn(o){return o?`<button class="sm gh onus" data-onus="${esc(o)}" title="${esc(o)}" aria-label="Ônus: ${esc(o)}" style="padding:2px 8px">⚠</button>`:""}
@@ -1176,10 +1259,11 @@ async function draw6(){
    <div class="grid"><div class="kpi"><div class="mut">Copiados e conferidos</div><div class="big">${nf(c.copiados)}</div></div><div class="kpi"><div class="mut">Tamanho</div><div class="big">${fmt(c.bytes)}</div></div><div class="kpi"><div class="mut">Falhas</div><div class="big">${c.falhas}</div></div><div class="kpi"><div class="mut">Ficaram de fora (listados)</div><div class="big">${nf(c.ficaram)}</div></div>${rec}</div>
    ${c.motivos.length?`<h3 style="font-size:14px">O que ficou de fora e por quê</h3><table>${c.motivos.map(x=>`<tr><td>${esc(x.motivo)}</td><td>${nf(x.n)}</td><td>${fmt(x.bytes)}</td></tr>`).join("")}</table>`:""}
    <p class="mono mut">Pasta do backup: ${esc(st.dest_root)}<br>Mapa: ${esc(st.dest_root)}/Mapa/visualizador.html</p>
-   <div class="row"><button class="pri" id="om">Abrir o mapa (certificado e navegação)</button><button id="newb">Novo backup</button>${terc?'<button id="os6">Encerrar a OS</button>':""}</div></div>
+   <div class="row"><button class="pri" id="omi">Abrir o Mapa no Destrava!</button><button id="om">Visualizador offline</button><button id="newb">Novo backup</button>${terc?'<button id="os6">Encerrar a OS</button>':""}</div></div>
   <div class="card"><h2>Formatar a máquina</h2>${g.ok?`<p class="h">Tudo certo para seguir. O computador reinicia direto na tela de firmware (BIOS/UEFI) para você escolher o boot e formatar.</p>
    <label style="display:flex;gap:8px;align-items:center;margin:0 0 12px;color:var(--tx)"><input type="checkbox" id="cf"> Confirmo que o backup foi conferido e que posso formatar.</label><button class="dng" id="fw" disabled>Reiniciar para a BIOS/UEFI</button>`:`<div class="warnbox">Formatação bloqueada: ${esc(g.motivo)}</div>`}</div>`;
   $("#om").onclick=()=>safe(()=>api("/api/open_mapa",{}));
+  const omi=$("#omi");if(omi)omi.onclick=()=>safe(async()=>{await api("/api/mapa/abrir",{pasta:st.dest_root});nav("mapas")});
   $("#newb").onclick=()=>safe(async()=>{await api("/api/reset",{});S.sources=[];S.chosen={};S.dest="";S.folder="";go(0)});
   const o6=$("#os6");if(o6)o6.onclick=()=>nav("os");
   const cf=$("#cf");if(cf){cf.onchange=()=>$("#fw").disabled=!cf.checked;

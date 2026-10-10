@@ -42,6 +42,8 @@ if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 VERSION = "3.1"
+import disco  # noqa: E402  (conferência lendo do disco, não da memória)
+import mapa as MAPA  # noqa: E402
 try:
     import ficha as FICHA
 except Exception:  # o backup continua funcionando mesmo sem a ficha
@@ -99,6 +101,19 @@ IGN_LINUX_HOME = {".cache", ".config", ".local", ".mozilla", ".var", ".steam", "
 CLOUD_ATTRS = 0x1000 | 0x40000 | 0x400000  # OFFLINE | RECALL_ON_OPEN | RECALL_ON_DATA_ACCESS
 GOOD_FS = {"ntfs", "ntfs3", "fuseblk", "vfat", "exfat", "ext2", "ext3", "ext4", "btrfs", "xfs", "f2fs", "hfsplus", "apfs", "msdos"}
 RESERVED = {"con", "prn", "aux", "nul"} | {"com%d" % i for i in range(1, 10)} | {"lpt%d" % i for i in range(1, 10)}
+# dados de apps dentro da pasta do usuário (o resto da AppData não é pessoal): (app, caminho, extensões ou None)
+APPS_WIN = [("Thunderbird", "AppData/Roaming/Thunderbird/Profiles", None), ("Outlook", "AppData/Local/Microsoft/Outlook", (".pst",)),
+            ("Outlook_Assinaturas", "AppData/Roaming/Microsoft/Signatures", None),
+            ("Notas_Autoadesivas", "AppData/Local/Packages/Microsoft.MicrosoftStickyNotes_8wekyb3d8bbwe/LocalState", (".sqlite",))]
+APPS_LINUX = [("Evolution", ".local/share/evolution", None)]
+APP_PULAR = {"cache", "cache2", "startupcache", "crashes", "minidumps", "shader-cache"}
+# bancos de dados de sistemas (loja, contabilidade, PDV) em Program Files e ProgramData
+DB_EXT = {".fdb", ".gdb", ".fbk", ".gbk", ".mdb", ".accdb", ".dbf", ".sdf", ".mdf", ".ldf", ".bak"}
+SIS_PULAR = {"microsoft", "windows", "common files", "google", "mozilla", "mozilla firefox", "mozilla maintenance service", "adobe", "nvidia", "nvidia corporation",
+             "intel", "amd", "package cache", "windowsapps", "windows defender", "windows nt", "windows mail", "windows media player", "windows photo viewer",
+             "windows portable devices", "windows security", "windowspowershell", "internet explorer", "microsoft office", "microsoft.net", "reference assemblies",
+             "msbuild", "dotnet", "uninstall information", "installshield installation information", "realtek", "java", "docker", "packages", "ssh",
+             "usoshared", "usoprivate", "softwaredistribution", "regid.1991-06.com.microsoft"}
 ILLEGAL = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 
 
@@ -530,7 +545,7 @@ def classify_file(name, size, nuvem):
     elif ext in ARCH:
         cat, act, mot = "Outros", "copiar", "Arquivo compactado"
     else:
-        cat, act, mot = "Outros", "revisar", "Tipo não reconhecido - confira"
+        cat, act, mot = "Outros", "revisar", "Tipo não reconhecido: copiado por segurança, confira"
     if nuvem:
         if cat in ("Fotos", "Videos", "Audios"):
             mot += " · OneDrive: será baixado"
@@ -742,6 +757,9 @@ class App(object):
                         continue
                     plans.append((p, "Disco_%s/%s" % (letter, n), "%s:\\%s" % (letter, n), "\\", "plain"))
             plans.append((root, "Disco_%s" % letter, "%s:\\" % letter, "\\", "toplevel"))
+            for pf in ("program files", "program files (x86)", "programdata"):
+                if names.get(pf):
+                    plans.append((os.path.join(root, names[pf]), "Disco_%s/Sistemas" % letter, "%s:\\%s" % (letter, names[pf]), "\\", "sistemas"))
         elif kind == "linux":
             hp = os.path.join(root, "home")
             for u in sorted(safe_listdir(hp)):
@@ -816,6 +834,8 @@ class App(object):
                                         continue
                                 except OSError:
                                     pass
+                            if ctx == "sistemas" and is_root and name.lower() in SIS_PULAR:
+                                continue
                             why = self.dir_ignore(name, ctx, is_root)
                             if ctx == "winuser" and is_root and name.lower() in SILENT_JUNCTIONS:
                                 continue
@@ -825,6 +845,8 @@ class App(object):
                             stack.append((e.path, dd.rstrip(sep) + sep + name, False))
                         elif e.is_file(follow_symlinks=False):
                             st = e.stat(follow_symlinks=False)
+                            if ctx == "sistemas" and (os.path.splitext(name.lower())[1] not in DB_EXT or st.st_size < 65536):
+                                continue
                             yield (e.path, dd.rstrip(sep) + sep + name, name, st, local)
                     except OSError as ex:
                         self.add_ign(dd.rstrip(sep) + sep + getattr(e, "name", "?"), "Sem acesso: %s" % (ex.strerror or ex))
@@ -874,6 +896,39 @@ class App(object):
             res.append(it)
         return res
 
+    def app_items(self, plan):
+        """E-mail, contatos e notas que os apps guardam escondidos na pasta do usuário (AppData, .local)."""
+        real_root, local, disp_root, sep, ctx = plan
+        lista = APPS_WIN if ctx == "winuser" else (APPS_LINUX if ctx == "linuxuser" else [])
+        loc = "/".join(safe_seg(x) for x in local.split("/"))
+        res = []
+        for app, rel, exts in lista:
+            base = os.path.join(real_root, *rel.split("/"))
+            if not os.path.isdir(base):
+                continue
+            for dp, dns, fns in os.walk(base):
+                dns[:] = [d for d in dns if d.lower() not in APP_PULAR and not os.path.islink(os.path.join(dp, d))]
+                for fn in fns:
+                    p = os.path.join(dp, fn)
+                    if exts and not fn.lower().endswith(exts):
+                        continue
+                    try:
+                        st = os.lstat(p)
+                    except OSError:
+                        continue
+                    if not st.st_size or os.path.islink(p):
+                        continue
+                    sub = os.path.relpath(p, base).replace(os.sep, "/")
+                    it = Item()
+                    it.src = p
+                    it.disp = disp_root + sep + rel.replace("/", sep) + sep + sub.replace("/", sep)
+                    it.size, it.mtime, it.local = st.st_size, st.st_mtime, local
+                    it.cat, it.act, it.motivo = "Dados_de_apps", "copiar", "Dados do %s (e-mail, contatos, notas)" % app.replace("_", " ")
+                    it.date, it.tags, it.inc = None, "", True
+                    it.rel = "%s/Dados_de_apps/%s/%s" % (loc, app, "/".join(safe_seg(x) for x in sub.split("/")))
+                    res.append(it)
+        return res
+
     # ------------------------------------------------------------------ varredura
     def start_scan(self):
         with self.lock:
@@ -896,8 +951,15 @@ class App(object):
             self.phase = "scanning"
         threading.Thread(target=self._scan_thread, daemon=True).start()
 
-    def make_item(self, real, disp, name, st, local):
+    def make_item(self, real, disp, name, st, local, ctx=""):
         nuvem = bool(getattr(st, "st_file_attributes", 0) & CLOUD_ATTRS) if IS_WIN else False
+        if ctx == "sistemas":  # caminho original preservado: restaurar é copiar de volta para o mesmo lugar
+            it = Item()
+            it.src, it.disp, it.size, it.mtime, it.local = real, disp, st.st_size, st.st_mtime, local
+            it.cat, it.act, it.motivo, it.date, it.nuvem, it.tags, it.inc = "Sistemas", "copiar", "Banco de dados de sistema · feche o sistema antes do backup", None, nuvem, "", True
+            partes = [x for x in re.split(r"[\\/]", disp)[1:] if x]
+            it.rel = "/".join([safe_seg(x) for x in local.split("/")] + [safe_seg(x) for x in partes])
+            return it
         cat, act, mot = classify_file(name, st.st_size, nuvem)
         ext = os.path.splitext(name.lower())[1]
         date = None
@@ -909,7 +971,7 @@ class App(object):
         it.src, it.disp, it.size, it.mtime, it.local = real, disp, st.st_size, st.st_mtime, local
         it.cat, it.act, it.motivo, it.date, it.nuvem = cat, act, mot, date, nuvem
         it.tags = tag_path(self.rules, disp) if act != "ignorar" else ""
-        it.inc = (act == "copiar")
+        it.inc = act in ("copiar", "revisar")  # tipo desconhecido também vai: melhor sobrar do que faltar
         it.rel = build_rel(local, cat, date, name, ext)
         return it
 
@@ -920,11 +982,12 @@ class App(object):
             for src in self.cfg["sources"]:
                 for plan in self.plan_roots(src):
                     for real, disp, name, st, local in self.walk_plan(plan):
-                        it = self.make_item(real, disp, name, st, local)
+                        it = self.make_item(real, disp, name, st, local, plan[4])
                         items.append(it)
                         self.scan_info["files"] += 1
                         self.scan_info["bytes"] += st.st_size
                     items.extend(self.bookmark_items(plan))
+                    items.extend(self.app_items(plan))
             self.items = items
             self.phase = "scanned"
             self.log("Escaneamento concluído: %d arquivos, %d pastas ignoradas." % (len(items), self.ign_dirs_total))
@@ -1199,20 +1262,12 @@ class App(object):
         threading.Thread(target=self._verify_thread, args=(targets, mode, sweep), daemon=True).start()
 
     def hash_file(self, path, drop_cache=False):
+        """drop_cache: lê do DISCO, não da memória (disco.py). É o que vale para conferir o backup."""
         h = hashlib.sha256()
-        with open(lp(path), "rb") as f:
-            if drop_cache and hasattr(os, "posix_fadvise"):
-                try:
-                    os.posix_fadvise(f.fileno(), 0, 0, os.POSIX_FADV_DONTNEED)
-                except OSError:
-                    pass
-            while True:
-                self.check_run()
-                b = f.read(CHUNK)
-                if not b:
-                    break
-                h.update(b)
-                self.vf["bytes_done"] += len(b)
+        for b in (disco.blocos(lp(path)) if drop_cache else _ler(lp(path))):
+            self.check_run()
+            h.update(b)
+            self.vf["bytes_done"] += len(b)
         return h.hexdigest()
 
     def _verify_thread(self, targets, mode, sweep):
@@ -1290,7 +1345,7 @@ class App(object):
                         n_alt += 1
                         if len(alterados) < 500:
                             alterados.append([disp, st.st_size, "Mudou durante o backup (a cópia é a versão do momento em que foi lida)"])
-        sumiram = [it.disp for it in self.items if it.disp not in seen and not it.disp.endswith("_Bookmarks.json") and "(favoritos)" not in it.disp]
+        sumiram = [it.disp for it in self.items if it.disp not in seen and it.cat not in ("Navegadores", "Dados_de_apps")]
         self.sweep = {"novos": novos, "n_novos": n_novos, "alterados": alterados, "n_alterados": n_alt,
                       "sumiram": sumiram[:500], "n_sumiram": len(sumiram), "quando": now_iso()}
         self.log("Varredura final: %d novos, %d alterados, %d sumiram." % (n_novos, n_alt, len(sumiram)))
@@ -1411,7 +1466,7 @@ class App(object):
         status = "sem_falhas" if ressalvas == 0 else "ressalvas"
         meta = {
             "pc": cfg["equip"], "data": datetime.date.today().isoformat(), "raiz": self.dest_root, "dstRel": True,
-            "verificacao": "SHA-256 (completa)" if self.verified_mode == "completa" else "Tamanho (rápida)",
+            "verificacao": ("SHA-256 (completa, %s)" % disco.METODO) if self.verified_mode == "completa" else "Tamanho (rápida)",
             "campos": ["origem", "destino_relativo", "categoria", "tamanho_bytes", "data", "situacao", "etiquetas", "usuario", "motivo", "sha256", "mtime_epoch"],
             "versao": VERSION,
         }
@@ -1504,6 +1559,12 @@ class App(object):
                 cmd = "sudo -n " + cmd
             subprocess.Popen(["sh", "-c", "sleep 8; " + cmd])
         return {"ok": True, "uefi": (os.path.exists("/sys/firmware/efi") if not IS_WIN else None)}
+
+
+def _ler(p):
+    with open(p, "rb") as f:
+        for b in iter(lambda: f.read(CHUNK), b""):
+            yield b
 
 
 def safe_listdir(p):
@@ -1750,6 +1811,12 @@ class Handler(BaseHTTPRequestHandler):
             return
         if not self._auth(q):
             return self._json({"erro": "não autorizado"}, 401)
+        if path == "/api/mapa/ver":
+            try:
+                arq, mime, tipo, limite = MAPA.previa((q.get("i") or [""])[0])
+            except ValueError as e:
+                return self._json({"erro": str(e)}, 400)
+            return self._arquivo(arq, mime, limite, pagina=(tipo == "pdf"))
         if path == "/api/dados/ver":  # <img>/<video> não mandam cabeçalho: o token vem em ?t=
             try:
                 arq, mime, tipo, limite = DADOS.previa((q.get("no") or [""])[0])
@@ -1852,6 +1919,15 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/dados/resultado":
             g = lambda k: (q.get(k) or [""])[0]
             return DADOS.resultado(g("zona"), g("cat"), g("q"), int(g("offset") or 0), int(g("limit") or 200), g("usuario"))
+        if path == "/api/mapa/lista":
+            return {"mapas": mapas_conhecidos(), "aberto": MAPA.resumo() if MAPA.M["mapa"] else None}
+        if path == "/api/mapa/arvore":
+            return MAPA.arvore((q.get("pasta") or [""])[0])
+        if path == "/api/mapa/buscar":
+            g = lambda k: (q.get(k) or [""])[0]
+            return MAPA.buscar(g("q"), g("situacao"), g("cat"), g("usuario"), int(g("offset") or 0))
+        if path == "/api/mapa/conferencia":
+            return MAPA.estado_conferencia()
         if path == "/api/dados/explorar":
             self.exigir(None)
             g = lambda k: (q.get(k) or [""])[0]
@@ -2047,6 +2123,25 @@ class Handler(BaseHTTPRequestHandler):
             if not abrir_no_sistema(cam, revelar):
                 raise ValueError("O sistema não conseguiu abrir.")
             return {"ok": True}
+        if path == "/api/mapa/abrir":
+            self.exigir(None)
+            return MAPA.carregar(b.get("pasta", ""))
+        if path == "/api/mapa/arquivo":
+            cam = MAPA.caminho(b.get("i"))
+            revelar = b.get("modo") == "pasta"
+            if not revelar and not DADOS.pode_abrir(cam):
+                raise ValueError("Por segurança este arquivo não abre daqui. Use Mostrar na pasta.")
+            if not abrir_no_sistema(cam, revelar):
+                raise ValueError("O sistema não conseguiu abrir.")
+            return {"ok": True}
+        if path == "/api/mapa/conferir":
+            return MAPA.conferir()
+        if path == "/api/mapa/offline":
+            p = os.path.join(MAPA.M["mapa"], "visualizador.html")
+            if not os.path.isfile(p):
+                raise ValueError("Abra um Mapa primeiro.")
+            open_in_browser("file:///" + p.replace("\\", "/").lstrip("/"))
+            return {"ok": True}
         if path == "/api/dados/marcar":
             return {"id": DADOS.marcar(b.get("no"))}
         if path == "/api/dados/reset":
@@ -2153,6 +2248,28 @@ def encerrar_servidor(descartar=False):
         os._exit(0)
     threading.Thread(target=_go, daemon=True).start()
     return {"ok": True}
+
+
+def mapas_conhecidos():
+    """Backups desta máquina (histórico) e o desta sessão, com o Mapa ainda acessível."""
+    out, vistos = [], set()
+
+    def add(destino, quando, codigo, cliente):
+        mp = os.path.join(destino or "", "Mapa")
+        k = os.path.normcase(os.path.abspath(mp))
+        if destino and k not in vistos and os.path.isfile(os.path.join(mp, "dados.js")):
+            vistos.add(k)
+            out.append({"pasta": destino, "quando": quando, "codigo": codigo, "cliente": cliente})
+    if APP.dest_root:
+        add(APP.dest_root, "esta sessão", (APP.cert or {}).get("codigo", ""), APP.cfg.get("cliente", "") if APP.cfg else "")
+    try:
+        for h in reversed(FICHA.hist_get(FICHA.machine_id_cache())):
+            x = h.get("extra") or {}
+            if h.get("tipo") == "backup":
+                add(x.get("destino"), h.get("quando", ""), x.get("codigo", ""), x.get("cliente", ""))
+    except Exception:
+        pass
+    return out
 
 
 def usar_pasta_dados(p):
