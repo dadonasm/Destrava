@@ -1,0 +1,43 @@
+:root {
+  --bg: #f6f5f2; --card: #ffffff; --tx: #1b1b1f; --mut: #55555e; --line: #d9d8df;
+  --acc: #8a6812; --code: #efeee9; --ok: #1f7a4d; --err: #a8322d;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #121216; --card: #1b1b21; --tx: #ececf1; --mut: #a7a7b1; --line: #2e2e37;
+          --acc: #d9b44a; --code: #24242c; --ok: #5ccf94; --err: #ff8a80; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--tx); font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 720px; margin: 0 auto; padding: 28px 16px 48px; }
+.marca { display: flex; gap: 14px; align-items: center; margin-bottom: 18px; }
+.marca img { display: block; }
+.tag { margin: 0; font-size: 12px; letter-spacing: 2px; color: var(--acc); font-weight: 700; }
+h1 { margin: 2px 0 0; font-size: 28px; }
+.lema { margin: 2px 0 0; color: var(--mut); font-size: 13.5px; }
+h2 { font-size: 18px; margin: 22px 0 6px; }
+.card h2 { margin-top: 0; }
+h3 { font-size: 16px; margin: 0 0 4px; }
+p { margin: 6px 0; }
+.mut { color: var(--mut); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 12px 0; }
+.cmd { display: flex; gap: 8px; align-items: stretch; margin-top: 10px; }
+code { font: 13px/1.4 ui-monospace, Menlo, Consolas, monospace; }
+.cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; background: var(--code); border: 1px solid var(--line);
+            border-radius: 8px; padding: 10px 12px; user-select: all; -webkit-user-select: all; }
+button { border: 1px solid var(--acc); background: transparent; color: var(--acc); border-radius: 8px; padding: 0 14px;
+         font: inherit; font-weight: 600; cursor: pointer; min-height: 40px; }
+button:focus-visible, code:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+ol { margin: 8px 0 0; padding-left: 20px; }
+li { margin: 3px 0; }
+.aviso { margin-top: 12px; padding: 10px 12px; border-left: 3px solid var(--acc); background: var(--code); border-radius: 6px; }
+.estado { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 0; }
+.estado dt { color: var(--mut); }
+.estado dd { margin: 0; }
+.runtimes { list-style: none; padding: 0; margin: 10px 0 0; }
+.runtimes .ok { color: var(--ok); }
+.runtimes .falta { color: var(--err); }
+.alerta { color: var(--err); }
+@media (max-width: 420px) {
+  .cmd { flex-direction: column; }
+  .cmd code { white-space: normal; word-break: break-all; }
+}

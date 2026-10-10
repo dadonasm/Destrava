@@ -1,0 +1,67 @@
+{% extends "base.html" %}{% load static %}
+{% block titulo %}Iniciar o Destrava!{% endblock %}
+{% block corpo %}
+<main>
+ <header class="marca">
+  <picture>
+   <source srcset="{% static 'logos/monograma_claro.svg' %}" media="(prefers-color-scheme: dark)">
+   <img src="{% static 'logos/monograma_ouro.svg' %}" alt="" width="56" height="56">
+  </picture>
+  <div>
+   <p class="tag">D&amp;D TECHNOLOGY</p>
+   <h1>Destrava!</h1>
+   <p class="lema">Somos únicos. Somos diferentes. Somos D&amp;D.</p>
+  </div>
+ </header>
+
+ <section aria-labelledby="t-iniciar">
+  <h2 id="t-iniciar">Como iniciar nesta máquina</h2>
+  <p class="mut">Roda direto, sem pendrive. O programa vai para uma pasta temporária e <b>é apagado ao terminar</b>.</p>
+  <div class="card">
+   <h3>Windows</h3>
+   <p class="mut">Abra o <b>PowerShell</b> (menu Iniciar → digite PowerShell) e cole:</p>
+   <div class="cmd"><code id="cmd-win">irm {{ servidor }}/iniciar.ps1 | iex</code><button type="button" data-copiar="cmd-win" hidden>Copiar</button></div>
+  </div>
+  <div class="card">
+   <h3>Mac e Linux (Zorin)</h3>
+   <p class="mut">Abra o <b>Terminal</b> e cole:</p>
+   <div class="cmd"><code id="cmd-mac">curl -fsSL {{ servidor }}/iniciar.sh | sh</code><button type="button" data-copiar="cmd-mac" hidden>Copiar</button></div>
+  </div>
+ </section>
+
+ <section class="card" aria-labelledby="t-passos">
+  <h2 id="t-passos">O que acontece</h2>
+  <ol>
+   <li>O programa pede a <b>chave do técnico</b>.</li>
+   <li>Baixa o Destrava! e um Python fixo para uma <b>pasta temporária</b>, conferindo cada arquivo.</li>
+   <li>O técnico faz o atendimento pelo navegador.</li>
+   <li>No fim, <b>Encerrar</b> apaga tudo desta máquina.</li>
+  </ol>
+  <p class="aviso">Fichas, históricos e termos de autorização ficam <b>no servidor da loja</b>, não nesta máquina. Os arquivos pessoais não são enviados: só o resumo da análise e os registros do serviço.</p>
+ </section>
+
+ <section class="card" aria-labelledby="t-estado">
+  <h2 id="t-estado">Estado do servidor</h2>
+  <dl class="estado">
+   <dt>Versão do programa</dt><dd>{{ versao }}</dd>
+   <dt>Pacote (SHA-256)</dt><dd><code>{{ sha_curto }}</code></dd>
+  </dl>
+  <ul class="runtimes">
+   {% for r in runtimes %}<li class="{% if r.ok %}ok{% else %}falta{% endif %}">{% if r.ok %}✓{% else %}✗{% endif %} Python para {{ r.nome }}</li>{% endfor %}
+  </ul>
+  {% if falta_runtime %}<p class="alerta">Falta Python para algum sistema: rode <code>python3 nucleo/baixar_runtimes.py</code> no servidor. Sem ele, esses computadores precisam ter Python instalado.</p>{% endif %}
+ </section>
+</main>
+<script>
+// único JS da página: o botão Copiar (sem JS, o comando continua selecionável)
+document.querySelectorAll("[data-copiar]").forEach(function (b) {
+  if (!navigator.clipboard) return;
+  b.hidden = false;
+  b.addEventListener("click", function () {
+    navigator.clipboard.writeText(document.getElementById(b.dataset.copiar).textContent).then(function () {
+      b.textContent = "Copiado"; setTimeout(function () { b.textContent = "Copiar"; }, 1500);
+    });
+  });
+});
+</script>
+{% endblock %}

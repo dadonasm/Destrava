@@ -113,6 +113,17 @@ class Contrato(SimpleTestCase):
         self.assertRegex(self.j(r)["mid"], r"^DD-[A-Z0-9]{4}-[A-Z0-9]{4}$")
         self.assertEqual(self.j(self.c.get("/api/maquinas", **self.A)), {"maquinas": []})
 
+    def test_home_publica_sem_dados(self):
+        os.makedirs(os.path.join(self.dados, "maquinas", "DD-CLIE-NTE1"), exist_ok=True)
+        r = self.c.get("/")
+        self.assertEqual(r.status_code, 200)
+        html = r.content.decode()
+        self.assertIn("irm http://localhost/iniciar.ps1 | iex", html)
+        self.assertIn("curl -fsSL http://localhost/iniciar.sh | sh", html)
+        self.assertIn("3.1", html)
+        self.assertNotIn("DD-CLIE-NTE1", html)
+        self.assertNotIn("Técnico Teste", html)
+
     def test_healthz_e_404(self):
         self.assertEqual(self.j(self.c.get("/healthz")), {"ok": True})
         self.assertEqual(self.j(self.c.get("/nada")), {"erro": "rota desconhecida"})
