@@ -9,7 +9,7 @@ import unittest
 import urllib.error
 import urllib.request
 
-import dados
+from nucleo import dados
 
 
 def escreve(p, conteudo=b"x"):
@@ -120,7 +120,7 @@ class Marcar(ComCasa):
 class RotaDePrevia(ComCasa):
     @classmethod
     def setUpClass(cls):
-        import dd_backup
+        from nucleo import dd_backup
         from http.server import ThreadingHTTPServer
         cls.dd = dd_backup
         cls.srv = ThreadingHTTPServer(("127.0.0.1", 0), dd_backup.Handler)

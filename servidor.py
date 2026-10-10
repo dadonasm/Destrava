@@ -31,9 +31,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
-import atualizador  # noqa: E402
-import ficha  # noqa: E402
-import termo  # noqa: E402
+from nucleo import atualizador, ficha, termo  # noqa: E402
 
 DADOS = os.path.abspath(os.environ.get("DESTRAVA_SERVIDOR_DADOS") or os.path.join(HERE, "servidor-dados"))
 RUNTIMES = os.path.join(HERE, "runtimes")
@@ -162,7 +160,10 @@ def arquivos_pacote():
     for n in sorted(os.listdir(HERE)):
         if os.path.isfile(os.path.join(HERE, n)) and n not in SO_SERVIDOR and atualizador._is_code(n):
             out.append(n)
-    for dp, dns, fns in os.walk(os.path.join(HERE, "web")):
+    for n in sorted(os.listdir(os.path.join(HERE, "nucleo"))):
+        if os.path.isfile(os.path.join(HERE, "nucleo", n)) and n not in SO_SERVIDOR | {"__init__.py"} and atualizador._is_code(n):
+            out.append("nucleo/" + n)
+    for dp, dns, fns in os.walk(os.path.join(HERE, "nucleo", "web")):
         dns[:] = sorted(d for d in dns if d != "__pycache__")
         for fn in sorted(fns):
             rel = os.path.relpath(os.path.join(dp, fn), HERE).replace("\\", "/")
@@ -173,7 +174,7 @@ def arquivos_pacote():
 
 def versao_programa():
     try:
-        with open(os.path.join(HERE, "dd_backup.py"), encoding="utf-8") as fh:
+        with open(os.path.join(HERE, "nucleo", "dd_backup.py"), encoding="utf-8") as fh:
             m = re.search(r'^VERSION\s*=\s*"([^"]+)"', fh.read(), re.M)
         return m.group(1) if m else "?"
     except OSError:
@@ -189,7 +190,7 @@ def pacote():
             buf = io.BytesIO()
             with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
                 for a in arqs:
-                    zi = zipfile.ZipInfo("Destrava/" + a, date_time=(2020, 1, 1, 0, 0, 0))  # data fixa: mesmo conteúdo, mesmo hash
+                    zi = zipfile.ZipInfo("Destrava/" + (a[len("nucleo/"):] if a.startswith("nucleo/") else a), date_time=(2020, 1, 1, 0, 0, 0))  # data fixa: mesmo conteúdo, mesmo hash
                     zi.compress_type = zipfile.ZIP_DEFLATED
                     zi.external_attr = (0o755 if a.endswith(".sh") else 0o644) << 16
                     with open(os.path.join(HERE, a), "rb") as fh:

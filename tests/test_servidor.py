@@ -13,9 +13,9 @@ import unittest
 import urllib.error
 import urllib.request
 
-import conexao
-import ficha
-import termo
+from nucleo import conexao
+from nucleo import ficha
+from nucleo import termo
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WIN10_HD = os.path.join(RAIZ, "tests", "fixtures", "win10_hd.json")
@@ -131,7 +131,7 @@ class Servidor(ServidorReal):
             self.assertFalse(re.match(r"Destrava/(servidor|tests|maquinas|runtimes?|_dev|_cache_servidor|servidor-dados|servidor_web)\b", n), n)
             self.assertNotIn("consentimentos", n)
         # o mesmo zip serve de atualização para quem usa pendrive
-        import atualizador
+        from nucleo import atualizador
         p = os.path.join(self.dados, "Destrava.zip")
         with open(p, "wb") as fh:
             fh.write(z)

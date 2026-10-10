@@ -8,10 +8,10 @@ import tempfile
 import time
 import unittest
 
-import dd_backup
-import disco
-import ficha
-import mapa
+from nucleo import dd_backup
+from nucleo import disco
+from nucleo import ficha
+from nucleo import mapa
 
 
 def escreve(p, dados=b"x"):

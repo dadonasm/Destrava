@@ -6,4 +6,5 @@ cd "$(dirname "$0")" || exit 1
 PY=""
 for c in python3 python; do command -v "$c" >/dev/null 2>&1 && PY="$c" && break; done
 [ -z "$PY" ] && { echo "Python 3 nao encontrado."; exit 1; }
+[ -f nucleo/dd_backup.py ] && exec "$PY" nucleo/dd_backup.py --dados ./_dev "$@"
 exec "$PY" dd_backup.py --dados ./_dev "$@"

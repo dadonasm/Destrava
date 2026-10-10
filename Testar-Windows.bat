@@ -11,12 +11,15 @@ if %errorlevel% neq 0 (
 )
 set "DADOS=%USERPROFILE%\Destrava-teste"
 echo Modo de teste: fichas e consentimentos ficam em "%DADOS%".
+rem no projeto o programa fica em nucleo\ (dados continuam aqui); no pendrive fica tudo nesta pasta
+set "PROG=dd_backup.py"
+if exist "nucleo\dd_backup.py" set "PROG=nucleo\dd_backup.py"
 if exist "runtime\python.exe" (
-  "runtime\python.exe" dd_backup.py --dados "%DADOS%"
+  "runtime\python.exe" %PROG% --dados "%DADOS%"
   goto fim
 )
-where py >nul 2>&1 && ( py -3 dd_backup.py --dados "%DADOS%" & goto fim )
-where python >nul 2>&1 && ( python dd_backup.py --dados "%DADOS%" & goto fim )
+where py >nul 2>&1 && ( py -3 %PROG% --dados "%DADOS%" & goto fim )
+where python >nul 2>&1 && ( python %PROG% --dados "%DADOS%" & goto fim )
 echo.
 echo Python nao encontrado. Instale em https://www.python.org/downloads/windows/
 echo (marque "Add python.exe to PATH") ou coloque o Python portatil em runtime\python.exe.

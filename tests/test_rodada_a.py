@@ -5,9 +5,9 @@ import shutil
 import tempfile
 import unittest
 
-import dados
-import ficha
-import termo
+from nucleo import dados
+from nucleo import ficha
+from nucleo import termo
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 WIN10_HD = os.path.join(AQUI, "fixtures", "win10_hd.json")
@@ -68,7 +68,7 @@ class ColetaSalva(ComPastaTemporaria):
         self.assertEqual(f["host"], "PC-RECEPCAO")
         self.assertEqual(f["mid"], ficha.machine_id_cache(), "o código da máquina reproduzida tem que bater, senão a ficha fica só leitura")
         ficha.salvar_ficha(f)
-        import otimizacoes
+        from nucleo import otimizacoes
         sug = {d["id"]: d for d in otimizacoes.sugestoes(f)}
         self.assertIn("win.visual", sug)
         res = ficha.aplicar(f["mid"], ["win.visual"], f)
@@ -98,7 +98,7 @@ class ColetaSalva(ComPastaTemporaria):
 
 class PastaDeDados(ComPastaTemporaria):
     def test_dados_ficam_na_pasta_escolhida(self):
-        import dd_backup
+        from nucleo import dd_backup
         alvo = os.path.join(self.tmp, "outra")
         dd_backup.usar_pasta_dados(alvo)
         self.assertEqual(ficha.STORE, os.path.join(alvo, "maquinas"))
