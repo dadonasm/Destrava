@@ -12,3 +12,8 @@ servidor-dados
 _dev
 _cache_servidor
 *.zip
+.venv
+*.sqlite3
+staticfiles
+.env
+.secret_key

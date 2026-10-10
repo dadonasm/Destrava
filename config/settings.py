@@ -86,6 +86,9 @@ SECURE_HSTS_SECONDS = 31536000  # só vale em pedidos HTTPS (os que chegam pelo 
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SILENCED_SYSTEM_CHECKS = [
     "security.W008",  # SSL redirect: o acesso local (127.0.0.1:8080 e healthcheck) é http; o HTTPS vem do túnel
+    "security.W003",  # CSRF: não há cookie, sessão nem formulário; a API é autenticada por chave Bearer
+    "security.W005",  # HSTS em subdomínios: os túneis usam domínios compartilhados (trycloudflare.com, ts.net)
+    "security.W021",  # HSTS preload: idem, não se aplica a domínio compartilhado
 ]
 
 LOGGING = {
