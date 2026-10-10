@@ -20,13 +20,13 @@ USAR
   O mesmo botão "Backup" (gaveta lateral) leva aos 6 passos: origem/destino, checagens, seleção, cópia, verificação, certificado.
 
 RODAR SEM PENDRIVE (servidor da loja)
-  Um computador da loja roda o servidor (Docker) e entrega o programa a qualquer computador, na bancada ou no cliente.
+  Um computador da loja roda o servidor (Django em Docker, porta 8080) e entrega o programa a qualquer computador, na bancada ou no cliente.
   Fichas, históricos e termos ficam NO SERVIDOR; o computador atendido não guarda nada.
   PREPARAR (uma vez, no computador do servidor, dentro da pasta do projeto):
-    1) python3 baixar_runtimes.py            baixa o Python fixo (3.12.10) para Windows, Mac e Linux
-    2) docker compose up -d servidor         sobe o servidor (porta 8080, só neste computador)
-    3) docker compose exec servidor python servidor.py --nova-chave "Seu nome"
-       cria a chave do técnico. GUARDE: ela aparece uma única vez. (--listar-chaves e --revogar "Nome" também existem)
+    1) python3 nucleo/baixar_runtimes.py     baixa o Python fixo (3.12.10) para Windows, Mac e Linux
+    2) docker compose up -d web              sobe o servidor (porta 8080, só neste computador)
+    3) docker compose exec web python manage.py nova_chave "Seu nome"
+       cria a chave do técnico. GUARDE: ela aparece uma única vez. (listar_chaves e revogar_chave "Nome" também existem)
     4) Pela internet:  docker compose --profile internet up -d   e o endereço sai em
        docker compose logs tunel | grep trycloudflare      (temporário: muda a cada reinício)
        Endereço fixo: crie um túnel na Cloudflare (precisa de domínio), ponha CLOUDFLARE_TUNNEL_TOKEN e DESTRAVA_URL_PUBLICA
@@ -40,6 +40,7 @@ RODAR SEM PENDRIVE (servidor da loja)
     (dados dos clientes e chaves). O termo no modo servidor avisa o cliente de que os dados ficam no servidor da D&D.
 
 TESTAR NO PRÓPRIO COMPUTADOR (desenvolvimento)
+  O programa (motor) fica em nucleo/; os lançadores da raiz já apontam para lá. Veja README-DEV.md.
   Mac/Linux: sh testar-local.sh       Windows: Testar-Windows.bat       (os dados de teste ficam fora do pendrive)
   Reproduzir outra máquina: na ficha, Detalhes técnicos > "Exportar dados para suporte" grava um arquivo na Área de
     Trabalho. Em outro computador:  sh testar-local.sh --coleta-salva arquivo.json   (as ações são só simuladas)
