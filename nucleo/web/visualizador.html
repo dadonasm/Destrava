@@ -323,7 +323,11 @@ function headHtml(e){var s=e[ST_],st=ST[s]||[s,'mu'],nm=base(e[D_]||e[S_]),d=dic
 function pathsHtml(e){var ok=e[ST_]==='ok';
   return '<div class="paths">'+
    '<div class="pr"><span class="lbl">Caminho antigo</span><code>'+esc(e[S_])+'</code><button class="btn" data-copy="'+esc(e[S_])+'">Copiar</button></div>'+
-   '<div class="pr"><span class="lbl">Caminho novo</span><code>'+(e[D_]?esc(e[D_]):'— não foi copiado —')+'</code>'+(e[D_]?'<button class="btn" data-copy="'+esc(e[D_])+'">Copiar</button>':'<span></span>')+'</div></div>'}
+   '<div class="pr"><span class="lbl">Caminho novo</span><code>'+(e[D_]?esc(e[D_]):'— não foi copiado —')+'</code>'+(e[D_]?'<button class="btn" data-copy="'+esc(e[D_])+'">Copiar</button>':'<span></span>')+'</div>'+
+   (ok&&DTV()?'<div class="pr"><span class="lbl">No backup</span><span></span><span><button class="btn" data-dmodo="abrir" data-di="'+F.indexOf(e)+'">Abrir</button> <button class="btn" data-dmodo="pasta" data-di="'+F.indexOf(e)+'">Mostrar na pasta</button></span></div>':'')+'</div>'}
+// aberto dentro do Destrava!: abre ou mostra o arquivo DO BACKUP (o programa confere que ele está dentro da pasta do backup)
+function DTV(){try{return window.parent!==window&&typeof parent.destravaArquivo==='function'}catch(x){return false}}
+document.addEventListener('click',function(ev){var b=ev.target.closest&&ev.target.closest('[data-dmodo]');if(b)parent.destravaArquivo(+b.getAttribute('data-di'),b.getAttribute('data-dmodo'))});
 
 function renderDet(){var d=$('det');
   if(sel<0||!F[sel]){d.innerHTML='<div class="empty">Selecione um arquivo na lista para ver de onde ele veio e onde ficou.</div>';return}

@@ -200,3 +200,45 @@ def estado_conferencia():
     d = {k: (v[:200] if isinstance(v, list) else v) for k, v in CONF.items()}
     d["n_diferentes"], d["n_faltando"] = len(CONF["diferentes"]), len(CONF["faltando"])
     return d
+
+
+# ----------------------------------------------------------------------------------------------
+# certificado de conclusão dentro do sistema: o que foi feito, o que ficou, por quê e como resolver
+# ----------------------------------------------------------------------------------------------
+CAUSA_ = 11
+RESOLVER = {
+    "em_uso": "O arquivo estava aberto em outro programa: feche o programa e use 'Refazer só os que falharam'.",
+    "permissao": "Sem permissão de leitura: abra o Destrava! como administrador (ou com sudo) e refaça as falhas.",
+    "sumiu": "O arquivo foi apagado ou movido durante a cópia: confira com o cliente se ainda é necessário.",
+    "espaco": "Acabou o espaço no destino: libere espaço ou use um disco maior e refaça as falhas.",
+    "caminho_longo": "Caminho longo demais: encurte o nome da pasta na origem e refaça as falhas.",
+    "io": "Erro de leitura (possível setor com defeito): tente refazer; se repetir, o arquivo precisa de recuperação especializada.",
+    "somente_leitura": "Destino em modo somente leitura: corrija o disco de destino (chkdsk) e refaça as falhas.",
+    "divergente": "A cópia não conferiu com o original: refaça; se repetir, troque o disco de destino.",
+    "nao_escolhido": "Não foi escolhido no passo de seleção: se o cliente precisar, faça um novo backup marcando essa categoria.",
+    "ignorado": "Arquivo do sistema que se recria sozinho: não precisa de backup.",
+    "outro": "Veja o detalhe do erro; refaça as falhas e, se repetir, verifique o disco de origem.",
+}
+
+
+def certificado():
+    """Resumo para o certificado na tela: números, o que ficou agrupado por motivo (com como resolver) e as checagens."""
+    _exige()
+    grupos = {}
+    for e in M["f"]:
+        st = e[ST_]
+        if st == "ok":
+            continue
+        causa = (e[CAUSA_] if len(e) > CAUSA_ else "") or ("ignorado" if st == "ignorado" else "nao_escolhido" if st == "desmarcado" else "outro")
+        k = (st, causa if st == "falha" else (e[C_] if st == "desmarcado" else e[M_]))
+        g = grupos.setdefault(k, {"situacao": st, "causa": causa, "motivo": e[M_] if st != "desmarcado" else "Não escolhido: %s" % e[C_],
+                                  "n": 0, "bytes": 0, "exemplos": [], "resolver": RESOLVER.get(causa, RESOLVER["outro"])})
+        g["n"] += 1
+        g["bytes"] += e[Z_] or 0
+        if len(g["exemplos"]) < 3:
+            g["exemplos"].append(e[S_])
+    ordem = {"falha": 0, "revisar": 1, "desmarcado": 2, "ignorado": 3}
+    meta = M["meta"]
+    return dict(resumo(), grupos=sorted(grupos.values(), key=lambda g: (ordem.get(g["situacao"], 9), -g["bytes"])),
+                checagens=meta.get("checagens") or [], maes=meta.get("maes") or [], ign_dirs_total=meta.get("ign_dirs_total", 0),
+                sweep=(meta.get("cert") or {}).get("sweep") or {})

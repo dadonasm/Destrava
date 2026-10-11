@@ -127,6 +127,77 @@ class BackupCompleto(unittest.TestCase):
             mapa.caminho(0)
 
 
+class EscolhaTotal(BackupCompleto):
+    """Tudo listado, escolha por categoria, pastas-mãe, WhatsApp, checagens com solução e certificado."""
+
+    def setUp(self):
+        BackupCompleto.setUp(self)
+        j = lambda *p: os.path.join(self.disco, *p)
+        escreve(j("Users", "Ana", "Downloads", "instalador.exe"), b"MZ" * 50)
+        escreve(j("Users", "Ana", "Documents", "config.ini"), b"[x]")
+        escreve(j("Users", "Ana", ".segredo", "anotacao.txt"), b"oculto")
+        escreve(j("Users", "Ana", "AppData", "Local", "AppQualquer", "dados.dat"), b"app")
+        escreve(j("Users", "Ana", "Pictures", "WhatsApp", "IMG-20240105-WA0001.jpg"), b"\xff\xd8\xff" + b"w" * 500)
+        escreve(j("Users", "Ana", "Downloads", "WhatsApp Image 2024-02-03 at 10.11.12.jpeg"), b"\xff\xd8\xff" + b"v" * 500)
+        for i, nome in enumerate(("nota_fiscal_jan.pdf", "contrato_cliente.docx", "orcamento_loja.xlsx", "boleto.pdf")):
+            escreve(j("Users", "Ana", "Documents", "Wefix", "Clientes" if i % 2 else "Fiscal", nome), b"trabalho %d" % i)
+        for i in range(3):
+            escreve(j("Users", "Ana", "Documents", "Fotos da praia", "f%d.jpg" % i), b"\xff\xd8\xff" + b"p" * 100)
+
+    def test_tudo_listado_e_escolha(self):
+        it = self.escanear()
+        self.assertEqual((it["instalador.exe"].cat, it["instalador.exe"].inc), ("Programas", False))
+        self.assertEqual((it["config.ini"].cat, it["config.ini"].inc), ("Configuracoes", False))
+        self.assertEqual((it["anotacao.txt"].cat, it["anotacao.txt"].inc), ("Ocultos", False))
+        self.assertEqual((it["dados.dat"].cat, it["dados.dat"].inc), ("Dados_de_apps", False))
+        self.assertTrue(it["contrato.pdf"].inc, "pessoal vem marcado")
+        wa = it["IMG-20240105-WA0001.jpg"]
+        self.assertEqual(wa.local, "WhatsApp")
+        self.assertTrue(wa.rel.startswith("WhatsApp/Fotos/2024/01 - Janeiro/"))
+        self.assertEqual(it["WhatsApp Image 2024-02-03 at 10.11.12.jpeg"].local, "WhatsApp")
+        self.assertEqual(self.app.select({"filter": {"cat": "Programas"}, "on": True}), 1)
+        self.assertTrue(it["instalador.exe"].inc)
+
+    def test_pastas_mae(self):
+        it = self.escanear()
+        sug = {x["nome"]: x for x in self.app.sugestoes_maes()}
+        self.assertIn("Wefix", sug)
+        self.assertGreater(sug["Wefix"]["pct"], sug["Fotos da praia"]["pct"], "trabalho pontua mais que pasta pessoal")
+        self.assertTrue(sug["Wefix"]["motivos"])
+        self.app.set_maes([sug["Wefix"]["chave"]])
+        self.assertEqual(it["contrato_cliente.docx"].rel, "Pastas_mae/Wefix/Clientes/contrato_cliente.docx")
+        self.assertEqual(it["contrato_cliente.docx"].local, "Pastas_mae/Wefix")
+        self.app.set_maes([])
+        self.assertTrue(it["contrato_cliente.docx"].rel.startswith("Ana/Documentos/"), "desmarcar devolve ao lugar")
+
+    def test_destino_falsificado_bloqueia_com_solucao(self):
+        import unittest.mock as um
+        with um.patch.object(disco, "sha256", return_value="0" * 64):
+            ch = self.app.preflight()
+        erro = [c for c in ch if c["nivel"] == "erro"]
+        self.assertTrue(erro and "DIFERENTES" in erro[0]["titulo"] and "troque" in erro[0]["solucao"])
+        ok = [c for c in self.app.preflight() if "Gravou e releu" in c["titulo"]]
+        self.assertTrue(ok)
+
+    def test_formatar_so_com_verificacao_completa_e_certificado(self):
+        self.escanear()
+        self.app.preflight()
+        self.app.start_copy()
+        espera(self.app, ("copied", "error"))
+        self.app.start_verify("rapida")
+        espera(self.app, ("verified", "error"))
+        self.app.finish()
+        self.app.same_disk = False  # aqui origem e destino são pastas do mesmo disco; isola a regra da verificação completa
+        ok, por = self.app.firmware_gate()
+        self.assertFalse(ok)
+        self.assertIn("COMPLETA", por)
+        mapa.carregar(os.path.join(self.dest, "Backup_Ana"))
+        c = mapa.certificado()
+        nao = [g for g in c["grupos"] if g["causa"] == "nao_escolhido"]
+        self.assertTrue(nao and "novo backup" in nao[0]["resolver"])
+        self.assertTrue(any("Gravou e releu" in x["titulo"] for x in c["checagens"]))
+
+
 class LeituraDoDisco(unittest.TestCase):
     def test_mesmo_hash(self):
         fd, p = tempfile.mkstemp()
