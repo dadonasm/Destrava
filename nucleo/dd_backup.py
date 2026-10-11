@@ -42,6 +42,8 @@ if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 VERSION = "3.1"
+import disco  # noqa: E402  (conferência lendo do disco, não da memória)
+import mapa as MAPA  # noqa: E402
 try:
     import ficha as FICHA
 except Exception:  # o backup continua funcionando mesmo sem a ficha
@@ -89,7 +91,7 @@ IGN_EXT = set(".exe .dll .sys .tmp .temp .log .ini .lnk .url .msi .msp .cab .cat
 IGN_NAME_RE = re.compile(r"^(ntuser.*|desktop\.ini|thumbs\.db|iconcache\.db|pagefile\.sys|hiberfil\.sys|swapfile\.sys|\.ds_store|\.directory)$", re.I)
 WA_RE = re.compile(r"(^msgstore.*\.db(\.crypt\d+)?$)|(\.crypt\d+$)", re.I)
 
-IGN_ANY = {"node_modules", ".git", "__pycache__", "$recycle.bin", "system volume information", ".trash", "lost+found", ".thumbnails", ".cache"}
+IGN_ANY = {"__pycache__", "$recycle.bin", "system volume information", ".trash", "lost+found"}
 IGN_WIN_ROOT = {"windows", "program files", "program files (x86)", "programdata", "recovery", "config.msi", "msocache", "perflogs", "intel",
                 "amd", "nvidia", "documents and settings", "boot", "efi", "users"}
 IGN_WIN_USERS = {"default", "default user", "all users", "public documents"}
@@ -99,6 +101,34 @@ IGN_LINUX_HOME = {".cache", ".config", ".local", ".mozilla", ".var", ".steam", "
 CLOUD_ATTRS = 0x1000 | 0x40000 | 0x400000  # OFFLINE | RECALL_ON_OPEN | RECALL_ON_DATA_ACCESS
 GOOD_FS = {"ntfs", "ntfs3", "fuseblk", "vfat", "exfat", "ext2", "ext3", "ext4", "btrfs", "xfs", "f2fs", "hfsplus", "apfs", "msdos"}
 RESERVED = {"con", "prn", "aux", "nul"} | {"com%d" % i for i in range(1, 10)} | {"lpt%d" % i for i in range(1, 10)}
+# dados de apps dentro da pasta do usuário (o resto da AppData não é pessoal): (app, caminho, extensões ou None)
+APPS_WIN = [("Thunderbird", "AppData/Roaming/Thunderbird/Profiles", None), ("Outlook", "AppData/Local/Microsoft/Outlook", (".pst",)),
+            ("Outlook_Assinaturas", "AppData/Roaming/Microsoft/Signatures", None),
+            ("Notas_Autoadesivas", "AppData/Local/Packages/Microsoft.MicrosoftStickyNotes_8wekyb3d8bbwe/LocalState", (".sqlite",))]
+APPS_LINUX = [("Evolution", ".local/share/evolution", None)]
+APP_PULAR = {"cache", "cache2", "startupcache", "crashes", "minidumps", "shader-cache"}
+# bancos de dados de sistemas (loja, contabilidade, PDV) em Program Files e ProgramData
+DB_EXT = {".fdb", ".gdb", ".fbk", ".gbk", ".mdb", ".accdb", ".dbf", ".sdf", ".mdf", ".ldf", ".bak"}
+SIS_PULAR = {"microsoft", "windows", "common files", "google", "mozilla", "mozilla firefox", "mozilla maintenance service", "adobe", "nvidia", "nvidia corporation",
+             "intel", "amd", "package cache", "windowsapps", "windows defender", "windows nt", "windows mail", "windows media player", "windows photo viewer",
+             "windows portable devices", "windows security", "windowspowershell", "internet explorer", "microsoft office", "microsoft.net", "reference assemblies",
+             "msbuild", "dotnet", "uninstall information", "installshield installation information", "realtek", "java", "docker", "packages", "ssh",
+             "usoshared", "usoprivate", "softwaredistribution", "regid.1991-06.com.microsoft"}
+# o que antes era "ignorado" agora é listado em categorias próprias, desmarcadas: o técnico decide
+PROG_EXT = {".exe", ".msi", ".msp", ".appimage", ".deb", ".rpm", ".dmg", ".pkg", ".apk", ".jar", ".bat", ".cmd", ".ps1", ".vbs"}
+CONF_EXT = {".ini", ".log", ".lnk", ".url", ".desktop", ".cfg", ".conf", ".reg"}
+# pastas que se recriam sozinhas: listadas como puladas, nunca copiadas
+CACHE_DIRS = {"cache", "cache2", "code cache", "gpucache", "grshadercache", "shadercache", "temp", "tmp", "inetcache", "crashdumps",
+              "d3dscache", "webcache", "service worker", "cachestorage", "startupcache", "minidumps", "node_modules", ".cache", ".thumbnails",
+              ".npm", ".nvm", ".cargo", ".rustup", ".gradle", ".m2", ".steam", "snap", ".snap"}
+WA_PASTA = re.compile(r"(^|[\\/])whatsapp( (images|video|audio|documents|animated gifs|voice notes|stickers|profile photos))?([\\/]|$)", re.I)
+WA_NOME = re.compile(r"^whatsapp (image|video|audio|ptt|document)|^(img|vid|aud|ptt|doc|stk)-\d{8}-wa\d{3,5}", re.I)
+# ordem de cópia: o mais importante primeiro (se o disco de origem estiver morrendo, o essencial já foi)
+PRIORIDADE = ["Documentos", "Email_Contatos", "Contas_Senhas", "Fotos", "Conversas", "Projetos", "Sistemas", "Dados_de_apps", "Navegadores",
+              "Videos", "Audios", "Outros", "Ocultos", "Configuracoes", "Programas", "Temporarios", "Nuvem"]
+PESSOAL_NOMES = ("foto", "imagem", "picture", "photo", "music", "músic", "music", "video", "vídeo", "download", "whats", "pessoal", "famil",
+                 "celular", "backup", "wallpaper", "papel de parede", "screenshot", "captura")
+DOCS_DESK = {"documents", "documentos", "meus documentos", "desktop", "área de trabalho", "area de trabalho"}
 ILLEGAL = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 
 
@@ -502,10 +532,11 @@ def roots_for_browse():
 # Item
 # ----------------------------------------------------------------------------------------------
 class Item(object):
-    __slots__ = ("src", "disp", "size", "mtime", "local", "cat", "act", "motivo", "date", "tags", "inc", "rel",
+    __slots__ = ("raiz", "ctx", "local0", "rel0", "src", "disp", "size", "mtime", "local", "cat", "act", "motivo", "date", "tags", "inc", "rel",
                  "status", "err", "cause", "sha", "ver", "nuvem")
 
     def __init__(self):
+        self.raiz, self.ctx, self.local0, self.rel0 = "", "", None, None
         self.status = None
         self.err = ""
         self.cause = ""
@@ -516,27 +547,33 @@ class Item(object):
 
 
 def classify_file(name, size, nuvem):
+    """(categoria, ação, motivo, marcado). Tudo é listado; só vem marcado o que é claramente pessoal."""
     low = name.lower()
     ext = os.path.splitext(low)[1]
-    if size == 0:
-        return "Outros", "ignorar", "Arquivo vazio (0 bytes)"
-    if low.startswith("~$") or ext in IGN_EXT or IGN_NAME_RE.match(name):
-        return "Outros", "ignorar", "Programa / sistema / temporário"
-    if WA_RE.search(name):
-        cat, act, mot = "Conversas", "copiar", "Backup de conversas (WhatsApp)"
-    elif ext in EXT2CAT:
-        cat = EXT2CAT[ext]
-        act, mot = "copiar", "Arquivo pessoal (%s)" % cat
-    elif ext in ARCH:
-        cat, act, mot = "Outros", "copiar", "Arquivo compactado"
-    else:
-        cat, act, mot = "Outros", "revisar", "Tipo não reconhecido - confira"
+    if IGN_NAME_RE.match(name):
+        return "Temporarios", "ignorar", "Arquivo do sistema em uso (recriado sozinho)", False
     if nuvem:
-        if cat in ("Fotos", "Videos", "Audios"):
-            mot += " · OneDrive: será baixado"
-        else:
-            return cat, "ignorar", "OneDrive: só na nuvem (não baixado)"
-    return cat, act, mot
+        tipo = EXT2CAT.get(ext, "Outros")
+        return "Nuvem", "copiar", "Só na nuvem (%s): se marcar, baixa e copia" % tipo, False
+    if low.startswith("~$") or (ext in IGN_EXT and ext not in PROG_EXT and ext not in CONF_EXT):
+        return "Temporarios", "copiar", "Temporário/sistema (recriado sozinho): só se precisar", False
+    if ext in PROG_EXT:
+        return "Programas", "copiar", "Programa ou instalador: marque se o cliente quiser guardar", False
+    if ext in CONF_EXT:
+        return "Configuracoes", "copiar", "Configuração, atalho ou registro de programa", False
+    if size == 0:
+        return "Outros", "copiar", "Arquivo vazio (0 bytes)", False
+    if WA_RE.search(name):
+        return "Conversas", "copiar", "Backup de conversas (WhatsApp)", True
+    if ext in EXT2CAT:
+        return EXT2CAT[ext], "copiar", "Arquivo pessoal (%s)" % EXT2CAT[ext], True
+    if ext in ARCH:
+        return "Outros", "copiar", "Arquivo compactado", True
+    return "Outros", "revisar", "Tipo não reconhecido: copiado por segurança, confira", True
+
+
+def eh_whatsapp(disp, name):
+    return bool(WA_RE.search(name) or WA_NOME.search(name) or WA_PASTA.search(os.path.dirname(disp.replace("\\", "/"))))
 
 
 def build_rel(local, cat, date, name, ext):
@@ -571,6 +608,8 @@ class App(object):
         self.phase = "idle"
         self.msg = ""
         self.cfg = {}
+        self.maes = []
+        self.checagens = []
         self.items = []
         self.ign_dirs = []
         self.ign_dirs_total = 0
@@ -632,85 +671,95 @@ class App(object):
 
     # ------------------------------------------------------------------ checagens iniciais
     def preflight(self):
+        """Confere ORIGEM e DESTINO. Cada problema diz o que é e como resolver; 'erro' bloqueia a cópia."""
         res = []
 
-        def add(n, t, d):
-            res.append({"nivel": n, "titulo": t, "detalhe": d})
+        def add(n, t, d, solucao=""):
+            res.append({"nivel": n, "titulo": t, "detalhe": d, "solucao": solucao})
 
         cfg = self.cfg
         if not cfg:
-            return [{"nivel": "erro", "titulo": "Configuração incompleta", "detalhe": "Escolha origens e destino."}]
-        for s in cfg["sources"]:
-            p = s["path"]
+            return [{"nivel": "erro", "titulo": "Configuração incompleta", "detalhe": "Escolha origens e destino.", "solucao": "Volte ao passo 1."}]
+        # permissões
+        adm = (hasattr(os, "geteuid") and os.geteuid() == 0)
+        if IS_WIN:
+            try:
+                import ctypes
+                adm = bool(ctypes.windll.shell32.IsUserAnAdmin())
+            except Exception:
+                adm = False
+        if not adm:
+            add("aviso", "Sem permissão de administrador", "Pastas de outros usuários e arquivos do sistema podem ficar sem leitura.",
+                "Feche e abra o Destrava! como administrador (Windows: Iniciar-Windows.bat; Mac/Linux: com sudo).")
+        if sys.platform == "darwin" and DADOS and not DADOS.acesso_total_mac():
+            add("aviso", "Mac sem Acesso Total ao Disco", "Mail, Mensagens, Safari e backups do iPhone ficam invisíveis.",
+                "Ajustes do Sistema > Privacidade e Segurança > Acesso Total ao Disco: ligue o Terminal e abra o Destrava! de novo.")
+        # origem
+        for src in cfg["sources"]:
+            p = src["path"]
             try:
                 names = os.listdir(p)
                 if not names:
-                    add("aviso", "Origem vazia: %s" % p, "Nenhum arquivo encontrado. Se for um disco do Windows, ele pode estar criptografado (BitLocker) ou não montado.")
+                    add("aviso", "Origem vazia: %s" % p, "Nenhum arquivo encontrado.", "Se for um disco do Windows, ele pode estar criptografado (BitLocker) ou não montado: veja abaixo.")
                 else:
-                    add("ok", "Origem legível: %s" % p, "Tipo detectado: %s." % {"windows": "instalação do Windows", "linux": "instalação do Linux", "folder": "pasta comum"}.get(s["kind"], s["kind"]))
+                    add("ok", "Origem legível: %s" % p, "Tipo detectado: %s." % {"windows": "instalação do Windows", "linux": "instalação do Linux", "folder": "pasta comum"}.get(src["kind"], src["kind"]))
             except OSError as e:
-                add("erro", "Não consigo ler a origem: %s" % p, str(e))
+                add("erro", "Não consigo ler a origem: %s" % p, str(e), "Rode como administrador; se for disco externo, reconecte.")
                 continue
             if not IS_WIN:
                 m = mount_of(p)
-                if m:
-                    opts = m[3].split(",")
-                    if m[2] in ("ntfs", "ntfs3", "fuseblk") and "ro" in opts:
-                        add("aviso", "Disco NTFS montado somente leitura", "É seguro para backup. Se faltarem arquivos, o Windows pode ter sido desligado com 'Inicialização rápida' ativa.")
-            if s["kind"] == "windows":
-                if not os.path.isdir(os.path.join(p, "Users")) and not IS_WIN:
-                    add("aviso", "Pasta Users não encontrada", "Confirme se esta é a partição do Windows.")
+                if m and m[2] in ("ntfs", "ntfs3", "fuseblk") and "ro" in m[3].split(","):
+                    add("aviso", "Disco do Windows montado só para leitura", "É seguro para backup.",
+                        "Se faltarem arquivos: ligue o Windows, desative a Inicialização Rápida e desligue segurando Shift.")
+            ok, txt = saude_disco(p)
+            if ok is False:
+                add("erro", "Disco de ORIGEM com defeito (%s)" % p, txt,
+                    "Copie primeiro o essencial (a cópia já vai em ordem de importância) e use o computador o mínimo possível. Depois troque o disco; se arquivos falharem, leve a um laboratório de recuperação.")
+        for b in bitlocker_trancados():
+            add("erro", "Disco criptografado e trancado: %s" % b["onde"], "BitLocker: sem a chave, os arquivos dele não podem ser lidos.",
+                "Peça ao cliente a chave de recuperação (48 números; fica na conta Microsoft dele: aka.ms/myrecoverykey) e use 'Destravar com a chave'.")
+        escolhidas = {os.path.abspath(x["path"]) for x in cfg["sources"]}
+        for d in list_sources():
+            usado = (d["total"] or 0) - (d["free"] or 0)
+            if os.path.abspath(d["path"]) in escolhidas or usado < 2e9 or (physical_id(d["path"]) and physical_id(d["path"]) == physical_id(cfg["dest"])):
+                continue
+            if any(os.path.abspath(d["path"]).startswith(e.rstrip(os.sep) + os.sep) or e.startswith(os.path.abspath(d["path"]).rstrip(os.sep) + os.sep) for e in escolhidas):
+                continue
+            add("aviso", "Disco não escolhido: %s (%s usados)" % (d["label"], fmt_bytes(usado)), "Este disco tem dados e não está na origem.",
+                "Se tiver arquivos do cliente, volte ao passo 1 e adicione como origem.")
         # destino
         d = cfg["dest"]
         total, free = disk_usage(d)
         add("ok", "Destino: %s" % d, "%s livres de %s." % (fmt_bytes(free), fmt_bytes(total)))
         fs = fs_type(d)
         if fs in ("vfat", "msdos"):
-            add("aviso", "Destino em FAT32", "FAT32 não aceita arquivos acima de 4 GB. Prefira exFAT, NTFS ou ext4.")
-        elif fs:
-            add("ok", "Sistema de arquivos do destino: %s" % fs, "")
+            add("aviso", "Destino em FAT32", "FAT32 não aceita arquivos acima de 4 GB.", "Se houver arquivos grandes, formate o disco de destino em exFAT (apaga o disco!) ou use outro.")
         try:
             os.makedirs(self.dest_root, exist_ok=True)
-            tp = os.path.join(self.dest_root, ".dd_teste.tmp")
-            blob = os.urandom(1024 * 1024)
-            t0 = time.time()
-            with open(tp, "wb") as f:
-                f.write(blob)
-                f.flush()
-                os.fsync(f.fileno())
-            dt = max(time.time() - t0, 1e-6)
-            with open(tp, "rb") as f:
-                ok = hashlib.sha256(f.read()).digest() == hashlib.sha256(blob).digest()
-            os.remove(tp)
-            if ok:
-                add("ok", "Teste de gravação e leitura no destino", "Gravou e releu 1 MB sem diferenças (%.0f MB/s)." % (1.0 / dt))
-            else:
-                add("erro", "O destino devolveu dados diferentes dos gravados", "Não use este dispositivo para backup.")
+            mb, vel = teste_destino(self.dest_root, min(512, int(free / 1048576 * 0.5)))
+            add("ok", "Gravou e releu %d MB do disco de destino sem diferenças" % mb, "Gravação %.0f MB/s · leitura do disco (%s)." % (vel, disco.METODO))
+            if vel < 8:
+                add("aviso", "Destino lento (%.0f MB/s)" % vel, "A cópia vai demorar.", "Use uma porta USB 3 (azul) ou outro disco.")
+        except ValueError as e:
+            add("erro", "O destino devolveu dados DIFERENTES dos gravados", str(e),
+                "Disco ou pendrive com defeito ou com capacidade falsificada. NÃO use para backup: troque por outro.")
         except OSError as e:
-            add("erro", "Não consigo gravar no destino", str(e))
-        # mesmo disco?
+            ro = getattr(e, "errno", None) in (errno.EROFS, errno.EACCES, errno.EPERM)
+            add("erro", "Não consigo gravar no destino", str(e),
+                "Disco em modo somente leitura ou sem permissão: no Windows rode 'chkdsk X: /f'; disco NTFS no Zorin: ligue o Windows, desative a Inicialização Rápida e desligue com Shift." if ro
+                else "Reconecte o disco; se repetir, use outro.")
+        ok, txt = saude_disco(d)
+        if ok is False:
+            add("erro", "Disco de DESTINO com defeito", txt, "Não use este disco para backup: troque por outro.")
         pd = physical_id(d)
-        same = [s["path"] for s in cfg["sources"] if pd and physical_id(s["path"]) == pd]
+        same = [s_["path"] for s_ in cfg["sources"] if pd and physical_id(s_["path"]) == pd]
         self.same_disk = bool(same)
         if same:
-            add("aviso", "Destino está no MESMO disco físico de uma origem", "Serve para organizar, mas NÃO serve para formatar: a formatação apagaria o backup junto.")
+            add("aviso", "Destino no MESMO disco físico de uma origem", "Serve para organizar, NÃO para formatar: a formatação apagaria o backup.",
+                "Para formatar depois, use um disco externo como destino.")
         else:
             add("ok", "Destino em disco diferente das origens", "Pronto para um backup que sobrevive à formatação.")
-        # SMART (se existir)
-        sm = shutil.which("smartctl")
-        if sm and not IS_WIN:
-            for s in cfg["sources"]:
-                m = mount_of(s["path"])
-                pdk = parent_disk(m[0]) if m else None
-                if pdk:
-                    try:
-                        r = subprocess.run([sm, "-H", "/dev/" + pdk], capture_output=True, text=True, timeout=20)
-                        line = [x for x in r.stdout.splitlines() if "overall-health" in x or "SMART Health" in x]
-                        if line:
-                            ok = "PASSED" in line[0] or "OK" in line[0]
-                            add("ok" if ok else "erro", "Saúde (SMART) de /dev/%s" % pdk, line[0].strip())
-                    except Exception:
-                        pass
+        self.checagens = res
         return res
 
     # ------------------------------------------------------------------ planejamento de raízes
@@ -742,6 +791,9 @@ class App(object):
                         continue
                     plans.append((p, "Disco_%s/%s" % (letter, n), "%s:\\%s" % (letter, n), "\\", "plain"))
             plans.append((root, "Disco_%s" % letter, "%s:\\" % letter, "\\", "toplevel"))
+            for pf in ("program files", "program files (x86)", "programdata"):
+                if names.get(pf):
+                    plans.append((os.path.join(root, names[pf]), "Disco_%s/Sistemas" % letter, "%s:\\%s" % (letter, names[pf]), "\\", "sistemas"))
         elif kind == "linux":
             hp = os.path.join(root, "home")
             for u in sorted(safe_listdir(hp)):
@@ -768,22 +820,20 @@ class App(object):
     def dir_ignore(self, name, ctx, parent_is_root):
         low = name.lower()
         if low in IGN_ANY:
-            return "Dados de programas / temporários / lixeira"
-        if ctx == "winuser" and parent_is_root and low == "appdata":
-            return "Dados de programas (AppData) - só os favoritos dos navegadores são copiados"
-        if ctx == "linuxuser" and parent_is_root and low in IGN_LINUX_HOME:
-            return "Dados de programas / cache do Linux"
+            return "Lixeira / sistema"
+        if low in CACHE_DIRS:
+            return "Cache/temporário (recriado sozinho)"
         return None
 
     def walk_plan(self, plan):
-        """Gera (real, disp, name, st, local) para cada arquivo; registra pastas ignoradas."""
+        """Gera (real, disp, name, st, local, marca) para cada arquivo; marca = None | "appdata" | "oculto"."""
         real_root, local, disp_root, sep, ctx = plan
         dest_abs = os.path.abspath(self.dest_root) if self.dest_root else None
-        stack = [(real_root, disp_root, True)]
+        stack = [(real_root, disp_root, True, None)]
         while stack:
             if self.cancel.is_set():
                 raise Cancelled()
-            rd, dd, is_root = stack.pop()
+            rd, dd, is_root, marca = stack.pop()
             try:
                 it = os.scandir(lp(rd))
             except OSError as e:
@@ -816,16 +866,26 @@ class App(object):
                                         continue
                                 except OSError:
                                     pass
+                            if ctx == "sistemas" and is_root and name.lower() in SIS_PULAR:
+                                continue
                             why = self.dir_ignore(name, ctx, is_root)
                             if ctx == "winuser" and is_root and name.lower() in SILENT_JUNCTIONS:
                                 continue
                             if why:
                                 self.add_ign(dd.rstrip(sep) + sep + name, why)
                                 continue
-                            stack.append((e.path, dd.rstrip(sep) + sep + name, False))
+                            m = marca
+                            if not m and ctx == "winuser" and is_root and name.lower() == "appdata":
+                                m = "appdata"
+                            elif not m and (name.startswith(".") or (IS_WIN and getattr(st, "st_file_attributes", 0) & 2)):
+                                m = "oculto"
+                            stack.append((e.path, dd.rstrip(sep) + sep + name, False, m))
                         elif e.is_file(follow_symlinks=False):
                             st = e.stat(follow_symlinks=False)
-                            yield (e.path, dd.rstrip(sep) + sep + name, name, st, local)
+                            if ctx == "sistemas" and (os.path.splitext(name.lower())[1] not in DB_EXT or st.st_size < 65536):
+                                continue
+                            m = marca or ("oculto" if ctx != "toplevel" and (name.startswith(".") or (IS_WIN and getattr(st, "st_file_attributes", 0) & 2)) else None)
+                            yield (e.path, dd.rstrip(sep) + sep + name, name, st, local, m)
                     except OSError as ex:
                         self.add_ign(dd.rstrip(sep) + sep + getattr(e, "name", "?"), "Sem acesso: %s" % (ex.strerror or ex))
 
@@ -874,6 +934,15 @@ class App(object):
             res.append(it)
         return res
 
+    def _app_conhecido(self, dentro, ctx):
+        """(app, caminho dentro da pasta do app) se o arquivo é de um app cujos dados importam (e-mail, notas)."""
+        low = dentro.lower()
+        for app, rel, exts in (APPS_WIN if ctx == "winuser" else APPS_LINUX):
+            r = rel.lower() + "/"
+            if low.startswith(r) and (not exts or low.endswith(exts)):
+                return app, dentro[len(r):]
+        return None
+
     # ------------------------------------------------------------------ varredura
     def start_scan(self):
         with self.lock:
@@ -882,6 +951,7 @@ class App(object):
             if not self.cfg:
                 raise ValueError("Salve a configuração antes de escanear.")
             self.items = []
+            self.maes = []
             self.ign_dirs = []
             self.ign_dirs_total = 0
             self.sweep = None
@@ -896,9 +966,16 @@ class App(object):
             self.phase = "scanning"
         threading.Thread(target=self._scan_thread, daemon=True).start()
 
-    def make_item(self, real, disp, name, st, local):
-        nuvem = bool(getattr(st, "st_file_attributes", 0) & CLOUD_ATTRS) if IS_WIN else False
-        cat, act, mot = classify_file(name, st.st_size, nuvem)
+    def make_item(self, real, disp, name, st, local, ctx="", marca=None, raiz=""):
+        nuvem = bool(getattr(st, "st_file_attributes", 0) & CLOUD_ATTRS) if IS_WIN else bool(getattr(st, "st_flags", 0) & 0x40000000)
+        if ctx == "sistemas":  # caminho original preservado: restaurar é copiar de volta para o mesmo lugar
+            it = Item()
+            it.src, it.disp, it.size, it.mtime, it.local = real, disp, st.st_size, st.st_mtime, local
+            it.cat, it.act, it.motivo, it.date, it.nuvem, it.tags, it.inc = "Sistemas", "copiar", "Banco de dados de sistema · feche o sistema antes do backup", None, nuvem, "", True
+            partes = [x for x in re.split(r"[\\/]", disp)[1:] if x]
+            it.rel = "/".join([safe_seg(x) for x in local.split("/")] + [safe_seg(x) for x in partes])
+            return it
+        cat, act, mot, marcado = classify_file(name, st.st_size, nuvem)
         ext = os.path.splitext(name.lower())[1]
         date = None
         if cat == "Fotos" and ext in (".jpg", ".jpeg") and not nuvem:
@@ -909,8 +986,32 @@ class App(object):
         it.src, it.disp, it.size, it.mtime, it.local = real, disp, st.st_size, st.st_mtime, local
         it.cat, it.act, it.motivo, it.date, it.nuvem = cat, act, mot, date, nuvem
         it.tags = tag_path(self.rules, disp) if act != "ignorar" else ""
-        it.inc = (act == "copiar")
-        it.rel = build_rel(local, cat, date, name, ext)
+        it.raiz, it.ctx = raiz, ctx
+        loc = "/".join(safe_seg(x) for x in local.split("/"))
+        dentro = disp[len(raiz):].lstrip("\\/") if raiz and disp.startswith(raiz) else name
+        dentro_n = dentro.replace("\\", "/")
+        segs = lambda t: "/".join(safe_seg(x) for x in t.split("/") if x)
+        app = self._app_conhecido(dentro_n, ctx) if ctx in ("winuser", "linuxuser") else None
+        if app and act != "ignorar":
+            cat, act, mot, marcado = "Dados_de_apps", "copiar", "Dados do %s (e-mail, contatos, notas)" % app[0].replace("_", " "), True
+            it.rel = "%s/Dados_de_apps/%s/%s" % (loc, app[0], segs(app[1]))
+        elif marca == "appdata" and act != "ignorar":
+            k = dentro_n.lower().find("appdata/")
+            cat, act, mot, marcado = "Dados_de_apps", "copiar", "Dados de programas (AppData): só se o cliente precisar", False
+            it.rel = "%s/Dados_de_apps/AppData/%s" % (loc, segs(dentro_n[k + 8:] if k >= 0 else dentro_n))
+        elif marca == "oculto" and act != "ignorar" and cat != "Nuvem":
+            cat, mot, marcado = "Ocultos", "Arquivo oculto (%s)" % cat, False
+            it.rel = "%s/Ocultos/%s" % (loc, segs(dentro_n))
+        elif cat != "Nuvem" and eh_whatsapp(disp, name):
+            local = it.local = "WhatsApp"  # o WhatsApp vira um "usuário" à parte, mesmo padrão de organização
+            mot = "WhatsApp (%s)" % cat
+            it.rel = build_rel("WhatsApp", cat, date, name, ext)
+        else:
+            it.rel = build_rel(local, cat, date, name, ext)
+        it.cat, it.act, it.motivo = cat, act, mot
+        it.tags = tag_path(self.rules, disp) if act != "ignorar" else ""
+        it.inc = marcado
+        it.local0, it.rel0 = it.local, it.rel
         return it
 
     def _scan_thread(self):
@@ -919,8 +1020,8 @@ class App(object):
             items = []
             for src in self.cfg["sources"]:
                 for plan in self.plan_roots(src):
-                    for real, disp, name, st, local in self.walk_plan(plan):
-                        it = self.make_item(real, disp, name, st, local)
+                    for real, disp, name, st, local, marca in self.walk_plan(plan):
+                        it = self.make_item(real, disp, name, st, local, plan[4], marca, plan[2])
                         items.append(it)
                         self.scan_info["files"] += 1
                         self.scan_info["bytes"] += st.st_size
@@ -935,6 +1036,92 @@ class App(object):
             self.error = traceback.format_exc()
             self.phase = "error"
             self.log("ERRO no escaneamento: " + self.error.splitlines()[-1])
+
+    # ------------------------------------------------------------------ pastas-mãe (ex.: Wefix) separadas do pessoal
+    def _chave_mae(self, it):
+        """Pasta de 1º nível candidata: dentro de Documentos/Área de Trabalho do usuário, ou uma pasta solta na raiz do disco."""
+        if not it.raiz or it.ctx not in ("winuser", "linuxuser", "plain") or it.local0 is None:
+            return None
+        partes = [x for x in re.split(r"[\\/]", it.disp[len(it.raiz):]) if x]
+        if it.ctx == "plain" and it.local0.startswith("Disco_") and "/" in it.local0:  # pasta solta na raiz do disco do Windows
+            return (it.raiz, os.path.basename(it.raiz.rstrip("\\/"))) if len(partes) >= 2 else None
+        if it.ctx == "plain":  # pasta escolhida como origem: as subpastas dela são as candidatas
+            sep = "\\" if "\\" in it.raiz else "/"
+            return (it.raiz.rstrip(sep) + sep + partes[0], partes[0]) if len(partes) >= 2 else None
+        if len(partes) >= 3 and partes[0].lower() in DOCS_DESK:
+            sep = "\\" if "\\" in it.raiz else "/"
+            return (it.raiz.rstrip(sep) + sep + partes[0] + sep + partes[1], partes[1])
+        return None
+
+    def sugestoes_maes(self):
+        """Pastas que parecem de trabalho, com a % de acerto da sugestão e o porquê."""
+        cands = {}
+        for it in self.items:
+            k = self._chave_mae(it)
+            if not k:
+                continue
+            c = cands.setdefault(k[0], {"chave": k[0], "nome": k[1], "n": 0, "bytes": 0, "sub": set(), "ext": set(), "tags": {}})
+            c["n"] += 1
+            c["bytes"] += it.size
+            resto = [x for x in re.split(r"[\\/]", it.disp[len(k[0]):]) if x]
+            if len(resto) >= 2:
+                c["sub"].add(resto[0].lower())
+            c["ext"].add(os.path.splitext(it.disp.lower())[1])
+            for t in (it.tags or "").split("|"):
+                if t:
+                    c["tags"][t] = c["tags"].get(t, 0) + 1
+        out = []
+        for c in cands.values():
+            if c["n"] < 3:
+                continue
+            pct, motivos = 35, []
+            ntag = sum(c["tags"].values())
+            if ntag:
+                pct += min(30, int(ntag * 60.0 / c["n"]) + 8)
+                motivos.append("arquivos de trabalho (%s)" % ", ".join(sorted(c["tags"], key=lambda t: -c["tags"][t])[:3]))
+            if len(c["sub"]) >= 2:
+                pct += 15
+                motivos.append("%d subpastas organizadas" % len(c["sub"]))
+            if len(c["ext"]) >= 3:
+                pct += 10
+                motivos.append("%d tipos de arquivo" % len(c["ext"]))
+            if c["n"] >= 20:
+                pct += 8
+            if any(p in c["nome"].lower() for p in PESSOAL_NOMES):
+                pct -= 35
+                motivos.append("o nome parece pessoal")
+            pct = max(5, min(97, pct))
+            out.append({"chave": c["chave"], "nome": c["nome"], "n": c["n"], "bytes": c["bytes"], "pct": pct, "motivos": motivos,
+                        "marcada": c["chave"] in self.maes})
+        out.sort(key=lambda x: (-x["pct"], -x["bytes"]))
+        return out[:40]
+
+    def set_maes(self, chaves):
+        """Marca as pastas-mãe: tudo dentro delas vai para Pastas_mae/<Nome>/, com a estrutura de dentro preservada."""
+        if self.busy():
+            raise Busy("Aguarde o processo atual terminar.")
+        validas = {c["chave"]: c["nome"] for c in self.sugestoes_maes()}
+        for it in self.items:  # tudo volta ao lugar de antes
+            k = self._chave_mae(it)
+            if k:
+                validas.setdefault(k[0], k[1])
+            if it.local0 is not None:
+                it.local, it.rel = it.local0, it.rel0
+        self.maes = [c for c in chaves if c in validas]
+        nomes, usados = {}, set()
+        for c in self.maes:
+            n = safe_seg(validas[c])
+            while n.lower() in usados:
+                n += "_2"
+            usados.add(n.lower())
+            nomes[c] = n
+        for it in self.items:
+            k = self._chave_mae(it)
+            if k and k[0] in nomes:
+                it.local = "Pastas_mae/" + nomes[k[0]]
+                dentro = [safe_seg(x) for x in re.split(r"[\\/]", it.disp[len(k[0]):]) if x]
+                it.rel = "Pastas_mae/%s/%s" % (nomes[k[0]], "/".join(dentro))
+        return {"maes": self.maes, "sugestoes": self.sugestoes_maes()}
 
     # ------------------------------------------------------------------ seleção e listas
     def matches(self, it, f):
@@ -1036,8 +1223,10 @@ class App(object):
                     big = it.size
         total, free = disk_usage(self.cfg["dest"]) if self.cfg else (0, 0)
         fs = fs_type(self.cfg["dest"]) if self.cfg else None
-        return {"sel_n": n, "sel_bytes": b, "free": free, "total": total, "fs": fs, "biggest": big,
-                "cabe": b <= free * 0.995, "fat32_problema": fs in ("vfat", "msdos") and big > 4 * 1024 ** 3 - 1}
+        cabe = b * 1.02 + 256 * 1024 * 1024 <= free
+        return {"sel_n": n, "sel_bytes": b, "free": free, "total": total, "fs": fs, "biggest": big, "cabe": cabe,
+                "fat32_problema": fs in ("vfat", "msdos") and big > 4 * 1024 ** 3 - 1,
+                "solucao": "" if cabe else "Faltam %s: desmarque categorias (Programas, Ocultos, Vídeos…) ou use um disco maior." % fmt_bytes(b * 1.02 + 256 * 1024 * 1024 - free)}
 
     def final_status(self, it):
         if it.inc:
@@ -1071,6 +1260,7 @@ class App(object):
             if t["fat32_problema"]:
                 raise ValueError("O destino é FAT32 e há arquivos maiores que 4 GB. Use outro destino ou formate em exFAT/NTFS.")
             queue = [it for it in self.items if it.inc and (it.status is None or (retry_only and it.status == "falha"))]
+            queue.sort(key=lambda it: PRIORIDADE.index(it.cat) if it.cat in PRIORIDADE else len(PRIORIDADE))  # o essencial primeiro
             self.cancel.clear()
             self.run_ev.set()
             self.cp = {"done_files": 0, "total_files": len(queue), "done_bytes": 0, "total_bytes": sum(i.size for i in queue), "current": "",
@@ -1199,20 +1389,12 @@ class App(object):
         threading.Thread(target=self._verify_thread, args=(targets, mode, sweep), daemon=True).start()
 
     def hash_file(self, path, drop_cache=False):
+        """drop_cache: lê do DISCO, não da memória (disco.py). É o que vale para conferir o backup."""
         h = hashlib.sha256()
-        with open(lp(path), "rb") as f:
-            if drop_cache and hasattr(os, "posix_fadvise"):
-                try:
-                    os.posix_fadvise(f.fileno(), 0, 0, os.POSIX_FADV_DONTNEED)
-                except OSError:
-                    pass
-            while True:
-                self.check_run()
-                b = f.read(CHUNK)
-                if not b:
-                    break
-                h.update(b)
-                self.vf["bytes_done"] += len(b)
+        for b in (disco.blocos(lp(path)) if drop_cache else _ler(lp(path))):
+            self.check_run()
+            h.update(b)
+            self.vf["bytes_done"] += len(b)
         return h.hexdigest()
 
     def _verify_thread(self, targets, mode, sweep):
@@ -1276,10 +1458,10 @@ class App(object):
         n_novos = n_alt = 0
         for src in self.cfg["sources"]:
             for plan in self.plan_roots(src):
-                for real, disp, name, st, local in self.walk_plan(plan):
+                for real, disp, name, st, local, _m in self.walk_plan(plan):
                     it = known.get(disp)
                     if it is None:
-                        cat, act, mot = classify_file(name, st.st_size, False)
+                        cat, act, mot, _x = classify_file(name, st.st_size, False)
                         if act != "ignorar":
                             n_novos += 1
                             if len(novos) < 500:
@@ -1290,7 +1472,7 @@ class App(object):
                         n_alt += 1
                         if len(alterados) < 500:
                             alterados.append([disp, st.st_size, "Mudou durante o backup (a cópia é a versão do momento em que foi lida)"])
-        sumiram = [it.disp for it in self.items if it.disp not in seen and not it.disp.endswith("_Bookmarks.json") and "(favoritos)" not in it.disp]
+        sumiram = [it.disp for it in self.items if it.disp not in seen and it.cat != "Navegadores"]
         self.sweep = {"novos": novos, "n_novos": n_novos, "alterados": alterados, "n_alterados": n_alt,
                       "sumiram": sumiram[:500], "n_sumiram": len(sumiram), "quando": now_iso()}
         self.log("Varredura final: %d novos, %d alterados, %d sumiram." % (n_novos, n_alt, len(sumiram)))
@@ -1405,14 +1587,17 @@ class App(object):
                 c_left += 1
             dst = it.rel if st in ("ok", "falha") else ""
             mot = "" if st == "ok" else (it.err if st == "falha" else (it.motivo if st != "desmarcado" else "Desmarcado por você na seleção"))
-            f.append([it.disp, dst, it.cat, it.size, ("%04d-%02d-%02d" % it.date) if it.date else "", st, it.tags, it.local, mot, it.sha, int(it.mtime)])
+            f.append([it.disp, dst, it.cat, it.size, ("%04d-%02d-%02d" % it.date) if it.date else "", st, it.tags, it.local, mot, it.sha, int(it.mtime),
+                      it.cause if st == "falha" else ("nao_escolhido" if st == "desmarcado" else "")])
         sw = self.sweep or {}
         ressalvas = c_fail + int(sw.get("n_novos", 0)) + int(sw.get("n_alterados", 0)) + int(sw.get("n_sumiram", 0))
         status = "sem_falhas" if ressalvas == 0 else "ressalvas"
         meta = {
             "pc": cfg["equip"], "data": datetime.date.today().isoformat(), "raiz": self.dest_root, "dstRel": True,
-            "verificacao": "SHA-256 (completa)" if self.verified_mode == "completa" else "Tamanho (rápida)",
-            "campos": ["origem", "destino_relativo", "categoria", "tamanho_bytes", "data", "situacao", "etiquetas", "usuario", "motivo", "sha256", "mtime_epoch"],
+            "verificacao": ("SHA-256 (completa, %s)" % disco.METODO) if self.verified_mode == "completa" else "Tamanho (rápida)",
+            "campos": ["origem", "destino_relativo", "categoria", "tamanho_bytes", "data", "situacao", "etiquetas", "usuario", "motivo", "sha256", "mtime_epoch", "causa"],
+            "checagens": self.checagens, "maes": [x for x in sorted({it.local for it in self.items if it.local.startswith("Pastas_mae/")})],
+            "ign_dirs": self.ign_dirs[:300], "ign_dirs_total": self.ign_dirs_total,
             "versao": VERSION,
         }
         left = self.left_behind()
@@ -1481,6 +1666,8 @@ class App(object):
             return False, "O certificado tem ressalvas. Resolva as falhas (ou refaça) antes de formatar."
         if getattr(self, "same_disk", False):
             return False, "O backup está no mesmo disco físico de uma origem. Formatar apagaria o backup."
+        if self.verified_mode != "completa":
+            return False, "Faça a verificação COMPLETA (SHA-256 lido do disco) antes de formatar."
         return True, ""
 
     def firmware_reboot(self):
@@ -1504,6 +1691,124 @@ class App(object):
                 cmd = "sudo -n " + cmd
             subprocess.Popen(["sh", "-c", "sleep 8; " + cmd])
         return {"ok": True, "uefi": (os.path.exists("/sys/firmware/efi") if not IS_WIN else None)}
+
+
+def _ler(p):
+    with open(p, "rb") as f:
+        for b in iter(lambda: f.read(CHUNK), b""):
+            yield b
+
+
+def teste_destino(pasta, mb):
+    """Grava mb MB em blocos únicos (pega disco falsificado que 'dá a volta'), relê DO DISCO e compara. (MB, MB/s)"""
+    mb = max(16, (int(mb) // 4) * 4)
+    base = os.urandom(4 * 1024 * 1024)
+    arqs = [os.path.join(pasta, ".dd_teste_%d.tmp" % i) for i in range(4)]
+    por, hashes = mb // 4, []
+    t0 = time.time()
+    try:
+        for n, a in enumerate(arqs):
+            h = hashlib.sha256()
+            with open(a, "wb") as f:
+                for k in range(por // 4):
+                    blk = struct.pack(">QQ", n, k) + base[16:]
+                    f.write(blk)
+                    h.update(blk)
+                f.flush()
+                os.fsync(f.fileno())
+            hashes.append(h.hexdigest())
+        vel = mb / max(time.time() - t0, 1e-6)
+        for a, h in zip(arqs, hashes):
+            if disco.sha256(a) != h:
+                raise ValueError("Releitura de %s não confere com o que foi gravado." % os.path.basename(a))
+        return mb, vel
+    finally:
+        for a in arqs:
+            try:
+                os.remove(a)
+            except OSError:
+                pass
+
+
+def saude_disco(path):
+    """(True|False|None, texto) da saúde do disco que contém path (SMART/estado do Windows). None = não deu para ler."""
+    try:
+        if IS_WIN:
+            letra = os.path.splitdrive(os.path.abspath(path))[0][:1]
+            r = subprocess.run(["powershell", "-NoProfile", "-Command", "$d=Get-Partition -DriveLetter %s | Get-Disk | Get-PhysicalDisk; \"$($d.HealthStatus)|$($d.OperationalStatus)\"" % letra],
+                               capture_output=True, text=True, timeout=30, creationflags=0x08000000)
+            st = r.stdout.strip()
+            if not st or st == "|":
+                return None, "não informado"
+            return (st.startswith("Healthy")), "Windows informa: %s" % st.replace("|", ", ")
+        if sys.platform == "darwin":
+            r = subprocess.run(["diskutil", "info", path], capture_output=True, text=True, timeout=20)
+            m = re.search(r"SMART Status:\s*(.+)", r.stdout)
+            if not m or "Not Supported" in m.group(1):
+                return None, "não informado"
+            return ("Verified" in m.group(1)), "SMART: %s" % m.group(1).strip()
+        sm = shutil.which("smartctl")
+        mt = mount_of(path)
+        pdk = parent_disk(mt[0]) if mt else None
+        if sm and pdk:
+            r = subprocess.run([sm, "-H", "/dev/" + pdk], capture_output=True, text=True, timeout=20)
+            linha = [x for x in r.stdout.splitlines() if "overall-health" in x or "SMART Health" in x]
+            if linha:
+                return ("PASSED" in linha[0] or "OK" in linha[0]), linha[0].strip()
+    except Exception:
+        pass
+    return None, "não informado"
+
+
+BITLOCKER_CHAVE = re.compile(r"^\d{6}(-\d{6}){7}$")
+
+
+def bitlocker_trancados():
+    """[{onde}] discos criptografados com BitLocker ainda trancados."""
+    out = []
+    try:
+        if IS_WIN:
+            r = subprocess.run(["powershell", "-NoProfile", "-Command", "Get-BitLockerVolume | Where-Object { $_.LockStatus -eq 'Locked' } | ForEach-Object { $_.MountPoint }"],
+                               capture_output=True, text=True, timeout=30, creationflags=0x08000000)
+            out = [{"onde": x.strip()} for x in r.stdout.splitlines() if re.match(r"^[A-Z]:$", x.strip())]
+        elif shutil.which("lsblk"):
+            d = json.loads(subprocess.run(["lsblk", "-J", "-o", "NAME,FSTYPE,MOUNTPOINT"], capture_output=True, text=True, timeout=20).stdout or "{}")
+            pilha = list(d.get("blockdevices", []))
+            while pilha:
+                b = pilha.pop()
+                pilha.extend(b.get("children") or [])
+                if (b.get("fstype") or "").lower() == "bitlocker" and not b.get("mountpoint"):
+                    out.append({"onde": "/dev/" + b["name"]})
+    except Exception:
+        pass
+    return out
+
+
+def destravar_bitlocker(onde, chave):
+    """Destrava com a chave de recuperação. Windows: manage-bde. Linux: dislocker (montado só para leitura)."""
+    chave = (chave or "").strip()
+    if not BITLOCKER_CHAVE.match(chave):
+        raise ValueError("A chave de recuperação tem 48 números em 8 grupos (ex.: 123456-123456-…).")
+    if onde not in [b["onde"] for b in bitlocker_trancados()]:
+        raise ValueError("Esse disco não está na lista de criptografados trancados.")
+    if IS_WIN:
+        r = subprocess.run(["manage-bde", "-unlock", onde, "-RecoveryPassword", chave], capture_output=True, text=True, timeout=120, creationflags=0x08000000)
+        if r.returncode != 0:
+            raise ValueError("O Windows recusou a chave: %s" % (r.stdout + r.stderr).strip()[-200:])
+        return {"ok": True, "onde": onde}
+    if not shutil.which("dislocker"):
+        raise ValueError("Falta o programa dislocker neste Linux: conecte à internet e rode  sudo apt install dislocker  (ou destrave pelo próprio Windows).")
+    nome = os.path.basename(onde)
+    meio, ponto = "/mnt/destrava-bl-%s" % nome, "/media/destrava-bitlocker-%s" % nome
+    os.makedirs(meio, exist_ok=True)
+    os.makedirs(ponto, exist_ok=True)
+    r = subprocess.run(["dislocker", "-V", onde, "-p" + chave, "--", meio], capture_output=True, text=True, timeout=120)
+    if r.returncode != 0:
+        raise ValueError("A chave não abriu o disco: %s" % (r.stdout + r.stderr).strip()[-200:])
+    r = subprocess.run(["mount", "-o", "loop,ro", os.path.join(meio, "dislocker-file"), ponto], capture_output=True, text=True, timeout=60)
+    if r.returncode != 0:
+        raise ValueError("Destravou, mas não consegui montar: %s" % r.stderr.strip()[-200:])
+    return {"ok": True, "onde": onde, "pasta": ponto}
 
 
 def safe_listdir(p):
@@ -1737,19 +2042,25 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/web/"):
             return self._static(WEB, path[5:])
         if path.startswith("/mapa/"):
-            if not APP.mapa_dir or not os.path.isdir(APP.mapa_dir):
-                self.send_error(404)
-                return
+            pasta = MAPA.M["mapa"] or APP.mapa_dir  # o Mapa aberto em "Mapas" (ou o do backup desta sessão)
             nm = os.path.basename(path[6:])
-            if nm not in ("visualizador.html", "dados.js", "logo.js", "Relatorio.csv", "certificado.json"):
+            if nm in ("visualizador.html", "logo.js"):
+                return self._static(WEB, nm)  # sempre a tela atual, não a cópia guardada no Mapa
+            if not pasta or not os.path.isdir(pasta) or nm not in ("dados.js", "Relatorio.csv", "certificado.json"):
                 self.send_error(404)
                 return
-            return self._static(APP.mapa_dir, nm)
+            return self._static(pasta, nm)
         if not path.startswith("/api/"):
             self.send_error(404)
             return
         if not self._auth(q):
             return self._json({"erro": "não autorizado"}, 401)
+        if path == "/api/mapa/ver":
+            try:
+                arq, mime, tipo, limite = MAPA.previa((q.get("i") or [""])[0])
+            except ValueError as e:
+                return self._json({"erro": str(e)}, 400)
+            return self._arquivo(arq, mime, limite, pagina=(tipo == "pdf"))
         if path == "/api/dados/ver":  # <img>/<video> não mandam cabeçalho: o token vem em ?t=
             try:
                 arq, mime, tipo, limite = DADOS.previa((q.get("no") or [""])[0])
@@ -1852,6 +2163,19 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/dados/resultado":
             g = lambda k: (q.get(k) or [""])[0]
             return DADOS.resultado(g("zona"), g("cat"), g("q"), int(g("offset") or 0), int(g("limit") or 200), g("usuario"))
+        if path == "/api/mapa/lista":
+            return {"mapas": mapas_conhecidos(), "aberto": MAPA.resumo() if MAPA.M["mapa"] else None}
+        if path == "/api/mapa/arvore":
+            return MAPA.arvore((q.get("pasta") or [""])[0])
+        if path == "/api/mapa/buscar":
+            g = lambda k: (q.get(k) or [""])[0]
+            return MAPA.buscar(g("q"), g("situacao"), g("cat"), g("usuario"), int(g("offset") or 0))
+        if path == "/api/mapa/conferencia":
+            return MAPA.estado_conferencia()
+        if path == "/api/maes":
+            return {"sugestoes": APP.sugestoes_maes(), "maes": APP.maes}
+        if path == "/api/mapa/certificado":
+            return MAPA.certificado()
         if path == "/api/dados/explorar":
             self.exigir(None)
             g = lambda k: (q.get(k) or [""])[0]
@@ -2047,6 +2371,30 @@ class Handler(BaseHTTPRequestHandler):
             if not abrir_no_sistema(cam, revelar):
                 raise ValueError("O sistema não conseguiu abrir.")
             return {"ok": True}
+        if path == "/api/maes":
+            return APP.set_maes([str(x) for x in b.get("chaves", [])])
+        if path == "/api/bitlocker":
+            self.exigir("backup")
+            return destravar_bitlocker(str(b.get("onde", "")), str(b.get("chave", "")))
+        if path == "/api/mapa/abrir":
+            self.exigir(None)
+            return MAPA.carregar(b.get("pasta", ""))
+        if path == "/api/mapa/arquivo":
+            cam = MAPA.caminho(b.get("i"))
+            revelar = b.get("modo") == "pasta"
+            if not revelar and not DADOS.pode_abrir(cam):
+                raise ValueError("Por segurança este arquivo não abre daqui. Use Mostrar na pasta.")
+            if not abrir_no_sistema(cam, revelar):
+                raise ValueError("O sistema não conseguiu abrir.")
+            return {"ok": True}
+        if path == "/api/mapa/conferir":
+            return MAPA.conferir()
+        if path == "/api/mapa/offline":
+            p = os.path.join(MAPA.M["mapa"], "visualizador.html")
+            if not os.path.isfile(p):
+                raise ValueError("Abra um Mapa primeiro.")
+            open_in_browser("file:///" + p.replace("\\", "/").lstrip("/"))
+            return {"ok": True}
         if path == "/api/dados/marcar":
             return {"id": DADOS.marcar(b.get("no"))}
         if path == "/api/dados/reset":
@@ -2153,6 +2501,28 @@ def encerrar_servidor(descartar=False):
         os._exit(0)
     threading.Thread(target=_go, daemon=True).start()
     return {"ok": True}
+
+
+def mapas_conhecidos():
+    """Backups desta máquina (histórico) e o desta sessão, com o Mapa ainda acessível."""
+    out, vistos = [], set()
+
+    def add(destino, quando, codigo, cliente):
+        mp = os.path.join(destino or "", "Mapa")
+        k = os.path.normcase(os.path.abspath(mp))
+        if destino and k not in vistos and os.path.isfile(os.path.join(mp, "dados.js")):
+            vistos.add(k)
+            out.append({"pasta": destino, "quando": quando, "codigo": codigo, "cliente": cliente})
+    if APP.dest_root:
+        add(APP.dest_root, "esta sessão", (APP.cert or {}).get("codigo", ""), APP.cfg.get("cliente", "") if APP.cfg else "")
+    try:
+        for h in reversed(FICHA.hist_get(FICHA.machine_id_cache())):
+            x = h.get("extra") or {}
+            if h.get("tipo") == "backup":
+                add(x.get("destino"), h.get("quando", ""), x.get("codigo", ""), x.get("cliente", ""))
+    except Exception:
+        pass
+    return out
 
 
 def usar_pasta_dados(p):

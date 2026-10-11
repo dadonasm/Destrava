@@ -5,9 +5,9 @@ import shutil
 import tempfile
 import unittest
 
-import dados
-import ficha
-import termo
+from nucleo import dados
+from nucleo import ficha
+from nucleo import termo
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 WIN10_HD = os.path.join(AQUI, "fixtures", "win10_hd.json")
@@ -68,7 +68,7 @@ class ColetaSalva(ComPastaTemporaria):
         self.assertEqual(f["host"], "PC-RECEPCAO")
         self.assertEqual(f["mid"], ficha.machine_id_cache(), "o código da máquina reproduzida tem que bater, senão a ficha fica só leitura")
         ficha.salvar_ficha(f)
-        import otimizacoes
+        from nucleo import otimizacoes
         sug = {d["id"]: d for d in otimizacoes.sugestoes(f)}
         self.assertIn("win.visual", sug)
         res = ficha.aplicar(f["mid"], ["win.visual"], f)
@@ -98,7 +98,7 @@ class ColetaSalva(ComPastaTemporaria):
 
 class PastaDeDados(ComPastaTemporaria):
     def test_dados_ficam_na_pasta_escolhida(self):
-        import dd_backup
+        from nucleo import dd_backup
         alvo = os.path.join(self.tmp, "outra")
         dd_backup.usar_pasta_dados(alvo)
         self.assertEqual(ficha.STORE, os.path.join(alvo, "maquinas"))
@@ -150,6 +150,41 @@ class ZonaVermelha(unittest.TestCase):
         self.assertIsNotNone(dados.zona_vermelha(j(unicodedata.normalize("NFD", "Área de Trabalho"))))
         self.assertIsNotNone(dados.zona_vermelha(j("Downloads", "CHAVE.PEM")))
         self.assertIsNone(dados.zona_vermelha(j("Library", "Caches", "com.spotify.client")))
+
+
+class CodigoDaMaquina(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix="destrava_mid_")
+        self._store = ficha.STORE
+        ficha.STORE = self.tmp
+
+    def tearDown(self):
+        ficha.STORE = self._store
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_adaptador_usb_nao_junta_clientes(self):
+        usb = "00:e0:4c:68:00:01"
+        a = ficha.resolver_mid({"uuid": "UUID-CLIENTE-A-0001", "serial": "", "macs": [usb]})
+        ficha.meta_ids(a, {"uuid": "UUID-CLIENTE-A-0001", "serial": "", "macs": [usb]})
+        b = ficha.resolver_mid({"uuid": "UUID-CLIENTE-B-0002", "serial": "", "macs": [usb]})
+        self.assertNotEqual(a, b)
+
+    def test_sem_uuid_o_mac_ainda_reconhece(self):
+        m = "a4:4c:c8:11:22:33"
+        a = ficha.resolver_mid({"uuid": "", "serial": "", "macs": [m]}, "PC", "CPU")
+        ficha.meta_ids(a, {"uuid": "", "serial": "", "macs": [m, "a4:4c:c8:99:99:99"]})
+        self.assertEqual(ficha.resolver_mid({"uuid": "", "serial": "", "macs": ["a4:4c:c8:99:99:99"]}, "PC-NOVO", "CPU"), a)
+
+
+class NucleoPorPacote(unittest.TestCase):
+    def test_mesmo_modulo(self):
+        import sys
+        import nucleo
+        from nucleo import ficha as f1
+        import ficha as f2  # o nome de topo que o próprio motor usa
+        self.assertIs(f1, f2, "duas cópias de ficha teriam STORE diferentes")
+        self.assertIs(sys.modules["nucleo.termo"].FICHA, f1)
+        self.assertEqual(nucleo.__path__, [])
 
 
 if __name__ == "__main__":

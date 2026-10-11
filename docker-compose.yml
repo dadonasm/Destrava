@@ -1,45 +1,52 @@
 services:
-  # servidor da loja: entrega o programa e guarda fichas, históricos e termos (em servidor-dados/, fora do git)
-  servidor:
+  # servidor da loja (Django + Gunicorn): entrega o programa e guarda fichas, históricos e termos
+  web:
     build: .
-    command: ["python", "servidor.py", "--host", "0.0.0.0", "--porta", "8080"]
     ports:
       # só neste computador; os outros chegam pelo túnel (HTTPS). Para testar na rede local sem túnel: "8080:8080"
       - "127.0.0.1:8080:8080"
     volumes:
-      # pasta do projeto montada: o pacote entregue é sempre o código atual
-      - .:/app
+      # dados dos clientes e chaves: fora da imagem (no Linux, a pasta precisa ser gravável pelo UID 10001)
+      - ./servidor-dados:/app/servidor-dados
+      # os Pythons fixos (~100 MB) que o servidor entrega: baixe com  python3 nucleo/baixar_runtimes.py
+      - ./runtimes:/app/runtimes:ro
     environment:
-      # endereço fixo para os scripts de início (deixe vazio para usar o endereço pelo qual cada um chegou)
       - DESTRAVA_URL_PUBLICA=${DESTRAVA_URL_PUBLICA:-}
+      - DESTRAVA_ALLOWED_HOSTS=${DESTRAVA_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    # 1 worker Gunicorn (ver Dockerfile): não escale com --scale
     restart: unless-stopped
 
-  # acesso pela internet com endereço TEMPORÁRIO (muda a cada reinício):  docker compose --profile internet up -d
+  # acesso pela internet com endereço TEMPORÁRIO:  docker compose --profile internet up -d
   # o endereço aparece em:  docker compose logs tunel | grep trycloudflare
   tunel:
     image: cloudflare/cloudflared:2025.8.1
     profiles: ["internet"]
-    command: ["tunnel", "--no-autoupdate", "--url", "http://servidor:8080"]
-    depends_on: [servidor]
+    command: ["tunnel", "--no-autoupdate", "--url", "http://web:8080"]
+    depends_on: [web]
     restart: unless-stopped
 
-  # acesso pela internet com endereço FIXO (domínio na Cloudflare): ponha CLOUDFLARE_TUNNEL_TOKEN no arquivo .env
-  # e rode:  docker compose --profile internet-fixo up -d
+  # endereço FIXO (domínio na Cloudflare): CLOUDFLARE_TUNNEL_TOKEN no .env e  docker compose --profile internet-fixo up -d
   tunel-fixo:
     image: cloudflare/cloudflared:2025.8.1
     profiles: ["internet-fixo"]
     command: ["tunnel", "--no-autoupdate", "run"]
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN:-}
-    depends_on: [servidor]
+    depends_on: [web]
     restart: unless-stopped
 
-  # só para desenvolver a tela no Mac: o programa reproduzindo a coleta de um Windows (ações simuladas)
-  # docker compose --profile dev up -d   e abra http://localhost:8081
+  # só para desenvolver a tela do agente: reproduz a coleta de um Windows (ações simuladas)
+  # docker compose --profile dev up -d agente-demo   e abra http://localhost:8081
   agente-demo:
     build: .
     profiles: ["dev"]
-    command: ["python", "dd_backup.py", "--host", "0.0.0.0", "--port", "8081", "--no-browser", "--token-na-pagina",
+    command: ["python", "nucleo/dd_backup.py", "--host", "0.0.0.0", "--port", "8081", "--no-browser", "--token-na-pagina",
               "--dados", "/app/_dev", "--coleta-salva", "tests/fixtures/win10_hd.json"]
     ports:
       - "127.0.0.1:8081:8081"

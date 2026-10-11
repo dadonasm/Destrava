@@ -18,3 +18,9 @@ _novo_upload.zip
 
 __pycache__/
 .DS_Store
+
+# servidor Django
+.venv/
+*.sqlite3
+staticfiles/
+.env

@@ -7,8 +7,8 @@ import shutil
 import tempfile
 import unittest
 
-import ficha
-import otimizacoes as O
+from nucleo import ficha
+from nucleo import otimizacoes as O
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 

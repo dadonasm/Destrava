@@ -15,7 +15,8 @@ import sys
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DEST = os.path.join(HERE, "runtimes")
+# o servidor lê de runtimes/ na raiz do projeto (ou de DESTRAVA_RUNTIMES)
+DEST = os.environ.get("DESTRAVA_RUNTIMES") or os.path.join(os.path.dirname(HERE), "runtimes")
 PY = "3.12.10"
 PBS = "20250409"  # versão do python-build-standalone (Mac e Linux) que traz o Python 3.12.10
 PBS_URL = "https://github.com/astral-sh/python-build-standalone/releases/download/%s/" % PBS

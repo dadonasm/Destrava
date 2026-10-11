@@ -1234,7 +1234,8 @@ def _copiar_verificado(src, dst, cancel):
             shutil.copystat(src, tmp)
         except OSError:
             pass
-        if sha256_arquivo(tmp, cancel) != h.hexdigest():
+        import disco  # relê do DISCO (não da memória) antes de liberar a remoção do original
+        if disco.sha256(tmp) != h.hexdigest():
             raise IOError("A cópia não confere com o original (hash diferente).")
         os.replace(tmp, dst)
         return h.hexdigest()
