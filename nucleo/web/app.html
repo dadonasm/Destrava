@@ -14,6 +14,9 @@ h1,h2,h3,h4{margin:0}
 header{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:15;min-height:58px}
 header h1{font-size:17px;letter-spacing:.4px}header small{color:var(--mut)}
 header .sp{flex:1}
+#hperf{padding:6px 8px}#hperf svg{width:18px;height:18px;display:block}
+.pfl{display:flex;gap:14px;align-items:flex-end}.pfc{display:flex;gap:6px;align-items:center;white-space:nowrap;margin:0 0 11px;color:var(--tx);font-size:12.5px;cursor:pointer}
+.pft{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px 18px;margin-top:8px}.pft span{display:block;font-size:12px}.pft b{word-break:break-word}
 .chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);font-size:12px;color:var(--mut);background:var(--panel2);cursor:default;white-space:nowrap}
 button.chip{cursor:pointer;font:inherit;font-size:12px}button.chip:hover{border-color:var(--acc);color:var(--tx)}
 .chip.own-p{color:var(--ok);border-color:var(--ok)}.chip.own-t{color:var(--warn);border-color:var(--warn)}
@@ -244,6 +247,7 @@ button{border-radius:999px}
   <span id="hown"></span><span id="hsrv"></span>
   <button class="chip upd" id="hver" title="Ver atualizações">v–</button>
   <button class="sm" id="theme" aria-label="Alternar tema claro e escuro">Claro / Escuro</button>
+  <button class="sm" id="hperf" title="Meu perfil" aria-label="Meu perfil"></button>
 </header>
 <div class="shell">
 <aside id="gaveta" aria-label="Menu lateral"></aside>
@@ -305,7 +309,8 @@ const IC={
  cmp:'<rect x="3" y="5" width="7" height="14" rx="1.5"/><rect x="14" y="5" width="7" height="14" rx="1.5"/>',
  trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
  refresh:'<path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/>',
- up:'<path d="M12 19V5M5 12l7-7 7 7"/>'
+ up:'<path d="M12 19V5M5 12l7-7 7 7"/>',
+ gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>'
 };
 const ic=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||""}</svg>`;
 const FX=[[25,"#e5534b","Crítica"],[50,"#ff8a3d","Fraca"],[75,"#e5a23a","Regular"],[95,"#8bc34a","Muito boa"],[100,"#3fb27f","Excelente"]];
@@ -428,7 +433,7 @@ async function openGate(opt){
    ${corp?`<label style="display:flex;gap:8px;align-items:flex-start;color:var(--tx);font-size:13px;margin-top:8px"><input type="checkbox" id="gcp" style="margin-top:3px"> Confirmo que este computador é meu e não pertence à empresa.</label>`:""}
    <div id="gter" class="${corp?"":"hide"}"><label for="gtn">Nome do dono (cliente, empresa ou pessoa)</label><input type="text" id="gtn" value="${esc(st.terceiro_nome||"")}" autocomplete="off">
     <label for="gta">Quem autorizou o serviço (opcional)</label><input type="text" id="gta" value="${esc(st.autorizado_por||"")}" autocomplete="off"></div>
-   <label for="gnm">Seu nome (quem opera o programa)</label><input type="text" id="gnm" value="${esc(st.tecnico||"")}" autocomplete="name">
+   <label for="gnm">Seu nome (quem opera o programa)</label><input type="text" id="gnm" value="${esc(st.tecnico||(PERFIL&&PERFIL.nome)||"")}" autocomplete="name">
    <label style="display:flex;gap:9px;align-items:flex-start;color:var(--tx);font-size:14px;margin-top:14px;cursor:pointer"><input type="checkbox" id="gac" style="margin-top:3px"> Li e aceito o termo de responsabilidade.</label>
    <div class="row" style="margin-top:16px;justify-content:flex-end">${opt.reclass?'<button id="gcn">Cancelar</button>':""}<button class="pri" id="gok" disabled>Aceitar e continuar</button></div>
    <p class="mut" style="font-size:11px;margin:10px 0 0">Registro: consentimentos.log · selo do termo ${esc(t.selo)} · máquina ${esc(t.mid)}</p></div>`;
@@ -512,12 +517,35 @@ async function openUpdate(){
 }
 async function checkUpdate(){if(info.servidor)return;try{const r=await api("/api/atualizar/procurar");if(r.encontrados.some(x=>x.mais_nova))$("#hver").classList.add("nova")}catch(e){}}
 
+/* ---------- Meu perfil (técnico) ---------- */
+let PERFIL=null;
+const PROT={nome:"Nome",empresa:"Empresa",email:"E-mail",telefone:"Telefone / WhatsApp",instagram:"Instagram",site:"Site",facebook:"Facebook",linkedin:"LinkedIn",outro:"Outra rede"};
+function blocoTecnico(tp){const k=Object.keys(PROT).filter(c=>tp&&tp[c]);if(!k.length)return"";
+  return `<div class="eyebrow">TÉCNICO RESPONSÁVEL</div><div class="pft">${k.map(c=>`<div><span class="mut">${esc(PROT[c])}</span><b>${esc(tp[c])}</b></div>`).join("")}</div>`}
+async function drawPerfil(){
+  setWide(false);
+  const r=await api("/api/perfil");if(view!=="perfil")return;
+  const p=PERFIL=r.perfil,marc=new Set(p.no_certificado);
+  const IM={nome:'autocomplete="name"',empresa:'autocomplete="organization"',email:'inputmode="email" autocomplete="email"',telefone:'inputmode="tel" autocomplete="tel"',site:'inputmode="url"'};
+  $("#main").innerHTML=`<div class="ptitle"><h1>Meu perfil</h1><p>Quem atende. Fica só neste computador, não vai para o git nem para a internet.</p></div>
+   <div class="card"><h2>Seus dados</h2><p class="mut" style="margin-top:0">Marque o que aparece no certificado entregue ao cliente. Redes sociais são opcionais.</p>
+   ${r.campos.map(([c,rot])=>`<div class="pfl"><div class="grow"><label for="pf_${c}">${esc(rot)}</label><input type="text" id="pf_${c}" data-c="${c}" value="${esc(p[c]||"")}" maxlength="120" ${IM[c]||""}></div><label class="pfc"><input type="checkbox" data-cert="${c}" ${marc.has(c)?"checked":""}> no certificado</label></div>`).join("")}
+   <div id="pferr"></div><div class="row" style="justify-content:flex-end;margin-top:14px"><button class="pri" id="pfsave">Salvar perfil</button></div></div>
+   <div class="card"><h2>Como sai no certificado</h2><div id="pfprev"></div></div>`;
+  const coletar=()=>{const d={no_certificado:$$("[data-cert]").filter(x=>x.checked).map(x=>x.dataset.cert)};$$("[data-c]").forEach(i=>d[i.dataset.c]=i.value);return d};
+  const prev=()=>{const d=coletar(),tp={};if((d.nome||"").trim())d.no_certificado.forEach(c=>{if((d[c]||"").trim())tp[c]=d[c].trim()});
+    $("#pfprev").innerHTML=blocoTecnico(tp)||'<p class="mut">Sem nome preenchido ou sem nada marcado, o certificado não mostra o bloco "Técnico responsável".</p>'};
+  $$("#main input").forEach(i=>{i.addEventListener("input",prev);i.addEventListener("change",prev)});prev();
+  $("#pfsave").onclick=()=>safe(async()=>{$("#pferr").innerHTML="";
+    try{const x=await api("/api/perfil",coletar());PERFIL=x.perfil;toast("Perfil salvo.","ok")}catch(e){$("#pferr").innerHTML=`<div class="errbox" style="margin-top:10px">${esc(e.message)}</div>`}});
+}
+
 /* ================= Home / ficha ================= */
 let hp=null;
 function nav(v,arg){
   view=v;markNav();renderChrome();clearInterval(hp);
   $("#steps").classList.toggle("hide",v!=="backup");
-  if(v==="home")drawHome();else if(v==="maq")drawMaq(arg);else if(v==="dados")drawDados();else if(v==="mapas")drawMapas();else if(v==="os")drawOS();else{setWide(false);renderSteps();draw()}
+  if(v==="home")drawHome();else if(v==="perfil")drawPerfil();else if(v==="maq")drawMaq(arg);else if(v==="dados")drawDados();else if(v==="mapas")drawMapas();else if(v==="os")drawOS();else{setWide(false);renderSteps();draw()}
 }
 async function drawHome(){
   clearInterval(hp);setWide(true);
@@ -614,6 +642,7 @@ async function certificadoMapa(){
   $("#main").innerHTML=`<div class="ptitle row"><div class="grow"><h1>Certificado de conclusão</h1><p>${esc(c.pc||"")} · ${esc(c.data||"")}${ce.cliente?" · cliente "+esc(ce.cliente):""}${ce.tecnico?" · técnico "+esc(ce.tecnico):""} · código <b class="mono">${esc(c.codigo||"—")}</b></p></div><div class="row noprint"><button class="sm" onclick="window.print()">Imprimir / PDF</button><button class="sm" id="cvolta">Voltar ao Mapa</button></div></div>
    <div class="kpis">${kpi2(ok?"Concluído sem falhas":"Concluído com ressalvas",ok?"✅":"⚠️",nf(k.ok),"arquivos copiados e conferidos",tot?k.ok/tot*100:0,ok?"var(--ok)":"var(--warn)")}${kpi2("Tamanho copiado","📥",fmt(k.bytes),esc(c.verificacao||""),100,"var(--azul)")}
     ${kpi2("Falhas","❌",nf(k.falha),k.falha?"veja abaixo como resolver":"nenhuma",tot?k.falha/tot*100:0,"var(--err)")}${kpi2("Ficaram de fora","📤",nf(k.fora),"não escolhidos ou do sistema",tot?k.fora/tot*100:0,"#f0a020")}</div>
+   ${blocoTecnico(ce.tecnico_perfil)?`<div class="card">${blocoTecnico(ce.tecnico_perfil)}</div>`:""}
    <div class="card"><h2>O que não foi copiado, por quê e como resolver</h2>${c.grupos.length?c.grupos.map(gr=>`<div class="grp"><div class="gq" style="color:${(SIT[gr.situacao]||["",""])[1]}">${nf(gr.n)}<div class="mut" style="font-weight:400;font-size:12px">${fmt(gr.bytes)}</div></div><div class="grow"><b>${esc((SIT[gr.situacao]||[gr.situacao])[0])}: ${esc(gr.motivo)}</b><div class="sol" style="margin-top:6px;font-size:13px;padding:8px 10px;border-radius:10px;background:var(--panel2);border-left:3px solid var(--azul)"><b>Como resolver:</b> ${esc(gr.resolver)}</div><div class="mut mono" style="font-size:11.5px;margin-top:4px">${gr.exemplos.map(esc).join("<br>")}</div></div></div>`).join(""):'<p class="okbox">Tudo o que existia foi copiado e conferido. Nada se perdeu.</p>'}
     ${(c.sweep.n_novos||c.sweep.n_alterados||c.sweep.n_sumiram)?`<p class="warnbox">Durante o backup: ${c.sweep.n_novos||0} arquivo(s) novo(s), ${c.sweep.n_alterados||0} alterado(s) e ${c.sweep.n_sumiram||0} que sumiram na origem. <b>Como resolver:</b> rode o backup de novo para pegar a versão final.</p>`:""}</div>
    ${c.maes.length?`<div class="card"><h2>Pastas-mãe separadas</h2><p>${c.maes.map(m=>"📁 "+esc(m.replace("Pastas_mae/",""))).join(" · ")}</p></div>`:""}
@@ -1083,7 +1112,7 @@ async function draw1(){
    <div class="row"><input type="text" id="dest" class="grow" value="${esc(S.dest)}" placeholder="Pasta de destino" aria-label="Pasta de destino"><button id="pick">Escolher…</button></div><div id="br"></div><div id="destinfo" class="mut" style="margin-top:6px"></div>
    <label for="folder">Nome da pasta do backup</label><input type="text" id="folder" value="${esc(S.folder||("Backup_"+nome.replace(/[^\w\-]+/g,"_")))}"></div>
   <div class="card"><h2>Identificação <span class="tag">opcional</span></h2><p class="h">Aparece no certificado.</p>
-   <div class="row"><div class="grow"><label for="cli">Cliente</label><input type="text" id="cli" value="${esc(S.cliente||(ownT()?t.status.terceiro_nome||"":""))}"></div><div class="grow"><label for="tec">Técnico</label><input type="text" id="tec" value="${esc(S.tecnico)}"></div><div class="grow"><label for="eq">Equipamento</label><input type="text" id="eq" value="${esc(S.equip||nome)}"></div></div></div>
+   <div class="row"><div class="grow"><label for="cli">Cliente</label><input type="text" id="cli" value="${esc(S.cliente||(ownT()?t.status.terceiro_nome||"":""))}"></div><div class="grow"><label for="tec">Técnico</label><input type="text" id="tec" value="${esc(S.tecnico||(PERFIL&&PERFIL.no_certificado.includes("nome")?PERFIL.nome:""))}"></div><div class="grow"><label for="eq">Equipamento</label><input type="text" id="eq" value="${esc(S.equip||nome)}"></div></div></div>
   <div class="row"><span class="grow"></span><button class="pri" id="next1">Continuar →</button></div>`;
   drawSrcs();
   $("#addm").onclick=()=>safe(async()=>{const p=$("#manual").value.trim();if(!p)return;const r=await api("/api/ls?path="+encodeURIComponent(p));
@@ -1312,6 +1341,8 @@ async function draw6(){
   $("#theme").onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==="light"?"dark":"light";lsSet("dd_tema",r.dataset.theme)};
   try{$("#mono").innerHTML='<span class="mA">'+DD.mono({variant:"ouro",size:44,bg:true})+'</span><span class="mB">'+DD.mono({variant:"claro",size:44,bg:false})+'</span>'}catch(e){}
   try{info=await api("/api/info")}catch(e){document.body.innerHTML='<p style="padding:30px">Sessão inválida. Feche e abra o Destrava! de novo.</p>';return}
+  $("#hperf").innerHTML=ic("gear");$("#hperf").onclick=()=>nav("perfil");
+  try{PERFIL=(await api("/api/perfil")).perfil}catch(e){}
   FB=/darwin|mac/i.test(info.os||"")?1000:1024;
   $("#hver").onclick=()=>{if(info.servidor){toast("No modo servidor o programa já vem na versão do servidor.");return}safe(openUpdate)};
   await loadCtx();

@@ -24,3 +24,7 @@ __pycache__/
 *.sqlite3
 staticfiles/
 .env
+
+# perfil do técnico: fica só no computador
+perfil.json
+perfil.json.tmp

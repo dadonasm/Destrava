@@ -44,6 +44,7 @@ if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
 VERSION = "3.1"
 import disco  # noqa: E402  (conferência lendo do disco, não da memória)
 import mapa as MAPA  # noqa: E402
+import perfil as PERFIL  # noqa: E402
 try:
     import ficha as FICHA
 except Exception:  # o backup continua funcionando mesmo sem a ficha
@@ -1558,7 +1559,8 @@ class App(object):
                 if FICHA:
                     c = self.cert
                     FICHA.hist_add(FICHA.machine_id_cache(), "backup", "Backup %s: %d arquivos (%s) · código %s" % ("sem falhas" if c["status"] == "sem_falhas" else "com ressalvas", c["copiados"], fmt_bytes(c["bytes"]), c["codigo"]),
-                                   {"destino": self.dest_root, "codigo": c["codigo"], "cliente": c.get("cliente", "")})
+                                   {"destino": self.dest_root, "codigo": c["codigo"], "cliente": c.get("cliente", ""),
+                                    "tecnico": c.get("tecnico", ""), "tecnico_perfil": c.get("tecnico_perfil") or {}})
             except Exception:
                 pass
             return self.cert
@@ -1608,6 +1610,10 @@ class App(object):
             "motivos": left[:12], "sweep": {k: sw.get(k, 0) for k in ("n_novos", "n_alterados", "n_sumiram")},
             "sistema": "%s %s" % (platform.system(), platform.release()), "versao": VERSION,
         }
+        tp = PERFIL.snapshot()
+        if tp:
+            cert["tecnico_perfil"] = tp
+            cert["tecnico"] = cert["tecnico"] or tp.get("nome", "")
         try:
             if FICHA and TERMO:
                 mid = FICHA.machine_id_cache()
@@ -2133,6 +2139,8 @@ class Handler(BaseHTTPRequestHandler):
 
     # ---------------------------------------------------------------- rotas
     def api_get(self, path, q):
+        if path == "/api/perfil":
+            return {"perfil": PERFIL.ler(), "campos": PERFIL.CAMPOS, "certificado": PERFIL.snapshot()}
         if path == "/api/termo":
             mid = FICHA.machine_id_cache()
             return {"mid": mid, "host": socket.gethostname(), "nome": FICHA.nome_exibicao(mid), "status": TERMO.status(mid), "corporativa": TERMO.detectar_corporativa(),
@@ -2235,6 +2243,8 @@ class Handler(BaseHTTPRequestHandler):
             return encerrar_servidor(bool(b.get("descartar")))
         if path == "/api/config":
             return {"cfg": APP.set_config(b)}
+        if path == "/api/perfil":
+            return {"perfil": PERFIL.salvar(b), "certificado": PERFIL.snapshot()}
         if path == "/api/mkdir":
             p = os.path.join(os.path.abspath(os.path.expanduser(b.get("path", ""))), safe_seg(b.get("name", "")))
             os.makedirs(p, exist_ok=True)
@@ -2530,6 +2540,7 @@ def usar_pasta_dados(p):
     p = os.path.abspath(os.path.expanduser(p))
     os.makedirs(p, exist_ok=True)
     DADOS_DIR[0] = p
+    PERFIL.PASTA = p
     if FICHA:
         FICHA.STORE = os.path.join(p, "maquinas")
     if TERMO:
@@ -2564,7 +2575,10 @@ def conectar_servidor(url, chave_arquivo=None, dados=None):
     if proprio:
         shutil.rmtree(cache, ignore_errors=True)  # nunca reaproveita dados de outra sessão
         atexit.register(shutil.rmtree, cache, True)
+    pasta_perfil = PERFIL.PASTA
     usar_pasta_dados(cache)
+    if proprio:
+        PERFIL.PASTA = pasta_perfil  # o perfil é deste computador: não vai para o cache que se apaga ao sair
     FICHA.SINCRONIA = con
     TERMO.REMOTO = con
     TERMO.MODO = "servidor"
