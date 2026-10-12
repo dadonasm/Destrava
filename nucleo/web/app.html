@@ -218,6 +218,16 @@ body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{d
 @media (max-width:760px){.etp{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .rg2{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}@media (max-width:760px){.rg2{grid-template-columns:1fr}}
 .rgn{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:12px 0}.rgn div{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.rgn span{display:block;font-size:12px;color:var(--mut)}.rgn b{font-size:18px}
+/* painel da Home */
+.phero{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.phero h2{font-size:22px}
+.pnl{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+button.pn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:14px 16px;border-radius:16px;background:var(--panel);box-shadow:var(--sh);min-height:112px}
+.pn>span{font-size:12.5px;color:var(--mut)}.pn>b{font-size:24px;line-height:1.25;letter-spacing:-.3px}.pn>small{font-size:12px;color:var(--mut)}
+.pn.warn{border-color:var(--warn)}.pn.warn>b{color:var(--warn)}
+.pcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}.pcols .card{margin-bottom:0}@media (max-width:900px){.pcols{grid-template-columns:1fr}}
+button.pli{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 6px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
+button.pli:hover{background:var(--panel2)}.pli .grow{min-width:0}.pli .cod{display:block}.pli small{display:block;color:var(--mut);font-size:11.5px;text-align:right;margin-top:3px}
+.pfx{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;margin-bottom:12px;border:1px solid var(--line);border-radius:14px;background:var(--panel);font-size:13.5px}.pfx .ic svg{width:18px;height:18px;display:block}
 textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--tx);font:inherit;resize:vertical}
 .drow{display:flex;gap:10px;align-items:flex-start;padding:10px 4px;border-bottom:1px solid var(--line)}.drow:last-child{border:0}
 .drow .t{flex:1;min-width:0}.drow .t b{display:block;word-break:break-word}.drow .t span{font-size:12px;color:var(--mut);word-break:break-all;display:block}
@@ -585,18 +595,53 @@ async function drawPerfil(){
 /* ================= Home / ficha ================= */
 let hp=null;
 function nav(v,arg){
-  view=v;markNav();renderChrome();clearInterval(hp);
+  view=v;HOMEP=false;markNav();renderChrome();clearInterval(hp);
   $("#steps").classList.toggle("hide",v!=="backup");
   if(v==="home")drawHome();else if(v==="perfil")drawPerfil();else if(v==="maq")drawMaq(arg);else if(v==="dados")drawDados();else if(v==="mapas")drawMapas();else if(v==="os")drawOS();else{setWide(false);renderSteps();draw()}
 }
+let HOMEP=false,PCHEIO=false;  // HOMEP: painel aberto por cima da ficha desta máquina; PCHEIO: painel completo mesmo no 1º atendimento do dia
 async function drawHome(){
   clearInterval(hp);setWide(true);
   const est=await api("/api/ficha/estado");
   if(est.rodando)return drawFichaProg();
-  const r=await api("/api/ficha/atual");
+  const [r,p]=await Promise.all([api("/api/ficha/atual"),api("/api/painel").catch(()=>null)]);
   if(view!=="home")return;
-  if(!r.visao)return drawHomeVazia(r,est);
-  renderFicha(r,true);
+  if(r.visao&&!HOMEP){renderFicha(r,true);if(p&&p.maquinas)faixaPainel(p);return}
+  if(p&&p.maquinas)return drawPainel(r,est,p);
+  drawHomeVazia(r,est);
+}
+const pl=(n,um,varios)=>nf(n)+" "+(n===1?um:varios);
+const dec=n=>String(n).replace(".",",");
+function faixaPainel(p){const n=p.pendencias.length;
+  $(".fm").insertAdjacentHTML("afterbegin",`<div class="pfx"><span class="ic">${ic("maq")}</span><span class="grow"><b>Painel</b> · ${pl(p.maquinas,"máquina","máquinas")} no registro${n?` · <b style="color:var(--warn)">${pl(n,"pendência","pendências")}</b>`:""}</span><button class="sm" id="vpn">Ver painel</button></div>`);
+  $("#vpn").onclick=()=>{HOMEP=true;drawHome()}}
+/* Home com painel: só números do registro; cada um abre na tela Máquinas a lista que forma o número */
+function drawPainel(r,est,p){
+  setWide(true);
+  const v=r.visao,nt=p.nota,ot=p.otimizacao,np=p.pendencias.length,cheio=!p.compacto||PCHEIO;
+  const T=[["Máquinas atendidas",nf(p.maquinas),`${nf(p.em_andamento)} em andamento`,{}],
+   ["Serviços concluídos",nf(p.concluidos),p.concluidos?`${nf(p.concluidos_mes)} este mês · ${pl(p.maquinas_concluidas,"máquina","máquinas")}`:"nenhuma entrega marcada ainda",{extra:"concluidos"}],
+   ["Nota média",nt.n?`<span style="color:${COR(nt.antes)}">${dec(nt.antes)}</span> <span class="mut" style="font-size:18px">→</span> <span style="color:${COR(nt.depois)}">${dec(nt.depois)}</span>`:"—",nt.n?`antes → depois · ${pl(nt.n,"máquina","máquinas")}`:"nenhuma medida antes e depois ainda",{extra:"notas"}],
+   ["Taxa de otimização",ot.n?ot.taxa+"%":"—",ot.n?`${ot.subiu} de ${ot.n} subiram · ${ot.pontos>0?"+":""}${dec(ot.pontos)} pontos em média`:"nenhuma melhoria medida ainda",{extra:"melhorias"}],
+   ["Espaço recuperado",p.espaco?fmt(p.espaco):"—",p.espaco?pl(p.espaco_maquinas,"máquina","máquinas"):"nenhuma limpeza ainda",{extra:"espaco",ord:"espaco"}],
+   ["Dados protegidos",p.protegido?fmt(p.protegido):"—",p.backups?`${pl(p.backups,"backup","backups")} · ${pl(p.backup_maquinas,"máquina","máquinas")}`:"nenhum backup ainda",{extra:"backup"}],
+   ["Pendências",nf(np),np?"backup sem entrega ou diagnóstico parado":"tudo em dia",{aba:"pendentes"}]];
+  const nome=m=>esc(m.modelo||(m.analises?m.nome:"Ainda sem análise"));
+  const lin=(m,txt)=>`<button class="pli" data-mid="${esc(m.mid)}"><span class="grow"><b>${nome(m)}</b><span class="cod">${esc(m.mid)}</span>${txt?`<span class="pd">⚠ ${esc(txt)}</span>`:""}</span><span>${seloEt(m.etapa,m.etapa_nome)}<small>${dataBR(m.ultimo)}</small></span></button>`;
+  const hero=v?`<div class="card phero"><div class="grow"><div class="eyebrow">ESTA MÁQUINA</div><h2>${esc(v.nome)}</h2><div class="mut">${esc(v.modelo)} · nota <b style="color:${COR(v.analise.nota.geral)}">${v.analise.nota.geral}</b> · <span class="cod">${esc(r.mid)}</span></div></div><button class="pri" id="vfi">Voltar para a ficha desta máquina</button></div>`
+   :`<div class="card phero"><div class="grow"><div class="eyebrow">ATENDIMENTO</div><h2>Pronto para o próximo atendimento</h2><p class="mut" style="margin:4px 0 0">Este computador (<span class="cod">${esc(r.mid)}</span>) ainda não foi analisado. Começa pelo termo e pela análise, que leva de 15 a 60 segundos.</p>
+     ${est.erro?`<div class="errbox">A última tentativa falhou: ${esc(est.erro)}</div>`:""}</div><div class="row"><button class="gh sm" id="pm">Ver permissões</button><button class="pri" id="perm" style="font-size:16px;padding:13px 26px">Atender nova máquina</button></div></div>`;
+  $("#main").innerHTML=`<div class="ptitle"><h1>Painel</h1><p>O resultado do seu trabalho, só com o que está registrado${info.servidor?" no servidor da loja":" no pendrive"}. Clique num número para ver as máquinas.</p></div>${hero}
+   <div class="pnl">${T.map((t,i)=>`<button class="pn ${i===6&&np?"warn":""}" data-i="${i}"><span>${t[0]}</span><b>${t[1]}</b><small>${t[2]}</small></button>`).join("")}</div>
+   ${cheio?`<div class="pcols"><div class="card"><div class="row" style="margin-bottom:6px"><h2 class="grow">Últimas máquinas</h2><button class="sm" id="pall">Ver todas</button></div>${p.ultimas.map(m=>lin(m)).join("")}</div>
+     <div class="card"><div class="row" style="margin-bottom:6px"><h2 class="grow">Pendências</h2>${np?'<button class="sm" id="ppen">Ver na lista</button>':""}</div>${np?p.pendencias.slice(0,6).map(m=>lin(m,m.pendencia)).join("")+(np>6?`<p class="mut" style="font-size:13px">e mais ${np-6}.</p>`:""):'<p class="mut">Nenhuma pendência. Tudo em dia.</p>'}</div></div>`
+   :`<div class="row" style="justify-content:center;gap:12px"><span class="mut" style="font-size:13.5px">Primeiro atendimento do dia: painel resumido para não atrasar.</span><button class="sm" id="pfull">Mostrar últimas máquinas e pendências</button></div>`}`;
+  $$("#main .pn").forEach(b=>b.onclick=()=>nav("maq",T[+b.dataset.i][3]));
+  $$("#main .pli").forEach(b=>b.onclick=()=>nav("maq",b.dataset.mid));
+  const on=(id,fn)=>{const e=$("#"+id);if(e)e.onclick=fn};
+  on("pall",()=>nav("maq",{}));on("ppen",()=>nav("maq",{aba:"pendentes"}));on("pfull",()=>{PCHEIO=true;drawPainel(r,est,p)});
+  on("vfi",()=>{HOMEP=false;drawHome()});on("pm",()=>openPerm(false));
+  on("perm",()=>safe(async()=>{await api("/api/ficha/coletar",{fase:"antes"});drawFichaProg()}));
 }
 function trofeuStrip(cur){return `<div class="shelf">${[1,2,3,4,5].map(n=>`<div class="tr ${cur?(n===cur?"cur":n>cur?"lock":""):"lock"}">${trophy(n,96)}<b class="tl2">${esc(TRN[n])}</b><small>nota ${TRF[n]}</small></div>`).join("")}</div>`}
 function drawHomeVazia(r,est){
@@ -866,7 +911,10 @@ async function openCompare(mid,a,b){
 }
 
 /* ---------- máquinas: registro no modelo da tela de Leads (busca, filtros, abas, tabela, exportar) ---------- */
-const MQ={q:"",sis:"",tec:"",per:"",ord:"recentes",col:"",dir:-1,aba:"todas",pag:0,sel:new Set(),rows:[],etapas:[],vis:[]};
+const MQ={q:"",sis:"",tec:"",per:"",ord:"recentes",col:"",dir:-1,aba:"todas",pag:0,extra:"",sel:new Set(),rows:[],etapas:[],vis:[]};
+/* filtros que só o painel liga: o mesmo grupo de máquinas que forma cada número da Home */
+const MQX={concluidos:["Com serviço concluído",m=>(m.etapa_historico||[]).some(e=>e.etapa==="entregue")],notas:["Com nota antes e depois",m=>m.nota_antes!=null&&m.nota_depois!=null],
+ melhorias:["Com melhorias medidas antes e depois",m=>m.melhorias>0&&m.nota_antes!=null&&m.nota_depois!=null],espaco:["Com espaço recuperado",m=>m.espaco>0],backup:["Com backup",m=>m.backups>0]};
 const POR_PAG=25;
 const ETB={recebida:"b-mut",diagnosticada:"b-warn",backup_verificado:"b-ok",otimizada:"b-ok",formatada:"b-ok",entregue:"b-gold"};
 const FAM={windows:"Windows",mac:"Mac",linux:"Linux"};
@@ -885,6 +933,7 @@ function contatoHtml(m){const t=dig(m.telefone);
 function mqFiltra(){
   const q=semAc(MQ.q.trim()),qd=dig(MQ.q),dias={"7":7,"30":30,"90":90}[MQ.per],hoje=hojeISO();
   return MQ.rows.filter(m=>{
+    if(MQ.extra&&MQX[MQ.extra]&&!MQX[MQ.extra][1](m))return false;
     if(MQ.sis&&m.familia!==MQ.sis)return false;
     if(MQ.tec&&(m.tecnico||"")!==MQ.tec)return false;
     if(MQ.per==="hoje"&&(m.ultimo||"").slice(0,10)!==hoje)return false;
@@ -897,6 +946,7 @@ function mqOrdena(l){
   const v=m=>c==="maq"?semAc(m.modelo||m.nome||m.mid):c==="etapa"?ord.indexOf(m.etapa):c==="nota"||c==="espaco"?(m[c]==null?-1:m[c]):semAc(m[c]);
   return l.slice().sort((a,b)=>{const x=v(a),y=v(b);return (x<y?-1:x>y?1:0)*d||a.mid.localeCompare(b.mid)})}
 async function drawMaq(mid){
+  if(mid&&typeof mid==="object"){Object.assign(MQ,{q:"",sis:"",tec:"",per:"",ord:"recentes",aba:"todas",pag:0,extra:""},mid);mid=null}  // número clicado no painel
   if(mid)return drawMaqFicha(mid);
   setWide(true);
   const r=await api("/api/maquinas");if(view!=="maq")return;
@@ -912,7 +962,7 @@ async function drawMaq(mid){
      <select id="mqtec" aria-label="Técnico">${opt([["","Todos os técnicos"],...tecs.map(t=>[t,t])],MQ.tec)}</select>
      <select id="mqper" aria-label="Período">${opt([["","Qualquer data"],["hoje","Hoje"],["7","Últimos 7 dias"],["30","Últimos 30 dias"],["90","Últimos 90 dias"]],MQ.per)}</select>
      <select id="mqord" aria-label="Ordenar por">${opt([["recentes","Mais recentes"],["antigas","Mais antigas"],["nota","Maior nota"],["espaco","Espaço recuperado"]],MQ.ord)}<option value="col" hidden ${MQ.ord==="col"?"selected":""}>Pela coluna da tabela</option></select>
-    </div><div class="tabs" role="tablist" id="mqtabs"></div><div id="mqtab"></div></div>`
+    </div><div id="mqx"></div><div class="tabs" role="tablist" id="mqtabs"></div><div id="mqtab"></div></div>`
    :`<div class="card empty"><h2>Nenhuma máquina atendida ainda</h2><p>Quando você aceitar o termo e analisar uma máquina na Home, ela aparece aqui com a etapa do serviço.</p><button class="pri" id="mqhome">Ir para a Home</button></div>`}`;
   $("#mqperf").onclick=()=>nav("perfil");
   $("#mqexp").onclick=()=>safe(mqExporta);
@@ -924,6 +974,9 @@ async function drawMaq(mid){
   mqTabela();
 }
 function mqTabela(){
+  const x=MQX[MQ.extra];
+  $("#mqx").innerHTML=x?`<div class="row" style="margin-bottom:10px"><span class="chip" style="color:var(--tx);border-color:var(--acc)">Do painel: ${esc(x[0])} <button class="sm gh" id="mqxx" aria-label="Tirar o filtro do painel" style="padding:0 6px">✕</button></span></div>`:"";
+  const xx=$("#mqxx");if(xx)xx.onclick=()=>{MQ.extra="";MQ.pag=0;mqTabela()};
   const fl=mqFiltra(),cont={todas:fl.length,pendentes:0,"":0};
   MQ.etapas.forEach(e=>cont[e[0]]=0);fl.forEach(m=>{cont[m.etapa||""]++;if(m.pendencia)cont.pendentes++});
   const abas=[["todas","Todas"],...MQ.etapas,...(cont[""]?[["","Sem situação"]]:[]),["pendentes","Pendentes"]];
@@ -949,7 +1002,7 @@ function mqTabela(){
   const all=$("#mqall");if(all)all.onchange=()=>{pg.forEach(m=>all.checked?MQ.sel.add(m.mid):MQ.sel.delete(m.mid));$$("#mqtab [data-s]").forEach(c=>{c.checked=all.checked;c.closest("tr").classList.toggle("sel",all.checked)});mqSelUi(pg)};
   $$("#mqtab th.so").forEach(h=>{const go=()=>{const c=h.dataset.c;if(MQ.ord==="col"&&MQ.col===c)MQ.dir=-MQ.dir;else{MQ.ord="col";MQ.col=c;MQ.dir=c==="nota"||c==="ultimo"?-1:1}$("#mqord").value="col";mqTabela()};h.onclick=go;h.onkeydown=e=>{if(e.key==="Enter")go()}});
   const pv=$("#mqprev");if(pv){pv.onclick=()=>{MQ.pag--;mqTabela()};$("#mqnext").onclick=()=>{MQ.pag++;mqTabela()}}
-  const cl=$("#mqclr");if(cl)cl.onclick=()=>{Object.assign(MQ,{q:"",sis:"",tec:"",per:"",aba:"todas",pag:0});drawMaq()};
+  const cl=$("#mqclr");if(cl)cl.onclick=()=>{Object.assign(MQ,{q:"",sis:"",tec:"",per:"",aba:"todas",pag:0,extra:""});drawMaq()};
   mqSelUi(pg);
 }
 function mqSelUi(pg){

@@ -2248,6 +2248,8 @@ class Handler(BaseHTTPRequestHandler):
                 if reg:
                     out["registro"] = dict(reg, etapas=FICHA.ETAPAS, historico=[dict(e, etapa=FICHA.etapa_do_evento(e) or "") for e in FICHA.hist_get(mid)])
             return out
+        if path == "/api/painel":
+            return FICHA.painel_resumo(FICHA.machine_id_cache()) if FICHA else {"maquinas": 0}
         if path == "/api/maquinas":
             return {"maquinas": FICHA.listar_maquinas() if FICHA else [], "pendrive": DADOS_DIR[0], "etapas": FICHA.ETAPAS if FICHA else []}
         if path == "/api/left":

@@ -1702,7 +1702,7 @@ def linha_registro(mid, atual=""):
     p = pontuar(ult) if ult else None
     reg = registro(mid, mt, h)
     antes = depois = None
-    espaco = melhorias = 0
+    espaco = melhorias = backups = protegido = 0
     novo = True  # nota antes/depois: as do serviço mais recente (a primeira análise depois de cada entrega)
     for ev in h:
         t, ex = ev.get("tipo"), ev.get("extra") or {}
@@ -1710,6 +1710,9 @@ def linha_registro(mid, atual=""):
             espaco += int(ex.get("bytes") or 0)
         elif t == "otimizacao":
             melhorias += len(ex.get("itens") or [])
+        elif t == "backup":
+            backups += 1
+            protegido += int(ex.get("bytes") or 0) or _bytes_do_resumo(ev.get("resumo", ""))
         elif t == "etapa" and ex.get("etapa") == "entregue":
             novo = True
         elif t == "ficha" and novo and ex.get("nota") is not None:
@@ -1721,7 +1724,46 @@ def linha_registro(mid, atual=""):
                 nota=p["geral"] if p else None, classe=p["classe"] if p else "", nivel=p["trofeu"]["nivel"] if p else 1, eventos=len(h), analises=len(nomes),
                 terceiro_nome=mt.get("terceiro_nome", ""), atual=mid == atual, sistema=so.get("nome", ""), familia=so.get("familia", ""),
                 serie=(mt.get("ids") or {}).get("serial", ""), ultimo=(h[-1].get("quando", "") if h else "") or ult.get("quando", ""),
-                nota_antes=antes, nota_depois=depois, espaco=espaco, melhorias=melhorias)
+                nota_antes=antes, nota_depois=depois, espaco=espaco, melhorias=melhorias, backups=backups, protegido=protegido)
+
+
+_TAM_RE = re.compile(r"\(([\d.,]+) (B|KB|MB|GB|TB)\)")
+
+
+def _bytes_do_resumo(resumo):
+    """Backups de antes do campo bytes: o tamanho só está no texto, como "(212,40 GB)" (fmt_bytes, base 1024)."""
+    m = _TAM_RE.search(resumo or "")
+    if not m:
+        return 0
+    return int(float(m.group(1).replace(".", "").replace(",", ".")) * 1024 ** ["B", "KB", "MB", "GB", "TB"].index(m.group(2)))
+
+
+def painel_resumo(atual=None, agora=None):
+    """Números da Home, só com o que está no registro. Cada número sai de um grupo de máquinas que a tela Máquinas
+    filtra igual (o clique no número abre exatamente essa lista). compacto: nenhuma OUTRA máquina teve evento hoje."""
+    atual = machine_id_cache() if atual is None else atual
+    agora = agora or datetime.datetime.now()
+    linhas = listar_maquinas(atual)
+    hoje, mes = agora.strftime("%Y-%m-%d"), agora.strftime("%Y-%m")
+    entregas = [e.get("quando", "") for x in linhas for e in x.get("etapa_historico") or [] if e.get("etapa") == "entregue"]
+    notas = [x for x in linhas if x.get("nota_antes") is not None and x.get("nota_depois") is not None]
+    otim = [x for x in notas if x.get("melhorias")]
+    subiu = sum(1 for x in otim if x["nota_depois"] > x["nota_antes"])
+
+    def media(v):
+        return round(sum(v) / len(v), 1) if v else None
+    return {"maquinas": len(linhas), "em_andamento": sum(1 for x in linhas if x.get("etapa") != "entregue"),
+            "concluidos": len(entregas), "concluidos_mes": sum(1 for q in entregas if q.startswith(mes)),
+            "maquinas_concluidas": sum(1 for x in linhas if any(e.get("etapa") == "entregue" for e in x.get("etapa_historico") or [])),
+            "nota": {"n": len(notas), "antes": media([x["nota_antes"] for x in notas]), "depois": media([x["nota_depois"] for x in notas])},
+            "otimizacao": {"n": len(otim), "subiu": subiu, "taxa": round(100.0 * subiu / len(otim)) if otim else None,
+                           "pontos": media([x["nota_depois"] - x["nota_antes"] for x in otim])},
+            "espaco": sum(x.get("espaco") or 0 for x in linhas), "espaco_maquinas": sum(1 for x in linhas if x.get("espaco")),
+            "protegido": sum(x.get("protegido") or 0 for x in linhas), "backups": sum(x.get("backups") or 0 for x in linhas),
+            "backup_maquinas": sum(1 for x in linhas if x.get("backups")),
+            "pendencias": [x for x in linhas if x.get("pendencia")],
+            "ultimas": sorted(linhas, key=lambda x: x.get("ultimo") or "", reverse=True)[:5],
+            "compacto": not any((x.get("ultimo") or "").startswith(hoje) for x in linhas if x.get("mid") != atual)}
 
 
 CSV_COLUNAS = [("mid", "Código"), ("modelo", "Modelo"), ("dono_nome", "Dono"), ("telefone", "Telefone"), ("email", "E-mail"), ("sistema", "Sistema"),
