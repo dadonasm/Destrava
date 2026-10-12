@@ -39,6 +39,16 @@ def ler():
     return dict(p, preenchido=bool(p["nome"].strip()))
 
 
+def checar_contato(email, telefone):
+    """Validação simples, também usada no contato do dono na Ficha da máquina. Vazio sempre passa."""
+    if email and not EMAIL_RE.match(email):
+        raise ValueError("E-mail inválido. Exemplo: nome@empresa.com.br")
+    if telefone:
+        dig = re.sub(r"\D", "", telefone)
+        if not TEL_RE.match(telefone) or not 10 <= len(dig) <= 13:
+            raise ValueError("Telefone inválido. Use DDD + número, ex.: (27) 99999-0000")
+
+
 def validar(d):
     """Devolve o perfil limpo ou levanta ValueError com a mensagem para a tela. Redes sociais nunca bloqueiam."""
     p = {}
@@ -50,12 +60,7 @@ def validar(d):
         if len(v) > MAX:
             raise ValueError("%s muito longo (máximo %d letras)." % (rotulo, MAX))
         p[c] = v
-    if p["email"] and not EMAIL_RE.match(p["email"]):
-        raise ValueError("E-mail inválido. Exemplo: nome@empresa.com.br")
-    if p["telefone"]:
-        dig = re.sub(r"\D", "", p["telefone"])
-        if not TEL_RE.match(p["telefone"]) or not 10 <= len(dig) <= 13:
-            raise ValueError("Telefone inválido. Use DDD + número, ex.: (27) 99999-0000")
+    checar_contato(p["email"], p["telefone"])
     marc = d.get("no_certificado", [])
     if not isinstance(marc, list):
         raise ValueError("Lista do certificado inválida.")

@@ -1559,7 +1559,7 @@ class App(object):
                 if FICHA:
                     c = self.cert
                     FICHA.hist_add(FICHA.machine_id_cache(), "backup", "Backup %s: %d arquivos (%s) · código %s" % ("sem falhas" if c["status"] == "sem_falhas" else "com ressalvas", c["copiados"], fmt_bytes(c["bytes"]), c["codigo"]),
-                                   {"destino": self.dest_root, "codigo": c["codigo"], "cliente": c.get("cliente", ""),
+                                   {"destino": self.dest_root, "codigo": c["codigo"], "cliente": c.get("cliente", ""), "status": c["status"], "bytes": c["bytes"],
                                     "tecnico": c.get("tecnico", ""), "tecnico_perfil": c.get("tecnico_perfil") or {}})
             except Exception:
                 pass
@@ -1969,6 +1969,15 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _baixar(self, data, mime, nome):
+        self.send_response(200)
+        self.send_header("Content-Type", mime)
+        self.send_header("Content-Disposition", 'attachment; filename="%s"' % nome)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(data)
+
     def _static(self, base, name, troca=None):
         name = os.path.basename(name)
         p = os.path.join(base, name)
@@ -2095,6 +2104,10 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if u.path == "/api/atualizar/enviar":
                 return self._json(self.upload_zip(n, parse_qs(u.query)))
+            if u.path == "/api/maquinas/exportar":  # só códigos vêm da tela; a planilha volta como download
+                mids = body.get("mids")
+                dados = FICHA.exportar_csv([str(m) for m in mids] if isinstance(mids, list) else None)
+                return self._baixar(dados, "text/csv; charset=utf-8", "maquinas-%s.csv" % time.strftime("%Y-%m-%d"))
             return self._json(self.api_post(u.path, body))
         except PermissionError as e:
             if TERMO and isinstance(e, TERMO.SemPermissao):
@@ -2228,10 +2241,15 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError("Módulo da ficha ausente (ficha.py).")
             mid = (q.get("mid") or [""])[0] or FICHA.machine_id_cache()
             v = FICHA.visao(mid)
-            return {"mid": mid, "atual": mid == FICHA.machine_id_cache(), "visao": v, "pode_desfazer": FICHA.pode_desfazer(mid), "aplicadas": FICHA.aplicadas(mid), "root": FICHA.is_root() or FICHA.simulando(),
-                    "win": FICHA.familia_atual() == "windows", "simulacao": FICHA.simulando()}
+            out = {"mid": mid, "atual": mid == FICHA.machine_id_cache(), "visao": v, "pode_desfazer": FICHA.pode_desfazer(mid), "aplicadas": FICHA.aplicadas(mid), "root": FICHA.is_root() or FICHA.simulando(),
+                   "win": FICHA.familia_atual() == "windows", "simulacao": FICHA.simulando()}
+            if path == "/api/maquina":  # Ficha completa: registro (etapas, contato) e a linha do tempo inteira
+                reg = FICHA.linha_registro(mid, FICHA.machine_id_cache())
+                if reg:
+                    out["registro"] = dict(reg, etapas=FICHA.ETAPAS, historico=[dict(e, etapa=FICHA.etapa_do_evento(e) or "") for e in FICHA.hist_get(mid)])
+            return out
         if path == "/api/maquinas":
-            return {"maquinas": FICHA.listar_maquinas() if FICHA else [], "pendrive": DADOS_DIR[0]}
+            return {"maquinas": FICHA.listar_maquinas() if FICHA else [], "pendrive": DADOS_DIR[0], "etapas": FICHA.ETAPAS if FICHA else []}
         if path == "/api/left":
             return {"left": APP.left_behind(), "ign_dirs": APP.ign_dirs[:1000], "ign_dirs_total": APP.ign_dirs_total}
         raise ValueError("rota desconhecida")
@@ -2352,6 +2370,10 @@ class Handler(BaseHTTPRequestHandler):
             nome = str(b.get("nome", "")).strip()[:60]
             FICHA.meta_set(mid, nome=nome)
             return {"nome": FICHA.nome_exibicao(mid)}
+        if path == "/api/maquina/etapa":
+            return FICHA.marcar_etapa(str(b.get("mid") or ""), str(b.get("etapa") or ""), bool(b.get("confirmar")))
+        if path == "/api/maquina/registro":
+            return {"registro": FICHA.salvar_contato(str(b.get("mid") or ""), b.get("telefone", ""), b.get("email", ""), b.get("observacoes", ""))}
         if path == "/api/maquina/apagar":
             mid = b.get("mid") or ""
             if not mid or (b.get("digitou") or "").strip().upper() != "APAGAR":

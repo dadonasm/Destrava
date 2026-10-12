@@ -229,7 +229,8 @@ def aceitar(mid, responsavel, dono, terceiro_nome="", autorizado_por="", confirm
                   corporativa=det["corporativa"], sinais=det["sinais"], confirmou_particular_em_corporativa=bool(confirma_particular and det["corporativa"]),
                   termo_versao=TERMO_VERSAO, termo_hash=termo_hash())
     arq = doc_termo(mid, reg)
-    FICHA.hist_add(mid, "termo", "Termo de responsabilidade aceito por %s (%s)" % (responsavel, "particular" if dono == "particular" else "terceiros: " + (terceiro_nome or "").strip()))
+    FICHA.hist_add(mid, "termo", "Termo de responsabilidade aceito por %s (%s)" % (responsavel, "particular" if dono == "particular" else "terceiros: " + (terceiro_nome or "").strip()),
+                   {"tecnico": responsavel})
     return {"status": status(mid), "documento": arq}
 
 

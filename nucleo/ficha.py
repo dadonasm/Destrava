@@ -1444,12 +1444,19 @@ def hist_add(mid, tipo, resumo, extra=None):
             h = json.load(fh)
     except (OSError, ValueError):
         h = []
-    h.append({"quando": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "tipo": tipo, "resumo": resumo, "extra": extra or {}})
+    extra = dict(extra or {})
+    if not extra.get("tecnico"):
+        tec = tecnico_atual(mid)
+        if tec:
+            extra["tecnico"] = tec
+    ev = {"quando": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "tipo": tipo, "resumo": resumo, "extra": extra}
+    h.append(ev)
     tmp = p + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(h, fh, ensure_ascii=False, indent=1)
     os.replace(tmp, p)
     _gravou(p)
+    _registrar_etapa(mid, h[:-1], ev)
 
 
 def hist_get(mid):
@@ -1459,6 +1466,170 @@ def hist_get(mid):
             return json.load(fh)
     except (OSError, ValueError):
         return []
+
+
+# ----------------------------------------------------------------------------------------------
+# registro: a etapa de cada máquina, montada de meta.json + historico.json (não é uma base nova)
+# ----------------------------------------------------------------------------------------------
+ETAPAS = [("recebida", "Recebida"), ("diagnosticada", "Diagnosticada"), ("backup_verificado", "Backup verificado"),
+          ("otimizada", "Otimizada"), ("formatada", "Formatada"), ("entregue", "Entregue")]
+ORDEM = [e for e, _ in ETAPAS]
+NOME_ETAPA = dict(ETAPAS)
+MANUAIS = ("formatada", "entregue")  # o agente não tem como saber sozinho: o técnico marca na Ficha da máquina
+DIAS_PENDENTE = 7  # diagnosticada há mais que isso, sem backup, vira pendência
+
+
+def tecnico_atual(mid=""):
+    """Quem atende agora: o nome de Meu perfil ou, sem perfil, o nome digitado no termo desta máquina."""
+    try:
+        import perfil
+        nome = (perfil.ler().get("nome") or "").strip()
+        if nome:
+            return nome
+    except Exception:
+        pass
+    return (meta_ler(mid).get("tecnico") or "").strip() if mid else ""
+
+
+def etapa_do_evento(ev):
+    """Etapa a que um evento do histórico leva (ou None). A mesma regra vale ao vivo e para as máquinas de antes do registro."""
+    t, ex = ev.get("tipo"), ev.get("extra") or {}
+    if t == "termo":
+        return "recebida"
+    if t == "ficha":
+        return "diagnosticada"
+    if t == "backup" and (ex.get("status") == "sem_falhas" or str(ev.get("resumo", "")).startswith("Backup sem falhas")):
+        return "backup_verificado"
+    if t == "otimizacao" and ex.get("itens"):
+        return "otimizada"
+    if t == "etapa" and ex.get("etapa") in MANUAIS:
+        return ex["etapa"]
+    return None
+
+
+def _servicos(lst):
+    """Cada serviço termina em "entregue"; o que vem depois é a mesma máquina que voltou (mesma entrada, serviço novo)."""
+    out = []
+    for e in lst:
+        if not out or out[-1][-1]["etapa"] == "entregue":
+            out.append([])
+        out[-1].append(e)
+    return out
+
+
+def _em_aberto(lst):
+    s = _servicos(lst)
+    return [] if not s or s[-1][-1]["etapa"] == "entregue" else s[-1]
+
+
+def etapa_de(lst):
+    """A etapa é a mais adiantada que o serviço atual alcançou: na vida real a ordem varia (melhorar antes do backup, por exemplo)."""
+    s = _servicos(lst)
+    return max((e["etapa"] for e in s[-1]), key=ORDEM.index) if s else None
+
+
+def _seguir(lst, ev, tecnico, origem):
+    """Grava a etapa do evento uma vez por serviço. Depois de entregue, qualquer marco abre um serviço novo."""
+    nova = etapa_do_evento(ev)
+    if not nova or any(e["etapa"] == nova for e in _em_aberto(lst)):
+        return False
+    lst.append({"etapa": nova, "quando": ev.get("quando", ""), "tecnico": tecnico or "", "origem": origem})
+    return True
+
+
+def _importar(hist):
+    """Máquina de antes do registro: refaz as etapas pelo histórico. Sem técnico no evento, fica "desconhecido"."""
+    lst = []
+    for ev in hist:
+        _seguir(lst, ev, (ev.get("extra") or {}).get("tecnico") or "desconhecido", "importada")
+    if not lst and hist:
+        lst.append({"etapa": "recebida", "quando": hist[0].get("quando", ""), "tecnico": "desconhecido", "origem": "importada"})
+    return lst
+
+
+def _registrar_etapa(mid, antes, ev):
+    """Chamada por hist_add: o evento novo pode mudar a etapa. A primeira vez numa máquina antiga, importa o histórico dela."""
+    m = meta_ler(mid)
+    lst = m.get("etapa_historico")
+    novo = not isinstance(lst, list)
+    if novo:
+        lst = _importar(antes)
+    mudou = _seguir(lst, ev, (ev.get("extra") or {}).get("tecnico", ""), "manual" if ev.get("tipo") == "etapa" else "auto")
+    if mudou or (novo and lst):
+        meta_set(mid, etapa=etapa_de(lst), etapa_historico=lst)
+
+
+def _data(s):
+    try:
+        return datetime.datetime.strptime(str(s)[:16], "%Y-%m-%d %H:%M")
+    except ValueError:
+        return None
+
+
+def pendencia(lst, agora=None):
+    """Backup feito e ainda não entregue; ou diagnosticada há mais de DIAS_PENDENTE dias sem backup. Vazio = em dia."""
+    aberto = _em_aberto(lst)
+    if not aberto:
+        return ""
+    if any(e["etapa"] == "backup_verificado" for e in aberto):
+        return "Backup feito e ainda não entregue"
+    d = _data(next((e["quando"] for e in aberto if e["etapa"] == "diagnosticada"), ""))
+    if etapa_de(lst) == "diagnosticada" and d:
+        dias = ((agora or datetime.datetime.now()) - d).days
+        if dias > DIAS_PENDENTE:
+            return "Diagnosticada há %d dias sem backup" % dias
+    return ""
+
+
+def registro(mid, meta=None, hist=None):
+    """Etapa, serviços, pendência e contato de uma máquina. Máquina de antes do registro: etapas refeitas pelo histórico."""
+    m = meta_ler(mid) if meta is None else meta
+    h = hist_get(mid) if hist is None else hist
+    lst = m.get("etapa_historico")
+    importada = not isinstance(lst, list)
+    if importada:
+        lst = _importar(h)
+        if not lst and m:
+            lst = [{"etapa": "recebida", "quando": m.get("criado", ""), "tecnico": "desconhecido", "origem": "importada"}]
+    etapa = etapa_de(lst)
+    return {"etapa": etapa or "", "etapa_nome": NOME_ETAPA.get(etapa, ""), "etapa_historico": lst, "importada": importada,
+            "servicos": len(_servicos(lst)), "pendencia": pendencia(lst),
+            "tecnico": next((e["tecnico"] for e in reversed(lst) if e.get("tecnico")), "") or m.get("tecnico", ""),
+            "dono": m.get("dono", ""), "dono_nome": m.get("terceiro_nome") or m.get("autorizado_por") or "",
+            "telefone": m.get("telefone", ""), "email": m.get("email", ""), "observacoes": m.get("observacoes", "")}
+
+
+def marcar_etapa(mid, etapa, confirmar=False):
+    """Formatada e Entregue são marcadas pelo técnico. Formatar sem backup verificado neste serviço pede confirmação."""
+    if etapa not in MANUAIS:
+        raise ValueError("Só dá para marcar à mão Formatada ou Entregue. As outras etapas mudam sozinhas.")
+    if not existe_maquina(mid):
+        raise ValueError("Máquina não encontrada.")
+    reg = registro(mid)
+    aberto = _em_aberto(reg["etapa_historico"])
+    if etapa == "entregue" and reg["etapa"] == "entregue":
+        raise ValueError("Esta máquina já foi entregue.")
+    if any(e["etapa"] == etapa for e in aberto):
+        raise ValueError("Esta máquina já está marcada como %s neste serviço." % NOME_ETAPA[etapa].lower())
+    if etapa == "formatada" and not confirmar and not any(e["etapa"] == "backup_verificado" for e in aberto):
+        return {"confirmar": "Esta máquina não tem backup verificado neste serviço. Marcar como formatada mesmo assim?", "registro": reg}
+    hist_add(mid, "etapa", "Marcada como %s" % NOME_ETAPA[etapa].lower(), {"etapa": etapa})
+    return {"registro": registro(mid)}
+
+
+def salvar_contato(mid, telefone="", email="", observacoes=""):
+    """Contato do dono e observações livres da Ficha da máquina (ficam no meta.json, como o resto do termo)."""
+    import perfil
+    if not existe_maquina(mid):
+        raise ValueError("Máquina não encontrada.")
+    telefone, email = " ".join(str(telefone or "").split())[:40], str(email or "").strip()[:120]
+    perfil.checar_contato(email, telefone)
+    meta_set(mid, telefone=telefone, email=email, observacoes=str(observacoes or "").strip()[:2000])
+    return registro(mid)
+
+
+def existe_maquina(mid):
+    return bool(mid) and bool(meta_ler(mid) or hist_get(mid) or listar_fichas(mid))
 
 
 def visao(mid):
@@ -1516,20 +1687,69 @@ def listar_maquinas(atual=None):
             return lst
         except Exception:
             pass  # sem servidor agora: mostra o que já está no cache
-    out = []
     if not os.path.isdir(STORE):
-        return out
-    for mid in sorted(os.listdir(STORE)):
-        nomes = listar_fichas(mid)
-        if not nomes:
-            continue
-        ult = ler_ficha(mid, nomes[-1]) or {}
-        p = pontuar(ult) if ult else {"geral": 0, "classe": "", "trofeu": {"nivel": 1}}
-        mt = meta_ler(mid)
-        out.append({"mid": mid, "nome": nome_exibicao(mid, ult), "host": ult.get("host", mid), "modelo": modelo_comercial(ult),
-                    "quando": ult.get("quando", ""), "nota": p["geral"], "classe": p["classe"], "nivel": p["trofeu"]["nivel"], "eventos": len(hist_get(mid)),
-                    "analises": len(nomes), "dono": mt.get("dono", ""), "terceiro_nome": mt.get("terceiro_nome", ""), "atual": mid == atual})
-    return out
+        return []
+    out = (linha_registro(mid, atual) for mid in sorted(os.listdir(STORE)) if os.path.isdir(os.path.join(STORE, mid)))
+    return [x for x in out if x]
+
+
+def linha_registro(mid, atual=""):
+    """Uma linha da tela Máquinas. Entra toda máquina com termo, ficha ou histórico (recebida e ainda sem ficha também)."""
+    nomes, mt, h = listar_fichas(mid), meta_ler(mid), hist_get(mid)
+    if not (nomes or mt or h):
+        return None
+    ult = (ler_ficha(mid, nomes[-1]) if nomes else None) or {}
+    p = pontuar(ult) if ult else None
+    reg = registro(mid, mt, h)
+    antes = depois = None
+    espaco = melhorias = 0
+    novo = True  # nota antes/depois: as do serviço mais recente (a primeira análise depois de cada entrega)
+    for ev in h:
+        t, ex = ev.get("tipo"), ev.get("extra") or {}
+        if t == "limpeza":
+            espaco += int(ex.get("bytes") or 0)
+        elif t == "otimizacao":
+            melhorias += len(ex.get("itens") or [])
+        elif t == "etapa" and ex.get("etapa") == "entregue":
+            novo = True
+        elif t == "ficha" and novo and ex.get("nota") is not None:
+            antes, depois, novo = ex["nota"], None, False
+        elif t == "ficha_depois" and ex.get("nota") is not None:
+            depois = ex["nota"]
+    so = ult.get("so") or {}
+    return dict(reg, mid=mid, nome=nome_exibicao(mid, ult), host=ult.get("host", mid), modelo=modelo_comercial(ult), quando=ult.get("quando", ""),
+                nota=p["geral"] if p else None, classe=p["classe"] if p else "", nivel=p["trofeu"]["nivel"] if p else 1, eventos=len(h), analises=len(nomes),
+                terceiro_nome=mt.get("terceiro_nome", ""), atual=mid == atual, sistema=so.get("nome", ""), familia=so.get("familia", ""),
+                serie=(mt.get("ids") or {}).get("serial", ""), ultimo=(h[-1].get("quando", "") if h else "") or ult.get("quando", ""),
+                nota_antes=antes, nota_depois=depois, espaco=espaco, melhorias=melhorias)
+
+
+CSV_COLUNAS = [("mid", "Código"), ("modelo", "Modelo"), ("dono_nome", "Dono"), ("telefone", "Telefone"), ("email", "E-mail"), ("sistema", "Sistema"),
+               ("serie", "Número de série"), ("nota_antes", "Nota antes"), ("nota", "Nota atual"), ("tecnico", "Técnico"), ("ultimo", "Último serviço"),
+               ("etapa_nome", "Situação"), ("servicos", "Serviços"), ("melhorias", "Melhorias aplicadas"), ("espaco", "Espaço recuperado (GB)"),
+               ("pendencia", "Pendência"), ("observacoes", "Observações")]
+
+
+def exportar_csv(mids=None):
+    """Planilha da tela Máquinas: CSV com BOM UTF-8 e ponto e vírgula, que o Excel em português abre direto, com acentos.
+    mids: só essas máquinas, na ordem da tela (None = todas)."""
+    import csv
+    import io
+    linhas = listar_maquinas("")
+    if mids is not None:
+        por = {x["mid"]: x for x in linhas}
+        linhas = [por[m] for m in mids if m in por]
+    buf = io.StringIO()
+    w = csv.writer(buf, delimiter=";", lineterminator="\r\n")
+    w.writerow([r for _, r in CSV_COLUNAS])
+    for x in linhas:
+        lin = []
+        for k, _ in CSV_COLUNAS:
+            v = x.get(k)
+            v = ("%.1f" % (v / 1e9)).replace(".", ",") if k == "espaco" else "" if v is None else str(v)
+            lin.append("'" + v if v[:1] in ("=", "+", "-", "@") else v)  # o Excel não executa como fórmula
+        w.writerow(lin)
+    return ("\ufeff" + buf.getvalue()).encode("utf-8")
 
 
 # ----------------------------------------------------------------------------------------------

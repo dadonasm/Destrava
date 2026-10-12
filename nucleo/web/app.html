@@ -15,6 +15,7 @@ header{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:
 header h1{font-size:17px;letter-spacing:.4px}header small{color:var(--mut)}
 header .sp{flex:1}
 #hperf{padding:6px 8px}#hperf svg{width:18px;height:18px;display:block}
+@media (max-width:520px){header{gap:8px;padding:8px 12px;flex-wrap:wrap}header small{display:none}}
 .pfl{display:flex;gap:14px;align-items:flex-end}.pfc{display:flex;gap:6px;align-items:center;white-space:nowrap;margin:0 0 11px;color:var(--tx);font-size:12.5px;cursor:pointer}
 .pft{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px 18px;margin-top:8px}.pft span{display:block;font-size:12px}.pft b{word-break:break-word}
 .chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);font-size:12px;color:var(--mut);background:var(--panel2);cursor:default;white-space:nowrap}
@@ -197,6 +198,27 @@ body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{d
 .zc b{display:block}.zc span{font-size:12.5px;color:var(--mut);line-height:1.4;display:block;margin-top:3px}
 .z-v{border-top-color:var(--ok)}.z-a{border-top-color:var(--warn)}.z-r{border-top-color:var(--err)}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.tb{padding:7px 14px;border-radius:99px;border:1px solid var(--line);background:var(--panel2);font-size:13px;cursor:pointer}.tb.on{border-color:var(--acc);color:var(--tx);font-weight:700}
+/* registro de máquinas (tela Máquinas e Ficha completa) */
+.mqh{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.mqh>div{flex:1;min-width:240px}
+.cnt{display:inline-block;font-size:12.5px;font-weight:600;vertical-align:middle;margin-left:8px;padding:3px 10px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);color:var(--mut);letter-spacing:0}
+.mqbar{display:grid;grid-template-columns:minmax(220px,2fr) repeat(4,minmax(130px,1fr));gap:8px;margin-bottom:12px}.mqbar>*{margin:0;width:100%}
+@media (max-width:900px){.mqbar{grid-template-columns:1fr 1fr}.mqbar>input{grid-column:1/-1}}@media (max-width:520px){.mqbar{grid-template-columns:1fr}}
+.tb .n{opacity:.65;margin-left:4px;font-weight:400}.tb.pend .n{color:var(--warn);opacity:1;font-weight:700}
+.tblw{overflow-x:auto}.mqt{min-width:820px}
+.mqt th{white-space:nowrap}.mqt th.so{cursor:pointer;user-select:none}.mqt th.so:hover,.mqt th.on{color:var(--tx)}
+.mqt td{vertical-align:middle}.mqt tbody tr{cursor:pointer}.mqt tbody tr:hover td{background:var(--panel2)}.mqt tr.sel td{background:rgba(224,179,74,.08)}
+.mqt .ck{width:34px}.mqt input[type=checkbox]{width:16px;height:16px;cursor:pointer}
+.cod{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;letter-spacing:.6px;color:var(--mut);white-space:nowrap}
+.dots{display:flex;gap:3px;margin-top:4px}.dots i{width:6px;height:6px;border-radius:50%;background:var(--line)}.dots i.on{background:var(--acc)}
+.pd{color:var(--warn);font-size:11.5px;display:block;margin-top:2px}
+.mqpag{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:12px;color:var(--mut);font-size:13px}
+.etp{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:14px 0 4px}
+.etp .s{border-top:3px solid var(--line);padding-top:6px;font-size:11.5px;color:var(--mut);min-width:0;overflow-wrap:anywhere}.etp .s b{display:block;font-size:12.5px;color:var(--mut)}
+.etp .s.ok{border-color:var(--ok)}.etp .s.ok b{color:var(--tx)}.etp .s.cur{border-color:var(--acc)}.etp .s.cur b{color:var(--acc)}
+@media (max-width:760px){.etp{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.rg2{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}@media (max-width:760px){.rg2{grid-template-columns:1fr}}
+.rgn{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:12px 0}.rgn div{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.rgn span{display:block;font-size:12px;color:var(--mut)}.rgn b{font-size:18px}
+textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--tx);font:inherit;resize:vertical}
 .drow{display:flex;gap:10px;align-items:flex-start;padding:10px 4px;border-bottom:1px solid var(--line)}.drow:last-child{border:0}
 .drow .t{flex:1;min-width:0}.drow .t b{display:block;word-break:break-word}.drow .t span{font-size:12px;color:var(--mut);word-break:break-all;display:block}
 .drow .sz{font-weight:700;white-space:nowrap}
@@ -843,17 +865,153 @@ async function openCompare(mid,a,b){
   $("#ca",d).onchange=go;$("#cb",d).onchange=go;go();
 }
 
-/* ---------- máquinas ---------- */
+/* ---------- máquinas: registro no modelo da tela de Leads (busca, filtros, abas, tabela, exportar) ---------- */
+const MQ={q:"",sis:"",tec:"",per:"",ord:"recentes",col:"",dir:-1,aba:"todas",pag:0,sel:new Set(),rows:[],etapas:[],vis:[]};
+const POR_PAG=25;
+const ETB={recebida:"b-mut",diagnosticada:"b-warn",backup_verificado:"b-ok",otimizada:"b-ok",formatada:"b-ok",entregue:"b-gold"};
+const FAM={windows:"Windows",mac:"Mac",linux:"Linux"};
+const semAc=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const dig=s=>String(s||"").replace(/\D/g,"");
+const hojeISO=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const dataBR=q=>{const m=/^(\d{4})-(\d\d)-(\d\d)(?: (\d\d:\d\d))?/.exec(q||"");return m?`${m[3]}/${m[2]}/${m[1]}${m[4]?" "+m[4]:""}`:"—"};
+const seloEt=(k,nome)=>k?`<span class="badge ${ETB[k]||"b-mut"}" style="margin:0">${esc(nome)}</span>`:'<span class="mut">—</span>';
+function notaHtml(m){const c=n=>`<b style="color:${COR(n)}">${n}</b>`;
+  if(m.nota_antes!=null&&m.nota_depois!=null)return `${c(m.nota_antes)} <span class="mut">→</span> ${c(m.nota_depois)}`;
+  const n=m.nota!=null?m.nota:m.nota_antes;return n==null?'<span class="mut">—</span>':c(n)}
+/* na lista o dono não aparece (tela aberta): só o tipo e o contato mascarado. Tudo fica na Ficha completa */
+function contatoHtml(m){const t=dig(m.telefone);
+  const own=m.dono==="terceiros"?'<span class="badge b-warn" style="margin:0">Terceiros</span>':m.dono==="particular"?'<span class="badge b-ok" style="margin:0">Particular</span>':"";
+  return (own+(t?`<div class="mut" style="font-size:12px;white-space:nowrap">WhatsApp ··· ${esc(t.slice(-4))}</div>`:"")+(m.email?`<div class="mut" style="font-size:12px">${esc(m.email.replace(/^(.).*@/,"$1•••@"))}</div>`:""))||'<span class="mut">—</span>'}
+function mqFiltra(){
+  const q=semAc(MQ.q.trim()),qd=dig(MQ.q),dias={"7":7,"30":30,"90":90}[MQ.per],hoje=hojeISO();
+  return MQ.rows.filter(m=>{
+    if(MQ.sis&&m.familia!==MQ.sis)return false;
+    if(MQ.tec&&(m.tecnico||"")!==MQ.tec)return false;
+    if(MQ.per==="hoje"&&(m.ultimo||"").slice(0,10)!==hoje)return false;
+    if(dias){const t=Date.parse((m.ultimo||"").replace(" ","T"));if(isNaN(t)||Date.now()-t>dias*864e5)return false}
+    if(q&&!semAc([m.mid,m.dono_nome,m.terceiro_nome,m.modelo,m.nome,m.host,m.serie,m.email,m.telefone].join(" ")).includes(q)&&!(qd.length>=3&&dig(m.telefone).includes(qd)))return false;
+    return true})}
+function mqOrdena(l){
+  const [c,d]={recentes:["ultimo",-1],antigas:["ultimo",1],nota:["nota",-1],espaco:["espaco",-1]}[MQ.ord]||[MQ.col,MQ.dir];
+  const ord=MQ.etapas.map(e=>e[0]);
+  const v=m=>c==="maq"?semAc(m.modelo||m.nome||m.mid):c==="etapa"?ord.indexOf(m.etapa):c==="nota"||c==="espaco"?(m[c]==null?-1:m[c]):semAc(m[c]);
+  return l.slice().sort((a,b)=>{const x=v(a),y=v(b);return (x<y?-1:x>y?1:0)*d||a.mid.localeCompare(b.mid)})}
 async function drawMaq(mid){
-  setWide(!!mid);
-  if(mid){const r=await api("/api/maquina?mid="+encodeURIComponent(mid));
-    if(r.visao){renderFicha(r,r.atual);$(".fm").insertAdjacentHTML("afterbegin",'<div class="row" style="margin-bottom:10px"><button id="vm">← Todas as máquinas</button></div>');$("#vm").onclick=()=>drawMaq();return}}
-  const r=await api("/api/maquinas");
-  $("#main").innerHTML=`<div class="card"><h2>${info.servidor?"Máquinas no servidor":"Máquinas no pendrive"}</h2><p class="h">Tudo que já passou por aqui, guardado ${info.servidor?`no servidor <span class="mono">${esc(info.servidor.url)}</span>`:`em <span class="mono">${esc(r.pendrive)}/maquinas</span>`}. Cada máquina tem um código próprio, que não muda ao trocar o nome do computador.</p>
-   ${r.maquinas.map(m=>`<div class="mk" tabindex="0" role="button" data-mid="${esc(m.mid)}"><div>${trophy(m.nivel,64)}</div><div class="grow"><b style="font-size:16px">${esc(m.nome)}</b> ${m.atual?'<span class="badge b-gold">ESTA MÁQUINA</span>':""}${m.dono==="terceiros"?`<span class="badge b-warn">Terceiros${m.terceiro_nome?": "+esc(m.terceiro_nome):""}</span>`:m.dono==="particular"?'<span class="badge b-ok">Particular</span>':""}
-    <div class="mut" style="font-size:13px">${esc(m.modelo)} · ${m.analises} análise(s) · última em ${esc(m.quando)} · ${m.eventos} evento(s)</div><div class="mid" style="cursor:default">${esc(m.mid)}</div></div>
-    <div style="text-align:center"><b style="font-size:26px;color:${COR(m.nota)}">${m.nota}</b><div class="mut" style="font-size:11px">${esc(m.classe)}</div></div></div>`).join("")||'<p class="mut">Nenhuma máquina ainda. Rode a análise na Home.</p>'}</div>`;
-  $$(".mk").forEach(e=>{e.onclick=()=>drawMaq(e.dataset.mid);e.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" ")drawMaq(e.dataset.mid)}})
+  if(mid)return drawMaqFicha(mid);
+  setWide(true);
+  const r=await api("/api/maquinas");if(view!=="maq")return;
+  MQ.rows=r.maquinas;MQ.etapas=r.etapas||[];
+  const ids=new Set(MQ.rows.map(m=>m.mid));[...MQ.sel].forEach(x=>{if(!ids.has(x))MQ.sel.delete(x)});
+  const tecs=[...new Set(MQ.rows.map(m=>m.tecnico).filter(Boolean))].sort(),n=MQ.rows.length;
+  const opt=(lst,cur)=>lst.map(([v,t])=>`<option value="${esc(v)}" ${cur===v?"selected":""}>${esc(t)}</option>`).join("");
+  $("#main").innerHTML=`<div class="ptitle mqh"><div><h1>Máquinas<span class="cnt">${n} ${n===1?"máquina":"máquinas"}</span></h1><p>Todas as máquinas que passaram pelo Destrava. Cada serviço fica registrado${info.servidor?" no servidor da loja":""}.</p></div>
+   <button id="mqperf">${ic("gear")}<span style="margin-left:6px">Meu perfil</span></button><button class="pri" id="mqexp" ${n?"":"disabled"}>Exportar para Excel</button></div>
+   ${n?`<div class="card"><div class="mqbar" role="search">
+     <input type="text" id="mqq" placeholder="Buscar por código, dono, telefone, modelo ou série" aria-label="Buscar máquinas" value="${esc(MQ.q)}" autocomplete="off">
+     <select id="mqsis" aria-label="Sistema">${opt([["","Todos os sistemas"],["windows","Windows"],["mac","Mac"],["linux","Linux"]],MQ.sis)}</select>
+     <select id="mqtec" aria-label="Técnico">${opt([["","Todos os técnicos"],...tecs.map(t=>[t,t])],MQ.tec)}</select>
+     <select id="mqper" aria-label="Período">${opt([["","Qualquer data"],["hoje","Hoje"],["7","Últimos 7 dias"],["30","Últimos 30 dias"],["90","Últimos 90 dias"]],MQ.per)}</select>
+     <select id="mqord" aria-label="Ordenar por">${opt([["recentes","Mais recentes"],["antigas","Mais antigas"],["nota","Maior nota"],["espaco","Espaço recuperado"]],MQ.ord)}<option value="col" hidden ${MQ.ord==="col"?"selected":""}>Pela coluna da tabela</option></select>
+    </div><div class="tabs" role="tablist" id="mqtabs"></div><div id="mqtab"></div></div>`
+   :`<div class="card empty"><h2>Nenhuma máquina atendida ainda</h2><p>Quando você aceitar o termo e analisar uma máquina na Home, ela aparece aqui com a etapa do serviço.</p><button class="pri" id="mqhome">Ir para a Home</button></div>`}`;
+  $("#mqperf").onclick=()=>nav("perfil");
+  $("#mqexp").onclick=()=>safe(mqExporta);
+  if(!n){$("#mqhome").onclick=()=>nav("home");return}
+  const re=()=>{MQ.pag=0;mqTabela()};
+  $("#mqq").oninput=e=>{MQ.q=e.target.value;re()};
+  [["mqsis","sis"],["mqtec","tec"],["mqper","per"]].forEach(([id,k])=>$("#"+id).onchange=e=>{MQ[k]=e.target.value;re()});
+  $("#mqord").onchange=e=>{MQ.ord=e.target.value;mqTabela()};
+  mqTabela();
+}
+function mqTabela(){
+  const fl=mqFiltra(),cont={todas:fl.length,pendentes:0,"":0};
+  MQ.etapas.forEach(e=>cont[e[0]]=0);fl.forEach(m=>{cont[m.etapa||""]++;if(m.pendencia)cont.pendentes++});
+  const abas=[["todas","Todas"],...MQ.etapas,...(cont[""]?[["","Sem situação"]]:[]),["pendentes","Pendentes"]];
+  if(!abas.some(a=>a[0]===MQ.aba))MQ.aba="todas";
+  $("#mqtabs").innerHTML=abas.map(([k,t])=>`<button class="tb ${MQ.aba===k?"on":""} ${k==="pendentes"&&cont.pendentes?"pend":""}" role="tab" aria-selected="${MQ.aba===k}" data-a="${k}">${esc(t)}<span class="n">${cont[k]}</span></button>`).join("");
+  $$("#mqtabs [data-a]").forEach(b=>b.onclick=()=>{MQ.aba=b.dataset.a;MQ.pag=0;mqTabela()});
+  const lst=MQ.vis=mqOrdena(fl.filter(m=>MQ.aba==="todas"||(MQ.aba==="pendentes"?!!m.pendencia:(m.etapa||"")===MQ.aba)));
+  const tot=lst.length,pags=Math.max(1,Math.ceil(tot/POR_PAG));MQ.pag=Math.min(MQ.pag,pags-1);
+  const ini=MQ.pag*POR_PAG,pg=lst.slice(ini,ini+POR_PAG),ord=MQ.etapas.map(e=>e[0]);
+  const on=MQ.ord==="col"?MQ.col:{recentes:"ultimo",antigas:"ultimo",nota:"nota"}[MQ.ord]||"",dir=MQ.ord==="col"?MQ.dir:MQ.ord==="antigas"?1:-1;
+  const th=(c,t)=>`<th class="so ${on===c?"on":""}" data-c="${c}" tabindex="0" aria-sort="${on===c?(dir<0?"descending":"ascending"):"none"}">${t}${on===c?(dir<0?" ↓":" ↑"):""}</th>`;
+  $("#mqtab").innerHTML=tot?`<div class="tblw"><table class="mqt"><thead><tr><th class="ck"><input type="checkbox" id="mqall" aria-label="Marcar todas desta página"></th>${th("maq","Máquina")}<th>Contato</th>${th("sistema","Sistema")}${th("nota","Nota")}${th("tecnico","Técnico")}${th("ultimo","Último serviço")}${th("etapa","Situação")}</tr></thead>
+   <tbody>${pg.map(m=>`<tr data-mid="${esc(m.mid)}" tabindex="0" class="${MQ.sel.has(m.mid)?"sel":""}"><td class="ck"><input type="checkbox" data-s="${esc(m.mid)}" ${MQ.sel.has(m.mid)?"checked":""} aria-label="Marcar ${esc(m.mid)}"></td>
+     <td><b>${esc(m.modelo||(m.analises?m.nome:"Ainda sem análise"))}</b>${m.atual?' <span class="badge b-gold" style="margin:0">ESTA</span>':""}<div class="cod">${esc(m.mid)}</div></td>
+     <td>${contatoHtml(m)}</td><td>${esc(m.sistema||"—")}</td><td style="white-space:nowrap">${notaHtml(m)}</td><td>${esc(m.tecnico||"—")}</td>
+     <td style="white-space:nowrap">${dataBR(m.ultimo)}${m.servicos>1?`<div class="mut" style="font-size:11.5px">${m.servicos} serviços</div>`:""}</td>
+     <td>${seloEt(m.etapa,m.etapa_nome)}<div class="dots" aria-hidden="true">${ord.map((e,i)=>`<i class="${i<=ord.indexOf(m.etapa)?"on":""}"></i>`).join("")}</div>${m.pendencia?`<span class="pd">⚠ ${esc(m.pendencia)}</span>`:""}</td></tr>`).join("")}</tbody></table></div>
+   <div class="mqpag"><span id="mqsi"></span><span>${ini+1} a ${ini+pg.length} de ${tot} <button class="sm" id="mqprev" ${MQ.pag?"":"disabled"} aria-label="Página anterior">‹</button> <button class="sm" id="mqnext" ${MQ.pag<pags-1?"":"disabled"} aria-label="Próxima página">›</button></span></div>`
+   :`<div class="empty" style="padding:24px"><p>Nenhuma máquina com esses filtros.</p><button id="mqclr">Limpar busca e filtros</button></div>`;
+  const abre=tr=>nav("maq",tr.dataset.mid);
+  $$("#mqtab tbody tr").forEach(tr=>{tr.onclick=e=>{if(!e.target.closest(".ck"))abre(tr)};tr.onkeydown=e=>{if(e.key==="Enter"&&e.target===tr)abre(tr)}});
+  $$("#mqtab [data-s]").forEach(c=>c.onchange=()=>{c.checked?MQ.sel.add(c.dataset.s):MQ.sel.delete(c.dataset.s);c.closest("tr").classList.toggle("sel",c.checked);mqSelUi(pg)});
+  const all=$("#mqall");if(all)all.onchange=()=>{pg.forEach(m=>all.checked?MQ.sel.add(m.mid):MQ.sel.delete(m.mid));$$("#mqtab [data-s]").forEach(c=>{c.checked=all.checked;c.closest("tr").classList.toggle("sel",all.checked)});mqSelUi(pg)};
+  $$("#mqtab th.so").forEach(h=>{const go=()=>{const c=h.dataset.c;if(MQ.ord==="col"&&MQ.col===c)MQ.dir=-MQ.dir;else{MQ.ord="col";MQ.col=c;MQ.dir=c==="nota"||c==="ultimo"?-1:1}$("#mqord").value="col";mqTabela()};h.onclick=go;h.onkeydown=e=>{if(e.key==="Enter")go()}});
+  const pv=$("#mqprev");if(pv){pv.onclick=()=>{MQ.pag--;mqTabela()};$("#mqnext").onclick=()=>{MQ.pag++;mqTabela()}}
+  const cl=$("#mqclr");if(cl)cl.onclick=()=>{Object.assign(MQ,{q:"",sis:"",tec:"",per:"",aba:"todas",pag:0});drawMaq()};
+  mqSelUi(pg);
+}
+function mqSelUi(pg){
+  const n=MQ.sel.size,all=$("#mqall"),si=$("#mqsi");
+  if(all){const k=pg.filter(m=>MQ.sel.has(m.mid)).length;all.checked=!!k&&k===pg.length;all.indeterminate=k>0&&k<pg.length}
+  if(si){si.innerHTML=n?`<b style="color:var(--tx)">${n} marcada${n>1?"s":""}</b> <button class="sm gh" id="mqdes">Desmarcar</button>`:"";const d=$("#mqdes");if(d)d.onclick=()=>{MQ.sel.clear();mqTabela()}}
+  $("#mqexp").textContent=n?`Exportar marcadas (${n})`:"Exportar para Excel";
+}
+/* planilha: a tela manda só os códigos, na ordem da tela; volta um CSV que o Excel abre com acentos */
+async function mqExporta(){
+  const mids=(MQ.sel.size?mqOrdena(MQ.rows).filter(m=>MQ.sel.has(m.mid)):MQ.vis).map(m=>m.mid);
+  if(!mids.length)return toast("Nenhuma máquina na lista para exportar.");
+  const r=await fetch("/api/maquinas/exportar",{method:"POST",headers:{"X-DD-Token":TOKEN},body:JSON.stringify({mids})});
+  if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(j.erro||("HTTP "+r.status))}
+  const u=URL.createObjectURL(await r.blob()),a=document.createElement("a");
+  a.href=u;a.download=(/filename="([^"]+)"/.exec(r.headers.get("Content-Disposition")||"")||[0,"maquinas.csv"])[1];
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);
+  toast(`Planilha com ${mids.length} máquina${mids.length>1?"s":""} baixada. Abre direto no Excel.`,"ok");
+}
+
+/* ---------- Ficha completa da máquina: etapas, contato, observações, linha do tempo (e a ficha de diagnóstico, se houver) ---------- */
+async function drawMaqFicha(mid){
+  const r=await api("/api/maquina?mid="+encodeURIComponent(mid));if(view!=="maq")return;
+  const g=r.registro,back='<div class="row" style="margin-bottom:10px"><button id="vm">← Todas as máquinas</button></div>';
+  if(r.visao){renderFicha(r,r.atual);$(".fm").insertAdjacentHTML("afterbegin",back+(g?regHtml(g):""))}
+  else if(g){setWide(false);$("#main").innerHTML=back+regHtml(g)}
+  else{toast("Máquina não encontrada.","err");return drawMaq()}
+  $("#vm").onclick=()=>drawMaq();
+  if(g)wireReg(g);
+}
+function regHtml(g){
+  const nome=k=>(g.etapas.find(e=>e[0]===k)||[k,k])[1],ser=[];
+  (g.etapa_historico||[]).forEach(e=>{if(!ser.length||ser[ser.length-1].slice(-1)[0].etapa==="entregue")ser.push([]);ser[ser.length-1].push(e)});
+  const feito={};(ser[ser.length-1]||[]).forEach(e=>feito[e.etapa]=e);
+  const ent=g.etapa==="entregue",tel=dig(g.telefone),nbk=(g.historico||[]).filter(e=>e.tipo==="backup").length;
+  const dono=g.dono==="terceiros"?`<p style="margin:4px 0 0"><b>${esc(g.dono_nome||"—")}</b> <span class="badge b-warn">Terceiros</span></p>`:g.dono==="particular"?'<p style="margin:4px 0 0"><b>Máquina particular</b> <span class="mut">(uso próprio)</span></p>':'<p class="mut" style="margin:4px 0 0">Termo ainda não aceito nesta máquina.</p>';
+  return `<div class="card"><div class="row" style="align-items:flex-start"><div class="grow"><div class="eyebrow">REGISTRO DA MÁQUINA</div><h2 style="font-size:22px">${esc(g.modelo||(g.analises?g.nome:"Ainda sem análise"))}</h2>
+    <div class="mut" style="font-size:13px"><span class="cod">${esc(g.mid)}</span>${g.sistema?" · "+esc(g.sistema):""}${g.serie?" · série "+esc(g.serie):""}</div></div>${seloEt(g.etapa,g.etapa_nome)}</div>
+   ${g.pendencia?`<div class="warnbox"><b>Pendência:</b> ${esc(g.pendencia)}</div>`:""}
+   <div class="etp">${g.etapas.map(([k,t])=>{const e=feito[k];return `<div class="s ${k===g.etapa?"cur":e?"ok":""}"><b>${esc(t)}</b>${e?`${dataBR(e.quando)}<br>${esc(e.tecnico||"—")}`:"&nbsp;"}</div>`}).join("")}</div>
+   <div class="row" style="justify-content:flex-end;margin-top:10px">${ent?'<span class="mut grow" style="font-size:13px">Serviço encerrado. Se a máquina voltar, o próximo termo ou análise abre um serviço novo nesta mesma entrada.</span>':'<span class="mut grow" style="font-size:13px">As outras etapas mudam sozinhas, conforme o atendimento avança.</span>'}
+    <button id="rgfmt" ${feito.formatada||ent?"disabled":""}>Marcar como formatada</button><button class="pri" id="rgent" ${ent?"disabled":""}>Marcar como entregue</button></div>
+   <div class="rgn"><div><span>Serviços</span><b>${g.servicos}</b></div><div><span>Nota</span><b>${notaHtml(g)}</b></div><div><span>Melhorias aplicadas</span><b>${g.melhorias}</b></div><div><span>Espaço recuperado</span><b>${g.espaco?fmt(g.espaco):"—"}</b></div><div><span>Backups</span><b>${nbk}</b></div></div>
+   <div class="rg2"><div><h3 style="font-size:15px">Dono e contato</h3>${dono}
+     <label for="rgtel">Telefone / WhatsApp</label><input type="text" id="rgtel" inputmode="tel" autocomplete="off" maxlength="40" value="${esc(g.telefone)}">
+     <label for="rgmail">E-mail</label><input type="text" id="rgmail" inputmode="email" autocomplete="off" maxlength="120" value="${esc(g.email)}">
+     ${tel?`<p style="margin:8px 0 0"><a href="https://wa.me/${tel.length<=11?"55"+tel:tel}" target="_blank" rel="noopener" style="color:var(--acc)">Abrir conversa no WhatsApp</a></p>`:""}</div>
+    <div><h3 style="font-size:15px">Observações</h3><label for="rgobs">Anotações livres sobre a máquina e o cliente (nada de senhas)</label><textarea id="rgobs" maxlength="2000">${esc(g.observacoes)}</textarea></div></div>
+   <div id="rgerr"></div><div class="row" style="justify-content:flex-end;margin-top:10px"><button id="rgsave">Salvar contato e observações</button></div></div>
+  <div class="card"><div class="rg2"><div><h3 style="font-size:15px">Etapas de cada serviço</h3><table style="margin-top:8px">${ser.map((s,i)=>`<tr><th colspan="3" style="color:var(--tx)">Serviço ${i+1}${i===ser.length-1&&!ent?" · em andamento":""}</th></tr>${s.map(e=>`<tr><td style="white-space:nowrap">${dataBR(e.quando)}</td><td>${esc(nome(e.etapa))}${e.origem==="importada"?' <span class="mut" style="font-size:11.5px">(histórico antigo)</span>':e.origem==="manual"?' <span class="mut" style="font-size:11.5px">(marcada à mão)</span>':""}</td><td>${esc(e.tecnico||"—")}</td></tr>`).join("")}`).join("")||'<tr><td class="mut">Nada registrado ainda.</td></tr>'}</table></div>
+   <div><h3 style="font-size:15px">Linha do tempo</h3><div style="max-height:440px;overflow:auto;margin-top:10px;padding:2px 0 0 10px"><div class="tl">${(g.historico||[]).slice().reverse().map(e=>`<div class="ev"><b>${esc(e.resumo)}</b>${e.etapa?` <span class="badge ${ETB[e.etapa]||"b-mut"}">${esc(nome(e.etapa))}</span>`:""}<br><small>${dataBR(e.quando)} · ${esc((e.extra||{}).tecnico||"técnico não registrado")}</small></div>`).join("")||'<p class="mut">Sem eventos ainda.</p>'}</div></div></div></div></div>`;
+}
+function wireReg(g){
+  const mid=g.mid;
+  const marca=async(etapa,confirmar)=>{const x=await api("/api/maquina/etapa",{mid,etapa,confirmar:!!confirmar});
+    if(x.confirmar){if(await dialog({titulo:"Formatar sem backup verificado?",html:`<p>${esc(x.confirmar)}</p><p class="mut">Use só se o cliente dispensou o backup.</p>`,ok:"Marcar mesmo assim",perigo:true}))return marca(etapa,true);return}
+    toast("Máquina marcada como "+x.registro.etapa_nome.toLowerCase()+".","ok");drawMaq(mid)};
+  $("#rgfmt").onclick=()=>safe(()=>marca("formatada"));
+  $("#rgent").onclick=()=>safe(async()=>{if(await dialog({titulo:"Marcar como entregue?",html:"<p>Encerra este serviço. Se a máquina voltar, ela continua nesta mesma entrada, com um serviço novo.</p>",ok:"Marcar como entregue"}))await marca("entregue")});
+  $("#rgsave").onclick=()=>safe(async()=>{$("#rgerr").innerHTML="";
+    try{await api("/api/maquina/registro",{mid,telefone:$("#rgtel").value,email:$("#rgmail").value,observacoes:$("#rgobs").value});toast("Contato e observações salvos.","ok")}
+    catch(e){$("#rgerr").innerHTML=`<div class="errbox" style="margin-top:10px">${esc(e.message)}</div>`}});
 }
 
 /* ---------- OS (ordem de serviço) ---------- */
