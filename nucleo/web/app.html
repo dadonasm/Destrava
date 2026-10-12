@@ -219,6 +219,24 @@ body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{d
 @media (max-width:760px){.etp{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .rg2{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}@media (max-width:760px){.rg2{grid-template-columns:1fr}}
 .rgn{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:12px 0}.rgn div{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.rgn span{display:block;font-size:12px;color:var(--mut)}.rgn b{font-size:18px}
+/* painel da lista do backup (Ver lista) */
+.modal .box.lstb{width:calc(100% - 32px);max-width:1180px;height:min(88vh,920px);max-height:none;display:flex;flex-direction:column;padding:18px 20px;overflow:hidden}
+.lsth{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.lsth h2{margin:0;font-size:19px}
+.lchip{color:var(--tx);border-color:var(--acc)}.lchip button{border:0;background:transparent;padding:0 2px;color:var(--mut);cursor:pointer;font-size:12px}
+.lstn{display:grid;grid-template-columns:repeat(2,minmax(0,1fr)) auto;grid-auto-flow:row;gap:6px 24px;align-items:center;margin-top:12px}
+.lstn span{color:var(--mut);font-size:12.5px;display:block}.lstn b{font-size:18px}.lstn .arco{width:76px;height:76px;grid-column:3;grid-row:1/span 2}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;background:var(--panel2)}.seg button{border:0;background:transparent}.seg button.on{background:var(--panel);box-shadow:var(--sh);font-weight:700}
+.lstc{flex:1;min-height:0;overflow:auto;border-top:1px solid var(--line)}
+.lstt{min-width:780px}.lstt thead th{position:sticky;top:0;background:var(--panel);z-index:1}.lstt th button{border:0;background:transparent;padding:0;font:inherit;color:inherit;cursor:pointer;border-radius:0}.lstt th button.on{color:var(--tx);font-weight:700}
+.lstt td{vertical-align:middle}.lstt .ck{width:32px}.lstt .cam{font-size:12px;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lstt tr.desm td{color:var(--mut)}
+button.lnk{border:0;background:transparent;padding:0;color:var(--acc);text-align:left;cursor:pointer;font:inherit;border-radius:0}button.lnk:hover{text-decoration:underline}
+.lbbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 2px;position:sticky;top:0;background:var(--panel);z-index:1}
+.lbg{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;padding:4px 2px 12px}
+.lbk{position:relative;border:1px solid var(--line);border-radius:14px;background:var(--panel2);padding:8px;display:flex;flex-direction:column;gap:4px;min-width:0}.lbk.desm{opacity:.55}
+.lbc{position:absolute;top:13px;left:13px;margin:0;z-index:1}.lbc input{width:17px;height:17px}
+button.lbt{height:110px;border-radius:10px;border:0;padding:0;background:var(--panel);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:40px}.lbt img{width:100%;height:100%;object-fit:cover}
+.lbk b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lbk small{color:var(--mut);font-size:11.5px}
+@media (max-width:600px){.lstn{grid-template-columns:1fr 1fr}.lstn .arco{display:none}.modal .box.lstb{height:92vh;padding:14px}}
 /* painel da Home */
 .phero{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.phero h2{font-size:22px}
 .pnl{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:16px}
@@ -1290,19 +1308,20 @@ function ligarAcoesArq(el){
   $$("[data-pas]",el).forEach(b=>b.onclick=()=>abrirNo(+b.dataset.pas,"pasta"));
 }
 function abrirNo(no,modo){safe(async()=>{await api("/api/dados/abrir",{no,modo});toast(modo==="pasta"?"Abrindo a pasta…":"Abrindo no programa padrão…","ok")})}
-function verArquivo(no,tipo,nome){
-  const url="/api/dados/ver?no="+no+"&t="+encodeURIComponent(TOKEN);
+function verArquivo(no,tipo,nome){verPrevia("/api/dados/ver?no="+no+"&t="+encodeURIComponent(TOKEN),tipo,nome,no)}
+/* janela de prévia (foto, vídeo, áudio, texto; PDF abre em outra aba). no: item da aba Dados, que ganha "Abrir" e "Mostrar na pasta" */
+function verPrevia(url,tipo,nome,no){
   if(tipo==="pdf"){window.open(url,"_blank","noopener");return}
   const sty="max-width:100%;max-height:70vh;display:block;margin:auto";
   const corpo=tipo==="imagem"?`<img src="${url}" alt="${esc(nome)}" style="${sty}">`:tipo==="video"?`<video src="${url}" controls autoplay style="${sty}"></video>`:tipo==="audio"?`<audio src="${url}" controls autoplay style="width:100%"></audio>`:'<pre class="mono" id="vtx" style="max-height:65vh;overflow:auto;white-space:pre-wrap;font-size:12.5px;margin:0">Carregando…</pre>';
   const d=document.createElement("div");d.className="modal";
-  d.innerHTML=`<div class="box" style="max-width:900px;width:calc(100% - 32px)"><div class="row"><h2 class="grow" style="margin:0;font-size:16px;word-break:break-all">${esc(nome)}</h2><button class="sm" id="vx">Fechar ✕</button></div><div style="margin:12px 0">${corpo}</div><div class="row" style="justify-content:flex-end;gap:8px"><button class="sm" id="vab">Abrir no programa</button><button class="sm gh" id="vpa">Mostrar na pasta</button></div></div>`;
+  d.innerHTML=`<div class="box" style="max-width:900px;width:calc(100% - 32px)"><div class="row"><h2 class="grow" style="margin:0;font-size:16px;word-break:break-all">${esc(nome)}</h2><button class="sm" id="vx">Fechar ✕</button></div><div style="margin:12px 0">${corpo}</div>${no!=null?'<div class="row" style="justify-content:flex-end;gap:8px"><button class="sm" id="vab">Abrir no programa</button><button class="sm gh" id="vpa">Mostrar na pasta</button></div>':""}</div>`;
   $("#layer").appendChild(d);
   const tecla=ev=>{if(ev.key==="Escape")fechar()};
   const fechar=()=>{const m=$("video,audio",d);if(m)m.pause();d.remove();document.removeEventListener("keydown",tecla)};
   document.addEventListener("keydown",tecla);
   $("#vx",d).onclick=fechar;d.onclick=ev=>{if(ev.target===d)fechar()};
-  $("#vab",d).onclick=()=>abrirNo(no,"abrir");$("#vpa",d).onclick=()=>abrirNo(no,"pasta");
+  if(no!=null){$("#vab",d).onclick=()=>abrirNo(no,"abrir");$("#vpa",d).onclick=()=>abrirNo(no,"pasta")}
   if(tipo==="texto")fetch(url).then(r=>r.ok?r.text():Promise.reject()).then(t=>{$("#vtx",d).textContent=t+(t.length>=200*1024?"\n\n… (mostrando só o começo)":"")}).catch(()=>{$("#vtx",d).textContent="Não consegui ler este arquivo."});
 }
 /* explorar: pastas de cada usuário, até o arquivo; marcar o que quiser limpar ou mover */
@@ -1392,7 +1411,6 @@ function dadosFim(a){
 /* ================= Backup (jornada) ================= */
 const STEPS=["Origem e destino","Checagens","Seleção","Cópia","Verificação","O que manter","Conclusão"];
 let step=0,S={sources:[],chosen:{},dest:"",folder:"",cliente:"",tecnico:"",equip:""},st=null,timer=null;
-let fl={cat:"",act:"",local:"",q:"",offset:0};
 function renderSteps(){
   const el=$("#steps");if(view!=="backup"){el.innerHTML="";return}
   el.innerHTML=`<div class="jn done" title="Termo aceito"><span class="c">✓</span>Termo</div>`+STEPS.map((t,i)=>`<div class="jn ${i===step?"on":i<step?"done":""}" ${i===step?'aria-current="step"':""}><span class="c">${i<step?"✓":i+1}</span>${esc(t)}</div>`).join("");
@@ -1539,29 +1557,23 @@ async function draw3(){
      <div class="cb2"><div class="cn">${nf(c.sel_n)} de ${nf(c.n)} arquivos<br><b style="color:var(--tx)">${fmt(c.sel_bytes)}</b> de ${fmt(c.bytes)}</div>${arco(p,c.sel_n?"var(--azul)":"var(--trilho)")}</div>
      ${CATDICA[c.cat]?`<div class="dica">${esc(CATDICA[c.cat])}</div>`:""}<button class="sm gh" data-v="${esc(c.cat)}" style="align-self:flex-start">Ver lista</button></div>`}).join("")}
     ${rv.n?`<div class="catc"><div class="ct"><span style="font-size:20px">❓</span><b>Tipo desconhecido</b></div><div class="cn">${nf(rv.n)} arquivos · ${fmt(rv.bytes)} · copiados por segurança</div><div class="row"><button class="sm gh" data-va="revisar">Ver lista</button><button class="sm" id="revall">Marcar todos</button></div></div>`:""}</div>
-    <p class="mut" style="font-size:12.5px;margin:12px 0 0">${nf(g.ign_dirs_total)} pastas puladas (sistema, caches e lixeira, que se recriam sozinhas). <button class="sm gh" id="vdirs">Ver quais</button></p></div>
+    <p class="mut" style="font-size:12.5px;margin:12px 0 0">${nf(g.ign_dirs_total)} pastas puladas (sistema, caches e lixeira, que se recriam sozinhas). <button class="sm gh" id="vdirs">Ver quais</button></p>
+    <div class="row" style="margin-top:10px"><button class="sm" id="vtodos">Ver todos os arquivos</button><button class="sm gh" data-va="ignorar">Ver o que não vai (do sistema)</button></div></div>
   <div class="card"><h2>Usuários e grupos</h2><p class="h">Cada pessoa da máquina, o WhatsApp e as pastas-mãe ficam separados no backup.</p><div class="catg">${Object.keys(locs).sort().map(k=>{const o=locs[k],p=o.b?o.sb/o.b*100:0,nome=k.startsWith("Pastas_mae/")?"📁 "+k.slice(11):k==="WhatsApp"?"💬 WhatsApp":"👤 "+k;
-    return `<div class="catc ${o.sn?"":"off"}"><div class="ct"><b>${esc(nome)}</b><label class="tg" aria-label="${esc(nome)}"><input type="checkbox" data-l="${esc(k)}" ${o.sn===o.n?"checked":""} data-ind="${o.sn&&o.sn<o.n?1:0}"><s></s></label></div><div class="cb2"><div class="cn">${nf(o.sn)} de ${nf(o.n)}<br><b style="color:var(--tx)">${fmt(o.sb)}</b> de ${fmt(o.b)}</div>${arco(p)}</div></div>`}).join("")}</div></div>
+    return `<div class="catc ${o.sn?"":"off"}"><div class="ct"><b>${esc(nome)}</b><label class="tg" aria-label="${esc(nome)}"><input type="checkbox" data-l="${esc(k)}" ${o.sn===o.n?"checked":""} data-ind="${o.sn&&o.sn<o.n?1:0}"><s></s></label></div><div class="cb2"><div class="cn">${nf(o.sn)} de ${nf(o.n)}<br><b style="color:var(--tx)">${fmt(o.sb)}</b> de ${fmt(o.b)}</div>${arco(p)}</div><button class="sm gh" data-vl="${esc(k)}" data-vn="${esc(nome.replace(/^\S+ /,""))}" style="align-self:flex-start">Ver lista</button></div>`}).join("")}</div></div>
   <div class="card maes"><h2>Pastas-mãe (trabalho)</h2><p class="h">Pastas que parecem de trabalho vão inteiras para <b>Pastas_mae/</b>, sem misturar com o pessoal. A % é a minha confiança na sugestão; você decide.</p>
    ${M.sugestoes.length?M.sugestoes.map(m=>`<label class="mae" style="color:var(--tx);font-size:inherit;margin:0;cursor:pointer"><input type="checkbox" class="mck" value="${esc(m.chave)}" ${m.marcada?"checked":""} style="margin-top:4px"><span class="pctb" style="background:${corPct(m.pct)}">${m.pct}%</span><span class="grow"><b>${esc(m.nome)}</b> <span class="mut">· ${nf(m.n)} arquivos · ${fmt(m.bytes)}</span><br><span class="mut mono" style="font-size:11.5px">${esc(m.chave)}</span>${m.motivos.length?`<br><span class="mut" style="font-size:12.5px">${esc(m.motivos.join(" · "))}</span>`:""}</span></label>`).join("")+'<div class="row" style="margin-top:10px"><button class="pri" id="maeok">Aplicar pastas-mãe</button><span class="mut" style="font-size:12.5px">Marque as que são de trabalho e aplique.</span></div>':'<p class="mut">Nenhuma pasta com cara de trabalho encontrada.</p>'}</div>
-  <div class="card" id="listcard"><h2>Lista de arquivos</h2>
-   <div class="row"><select id="fcat" aria-label="Categoria"><option value="">Todas as categorias</option>${cats.map(c=>`<option value="${esc(c.cat)}">${esc(CATNAME[c.cat]||c.cat)}</option>`).join("")}</select>
-   <select id="fact" aria-label="Situação"><option value="">Qualquer situação</option><option value="copiar">Classificados</option><option value="revisar">Tipo desconhecido</option><option value="ignorar">Do sistema</option></select>
-   <select id="floc" aria-label="Usuário"><option value="">Todos os usuários e grupos</option>${[...new Set(g.groups.map(x=>x.local))].sort().map(l=>`<option>${esc(l)}</option>`).join("")}</select>
-   <input type="text" id="fq" class="grow" placeholder="Buscar no caminho…" aria-label="Buscar"><button class="sm" id="selF">Marcar filtro</button><button class="sm" id="unF">Desmarcar filtro</button></div><div id="flist" style="margin-top:10px"></div></div></div>
+  </div>
   <aside class="side card" id="tot" aria-label="Resumo da seleção"></aside></div>`;
   $$("[data-c],[data-l]").forEach(c=>{if(c.dataset.ind==="1")c.indeterminate=true;c.onchange=()=>safe(async()=>{await api("/api/select",{filter:c.dataset.c?{cat:c.dataset.c,act:""}:{local:c.dataset.l,act:""},on:c.checked});draw3()})});
-  const lst=()=>$("#listcard").scrollIntoView({behavior:"smooth"});
-  $$("[data-v]").forEach(b=>b.onclick=()=>{fl={cat:b.dataset.v,act:"",local:"",q:"",offset:0};syncF();loadList();lst()});
-  $$("[data-va]").forEach(b=>b.onclick=()=>{fl={cat:"",act:b.dataset.va,local:"",q:"",offset:0};syncF();loadList();lst()});
+  $$("[data-v]").forEach(b=>b.onclick=()=>abrirLista({cat:b.dataset.v},CATNAME[b.dataset.v]||b.dataset.v));
+  $$("[data-va]").forEach(b=>b.onclick=()=>abrirLista({act:b.dataset.va},b.dataset.va==="ignorar"?"do sistema (não vai)":"Tipo desconhecido"));
+  $$("[data-vl]").forEach(b=>b.onclick=()=>abrirLista({local:b.dataset.vl},b.dataset.vn));
+  $("#vtodos").onclick=()=>abrirLista({},"");
   const ra=$("#revall");if(ra)ra.onclick=()=>safe(async()=>{await api("/api/select",{filter:{act:"revisar"},on:true});draw3()});
   const mo=$("#maeok");if(mo)mo.onclick=()=>safe(async()=>{await api("/api/maes",{chaves:$$(".mck:checked").map(x=>x.value)});toast("Pastas-mãe aplicadas.","ok");draw3()});
   $("#vdirs").onclick=()=>safe(async()=>{const r=await api("/api/left");modalHtml("Pastas puladas",`<div class="mono" style="max-height:60vh;overflow:auto">${r.ign_dirs.map(d=>`<div><b>${esc(d[0])}</b><br><span class="mut">${esc(d[1])}</span></div>`).join("<br>")}</div>`)});
-  ["fcat","fact","floc"].forEach(id=>$("#"+id).onchange=()=>{fl.cat=$("#fcat").value;fl.act=$("#fact").value;fl.local=$("#floc").value;fl.offset=0;loadList()});
-  let tq;$("#fq").oninput=()=>{clearTimeout(tq);tq=setTimeout(()=>{fl.q=$("#fq").value;fl.offset=0;loadList()},300)};
-  $("#selF").onclick=()=>safe(async()=>{await api("/api/select",{filter:fl,on:true});draw3()});
-  $("#unF").onclick=()=>safe(async()=>{await api("/api/select",{filter:fl,on:false});draw3()});
-  drawTot(t);loadList();
+  drawTot(t);
 }
 function drawTot(t){
   const pct=t.free?Math.min(100,t.sel_bytes/t.free*100):0;
@@ -1574,13 +1586,85 @@ function drawTot(t){
   $("#go3").disabled=!t.cabe||t.fat32_problema||t.sel_n===0;
   $("#back3").onclick=()=>go(1);$("#go3").onclick=()=>safe(async()=>{await api("/api/copy",{});go(3)});
 }
-async function loadList(){
-  const q=new URLSearchParams({cat:fl.cat,act:fl.act,local:fl.local,q:fl.q,offset:fl.offset,limit:100});const r=await api("/api/files?"+q);
-  $("#flist").innerHTML=`<table><tr><th></th><th>Arquivo (onde estava)</th><th>Tam.</th><th>Data</th><th>Categoria</th><th>Situação</th></tr>
-  ${r.rows.map(x=>`<tr><td><input type="checkbox" data-i="${x[0]}" ${x[6]?"checked":""} aria-label="Marcar arquivo"></td><td class="mono">${esc(x[1])}${x[9]?" "+x[9].split("|").map(t=>`<span class="tag">${esc(t)}</span>`).join(" "):""}<div class="mut">${esc(x[7])}</div></td><td>${fmt(x[2])}</td><td>${esc(x[3])}</td><td>${esc(x[4])}</td><td><span class="pill p-${x[5]==="copiar"?"ok":x[5]}">${esc(x[5])}</span></td></tr>`).join("")||'<tr><td colspan="6" class="mut">Nada com esse filtro.</td></tr>'}</table>
-  <div class="pg"><button class="sm" id="pv" ${fl.offset<=0?"disabled":""}>← Anterior</button><span class="mut">${nf(r.total)} arquivos · ${r.total?fl.offset+1:0}–${Math.min(fl.offset+100,r.total)}</span><button class="sm" id="nx" ${fl.offset+100>=r.total?"disabled":""}>Próxima →</button></div>`;
-  $$("#flist input[type=checkbox]").forEach(c=>c.onchange=()=>safe(async()=>{await api("/api/select",{idx:[+c.dataset.i],on:c.checked});drawTot(await api("/api/totals"))}));
-  $("#pv").onclick=()=>{fl.offset=Math.max(0,fl.offset-100);loadList()};$("#nx").onclick=()=>{fl.offset+=100;loadList()};
+/* ---- lista do backup: painel aberto pelo "Ver lista" (filtro, busca, ordem, Bloco ou Lista, rolagem infinita) ---- */
+const LST={f:{},rot:"",q:"",ord:"nome",dir:"asc",modo:"lista",off:0,fim:false,carregando:false,gen:0,tot:null};
+const TIPO_IC={PDF:"📕",Word:"📘",Documento:"📄",Planilha:"📗","Apresentação":"📙",Texto:"📝",OneNote:"📓","E-mail":"✉️",Contato:"👤",Compactado:"🗜️",Imagem:"🖼️","Vídeo":"🎬","Áudio":"🎵"};
+const ORD_ROT=[["nome","Nome"],["tipo","Tipo"],["data","Data de criação"],["tamanho","Tamanho"]];
+const lstUrl=i=>"/api/files/ver?i="+i+"&t="+encodeURIComponent(TOKEN);
+const lstCurto=d=>{const p=String(d||"").split(/[\\/]/).filter(Boolean).slice(0,-1);return p.length?(p.length>2?"…/":"")+p.slice(-2).join("/")+"/":""};
+const lstLinha=x=>({i:x[0],disp:x[1],size:x[2],data:x[3],cat:x[4],act:x[5],inc:!!x[6],nome:x[10]||x[1],tipo:x[11]||"",prev:x[13]||""});
+function abrirLista(filtro,rotulo){
+  Object.assign(LST,{f:filtro||{},rot:rotulo||"",q:"",ord:"nome",dir:"asc",modo:lsGet("dd_lista_modo","lista")==="bloco"?"bloco":"lista",tot:null});
+  const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","lstt");
+  d.innerHTML=`<div class="box lstb"><div class="lsth"><h2 class="grow" id="lstt"></h2><span id="lstf"></span><button class="sm" id="lstx">Fechar</button></div>
+   <div class="lstn" id="lstn"></div>
+   <div class="row" style="margin:12px 0 10px"><input type="text" id="lstq" class="grow" placeholder="Buscar: nome, tipo ou caminho" aria-label="Buscar por nome, tipo ou caminho" style="margin:0" autocomplete="off">
+    <div class="seg" role="group" aria-label="Como mostrar"><button class="sm" data-m="bloco">Bloco</button><button class="sm" data-m="lista">Lista</button></div></div>
+   <div class="lstc" id="lstc"></div></div>`;
+  $("#layer").appendChild(d);
+  const tecla=ev=>{if(ev.key==="Escape"&&$("#layer").lastElementChild===d)fechar()};
+  const fechar=()=>{d.remove();document.removeEventListener("keydown",tecla);if(view==="backup"&&step===2)draw3()};
+  document.addEventListener("keydown",tecla);
+  $("#lstx",d).onclick=fechar;
+  let tq;$("#lstq",d).oninput=e=>{clearTimeout(tq);tq=setTimeout(()=>{LST.q=e.target.value.trim();lstCarrega(true)},300)};
+  $$("[data-m]",d).forEach(b=>b.onclick=()=>{LST.modo=b.dataset.m;lsSet("dd_lista_modo",LST.modo);lstCarrega(true)});
+  const c=$("#lstc",d);
+  c.onscroll=()=>{if(c.scrollTop+c.clientHeight>c.scrollHeight-400)lstCarrega()};
+  c.addEventListener("change",e=>{const k=e.target.closest("[data-s]");if(k)safe(()=>lstMarca(k))});
+  c.addEventListener("click",e=>{const v=e.target.closest("[data-p]");if(v)verPrevia(lstUrl(v.dataset.p),v.dataset.tp,v.dataset.nm);
+    const o=e.target.closest("[data-o]");if(o){const k=o.dataset.o;if(LST.ord===k)LST.dir=LST.dir==="asc"?"desc":"asc";else{LST.ord=k;LST.dir=k==="data"||k==="tamanho"?"desc":"asc"}lstCarrega(true)}});
+  c.addEventListener("change",e=>{if(e.target.id==="lstord"){LST.ord=e.target.value;LST.dir=LST.ord==="data"||LST.ord==="tamanho"?"desc":"asc";lstCarrega(true)}});
+  lstCarrega(true);$("#lstq",d).focus();
+}
+function lstCab(){
+  const f=$("#lstf");$("#lstt").textContent="Lista: "+(LST.rot||"todos os arquivos");
+  f.innerHTML=LST.rot?`<span class="chip lchip">Filtro: ${esc(LST.rot)} <button aria-label="Tirar o filtro ${esc(LST.rot)}">✕</button></span>`:"";
+  const x=$("button",f);if(x)x.onclick=()=>{LST.f={};LST.rot="";lstCarrega(true)};
+  $$("[data-m]").forEach(b=>{b.classList.toggle("on",b.dataset.m===LST.modo);b.setAttribute("aria-pressed",b.dataset.m===LST.modo)});
+  const seta=k=>LST.ord===k?(LST.dir==="asc"?" ▲":" ▼"):"";
+  $("#lstc").innerHTML=(LST.modo==="lista"
+   ?`<table class="lstt"><thead><tr><th class="ck"><input type="checkbox" id="lsta" aria-label="Marcar todos desta lista"></th>${[["nome","Nome do arquivo"],["tipo","Tipo"]].map(([k,t])=>`<th><button data-o="${k}" class="${LST.ord===k?"on":""}">${t}${seta(k)}</button></th>`).join("")}<th>Categoria</th>${[["data","Data de criação"],["tamanho","Tamanho"]].map(([k,t])=>`<th><button data-o="${k}" class="${LST.ord===k?"on":""}">${t}${seta(k)}</button></th>`).join("")}<th>Caminho</th></tr></thead><tbody id="lstl"></tbody></table>`
+   :`<div class="lbbar"><label class="pfc" style="margin:0"><input type="checkbox" id="lsta"> Marcar todos</label><span class="grow"></span><label for="lstord" style="margin:0">Ordenar por</label><select id="lstord" style="width:auto;margin:0">${ORD_ROT.map(([k,t])=>`<option value="${k}" ${LST.ord===k?"selected":""}>${t}</option>`).join("")}</select><button class="sm" data-o="${LST.ord}" aria-label="Inverter a ordem">${LST.dir==="asc"?"▲":"▼"}</button></div><div class="lbg" id="lstl"></div>`)
+   +'<div id="lstfim" class="mut" style="text-align:center;padding:14px;font-size:13px"></div>';
+  $("#lsta").onchange=e=>safe(()=>lstMarcaTodos(e.target.checked));
+}
+async function lstCarrega(reset){
+  if(reset){LST.off=0;LST.fim=false;LST.gen++;LST.carregando=false;lstCab()}
+  if(LST.carregando||LST.fim)return;
+  LST.carregando=true;const gen=LST.gen;let r;
+  try{r=await api("/api/files?"+new URLSearchParams({...LST.f,q:LST.q,ord:LST.ord,dir:LST.dir,offset:LST.off,limit:200}))}
+  catch(e){LST.carregando=false;return onErr(e)}
+  if(gen!==LST.gen||!$("#lstl"))return;
+  LST.carregando=false;LST.off+=r.rows.length;LST.fim=!r.rows.length||LST.off>=r.total;
+  lstNums(r);
+  const os=r.rows.map(lstLinha);
+  $("#lstl").insertAdjacentHTML("beforeend",os.map(LST.modo==="lista"?lstTr:lstBloco).join(""));
+  $("#lstfim").textContent=r.total?(LST.fim?`${nf(r.total)} arquivo${r.total>1?"s":""}`:"Carregando mais…"):"Nada com esse filtro.";
+  const c=$("#lstc");if(!LST.fim&&c.scrollHeight<=c.clientHeight+400)lstCarrega();
+}
+function lstTr(o){return `<tr class="${o.inc?"":"desm"}"><td class="ck"><input type="checkbox" data-s="${o.i}" data-a="${esc(o.act)}" ${o.inc?"checked":""} aria-label="Marcar ${esc(o.nome)}"></td>
+ <td>${o.prev?`<button class="lnk" data-p="${o.i}" data-tp="${o.prev}" data-nm="${esc(o.nome)}">${esc(o.nome)}</button>`:esc(o.nome)}</td><td>${esc(o.tipo)}</td><td>${esc(CATNAME[o.cat]||o.cat)}</td>
+ <td style="white-space:nowrap">${o.data?dataBR(o.data):"—"}</td><td style="white-space:nowrap">${fmt(o.size)}</td><td class="mut cam" title="${esc(o.disp)}">${esc(lstCurto(o.disp))}</td></tr>`}
+function lstBloco(o){return `<div class="lbk ${o.inc?"":"desm"}"><label class="lbc"><input type="checkbox" data-s="${o.i}" data-a="${esc(o.act)}" ${o.inc?"checked":""} aria-label="Marcar ${esc(o.nome)}"></label>
+ <button class="lbt" ${o.prev?`data-p="${o.i}" data-tp="${o.prev}" data-nm="${esc(o.nome)}" aria-label="Ver ${esc(o.nome)}"`:'tabindex="-1" aria-hidden="true"'}>${o.prev==="imagem"?`<img loading="lazy" src="${lstUrl(o.i)}" alt="">`:`<span>${TIPO_IC[o.tipo]||"📄"}</span>`}</button>
+ <b title="${esc(o.disp)}">${esc(o.nome)}</b><small>${esc(o.tipo)} · ${fmt(o.size)}${o.data?" · "+dataBR(o.data):""}</small></div>`}
+function lstNums(r){
+  LST.tot=r;const p=r.bytes?r.sel_bytes/r.bytes*100:0,cat=LST.f.cat?"Total da categoria":"Tamanho total";
+  $("#lstn").innerHTML=`<div><span>Total de arquivos</span><b>${nf(r.total)}</b></div><div><span>${cat}</span><b>${fmt(r.bytes)}</b></div>${arco(p,r.sel_n?"var(--azul)":"var(--trilho)")}
+   <div><span>Arquivos selecionados</span><b>${nf(r.sel_n)}</b></div><div><span>Tamanho selecionado</span><b>${fmt(r.sel_bytes)}</b></div>`;
+  const a=$("#lsta");if(a){a.checked=!!r.total&&r.sel_n===r.total;a.indeterminate=r.sel_n>0&&r.sel_n<r.total}
+}
+async function lstTotais(){const r=await api("/api/files?"+new URLSearchParams({...LST.f,q:LST.q,limit:0}));lstNums(Object.assign(r,{total:r.total}))}
+async function lstMarca(k){
+  await api("/api/select",{idx:[+k.dataset.s],on:k.checked});
+  const caixa=k.closest("tr,.lbk");if(caixa)caixa.classList.toggle("desm",!k.checked);
+  await lstTotais();
+}
+async function lstMarcaTodos(on){
+  await api("/api/select",{filter:{...LST.f,q:LST.q},on});
+  // o servidor só liga/desliga em massa o que é pessoal (copiar), a não ser que o filtro seja de situação: a tela segue a mesma regra
+  $$("#lstl [data-s]").forEach(k=>{if(LST.f.act||k.dataset.a==="copiar"){k.checked=on;const c=k.closest("tr,.lbk");if(c)c.classList.toggle("desm",!on)}});
+  await lstTotais();
 }
 
 /* ---- 4 cópia ---- */

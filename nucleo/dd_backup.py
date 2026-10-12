@@ -88,6 +88,23 @@ for _c, _e in CATS.items():
     for _x in _e.split():
         EXT2CAT[_x] = _c
 ARCH = set(".zip .rar .7z .tar .gz .tgz .bz2".split())
+# coluna "Tipo" da lista do backup (e a busca por tipo): o que a pessoa reconhece, não a extensão
+TIPO_EXT = {}
+for _t, _e in (("PDF", ".pdf"), ("Word", ".doc .docx .docm .dotx"), ("Documento", ".odt .rtf"), ("Planilha", ".xls .xlsx .xlsm .xlsb .ods .csv"),
+               ("Apresentação", ".ppt .pptx .pps .ppsx .odp"), ("Texto", ".txt .md"), ("OneNote", ".one"), ("E-mail", ".pst .eml .msg .mbox"),
+               ("Contato", ".vcf"), ("Compactado", " ".join(sorted(ARCH)))):
+    for _x in _e.split():
+        TIPO_EXT[_x] = _t
+TIPO_CAT = {"Fotos": "Imagem", "Videos": "Vídeo", "Audios": "Áudio"}
+
+
+def nome_de(disp):
+    return re.split(r"[\\/]", disp)[-1]
+
+
+def tipo_de(nome):
+    ext = os.path.splitext(nome.lower())[1]
+    return TIPO_EXT.get(ext) or TIPO_CAT.get(EXT2CAT.get(ext, "")) or (ext[1:].upper() if ext else "Arquivo")
 IGN_EXT = set(".exe .dll .sys .tmp .temp .log .ini .lnk .url .msi .msp .cab .cat .mui .drv .ocx .cpl .scr .bin .obj .pyc .class "
               ".etl .dmp .cache .ost .crdownload .part .ddpart .so .lock .swp .desktop".split())
 IGN_NAME_RE = re.compile(r"^(ntuser.*|desktop\.ini|thumbs\.db|iconcache\.db|pagefile\.sys|hiberfil\.sys|swapfile\.sys|\.ds_store|\.directory)$", re.I)
@@ -1127,8 +1144,8 @@ class App(object):
 
     # ------------------------------------------------------------------ seleção e listas
     def matches(self, it, f):
-        if f.get("local") not in (None, "") and it.local != f["local"]:
-            return False
+        if f.get("local") not in (None, "") and it.local != f["local"] and not it.local.startswith(f["local"] + "/"):
+            return False  # o cartão "TEMP" da Seleção junta TEMP/<usuário>
         if f.get("cat") not in (None, "") and it.cat != f["cat"]:
             return False
         if f.get("act") not in (None, "") and it.act != f["act"]:
@@ -1141,7 +1158,7 @@ class App(object):
             if self.final_status(it) != f["status"]:
                 return False
         q = f.get("q")
-        if q and q not in it.disp.lower():
+        if q and q not in it.disp.lower() and q not in tipo_de(nome_de(it.disp)).lower():
             return False
         return True
 
@@ -1198,21 +1215,46 @@ class App(object):
         al = {k: {"n": v[0], "bytes": v[1], "sel_n": v[2], "sel_bytes": v[3]} for k, v in acts.items()}
         return {"groups": glist, "cats": cl, "acts": al, "ign_dirs": self.ign_dirs[:600], "ign_dirs_total": self.ign_dirs_total}
 
+    ORDEM = {"nome": lambda it: nome_de(it.disp).lower(), "tipo": lambda it: (tipo_de(nome_de(it.disp)), nome_de(it.disp).lower()),
+             "data": lambda it: it.date or (0, 0, 0), "tamanho": lambda it: it.size, "caminho": lambda it: it.disp.lower()}
+
     def files(self, q):
+        """Lista do backup: filtro, busca (caminho ou tipo), ordem (ord/dir), página e os totais do filtro. limit=0: só os totais."""
         f = {k: (v[0] if isinstance(v, list) else v) for k, v in q.items()}
         if f.get("q"):
             f["q"] = f["q"].lower()
-        off = int(f.get("offset", 0))
-        lim = min(int(f.get("limit", 200)), 500)
+        off = max(0, int(f.get("offset") or 0))
+        lim = max(0, min(int(f.get("limit", 200)), 500))
+        idx = [i for i, it in enumerate(self.items) if self.matches(it, f)]
+        sel = [self.items[i] for i in idx if self.items[i].inc]
+        chave = self.ORDEM.get(f.get("ord") or "")
+        if chave and lim:
+            idx.sort(key=lambda i: chave(self.items[i]), reverse=f.get("dir") == "desc")
         out = []
-        total = 0
-        for i, it in enumerate(self.items):
-            if self.matches(it, f):
-                if total >= off and len(out) < lim:
-                    out.append([i, it.disp, it.size, ("%04d-%02d-%02d" % it.date) if it.date else "", it.cat, it.act, 1 if it.inc else 0,
-                                it.err or it.motivo, self.final_status(it), it.tags])
-                total += 1
-        return {"total": total, "rows": out}
+        for i in idx[off:off + lim]:
+            it = self.items[i]
+            nome = nome_de(it.disp)
+            out.append([i, it.disp, it.size, ("%04d-%02d-%02d" % it.date) if it.date else "", it.cat, it.act, 1 if it.inc else 0,
+                        it.err or it.motivo, self.final_status(it), it.tags, nome, tipo_de(nome), it.local,
+                        "" if it.nuvem or not DADOS else (DADOS.tipo_previa(it.src) or "")])
+        return {"total": len(idx), "rows": out, "bytes": sum(self.items[i].size for i in idx), "sel_n": len(sel), "sel_bytes": sum(it.size for it in sel)}
+
+    def previa(self, i):
+        """Prévia de um arquivo da origem pelo índice da lista: a tela nunca manda caminho. Só na nuvem não abre (baixaria o arquivo)."""
+        try:
+            i = int(i)
+        except (TypeError, ValueError):
+            raise ValueError("Arquivo não encontrado.")
+        if not 0 <= i < len(self.items):
+            raise ValueError("Arquivo não encontrado.")
+        it = self.items[i]
+        if it.nuvem:
+            raise ValueError("Este arquivo está só na nuvem: abrir faria o download.")
+        tipo = DADOS.tipo_previa(it.src) if DADOS else None
+        if not tipo:
+            raise ValueError("Sem prévia para este tipo de arquivo.")
+        mime = DADOS.PREVIA[os.path.splitext(it.src.lower())[1]][1]
+        return it.src, mime, tipo, (200 * 1024 if tipo == "texto" else None)
 
     def totals(self):
         n = b = 0
@@ -2082,6 +2124,12 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/mapa/ver":
             try:
                 arq, mime, tipo, limite = MAPA.previa((q.get("i") or [""])[0])
+            except ValueError as e:
+                return self._json({"erro": str(e)}, 400)
+            return self._arquivo(arq, mime, limite, pagina=(tipo == "pdf"))
+        if path == "/api/files/ver":  # prévia na lista do backup, só pelo índice (o token vem em ?t=, como em /api/dados/ver)
+            try:
+                arq, mime, tipo, limite = APP.previa((q.get("i") or [""])[0])
             except ValueError as e:
                 return self._json({"erro": str(e)}, 400)
             return self._arquivo(arq, mime, limite, pagina=(tipo == "pdf"))
