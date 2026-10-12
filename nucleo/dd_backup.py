@@ -1556,7 +1556,8 @@ class App(object):
                 out.append({"idx": i, "disp": it.disp, "size": it.size, "err": it.err, "cause": it.cause})
         return out
 
-    def status(self):
+    def _ritmo(self):
+        """Velocidade (bytes/s nos últimos ~10 s) e tempo restante da cópia ou da verificação."""
         now = time.time()
         speed, eta = 0, 0
         if self.phase == "copying":
@@ -1578,6 +1579,29 @@ class App(object):
             tot = self.cp["total_bytes"] if self.phase == "copying" else self.vf["bytes_total"]
             if speed > 0 and tot:
                 eta = max(0, (tot - cur) / speed)
+        return speed, eta
+
+    def andamento(self):
+        """Resumo leve do backup para a ilha do topo (sem log nem lista de falhas). None quando nada está rodando."""
+        ph = self.phase
+        if ph not in FASE_BACKUP:
+            return None
+        speed, eta = self._ritmo()
+        a = {"id": "backup", "titulo": FASE_BACKUP[ph], "fase": ph, "tela": "backup", "pausado": not self.run_ev.is_set(),
+             "velocidade": speed, "eta": eta, "pct": None, "detalhe": "", "info": ""}
+        if ph == "scanning":
+            a.update(detalhe=self.scan_info["current"], info="%d arquivos achados" % self.scan_info["files"])
+        elif ph == "copying":
+            c = self.cp
+            a.update(pct=_pct(c["done_bytes"], c["total_bytes"]), detalhe=c["current"], info="%d de %d arquivos" % (c["done_files"], c["total_files"]))
+        elif ph == "verifying":
+            v = self.vf
+            a.update(pct=_pct(v["bytes_done"], v["bytes_total"]) if v["bytes_total"] else _pct(v["done"], v["total"]), detalhe=v["current"],
+                     info="%d de %d arquivos" % (v["done"], v["total"]))
+        return a
+
+    def status(self):
+        speed, eta = self._ritmo()
         return {
             "phase": self.phase, "paused": not self.run_ev.is_set(), "error": self.error, "scan": self.scan_info, "copy": self.cp, "verify": self.vf,
             "speed": speed, "eta": eta, "log": list(self.logs)[-60:], "cfg": self.cfg, "sweep": self.sweep, "verified_mode": self.verified_mode,
@@ -1948,6 +1972,46 @@ def ficha_iniciar(alvo, fn):
     threading.Thread(target=work, daemon=True).start()
 
 
+FASE_BACKUP = {"scanning": "Escaneando para o backup", "copying": "Copiando o backup", "verifying": "Conferindo o backup",
+               "finishing": "Gerando o Mapa e o certificado"}
+
+
+def _pct(a, b):
+    return max(0, min(100, int(a * 100 / b))) if b else None
+
+
+def atividades():
+    """O que está rodando agora, para a ilha do topo: só lê o estado que cada processo já mantém.
+    fim: como cada fonte terminou da última vez (a tela usa na hora em que uma atividade some, para dizer se deu certo)."""
+    out = []
+    if FT["rodando"]:
+        out.append({"id": "ficha", "titulo": "Aplicando melhorias" if FT["o_que"] == "aplicar" else "Analisando a máquina", "detalhe": FT["etapa"],
+                    "pct": FT["pct"], "tela": "home"})
+    bk = APP.andamento()
+    if bk:
+        out.append(bk)
+    dst = DADOS.ST if DADOS else {}
+    ac = dst.get("acao") or {}
+    if ac.get("rodando"):
+        out.append({"id": "dados", "titulo": {"limpar": "Limpando arquivos", "offload": "Movendo para outro disco"}.get(ac.get("tipo"), "Organizando arquivos"),
+                    "detalhe": ac.get("atual", ""), "pct": _pct(ac.get("bytes_feito", 0), ac.get("bytes_total", 0)) if ac.get("bytes_total") else _pct(ac.get("feito", 0), ac.get("total", 0)),
+                    "info": "%d de %d" % (ac.get("feito", 0), ac.get("total", 0)), "tela": "dados"})
+    elif dst.get("fase") == "varrendo":
+        out.append({"id": "dados", "titulo": "Procurando o que pesa", "detalhe": dst.get("atual", ""), "pct": dst.get("pct"),
+                    "info": "%d arquivos" % dst.get("arquivos", 0), "tela": "dados"})
+    cf = MAPA.CONF
+    if cf.get("rodando"):
+        out.append({"id": "conferencia", "titulo": "Conferindo o backup no disco", "pct": _pct(cf.get("feitos", 0), cf.get("total", 0)),
+                    "info": "%d de %d" % (cf.get("feitos", 0), cf.get("total", 0)), "tela": "mapas"})
+    con = SERVIDOR["con"]
+    if con and getattr(con, "pendentes", None):
+        out.append({"id": "envio", "titulo": "Enviando ao servidor", "pct": None, "info": "%d pendente(s)" % len(con.pendentes), "tela": ""})
+    fim = {"ficha": {"erro": FT["erro"]}, "backup": {"fase": APP.phase, "erro": bool(APP.error)},
+           "dados": {"fase": dst.get("fase", ""), "erros": len(ac.get("erros") or [])},
+           "conferencia": {"diferentes": len(cf.get("diferentes") or []), "faltando": len(cf.get("faltando") or []), "erro": cf.get("erro", "")}}
+    return {"atividades": out, "fim": fim}
+
+
 def ficha_coletar(fase):
     def fn(cb):
         f = FICHA.coletar(cb)
@@ -2310,6 +2374,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/programas":
             mid = (q.get("mid") or [""])[0] or FICHA.machine_id_cache()
             return {"mid": mid, "programas": PROG.com_sugestao(FICHA.programas_de(mid)), "receita": FICHA.receita_de(mid), "receita_valida": bool(FICHA.receita_valida(mid))}
+        if path == "/api/atividades":
+            return atividades()
         if path == "/api/painel":
             return FICHA.painel_resumo(FICHA.machine_id_cache()) if FICHA else {"maquinas": 0}
         if path == "/api/maquinas":

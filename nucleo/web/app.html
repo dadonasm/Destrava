@@ -219,6 +219,24 @@ body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{d
 @media (max-width:760px){.etp{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .rg2{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}@media (max-width:760px){.rg2{grid-template-columns:1fr}}
 .rgn{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:12px 0}.rgn div{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.rgn span{display:block;font-size:12px;color:var(--mut)}.rgn b{font-size:18px}
+/* "Dynamic Island" colada na aba atual: preta nos dois temas, como no iPhone */
+#ilha{background:#0b0b0e;color:#f4f4f6;border-radius:29px;box-shadow:0 10px 30px rgba(0,0,0,.3);display:flex;flex-direction:column;overflow:hidden;max-width:calc(100vw - 24px);animation:ilha-in .45s cubic-bezier(.2,.9,.3,1.25);transition:border-radius .35s,width .35s}
+@keyframes ilha-in{from{transform:scale(.5);opacity:0}to{transform:none;opacity:1}}
+#ilhab{display:flex;align-items:center;gap:10px;height:58px;padding:0 20px 0 10px;background:transparent;border:0;border-radius:29px;color:inherit;font:inherit;font-size:14px;white-space:nowrap;cursor:pointer;max-width:100%}
+#ilhab:disabled{cursor:default;opacity:1}#ilhab:hover{border-color:transparent}
+#ilhab .txt{overflow:hidden;text-overflow:ellipsis}#ilhab .eta,#ilhad .eta{color:#a4a9b6;font-variant-numeric:tabular-nums;font-size:13px}
+#ilhab .anel{width:38px;height:38px;flex:none}#ilhab .anel circle{transition:stroke-dashoffset .6s}.anel.gira{animation:ilha-gira 1.1s linear infinite}@keyframes ilha-gira{to{transform:rotate(360deg)}}
+#ilhab .sinal{width:38px;height:38px;flex:none;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;background:rgba(255,255,255,.12)}
+#ilha.ok .sinal{background:#1f7a4d;color:#fff}#ilha.erro .sinal{background:#b3261e;color:#fff}
+#ilha.aberta{border-radius:26px;width:min(440px,calc(100vw - 24px))}
+#ilhad{padding:2px 18px 16px;display:flex;flex-direction:column;gap:14px}
+.ilt{display:flex;flex-direction:column;gap:6px}.ilt .l1{display:flex;gap:8px;align-items:center;min-width:0}.ilt .ico svg{width:18px;height:18px;display:block}
+.ilt .det{font:11.5px ui-monospace,Menlo,Consolas,monospace;color:#a4a9b6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ilt button{background:rgba(255,255,255,.14);border:0;color:#fff;flex:none}.ilt button:hover{background:rgba(255,255,255,.24)}
+.ilbar{height:6px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}.ilbar i{display:block;height:100%;background:var(--azul);border-radius:99px;transition:width .6s}
+.ilbar.ind i{width:35%;animation:ilha-ind 1.4s ease-in-out infinite}@keyframes ilha-ind{from{transform:translateX(-110%)}to{transform:translateX(310%)}}
+#ilha2{width:58px;height:58px;flex:none;border-radius:50%;background:#0b0b0e;color:#fff;border:0;font-weight:700;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.3);animation:ilha-in .45s cubic-bezier(.2,.9,.3,1.25)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 /* painel da lista do backup (Ver lista) */
 .modal .box.lstb{width:calc(100% - 32px);max-width:1180px;height:min(88vh,920px);max-height:none;display:flex;flex-direction:column;padding:18px 20px;overflow:hidden}
 .lsth{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.lsth h2{margin:0;font-size:19px}
@@ -314,7 +332,8 @@ button{border-radius:999px}
 .chk2.aviso .ci{background:var(--warn)}.chk2.erro .ci{background:var(--err)}.chk2.erro{border-color:var(--err)}
 .chk2 .sol{margin-top:6px;font-size:13px;padding:8px 10px;border-radius:10px;background:var(--panel);border-left:3px solid var(--azul)}
 .grp{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.grp .gq{flex:none;width:96px;text-align:right;font-weight:700}
-@media (max-width:720px){#gaveta{position:fixed!important;top:auto!important;bottom:10px;left:50%;transform:translateX(-50%);max-width:calc(100vw - 20px);overflow-x:auto}.content{padding-bottom:90px}}
+@media (max-width:720px){#gaveta{position:fixed!important;top:auto!important;bottom:10px;left:50%;transform:translateX(-50%);max-width:calc(100vw - 20px);overflow-x:auto}.content{padding-bottom:150px}
+ #topo{top:auto;bottom:80px}#ilha{flex-direction:column-reverse}#ilha2{display:none!important}}  /* celular: a ilha fica logo acima do menu, abre para cima */
 @media print{#gaveta,header,.noprint{display:none!important}.card{box-shadow:none;border:1px solid #ccc}body{background:#fff!important}}
 
 </style>
@@ -329,7 +348,7 @@ button{border-radius:999px}
   <button class="sm" id="hperf" title="Meu perfil" aria-label="Meu perfil"></button>
 </header>
 <div class="shell">
-<div id="topo"><aside id="gaveta" aria-label="Menu"></aside></div>
+<div id="topo"><aside id="gaveta" aria-label="Menu"></aside><div id="ilha" class="hide"><button id="ilhab" aria-expanded="false" aria-controls="ilhad"></button><div id="ilhad" class="hide"></div></div><button id="ilha2" class="hide" aria-label="Mais atividades rodando"></button></div><span id="ilhavivo" class="sr" aria-live="polite"></span>
 <div class="content"><div class="journey hide" id="steps"></div>
 <main id="main"></main></div>
 </div>
@@ -1181,6 +1200,60 @@ function wireReg(g){
     catch(e){$("#rgerr").innerHTML=`<div class="errbox" style="margin-top:10px">${esc(e.message)}</div>`}});
 }
 
+/* ---------- "Dynamic Island": o que está rodando agora (análise, backup, Dados, conferência, envios), mesmo olhando outra tela ---------- */
+const ILHA={ativas:[],aberta:false,t:null,aviso:null,ta:null};
+const ILHA_ORD=["backup","ficha","dados","conferencia","envio"];
+const ILHA_IC={backup:"backup",ficha:"cpu",dados:"dados",conferencia:"shield",envio:"up"};
+const ILHA_PASSO={scanning:1,copying:3,verifying:4,finishing:6};
+const ILHA_FIM={
+ ficha:f=>f.erro?["erro","A análise falhou"]:["ok","Análise pronta"],
+ backup:f=>f.erro||f.fase==="error"?["erro","O backup parou com erro"]:({scanned:["ok","Escaneamento pronto"],copied:["ok","Cópia concluída"],verified:["ok","Verificação concluída"],done:["ok","Mapa e certificado prontos"]})[f.fase]||null,
+ dados:f=>f.fase==="erro"||f.erros?["erro","Dados: veja o que não deu certo"]:["ok","Dados: pronto"],
+ conferencia:f=>f.erro||f.diferentes||f.faltando?["erro","Conferência: "+((f.diferentes||0)+(f.faltando||0))+" problema(s)"]:["ok","Backup conferido sem diferenças"],
+ envio:()=>["ok","Tudo enviado ao servidor"]};
+function ilhaEta(s){s=Math.round(s||0);if(!s)return"";if(s<60)return"menos de 1 min";const h=Math.floor(s/3600),m=Math.round(s%3600/60);return "faltam "+(h?h+"h"+(m?" "+m+"min":""):m+" min")}
+function ilhaAnel(p){const r=15,C=2*Math.PI*r;
+  return `<svg class="anel ${p==null?"gira":""}" viewBox="0 0 38 38" aria-hidden="true"><circle cx="19" cy="19" r="${r}" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="4"/><circle cx="19" cy="19" r="${r}" fill="none" stroke="var(--azul)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-(p==null?28:p)/100)).toFixed(1)}" transform="rotate(-90 19 19)"/></svg>`}
+const ilhaTitulo=a=>a.titulo+(a.pausado?" (pausado)":"");
+function ilhaVivo(t){const v=$("#ilhavivo");if(v)v.textContent=t}
+function ilhaAviso(tipo,texto){ILHA.aviso={tipo,texto};ilhaVivo(texto);clearTimeout(ILHA.ta);ILHA.ta=setTimeout(()=>{ILHA.aviso=null;ilhaDesenha()},6000)}
+async function ilhaPoll(){
+  clearTimeout(ILHA.t);let r;
+  try{r=await api("/api/atividades")}catch(e){ILHA.t=setTimeout(ilhaPoll,5000);return}
+  const agora=r.atividades.sort((a,b)=>ILHA_ORD.indexOf(a.id)-ILHA_ORD.indexOf(b.id)),ids=new Set(agora.map(a=>a.id));
+  ILHA.ativas.forEach(a=>{if(!ids.has(a.id)){const f=(ILHA_FIM[a.id]||(()=>null))(r.fim[a.id]||{});if(f)ilhaAviso(f[0],f[1])}});
+  agora.forEach(a=>{if(!ILHA.ativas.some(b=>b.id===a.id))ilhaVivo(a.titulo)});
+  ILHA.ativas=agora;ilhaDesenha();
+  ILHA.t=setTimeout(ilhaPoll,agora.length?1000:4000);
+}
+function ilhaDesenha(){
+  const el=$("#ilha"),b=$("#ilhab"),e2=$("#ilha2"),d=$("#ilhad");if(!el)return;
+  const a=ILHA.ativas[0],av=ILHA.aviso;
+  if(!a)ILHA.aberta=false;
+  el.classList.toggle("hide",!a&&!av);e2.classList.toggle("hide",ILHA.ativas.length<2);e2.textContent="+"+(ILHA.ativas.length-1);
+  el.classList.toggle("ok",!!av&&av.tipo==="ok");el.classList.toggle("erro",!!av&&av.tipo==="erro");
+  if(av)b.innerHTML=`<span class="sinal">${av.tipo==="ok"?"✓":"✕"}</span><span class="txt"><b>${esc(av.texto)}</b></span>`;  // o aviso de fim passa na frente por 6 s
+  else if(a)b.innerHTML=`${ilhaAnel(a.pct)}<span class="txt"><b>${esc(ilhaTitulo(a))}</b>${a.pct!=null?" "+a.pct+"%":""}</span>${a.eta||a.info?`<span class="eta">${esc(a.eta?ilhaEta(a.eta):a.info)}</span>`:""}`;
+  b.setAttribute("aria-expanded",ILHA.aberta);b.disabled=!a;
+  b.setAttribute("aria-label",a?ILHA.ativas.map(x=>ilhaTitulo(x)+(x.pct!=null?" "+x.pct+"%":"")).join("; ")+". Mostrar detalhes":av?av.texto:"");
+  el.classList.toggle("aberta",ILHA.aberta);d.classList.toggle("hide",!ILHA.aberta);
+  if(!ILHA.aberta)return;
+  d.innerHTML=ILHA.ativas.map(x=>`<div class="ilt"><div class="l1"><span class="ico">${ic(ILHA_IC[x.id]||"hist")}</span><b class="grow">${esc(ilhaTitulo(x))}</b><span class="eta">${x.pct!=null?x.pct+"%":""}</span></div>
+    <div class="ilbar ${x.pct==null?"ind":""}"><i style="${x.pct!=null?"width:"+x.pct+"%":""}"></i></div>
+    <div class="l1"><span class="eta grow">${esc([x.info,x.velocidade?fmt(x.velocidade)+"/s":"",x.eta?ilhaEta(x.eta):""].filter(Boolean).join(" · "))}</span>${x.tela?`<button class="sm" data-ir="${x.id}">Ver</button>`:""}</div>
+    ${x.detalhe?`<div class="det" title="${esc(x.detalhe)}">${esc(x.detalhe)}</div>`:""}</div>`).join("");
+  $$("[data-ir]",d).forEach(k=>k.onclick=e=>{e.stopPropagation();ilhaIr(k.dataset.ir)});
+}
+function ilhaIr(id){const a=ILHA.ativas.find(x=>x.id===id);ILHA.aberta=false;ilhaDesenha();if(!a)return;
+  if(a.id==="backup")go(ILHA_PASSO[a.fase]!=null?ILHA_PASSO[a.fase]:step);else nav(a.tela)}
+function ilhaLigar(){
+  const t=()=>{if(!ILHA.ativas.length)return;ILHA.aberta=!ILHA.aberta;ilhaDesenha()};
+  $("#ilhab").onclick=t;$("#ilha2").onclick=t;
+  document.addEventListener("click",e=>{if(ILHA.aberta&&!e.target.closest("#ilha,#ilha2")){ILHA.aberta=false;ilhaDesenha()}});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&ILHA.aberta){ILHA.aberta=false;ilhaDesenha();$("#ilhab").focus()}});
+  ilhaPoll();
+}
+
 /* ---------- menu do topo no estilo do Dock do Mac: o ícone cresce perto do mouse; com o mouse fora, só a aba atual fica
    e as outras deslizam para trás dela. Toque e tela estreita: barra completa, como antes ---------- */
 const DOCK={base:44,max:68,alcance:150,t:null,ta:null,inicio:true};
@@ -1824,6 +1897,7 @@ async function draw6(){
   if(t&&t.status&&!t.status.aceito)openGate();
   checkUpdate();
   setTimeout(()=>{DOCK.inicio=false;dockFechar(true)},1500);
+  ilhaLigar();
 })();
 </script>
 </body>
