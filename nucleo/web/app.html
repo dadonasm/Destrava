@@ -277,7 +277,15 @@ textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);b
 :root[data-theme=light] .pri{border-color:#3b7cf4}
 header{background:transparent!important;border-bottom:0!important;backdrop-filter:none}
 .shell{display:block!important}
-#gaveta{position:fixed!important;top:9px!important;left:50%;transform:translateX(-50%);width:auto!important;height:auto!important;flex-direction:row!important;gap:6px!important;padding:6px!important;border-radius:999px;background:var(--pill)!important;border:1px solid var(--line)!important;box-shadow:var(--sh);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);z-index:30}
+#topo{position:fixed;top:9px;left:0;right:0;display:flex;justify-content:center;align-items:flex-start;gap:8px;z-index:30;pointer-events:none}#topo>*{pointer-events:auto}
+#gaveta{position:relative!important;top:auto!important;width:auto!important;height:auto!important;flex-direction:row!important;align-items:flex-start;gap:6px!important;padding:6px!important;border-radius:999px;background:var(--pill)!important;border:1px solid var(--line)!important;box-shadow:var(--sh);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+#gaveta .gv[data-view]{flex:none;transition:width .12s ease-out,height .12s ease-out,background .2s,opacity .3s,transform .42s cubic-bezier(.2,.9,.3,1.12),margin .42s}
+#gaveta.anim .gv[data-view]{transition:width .42s cubic-bezier(.2,.9,.3,1),height .2s,background .2s,opacity .3s,transform .42s cubic-bezier(.2,.9,.3,1.12),margin .42s}
+#gaveta .gv .ic{width:auto}#gaveta .gv .ic svg{width:calc(21px * var(--k,1));height:calc(21px * var(--k,1))}
+#gaveta .gv.on{z-index:2}
+#gaveta .gv.atras{width:0!important;height:44px!important;margin-right:-6px;opacity:0;transform:translateX(var(--dx,0)) scale(.4);pointer-events:none;z-index:1}
+#gaveta .gv.perto .lb{display:block!important;position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);background:rgba(16,18,24,.92);color:#fff;font-size:12px;font-weight:600;padding:3px 10px;border-radius:8px;white-space:nowrap;pointer-events:none}
+#gaveta.fechado.tem-bd::after{content:"";position:absolute;top:5px;right:5px;width:9px;height:9px;border-radius:50%;background:var(--err)}
 #gaveta .sp,#gaveta .gvfoot,#gvtoggle{display:none!important}
 #gaveta .gv{width:44px;height:44px;padding:0;justify-content:center;border-radius:999px;position:relative}
 #gaveta .gv .lb{display:none}
@@ -306,7 +314,7 @@ button{border-radius:999px}
 .chk2.aviso .ci{background:var(--warn)}.chk2.erro .ci{background:var(--err)}.chk2.erro{border-color:var(--err)}
 .chk2 .sol{margin-top:6px;font-size:13px;padding:8px 10px;border-radius:10px;background:var(--panel);border-left:3px solid var(--azul)}
 .grp{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.grp .gq{flex:none;width:96px;text-align:right;font-weight:700}
-@media (max-width:720px){#gaveta{top:auto!important;bottom:10px;max-width:calc(100vw - 20px);overflow-x:auto}.content{padding-bottom:90px}}
+@media (max-width:720px){#gaveta{position:fixed!important;top:auto!important;bottom:10px;left:50%;transform:translateX(-50%);max-width:calc(100vw - 20px);overflow-x:auto}.content{padding-bottom:90px}}
 @media print{#gaveta,header,.noprint{display:none!important}.card{box-shadow:none;border:1px solid #ccc}body{background:#fff!important}}
 
 </style>
@@ -321,7 +329,7 @@ button{border-radius:999px}
   <button class="sm" id="hperf" title="Meu perfil" aria-label="Meu perfil"></button>
 </header>
 <div class="shell">
-<aside id="gaveta" aria-label="Menu lateral"></aside>
+<div id="topo"><aside id="gaveta" aria-label="Menu"></aside></div>
 <div class="content"><div class="journey hide" id="steps"></div>
 <main id="main"></main></div>
 </div>
@@ -448,7 +456,7 @@ function renderChrome(){
   const t=CTX.t,st=t&&t.status;
   const items=[["home","Home","home"],["backup","Backup","backup"],["mapas","Mapas","mapa"],["dados","Dados","dados"],["maq","Máquinas","maq"],["os","OS","os"]];
   const need=ownT()&&!t.os;
-  $("#gaveta").innerHTML=items.map(i=>`<button class="gv ${view===i[0]?"on":""}" data-view="${i[0]}" title="${i[1]}"><span class="ic">${ic(i[2])}</span><span class="lb">${i[1]}</span>${i[0]==="os"&&need?'<span class="bd">falta</span>':""}</button>`).join("")+
+  $("#gaveta").innerHTML=items.map(i=>`<button class="gv ${(ABA_DE[view]||view)===i[0]?"on":""}" data-view="${i[0]}" title="${i[1]}"><span class="ic">${ic(i[2])}</span><span class="lb">${i[1]}</span>${i[0]==="os"&&need?'<span class="bd">falta</span>':""}</button>`).join("")+
    `<span class="sp"></span><div class="gvfoot"><b>${esc(t?t.nome:info.host||"")}</b><button class="mid" id="midc" title="Copiar o código da máquina">${esc(t?t.mid:"")}</button></div><button class="gv" id="gvtoggle" title="Recolher"><span class="ic">☰</span><span class="lb">Recolher</span></button>`;
   $$("#gaveta [data-view]").forEach(b=>b.onclick=()=>nav(b.dataset.view));
   $("#gvtoggle").onclick=()=>document.body.classList.toggle("min");
@@ -457,6 +465,7 @@ function renderChrome(){
   if(info.simulacao)$("#hown").innerHTML+=`<span class="chip own-t" title="Reproduzindo uma coleta salva: as ações são só simuladas, nada muda neste computador"><i class="d"></i>SIMULAÇÃO</span>`;
   $("#hver").textContent="v"+(info.versao||"–");
   srvChip();
+  dockLigar();dockFechar(false);
 }
 /* modo servidor: quem está conectado, o que falta enviar e o botão de encerrar (apaga tudo deste computador) */
 function srvChip(){
@@ -476,7 +485,8 @@ async function encerrar(descartar){
   document.body.innerHTML='<p style="padding:30px;font:16px system-ui">Destrava! encerrado. Os arquivos temporários foram apagados deste computador. Pode fechar esta aba.</p>';
 }
 setInterval(async()=>{if(!info.servidor)return;try{const i=await api("/api/info");if(i.servidor){info.servidor=i.servidor;srvChip()}}catch(e){}},20000);
-function markNav(){$$("#gaveta [data-view]").forEach(b=>b.classList.toggle("on",b.dataset.view===view))}
+const ABA_DE={manter:"maq"};
+function markNav(){$$("#gaveta [data-view]").forEach(b=>b.classList.toggle("on",b.dataset.view===(ABA_DE[view]||view)))}
 function setWide(b){$("#main").classList.toggle("wide",!!b)}
 
 /* ---------- termo de responsabilidade (1ª vez em cada máquina) ---------- */
@@ -1171,6 +1181,36 @@ function wireReg(g){
     catch(e){$("#rgerr").innerHTML=`<div class="errbox" style="margin-top:10px">${esc(e.message)}</div>`}});
 }
 
+/* ---------- menu do topo no estilo do Dock do Mac: o ícone cresce perto do mouse; com o mouse fora, só a aba atual fica
+   e as outras deslizam para trás dela. Toque e tela estreita: barra completa, como antes ---------- */
+const DOCK={base:44,max:68,alcance:150,t:null,ta:null,inicio:true};
+const dockMouse=()=>matchMedia("(hover: hover) and (min-width: 721px)").matches;
+const dockBts=()=>$$("#gaveta .gv[data-view]");
+function dockLigar(){
+  const g=$("#gaveta");if(!g||g.dataset.dock)return;g.dataset.dock="1";
+  let raf=0,mx=null;
+  const tam=()=>{raf=0;let melhor=null,km=.5;
+    dockBts().forEach(b=>{if(b.classList.contains("atras"))return;let s=DOCK.base,k=0;
+      if(mx!=null){const r=b.getBoundingClientRect(),d=Math.abs(mx-(r.left+r.width/2));k=d<DOCK.alcance?Math.cos(d/DOCK.alcance*Math.PI/2):0;s=DOCK.base+(DOCK.max-DOCK.base)*k}
+      b.style.width=b.style.height=s+"px";b.style.setProperty("--k",(s/DOCK.base).toFixed(3));if(k>km){km=k;melhor=b}});
+    dockBts().forEach(b=>b.classList.toggle("perto",b===melhor))};  // só o nome do ícone sob o mouse
+  g.addEventListener("mousemove",e=>{if(!dockMouse())return;mx=e.clientX;if(!raf)raf=requestAnimationFrame(tam)});
+  g.addEventListener("mouseenter",()=>{if(!dockMouse())return;clearTimeout(DOCK.t);dockAbrir()});
+  g.addEventListener("mouseleave",()=>{if(!dockMouse())return;mx=null;tam();clearTimeout(DOCK.t);DOCK.t=setTimeout(()=>dockFechar(true),350)});
+  g.addEventListener("focusin",()=>{clearTimeout(DOCK.t);dockAbrir()});
+  g.addEventListener("focusout",e=>{if(!g.contains(e.relatedTarget)){clearTimeout(DOCK.t);DOCK.t=setTimeout(()=>dockFechar(true),350)}});
+}
+function dockAnim(g){g.classList.add("anim");clearTimeout(DOCK.ta);DOCK.ta=setTimeout(()=>g.classList.remove("anim"),480)}
+function dockFechar(anim){
+  const g=$("#gaveta"),on=$("#gaveta .gv.on");
+  if(!g||!on||DOCK.inicio||!dockMouse()||g.matches(":hover")||g.contains(document.activeElement))return;  // tela sem aba (Meu perfil): o menu fica aberto
+  if(anim)dockAnim(g);
+  const ro=on.getBoundingClientRect(),co=ro.left+ro.width/2;
+  dockBts().forEach(b=>{if(b===on)return;const r=b.getBoundingClientRect();b.style.setProperty("--dx",(co-(r.left+r.width/2)).toFixed(1)+"px");b.classList.add("atras");b.classList.remove("perto")});
+  g.classList.add("fechado");g.classList.toggle("tem-bd",!!$("#gaveta .gv.atras .bd"));
+}
+function dockAbrir(){const g=$("#gaveta");if(!g||!g.classList.contains("fechado"))return;dockAnim(g);g.classList.remove("fechado","tem-bd");dockBts().forEach(b=>b.classList.remove("atras"))}
+
 /* ---------- OS (ordem de serviço) ---------- */
 async function drawOS(){
   setWide(false);await loadCtx();
@@ -1783,6 +1823,7 @@ async function draw6(){
   const t=CTX.t;
   if(t&&t.status&&!t.status.aceito)openGate();
   checkUpdate();
+  setTimeout(()=>{DOCK.inicio=false;dockFechar(true)},1500);
 })();
 </script>
 </body>
