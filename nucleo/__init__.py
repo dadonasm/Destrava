@@ -17,7 +17,7 @@ if _AQUI not in sys.path:
     sys.path.insert(0, _AQUI)
 __path__ = []
 
-LEVES = ("disco", "atualizador", "otimizacoes", "ficha", "termo", "dados", "mapa", "conexao", "perfil")
+LEVES = ("disco", "atualizador", "otimizacoes", "ficha", "termo", "dados", "mapa", "conexao", "perfil", "programas")
 for _nome in LEVES:
     sys.modules[__name__ + "." + _nome] = importlib.import_module(_nome)
 

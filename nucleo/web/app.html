@@ -837,6 +837,7 @@ function renderFicha(r,atual){
   const ph=u.pesados||[],mx=Math.max(1,...ph.map(x=>x.ram_mb));
   h+=`<div class="card"><h2>Quem pesa na máquina agora</h2><p class="h"><b>${a.pesados_n}</b> programa(s) pesado(s) (${esc(a.pesados_limite)}). ${a.inicio_n?`<b>${a.inicio_n}</b> iniciam junto com o sistema: veja em Otimizações › Inicialização.`:""}</p>
    <table><tr><th>Programa</th><th style="width:90px">RAM</th><th style="width:40%"></th></tr>${ph.slice(0,10).map(x=>`<tr><td>${esc(x.nome)}${x.instancias>1?` <span class="mut">×${x.instancias}</span>`:""}</td><td>${x.ram_mb} MB</td><td><div class="mini"><i style="width:${x.ram_mb/mx*100}%;background:var(--acc)"></i></div></td></tr>`).join("")}</table></div>`;
+  h+=progCard(v,u);
   // SO ideal
   h+=`<div class="card"><h2>Sistema ideal para esta máquina</h2><p class="h">Nota estimada para o sistema recém-instalado, com o hardware atual. É uma projeção, não uma garantia.</p><div class="ossel">${a.sistemas.map(s=>`<div class="os ${s.compativel?"":"bad"} ${s.melhor_nota?"best":""}"><div class="sc" style="color:${COR(s.nota)};border-color:${COR(s.nota)}">${s.nota}</div><div><h4>${esc(s.nome)}</h4>
     ${s.melhor_nota?'<span class="badge b-gold">MELHOR NOTA</span>':""}${s.melhor_windows?'<span class="badge b-ok">MELHOR MANTENDO PROGRAMAS WINDOWS</span>':""}${s.compativel?"":'<span class="badge b-bad">NÃO COMPATÍVEL</span>'}
@@ -854,6 +855,7 @@ function renderFicha(r,atual){
   h+=`<aside class="dr ${open?"open":""}" id="dr" aria-label="Histórico da máquina">${drawerHtml(v)}</aside></div>`;
   $("#main").innerHTML=h;
   wireFicha(r,atual,v,mid);
+  const pv=$("#progver");if(pv)pv.onclick=()=>safe(()=>openProgramas(mid));
   wireOtim();
 }
 function wireFicha(r,atual,v,mid){
@@ -880,6 +882,27 @@ function wireFicha(r,atual,v,mid){
   const ud=$("#undo");if(ud)ud.onclick=()=>safe(async()=>{if(!await dialog({titulo:"Desfazer as melhorias?",html:"<p>Os ajustes aplicados voltam como estavam.</p>",ok:"Desfazer"}))return;const x=await api("/api/ficha/desfazer",{});toast(x.desfeitos+" ajuste(s) desfeito(s). Analise de novo para atualizar a nota.","ok");drawHome()});
   $("#wipe").onclick=()=>safe(async()=>{const r2=await dialog({titulo:"Remover esta máquina do pendrive?",html:`<p>Fichas, históricos e documentos de <b>${esc(v.nome)}</b> serão apagados do pendrive. Isso não tem volta.</p>`,texto:"Digite APAGAR para confirmar",exige:"APAGAR",ok:"Remover",perigo:true});if(!r2)return;
     await api("/api/maquina/apagar",{mid,digitou:r2.texto});await loadCtx();toast("Dados removidos do pendrive.","ok");nav("maq")});
+}
+
+/* ---------- programas instalados (lista da última análise; base do "o que manter") ---------- */
+function progCard(v,u){const p=v.programas,n=(u.medidas||{}).prog_instalados;
+  if(!p)return `<div class="card"><h2>Programas instalados</h2><p class="h" style="margin:0">${n?`<b>${n}</b> programas contados. `:""}A lista com nome, versão e fabricante entra na próxima análise desta máquina.</p></div>`;
+  const esc_=p.total-p.visiveis;
+  return `<div class="card"><div class="row"><div class="grow"><h2>Programas instalados</h2><p class="h" style="margin:0"><b>${p.visiveis}</b> programa${p.visiveis===1?"":"s"} para decidir o que reinstalar depois de formatar${p.com_instalador?` · <b>${p.com_instalador}</b> reinstala${p.com_instalador===1?"":"m"} sozinho${p.com_instalador===1?"":"s"}`:""}${esc_?` · ${esc_} escondido${esc_===1?"":"s"} (do sistema, runtimes, drivers e afins)`:""}.</p></div><button id="progver">Ver lista</button></div></div>`}
+const INST={winget:"winget",msstore:"Microsoft Store",brew:"Homebrew",apt:"apt",flatpak:"Flatpak",snap:"Snap",rpm:"rpm"};
+async function openProgramas(mid){
+  const d=(await api("/api/programas?mid="+encodeURIComponent(mid))).programas;
+  if(!d)return toast("Sem lista de programas: analise a máquina de novo.");
+  let tudo=false,q="";const esc_=d.total-d.visiveis;
+  const m=modalHtml("Programas instalados",`<p class="h">Da análise de ${dataBR(d.quando)}. Só nome, versão, fabricante e origem: nenhuma chave de licença, senha ou conta é lida.</p>
+   <div class="row" style="margin-bottom:10px"><input type="text" id="pgq" placeholder="Buscar programa ou fabricante" aria-label="Buscar programa" class="grow" style="margin:0" autocomplete="off">${esc_?`<label class="pfc" style="margin:0"><input type="checkbox" id="pgall"> Mostrar tudo (+${esc_} escondidos)</label>`:""}</div><div id="pgl" style="max-height:60vh;overflow:auto"></div>`,900);
+  const draw=()=>{const qq=semAc(q.trim()),l=d.itens.filter(g=>(tudo||!g.oculto)&&(!qq||semAc(g.nome+" "+g.fabricante).includes(qq)));
+    $("#pgl",m).innerHTML=l.length?`<table><tr><th>Programa</th><th>Versão</th><th>Origem</th><th>Reinstalar</th></tr>${l.map(g=>{const t=Object.keys(g.ids)[0];
+      return `<tr style="${g.oculto?"opacity:.65":""}"><td><b>${esc(g.nome)}</b>${g.fabricante?`<div class="mut" style="font-size:12px">${esc(g.fabricante)}</div>`:""}${g.oculto?`<span class="badge b-mut" style="margin-top:4px">${esc(g.motivo)}</span>`:""}</td>
+       <td style="font-size:12.5px" title="${esc(g.versoes.join(", "))}">${esc(g.versoes.slice(-1)[0]||"—")}${g.versoes.length>1?` <span class="mut">+${g.versoes.length-1}</span>`:""}${g.arch.length>1?'<div class="mut" style="font-size:11.5px">32 e 64 bits</div>':""}</td>
+       <td style="font-size:12.5px">${esc(g.origens.join(", "))}</td><td>${t?`<span class="badge b-ok" title="${esc(t+": "+g.ids[t])}">sozinho · ${esc(INST[t]||t)}</span>`:'<span class="badge b-mut">à mão</span>'}</td></tr>`}).join("")}</table>`
+     :'<p class="mut">Nenhum programa com essa busca.</p>'};
+  $("#pgq",m).oninput=e=>{q=e.target.value;draw()};const pa=$("#pgall",m);if(pa)pa.onchange=e=>{tudo=e.target.checked;draw()};draw();$("#pgq",m).focus();
 }
 
 /* ---------- comparar (Versus) ---------- */

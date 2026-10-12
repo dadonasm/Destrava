@@ -19,6 +19,7 @@ import tempfile
 import time
 
 import otimizacoes as OTIM
+import programas as PROG
 
 IS_WIN = os.name == "nt"
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -506,7 +507,7 @@ if($b){$r.bat=@{charge=$b.EstimatedChargeRemaining}
 $ds=Get-CimInstance -Namespace root\wmi -ClassName BatteryStaticData | Select-Object -First 1
 $fc=Get-CimInstance -Namespace root\wmi -ClassName BatteryFullChargedCapacity | Select-Object -First 1
 if($ds -and $fc){$r.bat.design=$ds.DesignedCapacity;$r.bat.full=$fc.FullChargedCapacity}}
-""" + OTIM.PS_INI + OTIM.PS_OTIM + r"""
+""" + PROG.PS_PROGS + OTIM.PS_INI + OTIM.PS_OTIM + r"""
 $r | ConvertTo-Json -Depth 6 -Compress
 """
 
@@ -572,12 +573,17 @@ def normalizar_windows(raw, med):
         f["inicializacao"] = [x for x in todos if x["ativo"]]
     if raw.get("otim") is not None or raw.get("procpath") is not None:
         f["otim"] = dict(raw.get("otim") or {}, procpath=aslist(raw.get("procpath")), deg=raw.get("deg") or {})
+    if raw.get("progs") is not None:
+        f["programas"] = PROG.de_windows(aslist(raw.get("progs")), aslist(raw.get("appx")), raw.get("winget") or "")
     return f
 
 
-def coletar_windows(cb):
+def coletar_windows(cb, programas=True):
     cb("Lendo hardware e programas (PowerShell)", 10)
     raw = ps_json(PS_COLETA, timeout=240) or {}
+    if programas:
+        cb("Procurando os programas no winget", 32)
+        raw["winget"] = PROG.winget_list()
     cb("Medindo processador", 40)
     med = {"cpu_ms": med_cpu()}
     cb("Medindo disco", 55)
@@ -605,13 +611,17 @@ def _host():
     return REPLAY.get("host") or socket.gethostname() if REPLAY else socket.gethostname()
 
 
-def coletar(cb=None):
+def coletar(cb=None, programas=True):
+    """programas=False: a medição "depois" das melhorias não refaz a lista de programas (winget e Homebrew demoram)."""
     cb = cb or (lambda e, p: None)
     ULTIMA.clear()
     if REPLAY:
         f = _coletar_replay(cb)
     else:
-        f = coletar_windows(cb) if IS_WIN else (coletar_mac(cb) if sys.platform == "darwin" else coletar_linux(cb))
+        f = coletar_windows(cb, programas) if IS_WIN else (coletar_mac(cb) if sys.platform == "darwin" else coletar_linux(cb))
+        if programas and not IS_WIN:
+            cb("Listando os programas instalados", 94)
+            f["programas"] = PROG.coletar()
     f["host"] = _host()
     f["quando"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     f["versao_ficha"] = VERSAO_FICHA
@@ -1346,6 +1356,9 @@ def salvar_ficha(f, fase="antes"):
     d = pasta(f["mid"])
     os.makedirs(d, exist_ok=True)
     f = dict(f, fase=fase)
+    progs = f.pop("programas", None)  # a lista vai para programas.json, não para cada ficha
+    if progs is not None and fase == "antes":
+        _json_atomico(os.path.join(d, "programas.json"), PROG.documento(progs, (f.get("so") or {}).get("familia", "")))
     ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     arq = os.path.join(d, "ficha-%s-%s.json" % (ts, fase))
     with open(arq, "w", encoding="utf-8") as fh:
@@ -1628,6 +1641,12 @@ def salvar_contato(mid, telefone="", email="", observacoes=""):
     return registro(mid)
 
 
+def programas_de(mid):
+    """O programas.json da última análise "antes" (ou None, em máquinas analisadas antes desta função existir)."""
+    _garantir(mid)
+    return PROG.ler(pasta(mid))
+
+
 def existe_maquina(mid):
     return bool(mid) and bool(meta_ler(mid) or hist_get(mid) or listar_fichas(mid))
 
@@ -1646,7 +1665,8 @@ def visao(mid):
     a = analise(ultima, extra_analise(mid))
     out = {"mid": mid, "antes": {"quando": antes["quando"], "nota": pontuar(antes)["geral"], "classe": pontuar(antes)["classe"]},
            "ultima": ultima, "analise": a, "historico": hist_get(mid), "n_fichas": len(fichas), "fase_ultima": ultima.get("fase", "antes"),
-           "meta": meta_ler(mid), "nome": nome_exibicao(mid, ultima), "modelo": modelo_comercial(ultima), "fichas": fichas_info(mid)}
+           "meta": meta_ler(mid), "nome": nome_exibicao(mid, ultima), "modelo": modelo_comercial(ultima), "fichas": fichas_info(mid),
+           "programas": PROG.resumo(programas_de(mid))}
     if len(fichas) > 1:
         ant = pontuar(fichas[-2])["geral"]
         out["variacao"] = pontuar(ultima)["geral"] - ant

@@ -1915,7 +1915,7 @@ def ficha_aplicar(ids):
         cb("Aplicando melhorias", 10)
         res = FICHA.aplicar(mid, ids, v["ultima"])
         cb("Medindo de novo para provar o resultado", 40)
-        f = FICHA.coletar(lambda e, p: cb(e, 40 + int(p * 0.6)))
+        f = FICHA.coletar(lambda e, p: cb(e, 40 + int(p * 0.6)), programas=False)
         FICHA.salvar_ficha(f, "depois")
         return {"mid": mid, "aplicadas": res}
     ficha_iniciar("aplicar", fn)
@@ -2248,6 +2248,8 @@ class Handler(BaseHTTPRequestHandler):
                 if reg:
                     out["registro"] = dict(reg, etapas=FICHA.ETAPAS, historico=[dict(e, etapa=FICHA.etapa_do_evento(e) or "") for e in FICHA.hist_get(mid)])
             return out
+        if path == "/api/programas":
+            return {"programas": FICHA.programas_de((q.get("mid") or [""])[0] or FICHA.machine_id_cache())}
         if path == "/api/painel":
             return FICHA.painel_resumo(FICHA.machine_id_cache()) if FICHA else {"maquinas": 0}
         if path == "/api/maquinas":
