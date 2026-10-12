@@ -48,6 +48,26 @@ button.sm{padding:5px 10px;font-size:12.5px;border-radius:8px}
 .src{display:flex;gap:10px;align-items:center;padding:11px;border:1px solid var(--line);border-radius:12px;margin-top:8px;background:var(--panel2)}
 .src.sel{border-color:var(--acc)}.src .t{flex:1;min-width:0}.src .t b{display:block}.src .t span{color:var(--mut);font-size:12px;word-break:break-all}
 .src input.l{width:44px;text-align:center;padding:6px}
+.fluxo{padding:22px 20px 16px;text-align:center;background:linear-gradient(180deg,var(--panel),var(--panel2))}
+.fx-leg{margin:0 0 14px;color:var(--mut);font-size:13.5px}.fx-leg b{color:var(--tx);font-weight:600}
+.fx-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:6px;max-width:640px;margin:0 auto}
+.fx-tile{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:0;padding:8px;border-radius:16px;cursor:pointer;color:var(--tx);font:inherit;min-width:0}
+.fx-tile:hover{background:var(--panel2)}.fx-tile:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.fx-ico{width:104px;height:104px;display:grid;place-items:center;margin-bottom:4px;border:2px solid transparent;border-radius:20px}
+.fx-ico svg{width:96px;height:96px;filter:drop-shadow(0 6px 10px rgba(20,30,60,.18))}
+.fx-tile b{font-size:14.5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fx-tile small{color:var(--mut);font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fx-vazio .fx-ico{border:2px dashed var(--line)}.fx-vazio .fx-ico svg{opacity:.35;filter:grayscale(1)}.fx-vazio b{color:var(--acc)}.fx-err small{color:var(--err)}
+.fx-seta{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:38px;padding:0 6px;color:var(--mut)}
+.fx-seta svg{width:30px;height:30px;opacity:.7}
+.fx-dots{display:flex;gap:6px}.fx-dots i{width:7px;height:7px;border-radius:50%;background:var(--azul);opacity:.15;animation:fxd 1.2s infinite}
+.fx-dots i:nth-child(2){animation-delay:.2s}.fx-dots i:nth-child(3){animation-delay:.4s}
+@keyframes fxd{0%,100%{opacity:.25;transform:translateX(-3px)}50%{opacity:1;transform:translateX(3px)}}
+.fx-seta:not(.off){color:var(--azul)}.fx-seta:not(.off) .fx-dots i{opacity:.4}
+.fx-seta.off .fx-dots i{animation:none}.fx-seta.off svg{opacity:.3}
+.od{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin-bottom:16px}.od .card{margin-bottom:0}
+@media (max-width:900px){.od{grid-template-columns:1fr}}
+@media (max-width:560px){.fx-ico{width:72px;height:72px}.fx-ico svg{width:64px;height:64px}.fx-seta{margin-top:22px;padding:0}.fx-seta svg{width:24px;height:24px}}
 .tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px;border:1px solid var(--line);color:var(--mut)}
 .tag.win{color:#5aa9ff;border-color:#5aa9ff}.tag.lin{color:var(--ok);border-color:var(--ok)}
 .bar{height:12px;background:var(--panel2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
@@ -1106,15 +1126,17 @@ async function draw1(){
   setWide(false);
   if(!S.sources.length){S.sources=(await api("/api/sources")).sources;S.sources.forEach(s=>{if(s.kind==="windows"||s.kind==="linux")S.chosen[s.path]=true})}
   const t=CTX.t,nome=t?t.nome:info.host||"PC";
-  $("#main").innerHTML=`<div class="card"><h2>De onde vamos copiar?</h2><p class="h">Marque os discos ou pastas de origem. O programa só <b>lê</b> deles: nada é apagado ou alterado.</p><div id="srcs"></div>
+  $("#main").innerHTML=`<div class="card fluxo" id="fluxo"></div>
+  <div class="od"><div class="card"><div class="eyebrow">ORIGEM</div><h2>De onde vamos copiar?</h2><p class="h">Marque os discos ou pastas de origem. O programa só <b>lê</b> deles: nada é apagado ou alterado.</p><div id="srcs"></div>
    <div class="row" style="margin-top:10px"><input type="text" id="manual" class="grow" placeholder="Outra pasta ou disco (ex.: /media/zorin/Windows ou D:\\)" aria-label="Outra origem"><button id="addm">Adicionar</button></div></div>
-  <div class="card"><h2>Para onde vai o backup?</h2><p class="h">Qualquer disco ou pasta com espaço. Para poder formatar depois, escolha um disco <b>diferente</b> do que será formatado.</p>
+  <div class="card"><div class="eyebrow">DESTINO</div><h2>Para onde vai o backup?</h2><p class="h">Qualquer disco ou pasta com espaço. Para poder formatar depois, escolha um disco <b>diferente</b> do que será formatado.</p>
    <div class="row"><input type="text" id="dest" class="grow" value="${esc(S.dest)}" placeholder="Pasta de destino" aria-label="Pasta de destino"><button id="pick">Escolher…</button></div><div id="br"></div><div id="destinfo" class="mut" style="margin-top:6px"></div>
-   <label for="folder">Nome da pasta do backup</label><input type="text" id="folder" value="${esc(S.folder||("Backup_"+nome.replace(/[^\w\-]+/g,"_")))}"></div>
+   <label for="folder">Nome da pasta do backup</label><input type="text" id="folder" value="${esc(S.folder||("Backup_"+nome.replace(/[^\w\-]+/g,"_")))}"></div></div>
   <div class="card"><h2>Identificação <span class="tag">opcional</span></h2><p class="h">Aparece no certificado.</p>
    <div class="row"><div class="grow"><label for="cli">Cliente</label><input type="text" id="cli" value="${esc(S.cliente||(ownT()?t.status.terceiro_nome||"":""))}"></div><div class="grow"><label for="tec">Técnico</label><input type="text" id="tec" value="${esc(S.tecnico||(PERFIL&&PERFIL.no_certificado.includes("nome")?PERFIL.nome:""))}"></div><div class="grow"><label for="eq">Equipamento</label><input type="text" id="eq" value="${esc(S.equip||nome)}"></div></div></div>
   <div class="row"><span class="grow"></span><button class="pri" id="next1">Continuar →</button></div>`;
   drawSrcs();
+  $("#folder").oninput=drawFluxo;
   $("#addm").onclick=()=>safe(async()=>{const p=$("#manual").value.trim();if(!p)return;const r=await api("/api/ls?path="+encodeURIComponent(p));
     S.sources.push({path:r.path,label:r.path,fs:r.fs,kind:r.kind||"folder",users:r.users||[],total:r.total,free:r.free,letter:r.kind==="windows"?"C":""});S.chosen[r.path]=true;$("#manual").value="";drawSrcs()});
   $("#pick").onclick=()=>pickFolder($("#dest"),$("#br"),destInfo);
@@ -1133,10 +1155,34 @@ function drawSrcs(){
    ${s.kind==="windows"?`<div class="mut" style="font-size:12px">Letra<br><input type="text" class="l" data-l="${i}" value="${esc(s.letter||"C")}" maxlength="1" aria-label="Letra do disco"></div>`:""}</label>`).join("")||'<p class="mut">Nenhum disco encontrado. Digite o caminho abaixo.</p>';
   $$("#srcs input[type=checkbox]").forEach(c=>c.onchange=()=>{S.chosen[S.sources[+c.dataset.i].path]=c.checked;drawSrcs()});
   $$("#srcs input.l").forEach(c=>{c.onclick=e=>e.stopPropagation();c.oninput=()=>{S.sources[+c.dataset.l].letter=c.value.toUpperCase()}});
+  drawFluxo();
 }
 async function destInfo(){
-  const el=$("#destinfo");if(!el)return;if(!S.dest){el.textContent="";return}
-  try{const r=await api("/api/ls?path="+encodeURIComponent(S.dest));el.textContent=r.path?`${fmt(r.free)} livres de ${fmt(r.total)} · ${r.fs||"sistema de arquivos desconhecido"}`:""}catch(e){el.textContent="Pasta não encontrada."}
+  const el=$("#destinfo");if(!el)return;if(!S.dest){el.textContent="";S.destLs=null;drawFluxo();return}
+  try{const r=await api("/api/ls?path="+encodeURIComponent(S.dest));S.destLs=r.path?r:null;el.textContent=r.path?`${fmt(r.free)} livres de ${fmt(r.total)} · ${r.fs||"sistema de arquivos desconhecido"}`:""}catch(e){S.destLs=false;el.textContent="Pasta não encontrada."}
+  drawFluxo();
+}
+const FX_PC=`<svg viewBox="0 0 96 96" aria-hidden="true"><defs><linearGradient id="fxScr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b9bff"/><stop offset="1" stop-color="#2a5bd7"/></linearGradient><linearGradient id="fxBase" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef0f5"/><stop offset="1" stop-color="#b6bdca"/></linearGradient></defs>
+ <rect x="14" y="16" width="68" height="48" rx="5" fill="#2b2f38"/><rect x="18" y="20" width="60" height="40" rx="2" fill="url(#fxScr)"/>
+ <path d="M29 32h22M29 40h32M29 48h16" stroke="rgba(255,255,255,.8)" stroke-width="3.2" stroke-linecap="round"/>
+ <path d="M5 66h86l-5 9H10z" fill="url(#fxBase)"/><rect x="40" y="66" width="16" height="3" rx="1.5" fill="#97a0b0"/></svg>`;
+const FX_PASTA=`<svg viewBox="0 0 96 96" aria-hidden="true"><defs><linearGradient id="fxFb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6db8f2"/><stop offset="1" stop-color="#3f97e3"/></linearGradient><linearGradient id="fxFf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a3d8fb"/><stop offset="1" stop-color="#5eaff0"/></linearGradient></defs>
+ <path d="M8 23a5 5 0 015-5h21l7 7h42a5 5 0 015 5v8H8z" fill="url(#fxFb)"/><rect x="8" y="31" width="80" height="51" rx="6" fill="url(#fxFf)"/>
+ <path d="M48 42v19M39.5 53l8.5 8.5 8.5-8.5M35 70h26" stroke="#2f80cf" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".8"/></svg>`;
+function drawFluxo(){
+  const el=$("#fluxo");if(!el)return;
+  const sel=S.sources.filter(s=>S.chosen[s.path]),o=sel[0];
+  const fi=$("#folder"),pasta=(fi&&fi.value.trim())||S.folder||"Backup";
+  const L=S.destLs,temD=!!S.dest&&L!==false,ok=!!o&&temD;
+  const base=S.dest?((L&&L.path)||S.dest).replace(/[\\/]+$/,"").split(/[\\/]/).pop()||S.dest:"";
+  const oSub=!o?"marque abaixo":sel.length>1?`${sel.length} origens · só leitura`:(o.total?`${fmt(o.total-o.free)} usados · só leitura`:"só leitura");
+  const dSub=!S.dest?"HD externo, pendrive ou pasta":L===false?"pasta não encontrada":`em ${base}${L&&L.total?" · "+fmt(L.free)+" livres":""}`;
+  el.innerHTML=`<p class="fx-leg">Copiando <b>do computador</b> para <b>o disco do backup</b>. A origem só é lida: nada é apagado.</p>
+   <div class="fx-row"><button type="button" class="fx-tile ${o?"":"fx-vazio"}" id="fxo" title="Ver as origens"><span class="fx-ico">${FX_PC}</span><b>${o?esc(o.label)+(sel.length>1?" +"+(sel.length-1):""):"Escolha a origem"}</b><small>${esc(oSub)}</small></button>
+   <div class="fx-seta ${ok?"":"off"}" role="img" aria-label="${ok?"Os arquivos vão da origem para o destino":"Falta escolher a origem ou o destino"}"><span class="fx-dots"><i></i><i></i><i></i></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5l9.5 7.5L8 19.5z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
+   <button type="button" class="fx-tile ${temD?"":"fx-vazio"} ${L===false?"fx-err":""}" id="fxd" title="Escolher o destino"><span class="fx-ico">${FX_PASTA}</span><b>${temD?esc(pasta):"Escolher destino"}</b><small>${esc(dSub)}</small></button></div>`;
+  $("#fxo").onclick=()=>$("#srcs").scrollIntoView({behavior:"smooth",block:"center"});
+  $("#fxd").onclick=()=>{$("#pick").click();$("#dest").scrollIntoView({behavior:"smooth",block:"center"})};
 }
 
 /* ---- 2 checagens e escaneamento ---- */
