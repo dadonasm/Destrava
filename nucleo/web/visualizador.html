@@ -399,6 +399,7 @@ function homeHtml(){
   var who=[['Cliente',c.cliente],['Equipamento',c.equipamento||Mt.pc],['Técnico',c.tecnico],['Data',(c.data||Mt.data||'')+(c.hora?' · '+c.hora:'')],['Verificação',c.metodo||Mt.verificacao],['Código da máquina',c.maquina_id],['Dono',c.dono==='terceiros'?('Terceiros'+(c.dono_nome?': '+c.dono_nome:'')):(c.dono==='particular'?'Particular':'')],['Autorizado por',c.autorizou],['Espaço recuperado',c.recuperado_bytes?(c.recuperado_bytes/1073741824).toFixed(2).replace('.',',')+' GB':'']].filter(function(x){return x[1]});
   var tp=c.tecnico_perfil||{},TPR={nome:'Nome',empresa:'Empresa',email:'E-mail',telefone:'Telefone / WhatsApp',instagram:'Instagram',site:'Site',facebook:'Facebook',linkedin:'LinkedIn',outro:'Outra rede'};
   var tpk=Object.keys(TPR).filter(function(k){return tp[k]});
+  var pr=c.programas_resumo;
   var rows=Object.keys(mot).sort(function(a,b){return mot[b][1]-mot[a][1]}).slice(0,12).map(function(k){return '<tr><td>'+esc(k)+'</td><td>'+mot[k][0].toLocaleString('pt-BR')+' arq.</td><td>'+fmtSize(mot[k][1])+'</td></tr>'}).join('');
   var swl=[];if(sw.n_novos)swl.push(sw.n_novos+' arquivo(s) novo(s) apareceram depois do escaneamento');if(sw.n_alterados)swl.push(sw.n_alterados+' mudaram durante o backup');if(sw.n_sumiram)swl.push(sw.n_sumiram+' sumiram da origem durante o backup');
   var h='<div class="cert" id="cert"><div class="ch"><div class="sl"><span class="sealA">'+seal('ouro',bt,170)+'</span><span class="sealP">'+seal('claro',bt,170)+'</span></div>'+
@@ -407,6 +408,7 @@ function homeHtml(){
    '<p class="lead">'+(okc?'Cada arquivo foi encontrado. Copiado. Conferido contra o original. Catalogado. Um por um — sem atalho, sem “acho que foi”.':'Nada foi escondido: o que deu problema está listado abaixo, com o motivo e como resolver.')+'</p></div></div>'+
    (who.length?'<div class="who">'+who.map(function(x){return '<div><span>'+x[0]+'</span><b>'+esc(x[1])+'</b></div>'}).join('')+'</div>':'')+
    (tpk.length?'<div class="eyebrow" style="margin-top:14px">Técnico responsável</div><div class="who">'+tpk.map(function(k){return '<div><span>'+TPR[k]+'</span><b>'+esc(tp[k])+'</b></div>'}).join('')+'</div>':'')+
+   (pr?'<div class="eyebrow" style="margin-top:14px">Programas a reinstalar: '+(pr.n||'nenhum')+'</div>'+(pr.n?'<p style="margin:6px 0 0">'+pr.nomes.map(esc).join(' · ')+'</p>':'<p style="margin:6px 0 0">Combinado com o cliente: nenhum programa para reinstalar.</p>'):'')+
    '<div class="nums"><div class="num g" data-f="ok"><b>'+nok.toLocaleString('pt-BR')+'</b><span>copiados e conferidos · '+fmtSize(byt)+'</span></div>'+
    '<div class="num '+(nfal?'r':'')+'" data-f="falha"><b>'+nfal+'</b><span>falhas</span></div>'+
    '<div class="num '+(ntras?'w':'')+'" data-f="tras"><b>'+ntras.toLocaleString('pt-BR')+'</b><span>ficaram de fora (listados)</span></div></div>'+

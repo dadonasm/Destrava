@@ -97,6 +97,9 @@ class Registro(unittest.TestCase):
             ficha.marcar_etapa(A, "otimizada")
         with self.assertRaises(ValueError):
             ficha.marcar_etapa("DD-NAO-EXISTE", "entregue")
+        with self.assertRaises(ValueError, msg="sem a etapa O que manter, não formata"):
+            ficha.marcar_etapa(A, "formatada", confirmar=True)
+        ficha.salvar_receita(A, [], nenhum=True)
         r = ficha.marcar_etapa(A, "formatada")
         self.assertIn("confirmar", r, "formatar sem backup verificado pede confirmação")
         self.assertEqual(ficha.meta_ler(A)["etapa"], "diagnosticada", "sem confirmar, nada muda")
@@ -113,6 +116,7 @@ class Registro(unittest.TestCase):
 
     def test_com_backup_verificado_formata_sem_perguntar(self):
         self.backup(A)
+        ficha.salvar_receita(A, [], nenhum=True)
         self.assertEqual(ficha.marcar_etapa(A, "formatada")["registro"]["etapa"], "formatada")
 
     # ------------------------------------------------------------------ máquinas antigas e serviço repetido

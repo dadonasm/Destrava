@@ -128,6 +128,34 @@ def documento(entradas, familia):
             "itens": itens}
 
 
+# sugestão pré-marcada em "O que manter": o que quase todo cliente usa. Nunca barra de ferramentas nem "otimizador".
+CATEGORIAS = [
+    ("navegador", ["google chrome", "firefox", "microsoft edge", "brave", "opera", "vivaldi"]),
+    ("escritório", ["microsoft office", "microsoft 365", "office 2016", "office 2019", "office 2021", "libreoffice", "onlyoffice", "wps office",
+                    "microsoft word", "microsoft excel", "microsoft powerpoint"]),
+    ("leitor de PDF", ["acrobat reader", "adobe acrobat", "foxit", "pdf-xchange", "sumatrapdf", "sumatra pdf"]),
+    ("e-mail", ["thunderbird", "microsoft outlook", "mailbird", "em client"]),
+    ("antivírus", ["avast", "avg antivirus", "kaspersky", "norton", "mcafee", "eset", "bitdefender", "malwarebytes", "avira", "panda dome", "sophos"]),
+]
+NUNCA_SUGERIR = ["toolbar", "barra de ferramentas", "booster", "cleaner", "cleanup", "optimizer", "otimizador", "web companion", "webadvisor",
+                 "safe search", "search protect", "coupon", "wajam"]
+
+
+def categoria(nome):
+    n = (nome or "").lower()
+    if any(b in n for b in NUNCA_SUGERIR):
+        return ""
+    return next((cat for cat, pads in CATEGORIAS if any(p in n for p in pads)), "")
+
+
+def com_sugestao(doc):
+    """Acrescenta categoria e "recomendado" na hora de mostrar (assim listas antigas também ganham a sugestão)."""
+    for g in (doc or {}).get("itens") or []:
+        g["categoria"] = categoria(g["nome"])
+        g["recomendado"] = bool(g["categoria"]) and not g["oculto"]
+    return doc
+
+
 def resumo(doc):
     if not doc:
         return None

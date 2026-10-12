@@ -1624,6 +1624,8 @@ def marcar_etapa(mid, etapa, confirmar=False):
         raise ValueError("Esta máquina já foi entregue.")
     if any(e["etapa"] == etapa for e in aberto):
         raise ValueError("Esta máquina já está marcada como %s neste serviço." % NOME_ETAPA[etapa].lower())
+    if etapa == "formatada" and not receita_valida(mid):
+        raise ValueError("Antes de formatar, defina o que manter (os programas a reinstalar). Pode ser nenhum, com confirmação.")
     if etapa == "formatada" and not confirmar and not any(e["etapa"] == "backup_verificado" for e in aberto):
         return {"confirmar": "Esta máquina não tem backup verificado neste serviço. Marcar como formatada mesmo assim?", "registro": reg}
     hist_add(mid, "etapa", "Marcada como %s" % NOME_ETAPA[etapa].lower(), {"etapa": etapa})
@@ -1645,6 +1647,53 @@ def programas_de(mid):
     """O programas.json da última análise "antes" (ou None, em máquinas analisadas antes desta função existir)."""
     _garantir(mid)
     return PROG.ler(pasta(mid))
+
+
+def receita_de(mid):
+    _garantir(mid)
+    try:
+        with open(os.path.join(pasta(mid), "receita.json"), encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return None
+
+
+def _inicio_servico(lst):
+    aberto = _em_aberto(lst)
+    if aberto:
+        return aberto[0].get("quando", "")
+    return next((e.get("quando", "") for e in reversed(lst) if e.get("etapa") == "entregue"), "")
+
+
+def receita_valida(mid):
+    """A receita feita neste serviço (depois que ele começou), ou None. É ela que libera formatar: a de um serviço antigo não vale."""
+    r = receita_de(mid)
+    return r if r and r.get("quando", "") >= _inicio_servico(registro(mid)["etapa_historico"]) else None
+
+
+def salvar_receita(mid, escolhas, nenhum=False):
+    """O que manter depois de formatar (receita.json). Da tela só vêm nome e nota de cada programa; o resto sai do
+    programas.json da máquina. Lista vazia só com a confirmação explícita de não manter nenhum."""
+    if not existe_maquina(mid):
+        raise ValueError("Máquina não encontrada.")
+    por = {g["nome"]: g for g in (programas_de(mid) or {}).get("itens") or []}
+    itens = []
+    for e in escolhas if isinstance(escolhas, list) else []:
+        g = por.get(str(e.get("nome") or "")) if isinstance(e, dict) else None
+        if not g or any(i["nome"] == g["nome"] for i in itens):
+            continue
+        tipo = next(iter(g["ids"]), "")
+        itens.append({"nome": g["nome"], "fabricante": g["fabricante"], "versao": (g["versoes"] or [""])[-1],
+                      "instalador": "%s:%s" % (tipo, g["ids"][tipo]) if tipo else "", "automatico": bool(tipo),
+                      "nota": " ".join(str(e.get("nota") or "").split())[:200]})
+    if not itens and not nenhum:
+        raise ValueError("Marque pelo menos um programa ou confirme que não vai manter nenhum.")
+    rec = {"versao": 1, "quando": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "tecnico": tecnico_atual(mid), "nenhum": not itens, "itens": itens}
+    _json_atomico(os.path.join(pasta(mid), "receita.json"), rec)
+    auto = sum(1 for i in itens if i["automatico"])
+    hist_add(mid, "receita", "O que manter: " + ("nenhum programa (confirmado)" if not itens else "%d programa(s), %d reinstala(m) sozinho(s)" % (len(itens), auto)),
+             {"n": len(itens), "automaticos": auto})
+    return rec
 
 
 def existe_maquina(mid):

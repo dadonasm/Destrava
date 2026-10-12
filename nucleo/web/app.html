@@ -205,6 +205,7 @@ body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{d
 @media (max-width:900px){.mqbar{grid-template-columns:1fr 1fr}.mqbar>input{grid-column:1/-1}}@media (max-width:520px){.mqbar{grid-template-columns:1fr}}
 .tb .n{opacity:.65;margin-left:4px;font-weight:400}.tb.pend .n{color:var(--warn);opacity:1;font-weight:700}
 .tblw{overflow-x:auto}.mqt{min-width:820px}
+.mtt{min-width:640px}.mtt td{vertical-align:middle}.mtt .ck{width:34px}.mtt input[type=checkbox]{width:16px;height:16px;cursor:pointer}.mtt tr.sel td{background:rgba(224,179,74,.08)}
 .mqt th{white-space:nowrap}.mqt th.so{cursor:pointer;user-select:none}.mqt th.so:hover,.mqt th.on{color:var(--tx)}
 .mqt td{vertical-align:middle}.mqt tbody tr{cursor:pointer}.mqt tbody tr:hover td{background:var(--panel2)}.mqt tr.sel td{background:rgba(224,179,74,.08)}
 .mqt .ck{width:34px}.mqt input[type=checkbox]{width:16px;height:16px;cursor:pointer}
@@ -597,7 +598,7 @@ let hp=null;
 function nav(v,arg){
   view=v;HOMEP=false;markNav();renderChrome();clearInterval(hp);
   $("#steps").classList.toggle("hide",v!=="backup");
-  if(v==="home")drawHome();else if(v==="perfil")drawPerfil();else if(v==="maq")drawMaq(arg);else if(v==="dados")drawDados();else if(v==="mapas")drawMapas();else if(v==="os")drawOS();else{setWide(false);renderSteps();draw()}
+  if(v==="home")drawHome();else if(v==="perfil")drawPerfil();else if(v==="maq")drawMaq(arg);else if(v==="manter")drawManter(arg,false);else if(v==="dados")drawDados();else if(v==="mapas")drawMapas();else if(v==="os")drawOS();else{setWide(false);renderSteps();draw()}
 }
 let HOMEP=false,PCHEIO=false;  // HOMEP: painel aberto por cima da ficha desta máquina; PCHEIO: painel completo mesmo no 1º atendimento do dia
 async function drawHome(){
@@ -730,6 +731,7 @@ async function certificadoMapa(){
    <div class="kpis">${kpi2(ok?"Concluído sem falhas":"Concluído com ressalvas",ok?"✅":"⚠️",nf(k.ok),"arquivos copiados e conferidos",tot?k.ok/tot*100:0,ok?"var(--ok)":"var(--warn)")}${kpi2("Tamanho copiado","📥",fmt(k.bytes),esc(c.verificacao||""),100,"var(--azul)")}
     ${kpi2("Falhas","❌",nf(k.falha),k.falha?"veja abaixo como resolver":"nenhuma",tot?k.falha/tot*100:0,"var(--err)")}${kpi2("Ficaram de fora","📤",nf(k.fora),"não escolhidos ou do sistema",tot?k.fora/tot*100:0,"#f0a020")}</div>
    ${blocoTecnico(ce.tecnico_perfil)?`<div class="card">${blocoTecnico(ce.tecnico_perfil)}</div>`:""}
+   ${ce.programas_resumo?`<div class="card"><h2>Programas a reinstalar: ${ce.programas_resumo.n||"nenhum"}</h2>${ce.programas_resumo.n?`<p style="margin:0">${ce.programas_resumo.nomes.map(esc).join(" · ")}</p>`:'<p class="mut" style="margin:0">Combinado com o cliente: nenhum programa para reinstalar.</p>'}</div>`:""}
    <div class="card"><h2>O que não foi copiado, por quê e como resolver</h2>${c.grupos.length?c.grupos.map(gr=>`<div class="grp"><div class="gq" style="color:${(SIT[gr.situacao]||["",""])[1]}">${nf(gr.n)}<div class="mut" style="font-weight:400;font-size:12px">${fmt(gr.bytes)}</div></div><div class="grow"><b>${esc((SIT[gr.situacao]||[gr.situacao])[0])}: ${esc(gr.motivo)}</b><div class="sol" style="margin-top:6px;font-size:13px;padding:8px 10px;border-radius:10px;background:var(--panel2);border-left:3px solid var(--azul)"><b>Como resolver:</b> ${esc(gr.resolver)}</div><div class="mut mono" style="font-size:11.5px;margin-top:4px">${gr.exemplos.map(esc).join("<br>")}</div></div></div>`).join(""):'<p class="okbox">Tudo o que existia foi copiado e conferido. Nada se perdeu.</p>'}
     ${(c.sweep.n_novos||c.sweep.n_alterados||c.sweep.n_sumiram)?`<p class="warnbox">Durante o backup: ${c.sweep.n_novos||0} arquivo(s) novo(s), ${c.sweep.n_alterados||0} alterado(s) e ${c.sweep.n_sumiram||0} que sumiram na origem. <b>Como resolver:</b> rode o backup de novo para pegar a versão final.</p>`:""}</div>
    ${c.maes.length?`<div class="card"><h2>Pastas-mãe separadas</h2><p>${c.maes.map(m=>"📁 "+esc(m.replace("Pastas_mae/",""))).join(" · ")}</p></div>`:""}
@@ -905,6 +907,65 @@ async function openProgramas(mid){
   $("#pgq",m).oninput=e=>{q=e.target.value;draw()};const pa=$("#pgall",m);if(pa)pa.onchange=e=>{tudo=e.target.checked;draw()};draw();$("#pgq",m).focus();
 }
 
+/* ---------- O que manter: programas a reinstalar depois de formatar (etapa do Backup e tela da máquina) ---------- */
+const MT={sel:new Map(),f:"todos",tudo:false,q:"",itens:[]};
+const PARECE_CHAVE=/\b[A-Z0-9]{5}(?:-[A-Z0-9]{5}){3,4}\b|senha|password/i;
+async function drawManter(mid,passo){
+  setWide(false);
+  const [r,s]=await Promise.all([api("/api/programas?mid="+encodeURIComponent(mid||"")),passo?api("/api/status"):null]);
+  if(passo?(view!=="backup"||step!==5):view!=="manter")return;
+  const d=r.programas,rc=r.receita,itens=(d&&d.itens)||[],feito=s&&s.phase==="done",esc_=itens.filter(g=>g.oculto).length;
+  const sel=new Map();
+  if(rc)(rc.itens||[]).forEach(i=>sel.set(i.nome,i.nota||""));else itens.forEach(g=>{if(g.recomendado)sel.set(g.nome,"")});  // 1ª vez: sugestão pré-marcada
+  itens.sort((x,y)=>(sel.has(y.nome)-sel.has(x.nome))||(y.recomendado-x.recomendado));  // escolhidos e sugeridos no topo (o resto segue em ordem alfabética)
+  Object.assign(MT,{mid:r.mid,sel,f:"todos",tudo:false,q:"",itens});
+  const nrec=itens.filter(g=>g.recomendado).length,nvis=itens.filter(g=>!g.oculto).length;
+  $("#main").innerHTML=`${passo?"":`<div class="row" style="margin-bottom:10px"><button id="mtvolta">← Voltar para a máquina</button></div>`}
+   <div class="ptitle"><h1>O que manter depois de formatar</h1><p>Marque os programas para reinstalar. A escolha fica gravada nesta máquina${passo?" e entra no certificado do backup":""}. Obrigatório para formatar, mas pode ser nenhum.</p></div>
+   ${rc&&!r.receita_valida?'<div class="warnbox">A escolha gravada é de um atendimento anterior. Confira e grave de novo para valer neste serviço.</div>':""}
+   ${feito?'<div class="infobox">O certificado deste backup já foi gerado: o que gravar agora libera a formatação, mas não muda o certificado.</div>':""}
+   <div class="card">${d?`<div class="row" style="margin-bottom:10px"><input type="text" id="mtq" placeholder="Buscar programa ou fabricante" aria-label="Buscar programa" class="grow" style="margin:0" autocomplete="off">
+      <select id="mtf" aria-label="Quais mostrar" style="width:auto;margin:0"><option value="todos">Todos (${nvis})</option><option value="rec">Só recomendados (${nrec})</option><option value="sel">Só marcados</option></select>
+      ${esc_?`<label class="pfc" style="margin:0"><input type="checkbox" id="mtall"> Incluir escondidos (+${esc_})</label>`:""}</div><div id="mtl" style="max-height:62vh;overflow:auto"></div>`
+     :'<div class="infobox">Esta máquina ainda não tem a lista de programas: ela sai da análise (Home → Analisar esta máquina). Sem a lista, dá para seguir confirmando que não vai manter nenhum programa.</div>'}
+    <p class="mut" style="font-size:12.5px;margin:10px 0 0">Nota livre por programa (ex.: “licença do cliente”, “baixar do site da fabricante”). <b>Não anote senhas nem chaves de licença.</b></p></div>
+   <div class="actbar"><div class="grow"><b id="mtn"></b><div class="mut" style="font-size:12px" id="mtn2"></div><label id="mtnen" class="pfc" style="margin:4px 0 0"><input type="checkbox" id="mtnenc" ${rc&&rc.nenhum?"checked":""}> Não manter nenhum programa (combinado com o cliente)</label></div>
+    ${passo?`<button id="mtback">← Voltar</button><button id="mtskip">Pular por agora</button><button class="pri" id="mtsave">${feito?"Gravar e ir para a conclusão →":"Gravar e concluir o backup →"}</button>`:'<button class="pri" id="mtsave">Gravar</button>'}</div>`;
+  const re=()=>mtLista();
+  if(d){$("#mtq").oninput=e=>{MT.q=e.target.value;re()};$("#mtf").onchange=e=>{MT.f=e.target.value;re()};const a=$("#mtall");if(a)a.onchange=e=>{MT.tudo=e.target.checked;re()};mtLista()}
+  mtConta();
+  const vo=$("#mtvolta");if(vo)vo.onclick=()=>nav("maq",MT.mid);
+  const fim=async()=>{if(!feito)await api("/api/finish",{});go(6)};
+  $("#mtsave").onclick=()=>safe(async()=>{if(!await mtGrava())return;toast("Escolha gravada.","ok");if(passo)await fim();else nav("maq",MT.mid)});
+  if(passo){$("#mtback").onclick=()=>go(4);
+    $("#mtskip").onclick=()=>safe(async()=>{if(await dialog({titulo:"Pular o “O que manter”?",html:"<p>Sem esta etapa, a formatação fica bloqueada e o certificado sai sem a lista de programas a reinstalar. Dá para fazer depois, pela ficha da máquina.</p>",ok:"Pular e concluir o backup"}))await fim()})}
+}
+function mtLista(){
+  const q=semAc(MT.q.trim()),l=MT.itens.filter(g=>(MT.tudo||!g.oculto||MT.sel.has(g.nome))&&(MT.f!=="rec"||g.recomendado)&&(MT.f!=="sel"||MT.sel.has(g.nome))&&(!q||semAc(g.nome+" "+g.fabricante).includes(q)));
+  const nota=g=>`<input type="text" data-nt="${esc(g.nome)}" value="${esc(MT.sel.get(g.nome))}" maxlength="200" placeholder="nota (opcional)" aria-label="Nota sobre ${esc(g.nome)}" style="margin:0;padding:6px 10px;font-size:13px">`;
+  $("#mtl").innerHTML=l.length?`<table class="mtt"><tr><th class="ck"></th><th>Programa</th><th>Versão</th><th>Reinstala sozinho?</th><th style="width:30%">Nota</th></tr>${l.map(g=>{const on=MT.sel.has(g.nome),t=Object.keys(g.ids)[0];
+    return `<tr class="${on?"sel":""}"><td class="ck"><input type="checkbox" data-n="${esc(g.nome)}" ${on?"checked":""} aria-label="Manter ${esc(g.nome)}"></td>
+     <td><b>${esc(g.nome)}</b>${g.fabricante?`<div class="mut" style="font-size:12px">${esc(g.fabricante)}</div>`:""}${g.categoria?`<span class="badge b-ok" style="margin-top:4px">${esc(g.categoria)}</span>`:""}${g.oculto?`<span class="badge b-mut" style="margin-top:4px">${esc(g.motivo)}</span>`:""}</td>
+     <td style="font-size:12.5px">${esc(g.versoes.slice(-1)[0]||"—")}</td><td>${t?`<span class="badge b-ok">sim · ${esc(INST[t]||t)}</span>`:'<span class="badge b-mut">não · à mão</span>'}</td><td data-nc="${esc(g.nome)}">${on?nota(g):""}</td></tr>`}).join("")}</table>`
+   :'<p class="mut">Nenhum programa com esse filtro.</p>';
+  const wn=i=>i.oninput=()=>MT.sel.set(i.dataset.nt,i.value);
+  $$("#mtl [data-nt]").forEach(wn);
+  $$("#mtl [data-n]").forEach(c=>c.onchange=()=>{const g=MT.itens.find(x=>x.nome===c.dataset.n);if(c.checked)MT.sel.set(g.nome,"");else MT.sel.delete(g.nome);
+    const tr=c.closest("tr");tr.classList.toggle("sel",c.checked);const td=tr.querySelector("[data-nc]");td.innerHTML=c.checked?nota(g):"";const i=td.querySelector("input");if(i)wn(i);mtConta()});
+}
+function mtConta(){
+  const n=MT.sel.size,auto=MT.itens.filter(g=>MT.sel.has(g.nome)&&Object.keys(g.ids).length).length;
+  $("#mtn").textContent=n?`${n} programa${n>1?"s":""} para reinstalar`:"Nenhum programa marcado";
+  $("#mtn2").textContent=n?`${auto} reinstala${auto===1?"":"m"} sozinho${auto===1?"":"s"} · ${n-auto} à mão`:"Para seguir sem programas, confirme ao lado.";
+  $("#mtnen").classList.toggle("hide",n>0);
+}
+async function mtGrava(){
+  const itens=[...MT.sel].map(([nome,nota])=>({nome,nota})),nenhum=!itens.length&&$("#mtnenc").checked;
+  if(!itens.length&&!nenhum)throw new Error("Marque pelo menos um programa ou confirme que não vai manter nenhum.");
+  if(itens.some(i=>PARECE_CHAVE.test(i.nota))&&!await dialog({titulo:"Isso parece uma senha ou chave de licença",html:"<p>A nota fica gravada no registro da máquina. O recomendado é não guardar senhas nem chaves de licença aqui.</p>",ok:"Gravar mesmo assim",cancelar:"Voltar e corrigir"}))return false;
+  await api("/api/maquina/receita",{mid:MT.mid,itens,nenhum});return true;
+}
+
 /* ---------- comparar (Versus) ---------- */
 async function openCompare(mid,a,b){
   const L=await api("/api/ficha/lista?mid="+encodeURIComponent(mid));const f=L.fichas;
@@ -1060,14 +1121,15 @@ function regHtml(g){
   const nome=k=>(g.etapas.find(e=>e[0]===k)||[k,k])[1],ser=[];
   (g.etapa_historico||[]).forEach(e=>{if(!ser.length||ser[ser.length-1].slice(-1)[0].etapa==="entregue")ser.push([]);ser[ser.length-1].push(e)});
   const feito={};(ser[ser.length-1]||[]).forEach(e=>feito[e.etapa]=e);
-  const ent=g.etapa==="entregue",tel=dig(g.telefone),nbk=(g.historico||[]).filter(e=>e.tipo==="backup").length;
+  const ent=g.etapa==="entregue",tel=dig(g.telefone),nbk=(g.historico||[]).filter(e=>e.tipo==="backup").length,rc=g.receita,rv=!!(rc&&rc.valida);
   const dono=g.dono==="terceiros"?`<p style="margin:4px 0 0"><b>${esc(g.dono_nome||"—")}</b> <span class="badge b-warn">Terceiros</span></p>`:g.dono==="particular"?'<p style="margin:4px 0 0"><b>Máquina particular</b> <span class="mut">(uso próprio)</span></p>':'<p class="mut" style="margin:4px 0 0">Termo ainda não aceito nesta máquina.</p>';
   return `<div class="card"><div class="row" style="align-items:flex-start"><div class="grow"><div class="eyebrow">REGISTRO DA MÁQUINA</div><h2 style="font-size:22px">${esc(g.modelo||(g.analises?g.nome:"Ainda sem análise"))}</h2>
     <div class="mut" style="font-size:13px"><span class="cod">${esc(g.mid)}</span>${g.sistema?" · "+esc(g.sistema):""}${g.serie?" · série "+esc(g.serie):""}</div></div>${seloEt(g.etapa,g.etapa_nome)}</div>
    ${g.pendencia?`<div class="warnbox"><b>Pendência:</b> ${esc(g.pendencia)}</div>`:""}
    <div class="etp">${g.etapas.map(([k,t])=>{const e=feito[k];return `<div class="s ${k===g.etapa?"cur":e?"ok":""}"><b>${esc(t)}</b>${e?`${dataBR(e.quando)}<br>${esc(e.tecnico||"—")}`:"&nbsp;"}</div>`}).join("")}</div>
    <div class="row" style="justify-content:flex-end;margin-top:10px">${ent?'<span class="mut grow" style="font-size:13px">Serviço encerrado. Se a máquina voltar, o próximo termo ou análise abre um serviço novo nesta mesma entrada.</span>':'<span class="mut grow" style="font-size:13px">As outras etapas mudam sozinhas, conforme o atendimento avança.</span>'}
-    <button id="rgfmt" ${feito.formatada||ent?"disabled":""}>Marcar como formatada</button><button class="pri" id="rgent" ${ent?"disabled":""}>Marcar como entregue</button></div>
+    <button id="rgfmt" ${feito.formatada||ent||!rv?"disabled":""} ${rv?"":'title="Defina o que manter antes de formatar"'}>Marcar como formatada</button><button class="pri" id="rgent" ${ent?"disabled":""}>Marcar como entregue</button></div>
+   ${ent&&!rv?"":`<div class="${rv?"okbox":"infobox"}" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="grow"><b>O que manter depois de formatar:</b> ${rv?(rc.n?`${rc.n} programa${rc.n>1?"s":""} a reinstalar (${rc.automaticos} sozinho${rc.automaticos===1?"":"s"})`:"nenhum programa (confirmado)")+` <span class="mut">· ${dataBR(rc.quando)}${rc.tecnico?" · "+esc(rc.tecnico):""}</span>`:"ainda não definido neste serviço. É obrigatório para formatar (pode ser nenhum)."}</div><button class="sm ${rv?"":"pri"}" id="rgman">${rv?"Ver ou editar":"Definir o que manter"}</button></div>`}
    <div class="rgn"><div><span>Serviços</span><b>${g.servicos}</b></div><div><span>Nota</span><b>${notaHtml(g)}</b></div><div><span>Melhorias aplicadas</span><b>${g.melhorias}</b></div><div><span>Espaço recuperado</span><b>${g.espaco?fmt(g.espaco):"—"}</b></div><div><span>Backups</span><b>${nbk}</b></div></div>
    <div class="rg2"><div><h3 style="font-size:15px">Dono e contato</h3>${dono}
      <label for="rgtel">Telefone / WhatsApp</label><input type="text" id="rgtel" inputmode="tel" autocomplete="off" maxlength="40" value="${esc(g.telefone)}">
@@ -1084,6 +1146,7 @@ function wireReg(g){
     if(x.confirmar){if(await dialog({titulo:"Formatar sem backup verificado?",html:`<p>${esc(x.confirmar)}</p><p class="mut">Use só se o cliente dispensou o backup.</p>`,ok:"Marcar mesmo assim",perigo:true}))return marca(etapa,true);return}
     toast("Máquina marcada como "+x.registro.etapa_nome.toLowerCase()+".","ok");drawMaq(mid)};
   $("#rgfmt").onclick=()=>safe(()=>marca("formatada"));
+  const rm=$("#rgman");if(rm)rm.onclick=()=>nav("manter",mid);
   $("#rgent").onclick=()=>safe(async()=>{if(await dialog({titulo:"Marcar como entregue?",html:"<p>Encerra este serviço. Se a máquina voltar, ela continua nesta mesma entrada, com um serviço novo.</p>",ok:"Marcar como entregue"}))await marca("entregue")});
   $("#rgsave").onclick=()=>safe(async()=>{$("#rgerr").innerHTML="";
     try{await api("/api/maquina/registro",{mid,telefone:$("#rgtel").value,email:$("#rgmail").value,observacoes:$("#rgobs").value});toast("Contato e observações salvos.","ok")}
@@ -1327,7 +1390,7 @@ function dadosFim(a){
 }
 
 /* ================= Backup (jornada) ================= */
-const STEPS=["Origem e destino","Checagens","Seleção","Cópia","Verificação","Conclusão"];
+const STEPS=["Origem e destino","Checagens","Seleção","Cópia","Verificação","O que manter","Conclusão"];
 let step=0,S={sources:[],chosen:{},dest:"",folder:"",cliente:"",tecnico:"",equip:""},st=null,timer=null;
 let fl={cat:"",act:"",local:"",q:"",offset:0};
 function renderSteps(){
@@ -1335,7 +1398,7 @@ function renderSteps(){
   el.innerHTML=`<div class="jn done" title="Termo aceito"><span class="c">✓</span>Termo</div>`+STEPS.map((t,i)=>`<div class="jn ${i===step?"on":i<step?"done":""}" ${i===step?'aria-current="step"':""}><span class="c">${i<step?"✓":i+1}</span>${esc(t)}</div>`).join("");
 }
 function go(n){step=n;view="backup";markNav();$("#steps").classList.remove("hide");renderSteps();draw();window.scrollTo(0,0)}
-function draw(){clearInterval(timer);[draw1,draw2,draw3,draw4,draw5,draw6][step]()}
+function draw(){clearInterval(timer);[draw1,draw2,draw3,draw4,draw5,()=>drawManter("",true),draw6][step]()}
 const CATORD=["Documentos","Fotos","Videos","Audios","Projetos","Email_Contatos","Conversas","Contas_Senhas","Dados_de_apps","Sistemas","Navegadores","Outros","Nuvem","Ocultos","Programas","Configuracoes","Temporarios"];
 const CATNAME={Fotos:"Fotos",Videos:"Vídeos",Audios:"Áudios",Documentos:"Documentos",Projetos:"Projetos (Photoshop, CAD…)",Email_Contatos:"E-mail e contatos",Conversas:"Conversas (WhatsApp)",Contas_Senhas:"Contas e senhas",Outros:"Outros",Navegadores:"Favoritos dos navegadores",
  Dados_de_apps:"Dados de programas",Sistemas:"Bancos de dados de sistemas",Nuvem:"Só na nuvem (OneDrive/iCloud)",Ocultos:"Arquivos ocultos",Programas:"Programas e instaladores",Configuracoes:"Configurações e atalhos",Temporarios:"Temporários e sistema"};
@@ -1585,10 +1648,10 @@ async function showRes5(){
   if(nsw){h+=`<div class="rc y"><span class="ic2">⚠️</span><div><b>Varredura final</b><div class="mut">${nf(sw.n_novos)} novo(s), ${nf(sw.n_alterados)} alterado(s) e ${nf(sw.n_sumiram)} que sumiram da origem desde o escaneamento.</div></div></div>`;
     const rows=[...(sw.novos||[]).map(x=>[x,"Novo"]),...(sw.alterados||[]).map(x=>[x,"Alterado"])];
     if(rows.length)h+=`<div class="card"><table><tr><th>Arquivo</th><th>Situação</th></tr>${rows.slice(0,80).map(r=>`<tr><td class="mono">${esc(r[0][0])}</td><td>${r[1]}: ${esc(r[0][2])}</td></tr>`).join("")}</table>${sw.n_novos?'<p class="mut">Para incluir os novos, volte ao passo 2 e escaneie de novo (o que já foi copiado é reaproveitado).</p>':""}</div>`}
-  h+=`<div class="row"><span class="grow"></span><button class="pri" id="fin">Concluir e gerar certificado →</button></div>`;
+  h+=`<div class="row"><span class="grow"></span><button class="pri" id="fin">Continuar: o que manter →</button></div>`;
   $("#res5").innerHTML=h;
   const r=$("#retry");if(r)r.onclick=()=>safe(async()=>{await api("/api/retry",{});go(3)});
-  $("#fin").onclick=()=>safe(async()=>{await api("/api/finish",{});go(5)});
+  $("#fin").onclick=()=>go(5);
 }
 
 /* ---- 6 conclusão ---- */
@@ -1604,11 +1667,12 @@ async function draw6(){
    <p class="mono mut">Pasta do backup: ${esc(st.dest_root)}<br>Mapa: ${esc(st.dest_root)}/Mapa/visualizador.html</p>
    <div class="row"><button class="pri" id="omi">Abrir o Mapa no Destrava!</button><button id="om">Visualizador offline</button><button id="newb">Novo backup</button>${terc?'<button id="os6">Encerrar a OS</button>':""}</div></div>
   <div class="card"><h2>Formatar a máquina</h2>${g.ok?`<p class="h">Tudo certo para seguir. O computador reinicia direto na tela de firmware (BIOS/UEFI) para você escolher o boot e formatar.</p>
-   <label style="display:flex;gap:8px;align-items:center;margin:0 0 12px;color:var(--tx)"><input type="checkbox" id="cf"> Confirmo que o backup foi conferido e que posso formatar.</label><button class="dng" id="fw" disabled>Reiniciar para a BIOS/UEFI</button>`:`<div class="warnbox">Formatação bloqueada: ${esc(g.motivo)}</div>`}</div>`;
+   <label style="display:flex;gap:8px;align-items:center;margin:0 0 12px;color:var(--tx)"><input type="checkbox" id="cf"> Confirmo que o backup foi conferido e que posso formatar.</label><button class="dng" id="fw" disabled>Reiniciar para a BIOS/UEFI</button>`:`<div class="warnbox">Formatação bloqueada: ${esc(g.motivo)}</div>${g.falta_receita?'<button class="pri" id="fwman">Definir o que manter</button>':""}`}</div>`;
   $("#om").onclick=()=>safe(()=>api("/api/open_mapa",{}));
   const omi=$("#omi");if(omi)omi.onclick=()=>safe(async()=>{await api("/api/mapa/abrir",{pasta:st.dest_root});nav("mapas")});
   $("#newb").onclick=()=>safe(async()=>{await api("/api/reset",{});S.sources=[];S.chosen={};S.dest="";S.folder="";go(0)});
   const o6=$("#os6");if(o6)o6.onclick=()=>nav("os");
+  const fm=$("#fwman");if(fm)fm.onclick=()=>go(5);
   const cf=$("#cf");if(cf){cf.onchange=()=>$("#fw").disabled=!cf.checked;
    $("#fw").onclick=()=>safe(async()=>{
     const x=await dialog({titulo:"Último aviso",html:"<p>O computador vai reiniciar em instantes para a tela de firmware.</p>"+(terc?'<div class="warnbox">Máquina de terceiros: confirme que o cliente autorizou a formatação.</div>':""),texto:terc?"Digite FORMATAR para confirmar":null,exige:terc?"FORMATAR":null,ok:"Reiniciar agora",perigo:true});
@@ -1628,7 +1692,7 @@ async function draw6(){
   await loadCtx();
   let s;try{s=await api("/api/status")}catch(e){s={phase:"idle"}}
   st=s;
-  const map={idle:0,scanning:1,scanned:2,copying:3,copied:4,verifying:4,verified:4,finishing:5,done:5,error:0};
+  const map={idle:0,scanning:1,scanned:2,copying:3,copied:4,verifying:4,verified:4,finishing:6,done:6,error:0};
   step=map[s.phase]||0;
   if(s.phase==="idle"){nav("home")}else{view="backup";nav("backup");}
   if(["scanning","copying","verifying"].includes(s.phase))poll();

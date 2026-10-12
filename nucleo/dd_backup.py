@@ -45,6 +45,7 @@ VERSION = "3.1"
 import disco  # noqa: E402  (conferência lendo do disco, não da memória)
 import mapa as MAPA  # noqa: E402
 import perfil as PERFIL  # noqa: E402
+import programas as PROG  # noqa: E402
 try:
     import ficha as FICHA
 except Exception:  # o backup continua funcionando mesmo sem a ficha
@@ -1614,6 +1615,12 @@ class App(object):
         if tp:
             cert["tecnico_perfil"] = tp
             cert["tecnico"] = cert["tecnico"] or tp.get("nome", "")
+        try:  # "O que manter" feito antes de concluir: o certificado lista os programas a reinstalar (só nomes, sem versão)
+            rec = FICHA.receita_valida(FICHA.machine_id_cache()) if FICHA else None
+            if rec:
+                cert["programas_resumo"] = {"n": len(rec["itens"]), "nomes": [i["nome"] for i in rec["itens"]]}
+        except Exception:
+            pass
         try:
             if FICHA and TERMO:
                 mid = FICHA.machine_id_cache()
@@ -1674,6 +1681,8 @@ class App(object):
             return False, "O backup está no mesmo disco físico de uma origem. Formatar apagaria o backup."
         if self.verified_mode != "completa":
             return False, "Faça a verificação COMPLETA (SHA-256 lido do disco) antes de formatar."
+        if FICHA and not FICHA.receita_valida(FICHA.machine_id_cache()):
+            return False, "Falta a etapa “O que manter”: escolha os programas a reinstalar (ou confirme que não vai manter nenhum)."
         return True, ""
 
     def firmware_reboot(self):
@@ -2246,10 +2255,13 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/maquina":  # Ficha completa: registro (etapas, contato) e a linha do tempo inteira
                 reg = FICHA.linha_registro(mid, FICHA.machine_id_cache())
                 if reg:
-                    out["registro"] = dict(reg, etapas=FICHA.ETAPAS, historico=[dict(e, etapa=FICHA.etapa_do_evento(e) or "") for e in FICHA.hist_get(mid)])
+                    rec = FICHA.receita_de(mid)
+                    out["registro"] = dict(reg, etapas=FICHA.ETAPAS, receita=rec and {"n": len(rec.get("itens") or []), "automaticos": sum(1 for i in rec.get("itens") or [] if i.get("automatico")),
+                                                                                     "quando": rec.get("quando", ""), "tecnico": rec.get("tecnico", ""), "valida": bool(FICHA.receita_valida(mid))}, historico=[dict(e, etapa=FICHA.etapa_do_evento(e) or "") for e in FICHA.hist_get(mid)])
             return out
         if path == "/api/programas":
-            return {"programas": FICHA.programas_de((q.get("mid") or [""])[0] or FICHA.machine_id_cache())}
+            mid = (q.get("mid") or [""])[0] or FICHA.machine_id_cache()
+            return {"mid": mid, "programas": PROG.com_sugestao(FICHA.programas_de(mid)), "receita": FICHA.receita_de(mid), "receita_valida": bool(FICHA.receita_valida(mid))}
         if path == "/api/painel":
             return FICHA.painel_resumo(FICHA.machine_id_cache()) if FICHA else {"maquinas": 0}
         if path == "/api/maquinas":
@@ -2311,7 +2323,7 @@ class Handler(BaseHTTPRequestHandler):
             return {"ok": True}
         if path == "/api/firmware_gate":
             ok, why = APP.firmware_gate()
-            return {"ok": ok, "motivo": why}
+            return {"ok": ok, "motivo": why, "falta_receita": bool(FICHA and not FICHA.receita_valida(FICHA.machine_id_cache()))}
         if path == "/api/firmware":
             if not b.get("confirmo"):
                 raise ValueError("Confirmação ausente.")
@@ -2376,6 +2388,9 @@ class Handler(BaseHTTPRequestHandler):
             return {"nome": FICHA.nome_exibicao(mid)}
         if path == "/api/maquina/etapa":
             return FICHA.marcar_etapa(str(b.get("mid") or ""), str(b.get("etapa") or ""), bool(b.get("confirmar")))
+        if path == "/api/maquina/receita":
+            mid = str(b.get("mid") or "") or FICHA.machine_id_cache()
+            return {"receita": FICHA.salvar_receita(mid, b.get("itens"), bool(b.get("nenhum")))}
         if path == "/api/maquina/registro":
             return {"registro": FICHA.salvar_contato(str(b.get("mid") or ""), b.get("telefone", ""), b.get("email", ""), b.get("observacoes", ""))}
         if path == "/api/maquina/apagar":
