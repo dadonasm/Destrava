@@ -245,7 +245,7 @@ body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{d
 .lstn span{color:var(--mut);font-size:12.5px;display:block}.lstn b{font-size:18px}.lstn .arco{width:76px;height:76px;grid-column:3;grid-row:1/span 2}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;background:var(--panel2)}.seg button{border:0;background:transparent}.seg button.on{background:var(--panel);box-shadow:var(--sh);font-weight:700}
 .lstc{flex:1;min-height:0;overflow:auto;border-top:1px solid var(--line)}
-.lstt{min-width:780px}.lstt thead th{position:sticky;top:0;background:var(--panel);z-index:1}.lstt th button{border:0;background:transparent;padding:0;font:inherit;color:inherit;cursor:pointer;border-radius:0}.lstt th button.on{color:var(--tx);font-weight:700}
+.lstt{min-width:880px}.lstt thead th{position:sticky;top:0;background:var(--panel);z-index:1}.lstt th button{border:0;background:transparent;padding:0;font:inherit;color:inherit;cursor:pointer;border-radius:0}.lstt th button.on{color:var(--tx);font-weight:700}
 .lstt td{vertical-align:middle}.lstt .ck{width:32px}.lstt .cam{font-size:12px;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lstt tr.desm td{color:var(--mut)}
 button.lnk{border:0;background:transparent;padding:0;color:var(--acc);text-align:left;cursor:pointer;font:inherit;border-radius:0}button.lnk:hover{text-decoration:underline}
 .lbbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 2px;position:sticky;top:0;background:var(--panel);z-index:1}
@@ -1701,11 +1701,13 @@ function drawTot(t){
 }
 /* ---- lista do backup: painel aberto pelo "Ver lista" (filtro, busca, ordem, Bloco ou Lista, rolagem infinita) ---- */
 const LST={f:{},rot:"",q:"",ord:"nome",dir:"asc",modo:"lista",off:0,fim:false,carregando:false,gen:0,tot:null};
+const STNOME={ok:"Copiado",pendente:"Pendente",falha:"Falha",revisar:"Revisar",ignorado:"Ignorado",desmarcado:"Desmarcado"};
+const stPill=s=>s?`<span class="pill p-${esc(s)}">${esc(STNOME[s]||s)}</span>`:"";
 const TIPO_IC={PDF:"📕",Word:"📘",Documento:"📄",Planilha:"📗","Apresentação":"📙",Texto:"📝",OneNote:"📓","E-mail":"✉️",Contato:"👤",Compactado:"🗜️",Imagem:"🖼️","Vídeo":"🎬","Áudio":"🎵"};
-const ORD_ROT=[["nome","Nome"],["tipo","Tipo"],["data","Data de criação"],["tamanho","Tamanho"]];
+const ORD_ROT=[["nome","Nome"],["tipo","Tipo"],["categoria","Categoria"],["situacao","Situação"],["data","Data de criação"],["tamanho","Tamanho"],["caminho","Caminho"]];
 const lstUrl=i=>"/api/files/ver?i="+i+"&t="+encodeURIComponent(TOKEN);
 const lstCurto=d=>{const p=String(d||"").split(/[\\/]/).filter(Boolean).slice(0,-1);return p.length?(p.length>2?"…/":"")+p.slice(-2).join("/")+"/":""};
-const lstLinha=x=>({i:x[0],disp:x[1],size:x[2],data:x[3],cat:x[4],act:x[5],inc:!!x[6],nome:x[10]||x[1],tipo:x[11]||"",prev:x[13]||""});
+const lstLinha=x=>({i:x[0],disp:x[1],size:x[2],data:x[3],cat:x[4],act:x[5],inc:!!x[6],motivo:x[7]||"",status:x[8]||"",nome:x[10]||x[1],tipo:x[11]||"",prev:x[13]||""});
 function abrirLista(filtro,rotulo){
   Object.assign(LST,{f:filtro||{},rot:rotulo||"",q:"",ord:"nome",dir:"asc",modo:lsGet("dd_lista_modo","lista")==="bloco"?"bloco":"lista",tot:null});
   const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","lstt");
@@ -1713,8 +1715,20 @@ function abrirLista(filtro,rotulo){
    <div class="lstn" id="lstn"></div>
    <div class="row" style="margin:12px 0 10px"><input type="text" id="lstq" class="grow" placeholder="Buscar: nome, tipo ou caminho" aria-label="Buscar por nome, tipo ou caminho" style="margin:0" autocomplete="off">
     <div class="seg" role="group" aria-label="Como mostrar"><button class="sm" data-m="bloco">Bloco</button><button class="sm" data-m="lista">Lista</button></div></div>
+   <div class="row" style="margin:0 0 10px">
+    <select id="lstcat" aria-label="Filtrar por categoria" style="margin:0"><option value="">Todas as categorias</option>${CATORD.map(c=>`<option value="${c}">${esc(CATNAME[c]||c)}</option>`).join("")}</select>
+    <select id="lstst" aria-label="Filtrar por situação" style="margin:0"><option value="">Todas as situações</option>${Object.keys(STNOME).map(s=>`<option value="${s}">${STNOME[s]}</option>`).join("")}</select>
+    <label class="tg"><input type="checkbox" id="lstinc"><s></s></label><label for="lstinc" class="pfc" style="margin:0">Só os selecionados</label>
+    <button class="sm gh" id="lstlimpa">Limpar filtros</button></div>
    <div class="lstc" id="lstc"></div></div>`;
   $("#layer").appendChild(d);
+  const fcat=$("#lstcat",d),fst=$("#lstst",d),finc=$("#lstinc",d);
+  fcat.value=LST.f.cat||"";fst.value=LST.f.status||"";finc.checked=!!LST.f.inc;
+  const poe=(k,v)=>{if(v)LST.f[k]=v;else delete LST.f[k];lstCarrega(true)};
+  fcat.onchange=()=>poe("cat",fcat.value);
+  fst.onchange=()=>poe("status",fst.value);
+  finc.onchange=()=>poe("inc",finc.checked?"1":"");
+  $("#lstlimpa",d).onclick=()=>{LST.f={};LST.rot="";LST.q="";$("#lstq",d).value="";fcat.value="";fst.value="";finc.checked=false;lstCarrega(true)};
   const tecla=ev=>{if(ev.key==="Escape"&&$("#layer").lastElementChild===d)fechar()};
   const fechar=()=>{d.remove();document.removeEventListener("keydown",tecla);if(view==="backup"&&step===2)draw3()};
   document.addEventListener("keydown",tecla);
@@ -1730,13 +1744,15 @@ function abrirLista(filtro,rotulo){
   lstCarrega(true);$("#lstq",d).focus();
 }
 function lstCab(){
-  const f=$("#lstf");$("#lstt").textContent="Lista: "+(LST.rot||"todos os arquivos");
-  f.innerHTML=LST.rot?`<span class="chip lchip">Filtro: ${esc(LST.rot)} <button aria-label="Tirar o filtro ${esc(LST.rot)}">✕</button></span>`:"";
-  const x=$("button",f);if(x)x.onclick=()=>{LST.f={};LST.rot="";lstCarrega(true)};
+  const f=$("#lstf"),fora=LST.rot&&(LST.f.local||LST.f.act);
+  const partes=[fora?LST.rot:"",LST.f.cat?CATNAME[LST.f.cat]||LST.f.cat:"",LST.f.status?STNOME[LST.f.status]:"",LST.f.inc?"só selecionados":""].filter(Boolean);
+  $("#lstt").textContent="Lista: "+(partes.join(" · ")||"todos os arquivos");
+  f.innerHTML=fora?`<span class="chip lchip">Filtro: ${esc(LST.rot)} <button aria-label="Tirar o filtro ${esc(LST.rot)}">✕</button></span>`:"";
+  const x=$("button",f);if(x)x.onclick=()=>{delete LST.f.local;delete LST.f.act;LST.rot="";lstCarrega(true)};
   $$("[data-m]").forEach(b=>{b.classList.toggle("on",b.dataset.m===LST.modo);b.setAttribute("aria-pressed",b.dataset.m===LST.modo)});
   const seta=k=>LST.ord===k?(LST.dir==="asc"?" ▲":" ▼"):"";
   $("#lstc").innerHTML=(LST.modo==="lista"
-   ?`<table class="lstt"><thead><tr><th class="ck"><input type="checkbox" id="lsta" aria-label="Marcar todos desta lista"></th>${[["nome","Nome do arquivo"],["tipo","Tipo"]].map(([k,t])=>`<th><button data-o="${k}" class="${LST.ord===k?"on":""}">${t}${seta(k)}</button></th>`).join("")}<th>Categoria</th>${[["data","Data de criação"],["tamanho","Tamanho"]].map(([k,t])=>`<th><button data-o="${k}" class="${LST.ord===k?"on":""}">${t}${seta(k)}</button></th>`).join("")}<th>Caminho</th></tr></thead><tbody id="lstl"></tbody></table>`
+   ?`<table class="lstt"><thead><tr><th class="ck"><input type="checkbox" id="lsta" aria-label="Marcar todos desta lista"></th>${[["nome","Nome do arquivo"],["tipo","Tipo"],["categoria","Categoria"],["situacao","Situação"],["data","Data de criação"],["tamanho","Tamanho"],["caminho","Caminho"]].map(([k,t])=>`<th><button data-o="${k}" class="${LST.ord===k?"on":""}">${t}${seta(k)}</button></th>`).join("")}</tr></thead><tbody id="lstl"></tbody></table>`
    :`<div class="lbbar"><label class="pfc" style="margin:0"><input type="checkbox" id="lsta"> Marcar todos</label><span class="grow"></span><label for="lstord" style="margin:0">Ordenar por</label><select id="lstord" style="width:auto;margin:0">${ORD_ROT.map(([k,t])=>`<option value="${k}" ${LST.ord===k?"selected":""}>${t}</option>`).join("")}</select><button class="sm" data-o="${LST.ord}" aria-label="Inverter a ordem">${LST.dir==="asc"?"▲":"▼"}</button></div><div class="lbg" id="lstl"></div>`)
    +'<div id="lstfim" class="mut" style="text-align:center;padding:14px;font-size:13px"></div>';
   $("#lsta").onchange=e=>safe(()=>lstMarcaTodos(e.target.checked));
@@ -1756,11 +1772,11 @@ async function lstCarrega(reset){
   const c=$("#lstc");if(!LST.fim&&c.scrollHeight<=c.clientHeight+400)lstCarrega();
 }
 function lstTr(o){return `<tr class="${o.inc?"":"desm"}"><td class="ck"><input type="checkbox" data-s="${o.i}" data-a="${esc(o.act)}" ${o.inc?"checked":""} aria-label="Marcar ${esc(o.nome)}"></td>
- <td>${o.prev?`<button class="lnk" data-p="${o.i}" data-tp="${o.prev}" data-nm="${esc(o.nome)}">${esc(o.nome)}</button>`:esc(o.nome)}</td><td>${esc(o.tipo)}</td><td>${esc(CATNAME[o.cat]||o.cat)}</td>
+ <td>${o.prev?`<button class="lnk" data-p="${o.i}" data-tp="${o.prev}" data-nm="${esc(o.nome)}">${esc(o.nome)}</button>`:esc(o.nome)}</td><td>${esc(o.tipo)}</td><td>${esc(CATNAME[o.cat]||o.cat)}</td><td title="${esc(o.motivo)}">${stPill(o.status)}</td>
  <td style="white-space:nowrap">${o.data?dataBR(o.data):"—"}</td><td style="white-space:nowrap">${fmt(o.size)}</td><td class="mut cam" title="${esc(o.disp)}">${esc(lstCurto(o.disp))}</td></tr>`}
 function lstBloco(o){return `<div class="lbk ${o.inc?"":"desm"}"><label class="lbc"><input type="checkbox" data-s="${o.i}" data-a="${esc(o.act)}" ${o.inc?"checked":""} aria-label="Marcar ${esc(o.nome)}"></label>
  <button class="lbt" ${o.prev?`data-p="${o.i}" data-tp="${o.prev}" data-nm="${esc(o.nome)}" aria-label="Ver ${esc(o.nome)}"`:'tabindex="-1" aria-hidden="true"'}>${o.prev==="imagem"?`<img loading="lazy" src="${lstUrl(o.i)}" alt="">`:`<span>${TIPO_IC[o.tipo]||"📄"}</span>`}</button>
- <b title="${esc(o.disp)}">${esc(o.nome)}</b><small>${esc(o.tipo)} · ${fmt(o.size)}${o.data?" · "+dataBR(o.data):""}</small></div>`}
+ <b title="${esc(o.disp)}">${esc(o.nome)}</b><small>${esc(o.tipo)} · ${fmt(o.size)}${o.data?" · "+dataBR(o.data):""}</small><span title="${esc(o.motivo)}">${stPill(o.status)}</span></div>`}
 function lstNums(r){
   LST.tot=r;const p=r.bytes?r.sel_bytes/r.bytes*100:0,cat=LST.f.cat?"Total da categoria":"Tamanho total";
   $("#lstn").innerHTML=`<div><span>Total de arquivos</span><b>${nf(r.total)}</b></div><div><span>${cat}</span><b>${fmt(r.bytes)}</b></div>${arco(p,r.sel_n?"var(--azul)":"var(--trilho)")}

@@ -115,8 +115,6 @@ IGN_WIN_ROOT = {"windows", "program files", "program files (x86)", "programdata"
                 "amd", "nvidia", "documents and settings", "boot", "efi", "users"}
 IGN_WIN_USERS = {"default", "default user", "all users", "public documents"}
 SILENT_JUNCTIONS = {"application data", "cookies", "local settings", "my documents", "nethood", "printhood", "recent", "sendto", "start menu", "templates"}
-IGN_LINUX_HOME = {".cache", ".config", ".local", ".mozilla", ".var", ".steam", ".npm", ".nvm", ".cargo", ".rustup", ".gradle", ".m2", ".wine",
-                  ".dbus", ".gvfs", ".thumbnails", "snap", ".snap", ".pki", ".gnome", ".compiz", ".icons", ".themes", ".java", ".nv"}
 CLOUD_ATTRS = 0x1000 | 0x40000 | 0x400000  # OFFLINE | RECALL_ON_OPEN | RECALL_ON_DATA_ACCESS
 GOOD_FS = {"ntfs", "ntfs3", "fuseblk", "vfat", "exfat", "ext2", "ext3", "ext4", "btrfs", "xfs", "f2fs", "hfsplus", "apfs", "msdos"}
 RESERVED = {"con", "prn", "aux", "nul"} | {"com%d" % i for i in range(1, 10)} | {"lpt%d" % i for i in range(1, 10)}
@@ -471,14 +469,16 @@ def detect_kind(p):
         users = []
         try:
             for n in sorted(os.listdir(os.path.join(p, names.get("users", "Users")))):
-                if os.path.isdir(os.path.join(p, names.get("users", "Users"), n)) and n.lower() not in IGN_WIN_USERS and not re.match(r"^defaultuser\d+$", n, re.I):
+                up = os.path.join(p, names.get("users", "Users"), n)
+                if os.path.isdir(up) and not os.path.islink(up) and n.lower() not in IGN_WIN_USERS and not re.match(r"^defaultuser\d+$", n, re.I):
                     users.append(n)
         except OSError:
             pass
         return "windows", users
     if "home" in names and "etc" in names and "usr" in names:
         try:
-            return "linux", sorted(n for n in os.listdir(os.path.join(p, names["home"])) if os.path.isdir(os.path.join(p, names["home"], n)))
+            hp = os.path.join(p, names["home"])
+            return "linux", sorted(n for n in os.listdir(hp) if os.path.isdir(os.path.join(hp, n)) and not os.path.islink(os.path.join(hp, n)))
         except OSError:
             return "linux", []
     return "folder", []
@@ -791,7 +791,7 @@ class App(object):
             if ud:
                 for u in sorted(safe_listdir(os.path.join(root, ud))):
                     up = os.path.join(root, ud, u)
-                    if not os.path.isdir(up) or u.lower() in IGN_WIN_USERS or re.match(r"^defaultuser\d+$", u, re.I):
+                    if not os.path.isdir(up) or os.path.islink(up) or u.lower() in IGN_WIN_USERS or re.match(r"^defaultuser\d+$", u, re.I):
                         continue
                     if u.lower() == "public":
                         local = "Publico"
@@ -817,10 +817,10 @@ class App(object):
             hp = os.path.join(root, "home")
             for u in sorted(safe_listdir(hp)):
                 up = os.path.join(hp, u)
-                if os.path.isdir(up):
+                if os.path.isdir(up) and not os.path.islink(up):
                     plans.append((up, u, "/home/" + u, "/", "linuxuser"))
             rp = os.path.join(root, "root")
-            if os.path.isdir(rp):
+            if os.path.isdir(rp) and not os.path.islink(rp):
                 plans.append((rp, "root", "/root", "/", "linuxuser"))
         else:
             base = os.path.basename(root.rstrip("/\\")) or root
@@ -1216,7 +1216,8 @@ class App(object):
         return {"groups": glist, "cats": cl, "acts": al, "ign_dirs": self.ign_dirs[:600], "ign_dirs_total": self.ign_dirs_total}
 
     ORDEM = {"nome": lambda it: nome_de(it.disp).lower(), "tipo": lambda it: (tipo_de(nome_de(it.disp)), nome_de(it.disp).lower()),
-             "data": lambda it: it.date or (0, 0, 0), "tamanho": lambda it: it.size, "caminho": lambda it: it.disp.lower()}
+             "data": lambda it: it.date or (0, 0, 0), "tamanho": lambda it: it.size, "caminho": lambda it: it.disp.lower(),
+             "categoria": lambda it: PRIORIDADE.index(it.cat) if it.cat in PRIORIDADE else len(PRIORIDADE)}
 
     def files(self, q):
         """Lista do backup: filtro, busca (caminho ou tipo), ordem (ord/dir), página e os totais do filtro. limit=0: só os totais."""
@@ -1227,7 +1228,7 @@ class App(object):
         lim = max(0, min(int(f.get("limit", 200)), 500))
         idx = [i for i, it in enumerate(self.items) if self.matches(it, f)]
         sel = [self.items[i] for i in idx if self.items[i].inc]
-        chave = self.ORDEM.get(f.get("ord") or "")
+        chave = (lambda it: self.final_status(it)) if f.get("ord") == "situacao" else self.ORDEM.get(f.get("ord") or "")
         if chave and lim:
             idx.sort(key=lambda i: chave(self.items[i]), reverse=f.get("dir") == "desc")
         out = []

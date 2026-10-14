@@ -47,6 +47,23 @@ class Lista(unittest.TestCase):
         r = self.lista(cat="Documentos", ord="nome", offset=1, limit=2)
         self.assertEqual((self.nomes(r), r["total"]), (["b_relatorio.docx", "c_apresentacao.pptx"], 4), "pagina depois de ordenar")
 
+    def test_ordem_por_categoria_e_situacao(self):
+        pos = lambda c: dd_backup.PRIORIDADE.index(c) if c in dd_backup.PRIORIDADE else 99
+        cats = [pos(x[4]) for x in self.lista(ord="categoria")["rows"]]
+        self.assertEqual(cats, sorted(cats), "na ordem de importância, a mesma da cópia")
+        self.assertEqual([pos(x[4]) for x in self.lista(ord="categoria", dir="desc")["rows"]], sorted(cats, reverse=True))
+        self.app.select({"idx": [self.app.items.index(self.itens["b_relatorio.docx"])], "on": False})
+        sts = [x[8] for x in self.lista(ord="situacao")["rows"]]
+        self.assertEqual(sts, sorted(sts))
+        self.assertIn("desmarcado", sts)
+
+    def test_filtro_por_situacao_e_so_selecionados(self):
+        self.app.select({"idx": [self.app.items.index(self.itens["b_relatorio.docx"])], "on": False})
+        self.assertNotIn("b_relatorio.docx", self.nomes(self.lista(cat="Documentos", inc=1)))
+        self.assertEqual(self.nomes(self.lista(cat="Documentos", status="desmarcado")), ["b_relatorio.docx"])
+        r = self.lista(cat="Documentos", inc=1, limit=0)
+        self.assertEqual(r["total"], r["sel_n"], "só selecionados: tudo que aparece está marcado")
+
     def test_linha_traz_nome_tipo_local_e_previa(self):
         x = next(x for x in self.lista(cat="Documentos", ord="nome")["rows"] if x[10] == "contrato.pdf")
         self.assertEqual((x[11], x[12], x[13]), ("PDF", self.itens["contrato.pdf"].local, "pdf"))
