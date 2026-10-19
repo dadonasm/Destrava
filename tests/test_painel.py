@@ -61,6 +61,14 @@ class Painel(unittest.TestCase):
         self.assertEqual((p["protegido"], p["backups"], p["backup_maquinas"]), (110 * GB, 2, 2), "o backup antigo entra pelo tamanho do texto")
         self.assertEqual([x["mid"] for x in p["ultimas"]][-1], B, "a mais antiga por último")
 
+    def test_formatacoes_e_melhor_nota(self):
+        self.assertEqual((ficha.painel_resumo("")["formatacoes"], ficha.painel_resumo("")["melhor"]), (0, None))
+        self.tres_maquinas()
+        ficha.hist_add(C, "formatacao", "Reinício para BIOS/UEFI solicitado para formatar")
+        p = ficha.painel_resumo("")
+        self.assertEqual(p["formatacoes"], 1, "o reinício para formatar conta como formatação")
+        self.assertEqual((p["melhor"]["mid"], p["melhor"]["nota"]), (A, 70))
+
     def test_concluido_de_outro_mes_nao_conta_no_mes(self):
         self.tres_maquinas()
         p = ficha.painel_resumo("", datetime.datetime.now() + datetime.timedelta(days=40))

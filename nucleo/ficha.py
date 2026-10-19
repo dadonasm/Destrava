@@ -1517,6 +1517,8 @@ def etapa_do_evento(ev):
         return "otimizada"
     if t == "etapa" and ex.get("etapa") in MANUAIS:
         return ex["etapa"]
+    if t == "formatacao":
+        return "formatada"
     return None
 
 
@@ -1820,6 +1822,9 @@ def painel_resumo(atual=None, agora=None):
     notas = [x for x in linhas if x.get("nota_antes") is not None and x.get("nota_depois") is not None]
     otim = [x for x in notas if x.get("melhorias")]
     subiu = sum(1 for x in otim if x["nota_depois"] > x["nota_antes"])
+    nota_de = lambda x: next((x[k] for k in ("nota", "nota_depois", "nota_antes") if x.get(k) is not None), None)
+    com_nota = [x for x in linhas if nota_de(x) is not None]
+    top = dict(max(com_nota, key=nota_de), nota=nota_de(max(com_nota, key=nota_de))) if com_nota else None
 
     def media(v):
         return round(sum(v) / len(v), 1) if v else None
@@ -1832,6 +1837,8 @@ def painel_resumo(atual=None, agora=None):
             "espaco": sum(x.get("espaco") or 0 for x in linhas), "espaco_maquinas": sum(1 for x in linhas if x.get("espaco")),
             "protegido": sum(x.get("protegido") or 0 for x in linhas), "backups": sum(x.get("backups") or 0 for x in linhas),
             "backup_maquinas": sum(1 for x in linhas if x.get("backups")),
+            "formatacoes": sum(1 for x in linhas for e in x.get("etapa_historico") or [] if e.get("etapa") == "formatada"),
+            "melhor": {k: top.get(k) for k in ("mid", "nota", "modelo", "nome", "dono_nome")} if top else None,
             "pendencias": [x for x in linhas if x.get("pendencia")],
             "ultimas": sorted(linhas, key=lambda x: x.get("ultimo") or "", reverse=True)[:5],
             "compacto": not any((x.get("ultimo") or "").startswith(hoje) for x in linhas if x.get("mid") != atual)}

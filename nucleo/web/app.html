@@ -261,6 +261,15 @@ button.lbt{height:110px;border-radius:10px;border:0;padding:0;background:var(--p
 button.pn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:14px 16px;border-radius:16px;background:var(--panel);box-shadow:var(--sh);min-height:112px}
 .pn>span{font-size:12.5px;color:var(--mut)}.pn>b{font-size:24px;line-height:1.25;letter-spacing:-.3px}.pn>small{font-size:12px;color:var(--mut)}
 .pn.warn{border-color:var(--warn)}.pn.warn>b{color:var(--warn)}
+.hk{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+button.hkc{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:18px;border-radius:18px;background:var(--panel);box-shadow:var(--sh);min-height:140px}
+.hkc .ic{width:38px;height:38px;border-radius:12px;background:var(--panel2);display:flex;align-items:center;justify-content:center;color:var(--acc);margin-bottom:6px}.hkc .ic svg{width:22px;height:22px}
+.hkc .t{font-size:13px;color:var(--mut)}.hkc b{font-size:30px;line-height:1.2;letter-spacing:-.5px}.hkc small{font-size:12.5px;color:var(--mut)}
+.ha{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}@media (max-width:820px){.ha{grid-template-columns:1fr 1fr}}@media (max-width:520px){.ha{grid-template-columns:1fr}}
+button.hac{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:16px;border-radius:16px;background:var(--panel2);border:1px solid var(--line);min-height:120px}
+button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-1px)}
+.hac .ic{width:44px;height:44px;border-radius:50%;background:var(--btnpri);color:var(--btnpri-tx);display:flex;align-items:center;justify-content:center;margin-bottom:4px}.hac .ic svg{width:22px;height:22px}
+.hac b{font-size:15px}.hac small{font-size:12.5px;color:var(--mut);line-height:1.35}
 .pcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}.pcols .card{margin-bottom:0}@media (max-width:900px){.pcols{grid-template-columns:1fr}}
 button.pli{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 6px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
 button.pli:hover{background:var(--panel2)}.pli .grow{min-width:0}.pli .cod{display:block}.pli small{display:block;color:var(--mut);font-size:11.5px;text-align:right;margin-top:3px}
@@ -658,72 +667,47 @@ function nav(v,arg){
   $("#steps").classList.toggle("hide",v!=="backup");
   if(v==="home")drawHome();else if(v==="perfil")drawPerfil();else if(v==="maq")drawMaq(arg);else if(v==="manter")drawManter(arg,false);else if(v==="dados")drawDados();else if(v==="mapas")drawMapas();else if(v==="os")drawOS();else{setWide(false);renderSteps();draw()}
 }
-let HOMEP=false,PCHEIO=false;  // HOMEP: painel aberto por cima da ficha desta máquina; PCHEIO: painel completo mesmo no 1º atendimento do dia
+let HOMEP=false;  // HOMEP: ficha desta máquina aberta a partir da Home
 async function drawHome(){
   clearInterval(hp);setWide(true);
   const est=await api("/api/ficha/estado");
   if(est.rodando)return drawFichaProg();
   const [r,p]=await Promise.all([api("/api/ficha/atual"),api("/api/painel").catch(()=>null)]);
   if(view!=="home")return;
-  if(r.visao&&!HOMEP){renderFicha(r,true);if(p&&p.maquinas)faixaPainel(p);return}
-  if(p&&p.maquinas)return drawPainel(r,est,p);
-  drawHomeVazia(r,est);
+  if(r.visao&&HOMEP){renderFicha(r,true);$(".fm").insertAdjacentHTML("afterbegin",'<div class="row" style="margin-bottom:10px"><button id="vhome">← Voltar para a Home</button></div>');$("#vhome").onclick=()=>{HOMEP=false;drawHome()};return}
+  drawApresentacao(r,est,p||{});
 }
 const pl=(n,um,varios)=>nf(n)+" "+(n===1?um:varios);
 const dec=n=>String(n).replace(".",",");
-function faixaPainel(p){const n=p.pendencias.length;
-  $(".fm").insertAdjacentHTML("afterbegin",`<div class="pfx"><span class="ic">${ic("maq")}</span><span class="grow"><b>Painel</b> · ${pl(p.maquinas,"máquina","máquinas")} no registro${n?` · <b style="color:var(--warn)">${pl(n,"pendência","pendências")}</b>`:""}</span><button class="sm" id="vpn">Ver painel</button></div>`);
-  $("#vpn").onclick=()=>{HOMEP=true;drawHome()}}
-/* Home com painel: só números do registro; cada um abre na tela Máquinas a lista que forma o número */
-function drawPainel(r,est,p){
+function trofeuStrip(cur){return `<div class="shelf">${[1,2,3,4,5].map(n=>`<div class="tr ${cur?(n===cur?"cur":n>cur?"lock":""):"lock"}">${trophy(n,96)}<b class="tl2">${esc(TRN[n])}</b><small>nota ${TRF[n]}</small></div>`).join("")}</div>`}
+/* Home de apresentação: números do registro (cada um abre a lista em Máquinas) e atalhos de uso */
+function drawApresentacao(r,est,p){
   setWide(true);
-  const v=r.visao,nt=p.nota,ot=p.otimizacao,np=p.pendencias.length,cheio=!p.compacto||PCHEIO;
-  const T=[["Máquinas atendidas",nf(p.maquinas),`${nf(p.em_andamento)} em andamento`,{}],
-   ["Serviços concluídos",nf(p.concluidos),p.concluidos?`${nf(p.concluidos_mes)} este mês · ${pl(p.maquinas_concluidas,"máquina","máquinas")}`:"nenhuma entrega marcada ainda",{extra:"concluidos"}],
-   ["Nota média",nt.n?`<span style="color:${COR(nt.antes)}">${dec(nt.antes)}</span> <span class="mut" style="font-size:18px">→</span> <span style="color:${COR(nt.depois)}">${dec(nt.depois)}</span>`:"—",nt.n?`antes → depois · ${pl(nt.n,"máquina","máquinas")}`:"nenhuma medida antes e depois ainda",{extra:"notas"}],
-   ["Taxa de otimização",ot.n?ot.taxa+"%":"—",ot.n?`${ot.subiu} de ${ot.n} subiram · ${ot.pontos>0?"+":""}${dec(ot.pontos)} pontos em média`:"nenhuma melhoria medida ainda",{extra:"melhorias"}],
-   ["Espaço recuperado",p.espaco?fmt(p.espaco):"—",p.espaco?pl(p.espaco_maquinas,"máquina","máquinas"):"nenhuma limpeza ainda",{extra:"espaco",ord:"espaco"}],
-   ["Dados protegidos",p.protegido?fmt(p.protegido):"—",p.backups?`${pl(p.backups,"backup","backups")} · ${pl(p.backup_maquinas,"máquina","máquinas")}`:"nenhum backup ainda",{extra:"backup"}],
-   ["Pendências",nf(np),np?"backup sem entrega ou diagnóstico parado":"tudo em dia",{aba:"pendentes"}]];
-  const nome=m=>esc(m.modelo||(m.analises?m.nome:"Ainda sem análise"));
-  const lin=(m,txt)=>`<button class="pli" data-mid="${esc(m.mid)}"><span class="grow"><b>${nome(m)}</b><span class="cod">${esc(m.mid)}</span>${txt?`<span class="pd">⚠ ${esc(txt)}</span>`:""}</span><span>${seloEt(m.etapa,m.etapa_nome)}<small>${dataBR(m.ultimo)}</small></span></button>`;
-  const hero=v?`<div class="card phero"><div class="grow"><div class="eyebrow">ESTA MÁQUINA</div><h2>${esc(v.nome)}</h2><div class="mut">${esc(v.modelo)} · nota <b style="color:${COR(v.analise.nota.geral)}">${v.analise.nota.geral}</b> · <span class="cod">${esc(r.mid)}</span></div></div><button class="pri" id="vfi">Voltar para a ficha desta máquina</button></div>`
-   :`<div class="card phero"><div class="grow"><div class="eyebrow">ATENDIMENTO</div><h2>Pronto para o próximo atendimento</h2><p class="mut" style="margin:4px 0 0">Este computador (<span class="cod">${esc(r.mid)}</span>) ainda não foi analisado. Começa pelo termo e pela análise, que leva de 15 a 60 segundos.</p>
-     ${est.erro?`<div class="errbox">A última tentativa falhou: ${esc(est.erro)}</div>`:""}</div><div class="row"><button class="gh sm" id="pm">Ver permissões</button><button class="pri" id="perm" style="font-size:16px;padding:13px 26px">Atender nova máquina</button></div></div>`;
-  $("#main").innerHTML=`<div class="ptitle"><h1>Painel</h1><p>O resultado do seu trabalho, só com o que está registrado${info.servidor?" no servidor da loja":" no pendrive"}. Clique num número para ver as máquinas.</p></div>${hero}
-   <div class="pnl">${T.map((t,i)=>`<button class="pn ${i===6&&np?"warn":""}" data-i="${i}"><span>${t[0]}</span><b>${t[1]}</b><small>${t[2]}</small></button>`).join("")}</div>
-   ${cheio?`<div class="pcols"><div class="card"><div class="row" style="margin-bottom:6px"><h2 class="grow">Últimas máquinas</h2><button class="sm" id="pall">Ver todas</button></div>${p.ultimas.map(m=>lin(m)).join("")}</div>
-     <div class="card"><div class="row" style="margin-bottom:6px"><h2 class="grow">Pendências</h2>${np?'<button class="sm" id="ppen">Ver na lista</button>':""}</div>${np?p.pendencias.slice(0,6).map(m=>lin(m,m.pendencia)).join("")+(np>6?`<p class="mut" style="font-size:13px">e mais ${np-6}.</p>`:""):'<p class="mut">Nenhuma pendência. Tudo em dia.</p>'}</div></div>`
-   :`<div class="row" style="justify-content:center;gap:12px"><span class="mut" style="font-size:13.5px">Primeiro atendimento do dia: painel resumido para não atrasar.</span><button class="sm" id="pfull">Mostrar últimas máquinas e pendências</button></div>`}`;
-  $$("#main .pn").forEach(b=>b.onclick=()=>nav("maq",T[+b.dataset.i][3]));
+  const v=r.visao,mb=p.melhor,np=(p.pendencias||[]).length,ok=CTX.t&&CTX.t.status&&CTX.t.status.aceito;
+  const nomeM=m=>esc(m.modelo||(m.analises?m.nome:"Ainda sem análise"));
+  const K=[["backup","Backups feitos",nf(p.backups||0),p.protegido?`${fmt(p.protegido)} protegidos`:"nenhum ainda",()=>nav("maq",{extra:"backup"})],
+   ["trash","Espaço otimizado",p.espaco?fmt(p.espaco):"0",p.espaco?pl(p.espaco_maquinas,"máquina","máquinas"):"nenhuma limpeza ainda",()=>nav("maq",{extra:"espaco",ord:"espaco"})],
+   ["refresh","Formatações",nf(p.formatacoes||0),p.formatacoes?"reinícios para formatar":"nenhuma ainda",()=>nav("maq",{})],
+   ["cpu","Melhor nota",mb?`<span style="color:${COR(mb.nota)}">${mb.nota}</span>`:"—",mb?esc(mb.dono_nome||mb.modelo||mb.nome||mb.mid):"nenhuma análise ainda",()=>mb&&nav("maq",mb.mid)]];
+  const A=[["backup","Fazer backup","Copia, confere por hash e gera o Mapa e o certificado.",()=>nav("backup")],
+   ["cpu",v?"Ver a ficha desta máquina":(ok?"Analisar esta máquina":"Aceitar o termo e analisar"),v?`Nota ${v.analise.nota.geral} · ${esc(v.modelo)}`:"Nota de 0 a 100 em 15 a 60 segundos. Só lê.",()=>v?(HOMEP=true,drawHome()):safe(async()=>{await api("/api/ficha/coletar",{fase:"antes"});drawFichaProg()})],
+   ["dados","Otimizar e liberar espaço","Acha o que pesa e limpa com o seu sim.",()=>nav("dados")],
+   ["maq","Máquinas e clientes","Dono, contato, notas e histórico de cada máquina.",()=>nav("maq",{})],
+   ["mapa","Abrir um Mapa","O que foi copiado, com busca e o certificado.",()=>nav("mapas")],
+   ["gear","Configurações","Permissões do sistema e seus dados de técnico.",()=>nav("perfil")]];
+  const lin=(m,txt)=>`<button class="pli" data-mid="${esc(m.mid)}"><span class="grow"><b>${nomeM(m)}</b>${m.dono_nome?`<span style="display:block;font-size:13px">${esc(m.dono_nome)}</span>`:""}<span class="cod">${esc(m.mid)}</span>${txt?`<span class="pd">⚠ ${esc(txt)}</span>`:""}</span><span>${seloEt(m.etapa,m.etapa_nome)}<small>${dataBR(m.ultimo)}</small></span></button>`;
+  $("#main").innerHTML=`<div class="ptitle"><h1>Destrava!</h1><p>Backup conferido, máquina mais rápida e tudo registrado por máquina. Clique em qualquer item.</p></div>
+   ${est.erro?`<div class="errbox">A última análise falhou: ${esc(est.erro)}</div>`:""}
+   <div class="hk">${K.map((k,i)=>`<button class="hkc" data-k="${i}"><span class="ic">${ic(k[0])}</span><span class="t">${k[1]}</span><b>${k[2]}</b><small>${k[3]}</small></button>`).join("")}</div>
+   <h2 style="margin:22px 0 10px">O que você quer fazer?</h2>
+   <div class="ha">${A.map((a,i)=>`<button class="hac" data-a="${i}"><span class="ic">${ic(a[0])}</span><b>${a[1]}</b><small>${a[2]}</small></button>`).join("")}</div>
+   ${p.maquinas?`<div class="pcols" style="margin-top:18px"><div class="card"><div class="row" style="margin-bottom:6px"><h2 class="grow">Últimas máquinas</h2><button class="sm" id="pall">Ver todas</button></div>${p.ultimas.map(m=>lin(m)).join("")}</div>
+     <div class="card"><div class="row" style="margin-bottom:6px"><h2 class="grow">Pendências</h2>${np?'<button class="sm" id="ppen">Ver na lista</button>':""}</div>${np?p.pendencias.slice(0,6).map(m=>lin(m,m.pendencia)).join("")+(np>6?`<p class="mut" style="font-size:13px">e mais ${np-6}.</p>`:""):'<p class="mut">Nenhuma pendência. Tudo em dia.</p>'}</div></div>`:""}`;
+  $$("#main .hkc").forEach(b=>b.onclick=()=>K[+b.dataset.k][4]());
+  $$("#main .hac").forEach(b=>b.onclick=()=>A[+b.dataset.a][3]());
   $$("#main .pli").forEach(b=>b.onclick=()=>nav("maq",b.dataset.mid));
   const on=(id,fn)=>{const e=$("#"+id);if(e)e.onclick=fn};
-  on("pall",()=>nav("maq",{}));on("ppen",()=>nav("maq",{aba:"pendentes"}));on("pfull",()=>{PCHEIO=true;drawPainel(r,est,p)});
-  on("vfi",()=>{HOMEP=false;drawHome()});on("pm",()=>nav("perfil"));
-  on("perm",()=>safe(async()=>{await api("/api/ficha/coletar",{fase:"antes"});drawFichaProg()}));
-}
-function trofeuStrip(cur){return `<div class="shelf">${[1,2,3,4,5].map(n=>`<div class="tr ${cur?(n===cur?"cur":n>cur?"lock":""):"lock"}">${trophy(n,96)}<b class="tl2">${esc(TRN[n])}</b><small>nota ${TRF[n]}</small></div>`).join("")}</div>`}
-function drawHomeVazia(r,est){
-  setWide(false);
-  const ok=CTX.t&&CTX.t.status.aceito;
-  $("#main").innerHTML=`<div class="card empty"><div class="shield">${ic("shield")}</div><h2>Conheça a saúde deste computador</h2>
-   <p>O Destrava! mede o computador, dá uma <b>nota de 0 a 100</b> e mostra o que fazer para melhorar. A ficha fica guardada no seu pendrive, com histórico para comparar depois.</p>
-   <div class="seals">
-    <div class="sealc">${ic("lock")}<div><b>Fica só no seu computador</b><span>Sem internet e sem envio de dados.</span></div></div>
-    <div class="sealc">${ic("eye")}<div><b>Só lê, não altera</b><span>Mudanças só com o seu “sim”.</span></div></div>
-    <div class="sealc">${ic("doc")}<div><b>Tudo registrado</b><span>Quem aceitou o quê fica anotado.</span></div></div></div>
-   ${est.erro?`<div class="errbox" style="max-width:560px;margin:10px auto">A última tentativa falhou: ${esc(est.erro)}</div>`:""}
-   <p style="margin-top:18px"><button class="pri" id="perm" style="font-size:16px;padding:13px 28px">${ok?"Analisar esta máquina":"Aceitar o termo e analisar"}</button></p>
-   <p><button class="gh sm" id="pm">Ver permissões</button></p></div>
-  <div class="card"><h2>Como funciona, em 4 passos</h2><p class="h">Você decide cada um. Pode parar em qualquer ponto.</p>
-   <div class="walk">
-    <div class="wk"><div class="nb">1</div><b>Autorizar</b><span>Aceite o termo e diga se a máquina é sua ou de terceiros.</span><em>1 MINUTO</em></div>
-    <div class="wk"><div class="nb">2</div><b>Analisar</b><span>Mede velocidade, memória, disco e inicialização. Só lê.</span><em>15 A 60 SEGUNDOS</em></div>
-    <div class="wk"><div class="nb">3</div><b>Melhorar</b><span>Opcional. Ajustes simples, com botão de desfazer.</span><em>COM DESFAZER</em></div>
-    <div class="wk"><div class="nb">4</div><b>Backup e entrega</b><span>Copia o que importa, confere e gera o certificado.</span><em>CONFERIDO POR HASH</em></div></div></div>
-  <div class="card"><h2>Qual troféu a sua máquina vai ganhar?</h2><p class="h">Cada faixa de nota ganha um troféu maior, na evolução do computador.</p>${trofeuStrip(0)}</div>`;
-  $("#perm").onclick=()=>safe(async()=>{await api("/api/ficha/coletar",{fase:"antes"});drawFichaProg()});
-  $("#pm").onclick=()=>nav("perfil");
+  on("pall",()=>nav("maq",{}));on("ppen",()=>nav("maq",{aba:"pendentes"}));
 }
 function drawFichaProg(){
   setWide(false);
@@ -731,7 +715,7 @@ function drawFichaProg(){
   clearInterval(hp);hp=setInterval(async()=>{
     let e;try{e=await api("/api/ficha/estado")}catch(x){return}
     if($("#fp_b")){$("#fp_b").style.width=e.pct+"%";$("#fp_e").textContent=e.etapa}
-    if(!e.rodando){clearInterval(hp);if(e.erro)toast("A análise falhou: "+e.erro,"err");if(view==="home")drawHome()}
+    if(!e.rodando){clearInterval(hp);if(e.erro)toast("A análise falhou: "+e.erro,"err");else HOMEP=true;if(view==="home")drawHome()}
   },700)
 }
 const ICONS_CHAR={cpu:"cpu",ram:"ram",disco:"disk",gpu:"gpu",sys:"sys",bat:"bat"};
