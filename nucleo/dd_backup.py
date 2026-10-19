@@ -2507,7 +2507,7 @@ class Handler(BaseHTTPRequestHandler):
             mid = str(b.get("mid") or "") or FICHA.machine_id_cache()
             return {"receita": FICHA.salvar_receita(mid, b.get("itens"), bool(b.get("nenhum")))}
         if path == "/api/maquina/registro":
-            return {"registro": FICHA.salvar_contato(str(b.get("mid") or ""), b.get("telefone", ""), b.get("email", ""), b.get("observacoes", ""))}
+            return {"registro": FICHA.salvar_contato(str(b.get("mid") or ""), b.get("telefone", ""), b.get("email", ""), b.get("observacoes", ""), b.get("dono_nome"))}
         if path == "/api/maquina/apagar":
             mid = b.get("mid") or ""
             if not mid or (b.get("digitou") or "").strip().upper() != "APAGAR":

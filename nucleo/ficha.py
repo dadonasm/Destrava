@@ -1632,14 +1632,16 @@ def marcar_etapa(mid, etapa, confirmar=False):
     return {"registro": registro(mid)}
 
 
-def salvar_contato(mid, telefone="", email="", observacoes=""):
-    """Contato do dono e observações livres da Ficha da máquina (ficam no meta.json, como o resto do termo)."""
+def salvar_contato(mid, telefone="", email="", observacoes="", dono_nome=None):
+    """Dono, contato e observações livres da Ficha da máquina (ficam no meta.json, como o resto do termo)."""
     import perfil
     if not existe_maquina(mid):
         raise ValueError("Máquina não encontrada.")
     telefone, email = " ".join(str(telefone or "").split())[:40], str(email or "").strip()[:120]
     perfil.checar_contato(email, telefone)
     meta_set(mid, telefone=telefone, email=email, observacoes=str(observacoes or "").strip()[:2000])
+    if dono_nome is not None:
+        meta_set(mid, terceiro_nome=" ".join(str(dono_nome).split())[:120])
     return registro(mid)
 
 

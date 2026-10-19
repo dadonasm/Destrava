@@ -34,6 +34,13 @@ class Registro(unittest.TestCase):
         ficha.STORE, termo.LOG, perfil.PASTA, termo.detectar_corporativa = self._store, self._log, self._pasta, self._det
         shutil.rmtree(self.tmp, ignore_errors=True)
 
+    def test_terceiros_sem_os_libera_tudo_com_termo(self):
+        with self.assertRaises(termo.SemPermissao):
+            termo.exigir(A, "backup")
+        termo.aceitar(A, "Marlos Teste", "terceiros", terceiro_nome="Maria")
+        for esc in ("ficha", "backup", "melhorias", "limpeza", "formatar"):
+            self.assertTrue(termo.exigir(A, esc)["aceito"], esc)
+
     def ficha_win10(self, mid, fase="antes"):
         with open(os.path.join(AQUI, "fixtures", "win10_hd.json"), encoding="utf-8") as fh:
             d = json.load(fh)
@@ -176,6 +183,10 @@ class Registro(unittest.TestCase):
         self.assertEqual((r["telefone"], r["email"]), ("(27) 99999-1234", "ana@exemplo.com"))
         self.assertEqual(ficha.meta_ler(A)["observacoes"], "Cliente pediu para manter o Office.")
         self.assertEqual(ficha.meta_ler(A)["etapa"], "recebida", "editar o contato não mexe na etapa")
+        self.assertEqual(r["dono_nome"], "Ana Lúcia", "sem dono_nome, o dono fica como estava")
+        r = ficha.salvar_contato(A, "(27) 99999-1234", "ana@exemplo.com", "", dono_nome="  Padaria   da Ana ")
+        self.assertEqual(r["dono_nome"], "Padaria da Ana")
+        self.assertEqual(self.linha(A)["dono_nome"], "Padaria da Ana", "aparece na lista de máquinas")
 
     # ------------------------------------------------------------------ planilha
     def test_planilha_abre_no_excel_com_acentos(self):

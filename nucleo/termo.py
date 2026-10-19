@@ -218,8 +218,6 @@ def aceitar(mid, responsavel, dono, terceiro_nome="", autorizado_por="", confirm
     if dono not in ("particular", "terceiros"):
         raise ValueError("Informe se a máquina é particular ou de terceiros.")
     det = detectar_corporativa()
-    if dono == "particular" and os_atual(mid):
-        raise ValueError("Há uma OS aberta nesta máquina. Encerre a OS antes de marcá-la como particular.")
     if dono == "particular" and det["corporativa"] and not confirma_particular:
         raise ValueError("Esta máquina parece corporativa. Para marcar como particular, confirme explicitamente que ela é sua.")
     if dono == "terceiros" and len((terceiro_nome or "").strip()) < 2:
@@ -278,10 +276,6 @@ def exigir(mid, escopo=None):
     st = status(mid)
     if not st["aceito"]:
         raise SemPermissao("termo")
-    if escopo and st["dono"] == "terceiros":
-        o = os_atual(mid)
-        if not o or escopo not in (o.get("escopos") or []):
-            raise SemPermissao("os:" + escopo)
     return st
 
 

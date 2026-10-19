@@ -345,7 +345,7 @@ button{border-radius:999px}
   <span id="hown"></span><span id="hsrv"></span>
   <button class="chip upd" id="hver" title="Ver atualizações">v–</button>
   <button class="sm" id="theme" aria-label="Alternar tema claro e escuro">Claro / Escuro</button>
-  <button class="sm" id="hperf" title="Meu perfil" aria-label="Meu perfil"></button>
+  <button class="sm" id="hperf" title="Configurações" aria-label="Configurações"></button>
 </header>
 <div class="shell">
 <div id="topo"><aside id="gaveta" aria-label="Menu"></aside><div id="ilha" class="hide"><button id="ilhab" aria-expanded="false" aria-controls="ilhad"></button><div id="ilhad" class="hide"></div></div><button id="ilha2" class="hide" aria-label="Mais atividades rodando"></button></div><span id="ilhavivo" class="sr" aria-live="polite"></span>
@@ -379,7 +379,6 @@ function toast(m,kind){let t=$(".toast");if(t)t.remove();t=document.createElemen
 async function safe(fn){try{return await fn()}catch(e){onErr(e)}}
 function onErr(e){
   if(e.codigo==="termo")return openGate();
-  if(e.codigo==="os")return dialog({titulo:"Falta a autorização do cliente",html:`<p>${esc(e.message)}</p><p class="mut">Esta máquina é de terceiros. Registre o nome de quem autoriza na aba <b>OS</b>.</p>`,ok:"Ir para a aba OS"}).then(r=>{if(r)nav("os")});
   if(e.message==="ORFAOS")return;
   toast(e.message||String(e),"err");
 }
@@ -474,8 +473,7 @@ const ownT=()=>CTX.t&&CTX.t.status&&CTX.t.status.dono==="terceiros";
 function renderChrome(){
   const t=CTX.t,st=t&&t.status;
   const items=[["home","Home","home"],["backup","Backup","backup"],["mapas","Mapas","mapa"],["dados","Dados","dados"],["maq","Máquinas","maq"],["os","OS","os"]];
-  const need=ownT()&&!t.os;
-  $("#gaveta").innerHTML=items.map(i=>`<button class="gv ${(ABA_DE[view]||view)===i[0]?"on":""}" data-view="${i[0]}" title="${i[1]}"><span class="ic">${ic(i[2])}</span><span class="lb">${i[1]}</span>${i[0]==="os"&&need?'<span class="bd">falta</span>':""}</button>`).join("")+
+  $("#gaveta").innerHTML=items.map(i=>`<button class="gv ${(ABA_DE[view]||view)===i[0]?"on":""}" data-view="${i[0]}" title="${i[1]}"><span class="ic">${ic(i[2])}</span><span class="lb">${i[1]}</span></button>`).join("")+
    `<span class="sp"></span><div class="gvfoot"><b>${esc(t?t.nome:info.host||"")}</b><button class="mid" id="midc" title="Copiar o código da máquina">${esc(t?t.mid:"")}</button></div><button class="gv" id="gvtoggle" title="Recolher"><span class="ic">☰</span><span class="lb">Recolher</span></button>`;
   $$("#gaveta [data-view]").forEach(b=>b.onclick=()=>nav(b.dataset.view));
   $("#gvtoggle").onclick=()=>document.body.classList.toggle("min");
@@ -561,16 +559,18 @@ async function openGate(opt){
 }
 
 /* ---------- permissões na entrada ---------- */
-async function openPerm(primeira){
-  const p=await api("/api/permissoes");
-  const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
+function permCorpo(p){
   const linha=(ok,t,s)=>`<li style="display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)"><span class="ci" style="${ok?"background:var(--ok);border-color:var(--ok);color:#fff":"border-color:var(--warn);color:var(--warn)"}">${ok?"✓":"!"}</span><div><b>${t}</b><div class="mut" style="font-size:13px;margin-top:2px">${s}</div></div></li>`;
   let corpo="";
   if(p.mac)corpo=linha(p.acesso_total,"Acesso Total ao Disco","Sem ele o macOS esconde algumas pastas (Mail, Safari, parte de Library) e a varredura enxerga menos. A permissão é do app que roda o Destrava!: o <b>Terminal</b>.")+
     (p.acesso_total?"":`<div class="infobox" style="font-size:13px"><b>Como liberar</b><ol style="margin:6px 0 0;padding-left:20px"><li>Clique em <b>Abrir Ajustes</b>.</li><li>Em <i>Privacidade e Segurança → Acesso Total ao Disco</i>, ligue o <b>Terminal</b> (ou clique em + e adicione).</li><li>Feche o Terminal, abra o Destrava! de novo e clique em <b>Verificar de novo</b>.</li></ol></div>`);
   else if(p.win)corpo=linha(p.admin,"Executar como administrador",p.admin?"Tudo certo: leitura de slots de RAM e saúde do disco liberada.":"Sem isso, slots de RAM e saúde do disco ficam sem leitura. Abra pelo <b>Iniciar-Windows.bat</b>, que pede a permissão.");
   else corpo=linha(p.root,"Permissão de administrador (sudo)",p.root?"Tudo certo: leitura de slots de RAM e saúde do disco liberada.":"Sem isso, slots de RAM e saúde do disco ficam sem leitura. Abra o Destrava! com <b>sudo</b>.");
-  const falta=p.mac?!p.acesso_total:p.win?!p.admin:!p.root;
+  return {corpo,falta:p.mac?!p.acesso_total:p.win?!p.admin:!p.root};
+}
+async function openPerm(primeira){
+  const p=await api("/api/permissoes"),{corpo,falta}=permCorpo(p);
+  const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
   d.innerHTML=`<div class="box" style="max-width:600px"><h2>${primeira?"Termo aceito. Só mais um passo":"Permissões"}</h2>
    <p class="mut" style="margin:0 0 4px">Estas permissões são opcionais. Sem elas o programa funciona, só enxerga um pouco menos.</p><ul class="chkl" style="margin:0">${corpo}</ul>
    ${primeira?`<p style="margin:12px 0 0"><button class="sm" id="pdoc">Abrir cópia do termo para imprimir ou salvar em PDF</button></p>`:""}
@@ -627,8 +627,9 @@ async function drawPerfil(){
   const r=await api("/api/perfil");if(view!=="perfil")return;
   const p=PERFIL=r.perfil,marc=new Set(p.no_certificado);
   const IM={nome:'autocomplete="name"',empresa:'autocomplete="organization"',email:'inputmode="email" autocomplete="email"',telefone:'inputmode="tel" autocomplete="tel"',site:'inputmode="url"'};
-  $("#main").innerHTML=`<div class="ptitle"><h1>Meu perfil</h1><p>Quem atende. Fica só neste computador, não vai para o git nem para a internet.</p></div>
-   <div class="card"><h2>Seus dados</h2><p class="mut" style="margin-top:0">Marque o que aparece no certificado entregue ao cliente. Redes sociais são opcionais.</p>
+  $("#main").innerHTML=`<div class="ptitle"><h1>Configurações</h1><p>Permissões do sistema e quem atende. Fica só neste computador, não vai para o git nem para a internet.</p></div>
+   <div class="card"><h2>Permissões do sistema</h2><div id="cfperm" class="mut">Verificando…</div></div>
+   <div class="card"><h2>Seus dados (técnico)</h2><p class="mut" style="margin-top:0">Marque o que aparece no certificado entregue ao cliente. Redes sociais são opcionais.</p>
    ${r.campos.map(([c,rot])=>`<div class="pfl"><div class="grow"><label for="pf_${c}">${esc(rot)}</label><input type="text" id="pf_${c}" data-c="${c}" value="${esc(p[c]||"")}" maxlength="120" ${IM[c]||""}></div><label class="pfc"><input type="checkbox" data-cert="${c}" ${marc.has(c)?"checked":""}> no certificado</label></div>`).join("")}
    <div id="pferr"></div><div class="row" style="justify-content:flex-end;margin-top:14px"><button class="pri" id="pfsave">Salvar perfil</button></div></div>
    <div class="card"><h2>Como sai no certificado</h2><div id="pfprev"></div></div>`;
@@ -638,6 +639,16 @@ async function drawPerfil(){
   $$("#main input").forEach(i=>{i.addEventListener("input",prev);i.addEventListener("change",prev)});prev();
   $("#pfsave").onclick=()=>safe(async()=>{$("#pferr").innerHTML="";
     try{const x=await api("/api/perfil",coletar());PERFIL=x.perfil;toast("Perfil salvo.","ok")}catch(e){$("#pferr").innerHTML=`<div class="errbox" style="margin-top:10px">${esc(e.message)}</div>`}});
+  cfgPerm();
+}
+async function cfgPerm(){
+  const el=$("#cfperm");if(!el)return;
+  let p;try{p=await api("/api/permissoes")}catch(e){el.innerHTML=`<div class="errbox">${esc(e.message)}</div>`;return}
+  const {corpo,falta}=permCorpo(p);
+  el.innerHTML=`<p class="mut" style="margin:0 0 4px">Opcionais: sem elas o programa funciona, só enxerga um pouco menos.</p><ul class="chkl" style="margin:0">${corpo}</ul>
+   <div class="row" style="margin-top:12px;justify-content:flex-end">${p.mac&&falta?'<button id="cfab">Abrir Ajustes</button>':""}<button id="cfvf">Verificar de novo</button></div>`;
+  const ab=$("#cfab");if(ab)ab.onclick=()=>safe(()=>api("/api/permissoes/abrir",{}));
+  $("#cfvf").onclick=()=>{el.innerHTML="Verificando…";cfgPerm()};
 }
 
 /* ================= Home / ficha ================= */
@@ -688,7 +699,7 @@ function drawPainel(r,est,p){
   $$("#main .pli").forEach(b=>b.onclick=()=>nav("maq",b.dataset.mid));
   const on=(id,fn)=>{const e=$("#"+id);if(e)e.onclick=fn};
   on("pall",()=>nav("maq",{}));on("ppen",()=>nav("maq",{aba:"pendentes"}));on("pfull",()=>{PCHEIO=true;drawPainel(r,est,p)});
-  on("vfi",()=>{HOMEP=false;drawHome()});on("pm",()=>openPerm(false));
+  on("vfi",()=>{HOMEP=false;drawHome()});on("pm",()=>nav("perfil"));
   on("perm",()=>safe(async()=>{await api("/api/ficha/coletar",{fase:"antes"});drawFichaProg()}));
 }
 function trofeuStrip(cur){return `<div class="shelf">${[1,2,3,4,5].map(n=>`<div class="tr ${cur?(n===cur?"cur":n>cur?"lock":""):"lock"}">${trophy(n,96)}<b class="tl2">${esc(TRN[n])}</b><small>nota ${TRF[n]}</small></div>`).join("")}</div>`}
@@ -712,7 +723,7 @@ function drawHomeVazia(r,est){
     <div class="wk"><div class="nb">4</div><b>Backup e entrega</b><span>Copia o que importa, confere e gera o certificado.</span><em>CONFERIDO POR HASH</em></div></div></div>
   <div class="card"><h2>Qual troféu a sua máquina vai ganhar?</h2><p class="h">Cada faixa de nota ganha um troféu maior, na evolução do computador.</p>${trofeuStrip(0)}</div>`;
   $("#perm").onclick=()=>safe(async()=>{await api("/api/ficha/coletar",{fase:"antes"});drawFichaProg()});
-  $("#pm").onclick=()=>openPerm(false);
+  $("#pm").onclick=()=>nav("perfil");
 }
 function drawFichaProg(){
   setWide(false);
@@ -1121,7 +1132,7 @@ function mqTabela(){
   const th=(c,t)=>`<th class="so ${on===c?"on":""}" data-c="${c}" tabindex="0" aria-sort="${on===c?(dir<0?"descending":"ascending"):"none"}">${t}${on===c?(dir<0?" ↓":" ↑"):""}</th>`;
   $("#mqtab").innerHTML=tot?`<div class="tblw"><table class="mqt"><thead><tr><th class="ck"><input type="checkbox" id="mqall" aria-label="Marcar todas desta página"></th>${th("maq","Máquina")}<th>Contato</th>${th("sistema","Sistema")}${th("nota","Nota")}${th("tecnico","Técnico")}${th("ultimo","Último serviço")}${th("etapa","Situação")}</tr></thead>
    <tbody>${pg.map(m=>`<tr data-mid="${esc(m.mid)}" tabindex="0" class="${MQ.sel.has(m.mid)?"sel":""}"><td class="ck"><input type="checkbox" data-s="${esc(m.mid)}" ${MQ.sel.has(m.mid)?"checked":""} aria-label="Marcar ${esc(m.mid)}"></td>
-     <td><b>${esc(m.modelo||(m.analises?m.nome:"Ainda sem análise"))}</b>${m.atual?' <span class="badge b-gold" style="margin:0">ESTA</span>':""}<div class="cod">${esc(m.mid)}</div></td>
+     <td><b>${esc(m.modelo||(m.analises?m.nome:"Ainda sem análise"))}</b>${m.atual?' <span class="badge b-gold" style="margin:0">ESTA</span>':""}${m.dono_nome?`<div style="font-size:13px">${esc(m.dono_nome)}</div>`:""}<div class="cod">${esc(m.mid)}</div></td>
      <td>${contatoHtml(m)}</td><td>${esc(m.sistema||"—")}</td><td style="white-space:nowrap">${notaHtml(m)}</td><td>${esc(m.tecnico||"—")}</td>
      <td style="white-space:nowrap">${dataBR(m.ultimo)}${m.servicos>1?`<div class="mut" style="font-size:11.5px">${m.servicos} serviços</div>`:""}</td>
      <td>${seloEt(m.etapa,m.etapa_nome)}<div class="dots" aria-hidden="true">${ord.map((e,i)=>`<i class="${i<=ord.indexOf(m.etapa)?"on":""}"></i>`).join("")}</div>${m.pendencia?`<span class="pd">⚠ ${esc(m.pendencia)}</span>`:""}</td></tr>`).join("")}</tbody></table></div>
@@ -1169,8 +1180,8 @@ function regHtml(g){
   (g.etapa_historico||[]).forEach(e=>{if(!ser.length||ser[ser.length-1].slice(-1)[0].etapa==="entregue")ser.push([]);ser[ser.length-1].push(e)});
   const feito={};(ser[ser.length-1]||[]).forEach(e=>feito[e.etapa]=e);
   const ent=g.etapa==="entregue",tel=dig(g.telefone),nbk=(g.historico||[]).filter(e=>e.tipo==="backup").length,rc=g.receita,rv=!!(rc&&rc.valida);
-  const dono=g.dono==="terceiros"?`<p style="margin:4px 0 0"><b>${esc(g.dono_nome||"—")}</b> <span class="badge b-warn">Terceiros</span></p>`:g.dono==="particular"?'<p style="margin:4px 0 0"><b>Máquina particular</b> <span class="mut">(uso próprio)</span></p>':'<p class="mut" style="margin:4px 0 0">Termo ainda não aceito nesta máquina.</p>';
-  return `<div class="card"><div class="row" style="align-items:flex-start"><div class="grow"><div class="eyebrow">REGISTRO DA MÁQUINA</div><h2 style="font-size:22px">${esc(g.modelo||(g.analises?g.nome:"Ainda sem análise"))}</h2>
+  const dono=`<label for="rgdono">Dono (cliente) ${g.dono==="terceiros"?'<span class="badge b-warn">Terceiros</span>':g.dono==="particular"?'<span class="badge b-mut">Particular</span>':""}</label><input type="text" id="rgdono" autocomplete="off" maxlength="120" placeholder="Nome do cliente, empresa ou pessoa" value="${esc(g.dono_nome)}">`;
+  return `<div class="card"><div class="row" style="align-items:flex-start"><div class="grow"><div class="eyebrow">PERFIL DA MÁQUINA (CLIENTE)</div><h2 style="font-size:22px">${esc(g.modelo||(g.analises?g.nome:"Ainda sem análise"))}</h2>
     <div class="mut" style="font-size:13px"><span class="cod">${esc(g.mid)}</span>${g.sistema?" · "+esc(g.sistema):""}${g.serie?" · série "+esc(g.serie):""}</div></div>${seloEt(g.etapa,g.etapa_nome)}</div>
    ${g.pendencia?`<div class="warnbox"><b>Pendência:</b> ${esc(g.pendencia)}</div>`:""}
    <div class="etp">${g.etapas.map(([k,t])=>{const e=feito[k];return `<div class="s ${k===g.etapa?"cur":e?"ok":""}"><b>${esc(t)}</b>${e?`${dataBR(e.quando)}<br>${esc(e.tecnico||"—")}`:"&nbsp;"}</div>`}).join("")}</div>
@@ -1183,7 +1194,7 @@ function regHtml(g){
      <label for="rgmail">E-mail</label><input type="text" id="rgmail" inputmode="email" autocomplete="off" maxlength="120" value="${esc(g.email)}">
      ${tel?`<p style="margin:8px 0 0"><a href="https://wa.me/${tel.length<=11?"55"+tel:tel}" target="_blank" rel="noopener" style="color:var(--acc)">Abrir conversa no WhatsApp</a></p>`:""}</div>
     <div><h3 style="font-size:15px">Observações</h3><label for="rgobs">Anotações livres sobre a máquina e o cliente (nada de senhas)</label><textarea id="rgobs" maxlength="2000">${esc(g.observacoes)}</textarea></div></div>
-   <div id="rgerr"></div><div class="row" style="justify-content:flex-end;margin-top:10px"><button id="rgsave">Salvar contato e observações</button></div></div>
+   <div id="rgerr"></div><div class="row" style="justify-content:flex-end;margin-top:10px"><button id="rgsave">Salvar dono, contato e observações</button></div></div>
   <div class="card"><div class="rg2"><div><h3 style="font-size:15px">Etapas de cada serviço</h3><table style="margin-top:8px">${ser.map((s,i)=>`<tr><th colspan="3" style="color:var(--tx)">Serviço ${i+1}${i===ser.length-1&&!ent?" · em andamento":""}</th></tr>${s.map(e=>`<tr><td style="white-space:nowrap">${dataBR(e.quando)}</td><td>${esc(nome(e.etapa))}${e.origem==="importada"?' <span class="mut" style="font-size:11.5px">(histórico antigo)</span>':e.origem==="manual"?' <span class="mut" style="font-size:11.5px">(marcada à mão)</span>':""}</td><td>${esc(e.tecnico||"—")}</td></tr>`).join("")}`).join("")||'<tr><td class="mut">Nada registrado ainda.</td></tr>'}</table></div>
    <div><h3 style="font-size:15px">Linha do tempo</h3><div style="max-height:440px;overflow:auto;margin-top:10px;padding:2px 0 0 10px"><div class="tl">${(g.historico||[]).slice().reverse().map(e=>`<div class="ev"><b>${esc(e.resumo)}</b>${e.etapa?` <span class="badge ${ETB[e.etapa]||"b-mut"}">${esc(nome(e.etapa))}</span>`:""}<br><small>${dataBR(e.quando)} · ${esc((e.extra||{}).tecnico||"técnico não registrado")}</small></div>`).join("")||'<p class="mut">Sem eventos ainda.</p>'}</div></div></div></div></div>`;
 }
@@ -1196,7 +1207,7 @@ function wireReg(g){
   const rm=$("#rgman");if(rm)rm.onclick=()=>nav("manter",mid);
   $("#rgent").onclick=()=>safe(async()=>{if(await dialog({titulo:"Marcar como entregue?",html:"<p>Encerra este serviço. Se a máquina voltar, ela continua nesta mesma entrada, com um serviço novo.</p>",ok:"Marcar como entregue"}))await marca("entregue")});
   $("#rgsave").onclick=()=>safe(async()=>{$("#rgerr").innerHTML="";
-    try{await api("/api/maquina/registro",{mid,telefone:$("#rgtel").value,email:$("#rgmail").value,observacoes:$("#rgobs").value});toast("Contato e observações salvos.","ok")}
+    try{await api("/api/maquina/registro",{mid,dono_nome:$("#rgdono").value,telefone:$("#rgtel").value,email:$("#rgmail").value,observacoes:$("#rgobs").value});toast("Dados da máquina salvos.","ok")}
     catch(e){$("#rgerr").innerHTML=`<div class="errbox" style="margin-top:10px">${esc(e.message)}</div>`}});
 }
 
@@ -1285,56 +1296,10 @@ function dockFechar(anim){
 function dockAbrir(){const g=$("#gaveta");if(!g||!g.classList.contains("fechado"))return;dockAnim(g);g.classList.remove("fechado","tem-bd");dockBts().forEach(b=>b.classList.remove("atras"))}
 
 /* ---------- OS (ordem de serviço) ---------- */
-async function drawOS(){
-  setWide(false);await loadCtx();
-  const t=CTX.t,st=t.status,os=t.os;
-  if(!st.aceito){$("#main").innerHTML='<div class="card empty"><h2>Aceite o termo primeiro</h2><p>A ordem de serviço vem depois do termo de responsabilidade.</p><button class="pri" id="og">Abrir o termo</button></div>';$("#og").onclick=()=>openGate();return}
-  if(st.dono!=="terceiros"){
-    $("#main").innerHTML=`<div class="card empty"><div class="shield" style="color:var(--ok)">${ic("shield")}</div><h2>Esta máquina é particular</h2><p>Não precisa de ordem de serviço: o termo que você aceitou já vale para uso próprio.</p>
-     <p>Se esta máquina é de um cliente, reclassifique para registrar a autorização dele.</p><button id="orc">Reclassificar como de terceiros…</button></div>`;
-    $("#orc").onclick=()=>openGate({reclass:true});return}
-  const nomes={};t.escopos.forEach(e=>nomes[e.id]=e.nome);
-  let h=`<div class="card"><div class="row"><div class="grow"><div class="eyebrow">ORDEM DE SERVIÇO</div><h2 style="font-size:22px">${os?esc(os.os):"Sem OS aberta"}</h2>
-   <div class="mut">${esc(t.nome)} · dono: <b style="color:var(--tx)">${esc(st.terceiro_nome)}</b>${st.autorizado_por?" · autorizado por "+esc(st.autorizado_por):""}</div></div>${os?'<span class="badge b-ok">AUTORIZADA</span>':'<span class="badge b-warn">FALTA AUTORIZAÇÃO</span>'}</div>`;
-  if(t.corporativa.corporativa)h+=`<div class="warnbox" style="margin-top:12px"><b>Máquina corporativa detectada.</b> ${t.corporativa.sinais.map(esc).join("; ")}. Tenha a autorização do responsável de TI da empresa e cuide dos dados corporativos.</div>`;
-  if(os){
-    h+=`<div class="okbox"><b>${esc(os.cliente)}</b> autorizou em ${esc(os.quando)}:<div style="margin-top:6px">${os.escopos.map(s=>`<span class="badge b-ok">${esc(nomes[s]||s)}</span>`).join("")}</div></div>
-     <p class="mut" style="font-size:13px">Só o nome fica registrado, sem CPF nem outros documentos. O que não está marcado fica bloqueado no programa.</p>
-     <div class="row"><button id="odoc">Abrir documento para imprimir ou salvar em PDF</button><button id="oend" class="dng">Encerrar OS…</button></div>`}
-  else h+=`<p class="h" style="margin-top:12px">Para analisar, fazer backup, melhorar ou liberar espaço nesta máquina, registre quem autorizou e o que foi autorizado. <b>Só o nome</b>: sem CPF.</p>
-     <label for="ocl">Nome de quem autoriza</label><input type="text" id="ocl" autocomplete="off" value="${esc(st.autorizado_por||st.terceiro_nome||"")}">
-     <label>O que está autorizado</label>${t.escopos.map(e=>`<label class="cat" style="cursor:pointer;color:var(--tx);font-size:14px"><input type="checkbox" class="osc" value="${esc(e.id)}" ${e.id==="ficha"?"checked":""}><div class="n"><b>${esc(e.nome)}</b><span>${esc(e.desc)}</span></div></label>`).join("")}
-     <div class="row" style="margin-top:14px"><button class="pri" id="osave">Registrar autorização</button></div>`;
-  h+=`</div><div class="card"><h3>Integridade do registro</h3><p class="mut" style="margin:0">O arquivo <span class="mono">consentimentos.log</span> encadeia cada linha à anterior por hash. Estado agora: ${t.log.ok?`<b style="color:var(--ok)">íntegro</b> (${t.log.linhas} registros)`:`<b style="color:var(--err)">ALTERADO (${esc(t.log.motivo)})</b>`}. É uma prova local, não um documento notarial.</p></div>`;
-  $("#main").innerHTML=h;
-  const sv=$("#osave");if(sv)sv.onclick=()=>safe(async()=>{const esc2=$$(".osc:checked").map(x=>x.value);const r=await api("/api/os/registrar",{cliente:$("#ocl").value,escopos:esc2});LASTDOC=(r.documento||"").split(/[\\/]/).pop();toast("Autorização registrada: "+r.os.os,"ok");await loadCtx();drawOS()});
-  const dc=$("#odoc");if(dc)dc.onclick=()=>safe(()=>api("/api/doc/abrir",{tipo:"os"}));
-  const en=$("#oend");if(en)en.onclick=()=>encerrarOS(os);
-}
-async function encerrarOS(os){
-  const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
-  d.innerHTML=`<div class="box" style="max-width:520px"><h2>Encerrar a OS?</h2><p>A autorização de <b>${esc(os.cliente)}</b> deixa de valer e as ações voltam a ficar bloqueadas.</p>
-   <label style="display:flex;gap:9px;align-items:flex-start;color:var(--tx);font-size:14px;cursor:pointer"><input type="checkbox" id="ew" style="margin-top:3px"><span>Também apagar os dados desta máquina do pendrive (fichas, históricos e documentos). Recomendado ao final do serviço de um cliente.</span></label>
-   <div id="ewt" class="hide"><label for="ewx">Digite APAGAR para confirmar</label><input type="text" id="ewx" autocomplete="off"></div>
-   <div class="row" style="margin-top:18px;justify-content:flex-end"><button id="ec">Cancelar</button><button class="dng" id="ek">Encerrar OS</button></div></div>`;
-  $("#layer").appendChild(d);
-  const up=()=>{$("#ewt",d).classList.toggle("hide",!$("#ew",d).checked);$("#ek",d).disabled=$("#ew",d).checked&&$("#ewx",d).value.trim().toUpperCase()!=="APAGAR"};
-  $("#ew",d).onchange=up;$("#ewx",d).oninput=up;up();
-  $("#ec",d).onclick=()=>d.remove();
-  $("#ek",d).onclick=()=>safe(async()=>{const ap=$("#ew",d).checked;await api("/api/os/encerrar",{apagar_dados:ap,digitou:$("#ewx",d).value});d.remove();await loadCtx();toast(ap?"OS encerrada e dados removidos do pendrive.":"OS encerrada.","ok");nav(ap?"maq":"os")});
-}
-
-/* ================= Dados (gerenciamento de espaço) ================= */
-let DT=null;const DS={tab:"verde",sel:new Set(),init:false,q:"",modo:"limpar",usr:"",usrAtual:"",exp:null,expT:null,marc:{}};
-const ZN={verde:["Limpeza imediata","Zero risco: o sistema ou o app recria sozinho."],ambar:["Arquivos parados","Valor para você: backup antes de remover, e a decisão é sua."],vermelha:["Bloqueado","Sistema, bibliotecas de apps e credenciais: dá para ver o que tem dentro, mas nunca limpar por aqui."]};
-async function drawDados(){
-  setWide(false);clearInterval(DT);DS.exp=null;clearTimeout(DS.expT);
-  const e=await api("/api/dados/estado");
-  if(view!=="dados")return;
-  if(e.acao&&e.acao.rodando)return dadosAcao();
-  if(e.fase==="varrendo")return dadosVarrendo();
-  if(e.fase==="pronto"||e.fase==="cancelado"||e.n_itens)return dadosResultado(e);  // n_itens: marcados ao explorar, mesmo sem varredura
-  dadosIntro(e);
+function drawOS(){
+  setWide(false);
+  $("#main").innerHTML=`<div class="card empty"><div class="eyebrow">ORDEM DE SERVIÇO</div><h2>Em breve</h2><p>Por enquanto tudo fica registrado por máquina: dono, contato, notas e histórico ficam na aba <b>Máquinas</b>.</p><button class="pri" id="osmq">Ir para Máquinas</button></div>`;
+  $("#osmq").onclick=()=>nav("maq");
 }
 async function dadosIntro(e){
   const p=await api("/api/permissoes");
@@ -1347,7 +1312,7 @@ async function dadosIntro(e){
    <div class="row" style="margin-top:16px"><div><label for="did">Considerar parado após</label><select id="did"><option value="60">60 dias</option><option value="90" selected>90 dias</option><option value="180">180 dias</option></select></div>
     <div><label for="dmb">Arquivos grandes a partir de</label><select id="dmb"><option value="50">50 MB</option><option value="100" selected>100 MB</option><option value="500">500 MB</option></select></div></div>
    <div class="row" style="margin-top:16px"><button class="pri" id="dgo" style="font-size:15px;padding:11px 24px">Varrer esta máquina</button><button id="dexp0">Explorar pastas</button></div></div>`;
-  const dp=$("#dperm");if(dp)dp.onclick=()=>openPerm(false);
+  const dp=$("#dperm");if(dp)dp.onclick=()=>nav("perfil");
   $("#dgo").onclick=()=>safe(async()=>{DS.init=false;DS.sel=new Set();await api("/api/dados/varrer",{idle_dias:+$("#did").value,min_mb:+$("#dmb").value});drawDados()});
   $("#dexp0").onclick=()=>safe(()=>dadosExplorar(0));
 }
@@ -1629,15 +1594,15 @@ async function draw2(){
     <div class="grid" style="margin-top:10px"><div class="kpi"><div class="mut">Arquivos</div><div class="big" id="sf">0</div></div><div class="kpi"><div class="mut">Pastas</div><div class="big" id="sd">0</div></div><div class="kpi"><div class="mut">Tamanho</div><div class="big" id="sz">0</div></div></div>
     <div class="mono mut" id="scur" style="margin-top:8px;word-break:break-all"></div><div class="row" style="margin-top:8px"><button class="sm" id="scancel">Cancelar</button></div></div></div>`;
   $("#back2").onclick=()=>go(0);
-  const r=await api("/api/preflight",{});
+  let r;try{r=await api("/api/preflight",{})}catch(e){$("#checks").innerHTML=`<div class="errbox">Não deu para checar: ${esc(e.message||String(e))}</div><button class="sm" id="chk2r">Tentar de novo</button>`;$("#chk2r").onclick=()=>draw2();return onErr(e)}
   const ICK={ok:"✓",aviso:"!",erro:"✕"};
   $("#checks").innerHTML=`<div class="chks">${r.checks.map(c=>`<div class="chk2 ${c.nivel}"><span class="ci">${ICK[c.nivel]||"·"}</span><div class="grow"><b>${esc(c.titulo)}</b><div class="mut">${esc(c.detalhe)}</div>${c.solucao?`<div class="sol"><b>Como resolver:</b> ${esc(c.solucao)}</div>`:""}${/trancado: /.test(c.titulo)?`<button class="sm pri" style="margin-top:6px" data-bl="${esc(c.titulo.replace(/^.*trancado: /,""))}">Destravar com a chave</button>`:""}</div></div>`).join("")}</div>`;
   $$("[data-bl]").forEach(b=>b.onclick=()=>safe(async()=>{const k=await pedirChave(b.dataset.bl);if(!k)return;await api("/api/bitlocker",{onde:b.dataset.bl,chave:k});toast("Destravado. Conferindo de novo…","ok");draw2()}));
   const bad=r.checks.some(c=>c.nivel==="erro");$("#scan").disabled=bad;
   if(bad)$("#checks").insertAdjacentHTML("beforeend",'<div class="errbox">Há um erro acima. Corrija antes de continuar.</div>');
   $("#scan").onclick=()=>safe(async()=>{await api("/api/scan",{});$("#scanbox").classList.remove("hide");$("#scan").disabled=true;poll()});
-  $("#scancel").onclick=()=>api("/api/cancel",{});
-  const s=await api("/api/status");if(s.phase==="scanning"){$("#scanbox").classList.remove("hide");$("#scan").disabled=true;poll()}
+  $("#scancel").onclick=()=>safe(()=>api("/api/cancel",{}));
+  const s=await safe(()=>api("/api/status"));if(s&&s.phase==="scanning"){$("#scanbox").classList.remove("hide");$("#scan").disabled=true;poll()}
 }
 function poll(){clearInterval(timer);timer=setInterval(tick,700);tick()}
 async function tick(){
@@ -1831,7 +1796,7 @@ function draw5(){
     <ul class="chkl grow" id="vl"><li class="run" id="vl1"><span class="ci"></span><div><b>Conferindo cada arquivo copiado</b><div class="mut" id="cur5" style="word-break:break-all;font-size:12px"></div></div></li><li class="wait" id="vl2"><span class="ci"></span><b>Nova varredura na origem</b></li><li class="wait" id="vl3"><span class="ci"></span><b>Resultado</b></li></ul></div>
     <div class="grid" style="margin-top:12px"><div class="kpi"><div class="mut">Conferidos</div><div class="big" id="v1">0</div></div><div class="kpi"><div class="mut">Divergências</div><div class="big" id="v2">0</div></div><div class="kpi"><div class="mut">Tempo restante</div><div class="big" id="v3">–</div></div></div>
     <div class="row" style="margin-top:8px"><button class="sm" id="vc">Cancelar</button></div></div></div><div id="res5"></div>`;
-  $("#b5").onclick=()=>go(2);$("#vc").onclick=()=>api("/api/cancel",{});
+  $("#b5").onclick=()=>go(2);$("#vc").onclick=()=>safe(()=>api("/api/cancel",{}));
   $("#vgo").onclick=()=>safe(async()=>{const m=document.querySelector("input[name=vm]:checked").value;await api("/api/verify",{mode:m});$("#vbox").classList.remove("hide");$("#vgo").disabled=true;poll()});
   api("/api/status").then(s=>{st=s;if(s.phase==="verifying"){$("#vbox").classList.remove("hide");$("#vgo").disabled=true;poll()}else if(s.phase==="verified"||s.phase==="done")showRes5();else if(s.n_failures)$("#res5").innerHTML=`<div class="warnbox">${s.n_failures} arquivo(s) falharam na cópia. Verifique e depois veja o que fazer.</div>`});
 }
@@ -1878,13 +1843,12 @@ async function draw6(){
    <div class="grid"><div class="kpi"><div class="mut">Copiados e conferidos</div><div class="big">${nf(c.copiados)}</div></div><div class="kpi"><div class="mut">Tamanho</div><div class="big">${fmt(c.bytes)}</div></div><div class="kpi"><div class="mut">Falhas</div><div class="big">${c.falhas}</div></div><div class="kpi"><div class="mut">Ficaram de fora (listados)</div><div class="big">${nf(c.ficaram)}</div></div>${rec}</div>
    ${c.motivos.length?`<h3 style="font-size:14px">O que ficou de fora e por quê</h3><table>${c.motivos.map(x=>`<tr><td>${esc(x.motivo)}</td><td>${nf(x.n)}</td><td>${fmt(x.bytes)}</td></tr>`).join("")}</table>`:""}
    <p class="mono mut">Pasta do backup: ${esc(st.dest_root)}<br>Mapa: ${esc(st.dest_root)}/Mapa/visualizador.html</p>
-   <div class="row"><button class="pri" id="omi">Abrir o Mapa no Destrava!</button><button id="om">Visualizador offline</button><button id="newb">Novo backup</button>${terc?'<button id="os6">Encerrar a OS</button>':""}</div></div>
+   <div class="row"><button class="pri" id="omi">Abrir o Mapa no Destrava!</button><button id="om">Visualizador offline</button><button id="newb">Novo backup</button></div></div>
   <div class="card"><h2>Formatar a máquina</h2>${g.ok?`<p class="h">Tudo certo para seguir. O computador reinicia direto na tela de firmware (BIOS/UEFI) para você escolher o boot e formatar.</p>
    <label style="display:flex;gap:8px;align-items:center;margin:0 0 12px;color:var(--tx)"><input type="checkbox" id="cf"> Confirmo que o backup foi conferido e que posso formatar.</label><button class="dng" id="fw" disabled>Reiniciar para a BIOS/UEFI</button>`:`<div class="warnbox">Formatação bloqueada: ${esc(g.motivo)}</div>${g.falta_receita?'<button class="pri" id="fwman">Definir o que manter</button>':""}`}</div>`;
   $("#om").onclick=()=>safe(()=>api("/api/open_mapa",{}));
   const omi=$("#omi");if(omi)omi.onclick=()=>safe(async()=>{await api("/api/mapa/abrir",{pasta:st.dest_root});nav("mapas")});
   $("#newb").onclick=()=>safe(async()=>{await api("/api/reset",{});S.sources=[];S.chosen={};S.dest="";S.folder="";go(0)});
-  const o6=$("#os6");if(o6)o6.onclick=()=>nav("os");
   const fm=$("#fwman");if(fm)fm.onclick=()=>go(5);
   const cf=$("#cf");if(cf){cf.onchange=()=>$("#fw").disabled=!cf.checked;
    $("#fw").onclick=()=>safe(async()=>{
