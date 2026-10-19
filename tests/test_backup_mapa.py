@@ -122,6 +122,42 @@ class BackupCompleto(unittest.TestCase):
         achados = dd_backup.mapas_conhecidos()
         self.assertEqual([m["pasta"] for m in achados if m["codigo"] == cert["codigo"]], [copia], "abre pela cópia do registro")
 
+    def concluir(self):
+        self.app.preflight()  # como na tela de Checagens: grava as checagens (inclui "mesmo disco") no certificado
+        self.escanear()
+        self.app.start_copy()
+        self.assertEqual(espera(self.app, ("copied", "error")), "copied", self.app.error)
+        self.app.start_verify("completa")
+        self.assertEqual(espera(self.app, ("verified", "error")), "verified", self.app.error)
+        return self.app.finish()
+
+    def test_retomar_depois_de_reiniciar(self):
+        cert = self.concluir()
+        mid = ficha.machine_id_cache()
+        novo = dd_backup.App()  # programa fechado e aberto de novo: a memória do backup se perdeu
+        self.assertEqual(novo.phase, "idle")
+        r = novo.retomar(mid)
+        self.assertEqual((novo.phase, novo.finished, novo.cert["codigo"], novo.verified_mode), ("done", True, cert["codigo"], "completa"))
+        self.assertEqual((r["ok"], r["passo"]), (True, 5), "falta o O que manter: volta nesse passo")
+        self.assertEqual(novo.same_disk, self.app.same_disk, "o mesmo disco continua bloqueando a formatação")
+        self.assertEqual(novo.dest_root, self.app.dest_root)
+        self.assertEqual(novo.retomar(mid)["passo"], 5, "já aberto: não recarrega")
+        with self.assertRaises(ValueError):
+            novo.retomar("DD-OUTRA-0000")
+
+    def test_retomar_so_com_o_backup_intacto(self):
+        self.concluir()
+        mid = ficha.machine_id_cache()
+        ok = next(it for it in self.app.items if it.status == "ok")
+        arq = os.path.join(self.app.dest_root, *ok.rel.split("/"))
+        with open(arq, "ab") as fh:
+            fh.write(b"mexeram")
+        with self.assertRaisesRegex(ValueError, "sumiram ou mudaram"):
+            dd_backup.App().retomar(mid)
+        shutil.rmtree(os.path.join(self.app.dest_root, "Mapa"))
+        with self.assertRaisesRegex(ValueError, "não está conectado"):
+            dd_backup.App().retomar(mid)
+
     def test_mapa_nao_sai_da_pasta_do_backup(self):
         self.escanear()
         self.app.start_copy()

@@ -41,6 +41,20 @@ class Registro(unittest.TestCase):
         for esc in ("ficha", "backup", "melhorias", "limpeza", "formatar"):
             self.assertTrue(termo.exigir(A, esc)["aceito"], esc)
 
+    def test_encerrar_como_incompleto(self):
+        termo.aceitar(A, "Marlos Teste", "particular", confirma_particular=True)
+        self.backup(A)
+        self.assertIn("não entregue", self.linha(A)["pendencia"])
+        with self.assertRaises(ValueError):
+            ficha.marcar_etapa(B, "encerrada")
+        r = ficha.marcar_etapa(A, "encerrada")["registro"]
+        self.assertEqual((r["etapa"], r["etapa_nome"], r["pendencia"]), ("encerrada", "Encerrado incompleto", ""))
+        with self.assertRaises(ValueError):
+            ficha.marcar_etapa(A, "encerrada")
+        ficha.hist_add(A, "ficha", "Ficha coletada: nota 50", {"nota": 50})
+        r = ficha.registro(A)
+        self.assertEqual((r["etapa"], r["servicos"]), ("diagnosticada", 2), "o que vem depois abre um serviço novo")
+
     def ficha_win10(self, mid, fase="antes"):
         with open(os.path.join(AQUI, "fixtures", "win10_hd.json"), encoding="utf-8") as fh:
             d = json.load(fh)

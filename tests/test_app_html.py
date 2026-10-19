@@ -29,7 +29,7 @@ class PaginaInteira(unittest.TestCase):
         self.assertEqual(sorted({"DS", "DT", "ZN", "LST", "MP", "STNOME", "CATORD", "CATNAME", "IC"} - self.definidos), [])
 
     def test_funcoes_chamadas_existem(self):
-        chamadas = set(re.findall(r"\b((?:draw|lst|dados|mq|ilha)[A-Z][A-Za-z0-9_]*)\(", self.js))
+        chamadas = set(re.findall(r"\b((?:draw|lst|dados|mq|ilha)[A-Z][A-Za-z0-9_]*|retomarBackup|encerrarIncompleto[A-Za-z0-9_]*)\(", self.js))
         self.assertEqual(sorted(chamadas - self.definidos), [], "função chamada que não existe na página")
 
 

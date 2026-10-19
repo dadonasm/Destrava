@@ -1648,6 +1648,49 @@ class App(object):
             self.phase = "error"
             raise
 
+    def retomar(self, mid):
+        """Volta ao backup que ficou parado (programa fechado depois da verificação): recarrega o certificado do Mapa e
+        só segue se o disco do backup está conectado e os arquivos continuam lá, com o mesmo tamanho."""
+        if not FICHA or mid != FICHA.machine_id_cache():
+            raise ValueError("Só dá para retomar o backup da máquina em que o Destrava! está aberto.")
+        rec = lambda: 6 if FICHA.receita_valida(mid) else 5
+        with self.lock:
+            if self.phase in ("verified", "done") and self.cert and self.cert.get("maquina_id") == mid:
+                return {"ok": True, "passo": rec() if self.phase == "done" else 5, "codigo": self.cert.get("codigo", "")}
+            if self.busy():
+                raise Busy("Já existe um processo em andamento.")
+            ultimo = next((h for h in reversed(FICHA.hist_get(mid)) if h.get("tipo") == "backup"), None)
+            if not ultimo:
+                raise ValueError("Esta máquina não tem backup registrado para retomar.")
+            x = ultimo.get("extra") or {}
+            mp = os.path.join(x.get("destino") or "", "Mapa")
+            if not os.path.isfile(os.path.join(mp, "dados.js")):
+                raise ValueError("O disco do backup não está conectado (ou a pasta mudou): %s. Conecte o disco e tente de novo, ou encerre como incompleto e refaça o backup." % (x.get("destino") or "caminho não registrado"))
+            with open(os.path.join(mp, "dados.js"), encoding="utf-8") as fh:
+                d = json.loads(fh.read().strip()[len("window.BKP="):].rstrip(";"))
+            with open(os.path.join(mp, "certificado.json"), encoding="utf-8") as fh:
+                cert = json.load(fh)["cert"]
+            meta, raiz = d.get("meta") or {}, os.path.dirname(mp)
+            ruins = []
+            for e in d.get("f") or []:
+                if e[5] != "ok":
+                    continue
+                try:
+                    if os.stat(lp(os.path.join(raiz, *str(e[1]).split("/")))).st_size != e[3]:
+                        ruins.append(e[1])
+                except OSError:
+                    ruins.append(e[1])
+            if ruins:
+                raise ValueError("%d arquivo(s) do backup sumiram ou mudaram (ex.: %s). Não é seguro formatar: encerre como incompleto e refaça o backup." % (len(ruins), ruins[0]))
+            self.reset()
+            self.dest_root, self.mapa_dir, self.cert = raiz, mp, cert
+            self.checagens = meta.get("checagens") or []
+            self.verified_mode = "completa" if str(meta.get("verificacao", "")).startswith("SHA-256") else "rapida"
+            self.same_disk = any(str(c.get("titulo", "")).startswith("Destino no MESMO disco") for c in self.checagens)
+            self.phase, self.finished = "done", True
+            self.log("Backup retomado do Mapa guardado (código %s): %d arquivos conferidos." % (cert.get("codigo", ""), sum(1 for e in d.get("f") or [] if e[5] == "ok")))
+        return {"ok": True, "passo": rec(), "codigo": cert.get("codigo", "")}
+
     def _guardar_mapa(self, codigo):
         """Cópia do Mapa no registro da máquina (pendrive), para abrir mesmo sem o disco do backup."""
         try:
@@ -2519,8 +2562,14 @@ class Handler(BaseHTTPRequestHandler):
             nome = str(b.get("nome", "")).strip()[:60]
             FICHA.meta_set(mid, nome=nome)
             return {"nome": FICHA.nome_exibicao(mid)}
+        if path == "/api/backup/retomar":
+            self.exigir("backup")
+            return APP.retomar(str(b.get("mid") or FICHA.machine_id_cache()))
         if path == "/api/maquina/etapa":
-            return FICHA.marcar_etapa(str(b.get("mid") or ""), str(b.get("etapa") or ""), bool(b.get("confirmar")))
+            r = FICHA.marcar_etapa(str(b.get("mid") or ""), str(b.get("etapa") or ""), bool(b.get("confirmar")))
+            if b.get("etapa") == "encerrada" and APP.phase in ("verified", "done") and not APP.busy():
+                APP.reset()  # o passo a passo daquele backup não fica aberto depois de encerrado
+            return r
         if path == "/api/maquina/receita":
             mid = str(b.get("mid") or "") or FICHA.machine_id_cache()
             return {"receita": FICHA.salvar_receita(mid, b.get("itens"), bool(b.get("nenhum")))}

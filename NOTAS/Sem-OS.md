@@ -29,3 +29,12 @@ serviço) travava tudo em máquina de terceiros. Decisão: tirar a OS por enquan
 - OS de verdade (padronizar para o comercial).
 - Certificado de formatação/restauração como documento (hoje só o evento `formatacao` no histórico).
 - Instalar o sistema novo: o fluxo continua só reiniciando para a BIOS/UEFI.
+
+## D. Processo parado: retomar ou encerrar como incompleto
+- Aviso de pendência no perfil da máquina com ⚠ e dois botões: **Retomar de onde parou** e **Encerrar como incompleto**.
+- `App.retomar(mid)` (`POST /api/backup/retomar`): depois de reiniciar o programa, recarrega o último backup da máquina a
+  partir do `Mapa` (certificado, método de verificação, checagens/"mesmo disco") e só segue se o disco está conectado e
+  todos os arquivos copiados existem com o mesmo tamanho. Abre o passo a passo em "O que manter" (ou em "Conclusão" se a
+  receita já vale). "Definir o que manter" faz o mesmo quando há backup pendente; a tela avulsa só serve sem backup.
+- Etapa terminal `encerrada` ("Encerrado incompleto") em `ficha.py`, como `entregue` (`TERMINAIS`): fecha o serviço, some a
+  pendência, o próximo backup/análise abre serviço novo; a sessão do backup em memória é zerada.

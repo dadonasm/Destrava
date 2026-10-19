@@ -270,6 +270,7 @@ button.hac{display:flex;flex-direction:column;align-items:flex-start;gap:4px;tex
 button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-1px)}
 .hac .ic{width:44px;height:44px;border-radius:50%;background:var(--btnpri);color:var(--btnpri-tx);display:flex;align-items:center;justify-content:center;margin-bottom:4px}.hac .ic svg{width:22px;height:22px}
 .hac b{font-size:15px}.hac small{font-size:12.5px;color:var(--mut);line-height:1.35}
+.warnbox.pend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border-width:2px}.pend .pic{font-size:30px;line-height:1;color:var(--warn);flex:none}
 .pcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}.pcols .card{margin-bottom:0}@media (max-width:900px){.pcols{grid-template-columns:1fr}}
 button.pli{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 6px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
 button.pli:hover{background:var(--panel2)}.pli .grow{min-width:0}.pli .cod{display:block}.pli small{display:block;color:var(--mut);font-size:11.5px;text-align:right;margin-top:3px}
@@ -1044,7 +1045,7 @@ const MQ={q:"",sis:"",tec:"",per:"",ord:"recentes",col:"",dir:-1,aba:"todas",pag
 const MQX={concluidos:["Com serviço concluído",m=>(m.etapa_historico||[]).some(e=>e.etapa==="entregue")],notas:["Com nota antes e depois",m=>m.nota_antes!=null&&m.nota_depois!=null],
  melhorias:["Com melhorias medidas antes e depois",m=>m.melhorias>0&&m.nota_antes!=null&&m.nota_depois!=null],espaco:["Com espaço recuperado",m=>m.espaco>0],backup:["Com backup",m=>m.backups>0]};
 const POR_PAG=25;
-const ETB={recebida:"b-mut",diagnosticada:"b-warn",backup_verificado:"b-ok",otimizada:"b-ok",formatada:"b-ok",entregue:"b-gold"};
+const ETB={recebida:"b-mut",diagnosticada:"b-warn",backup_verificado:"b-ok",otimizada:"b-ok",formatada:"b-ok",entregue:"b-gold",encerrada:"b-bad"};
 const FAM={windows:"Windows",mac:"Mac",linux:"Linux"};
 const semAc=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 const dig=s=>String(s||"").replace(/\D/g,"");
@@ -1162,14 +1163,16 @@ async function drawMaqFicha(mid){
   if(g)wireReg(g);
 }
 function regHtml(g){
-  const nome=k=>(g.etapas.find(e=>e[0]===k)||[k,k])[1],ser=[];
-  (g.etapa_historico||[]).forEach(e=>{if(!ser.length||ser[ser.length-1].slice(-1)[0].etapa==="entregue")ser.push([]);ser[ser.length-1].push(e)});
+  const nome=k=>k==="encerrada"?"Encerrado incompleto":(g.etapas.find(e=>e[0]===k)||[k,k])[1],ser=[];
+  (g.etapa_historico||[]).forEach(e=>{if(!ser.length||["entregue","encerrada"].includes(ser[ser.length-1].slice(-1)[0].etapa))ser.push([]);ser[ser.length-1].push(e)});
   const feito={};(ser[ser.length-1]||[]).forEach(e=>feito[e.etapa]=e);
-  const ent=g.etapa==="entregue",tel=dig(g.telefone),nbk=(g.historico||[]).filter(e=>e.tipo==="backup").length,rc=g.receita,rv=!!(rc&&rc.valida);
+  const ent=g.etapa==="entregue"||g.etapa==="encerrada",tel=dig(g.telefone),nbk=(g.historico||[]).filter(e=>e.tipo==="backup").length,rc=g.receita,rv=!!(rc&&rc.valida);
   const dono=`<label for="rgdono">Dono (cliente) ${g.dono==="terceiros"?'<span class="badge b-warn">Terceiros</span>':g.dono==="particular"?'<span class="badge b-mut">Particular</span>':""}</label><input type="text" id="rgdono" autocomplete="off" maxlength="120" placeholder="Nome do cliente, empresa ou pessoa" value="${esc(g.dono_nome)}">`;
   return `<div class="card"><div class="row" style="align-items:flex-start"><div class="grow"><div class="eyebrow">PERFIL DA MÁQUINA (CLIENTE)</div><h2 style="font-size:22px">${esc(g.modelo||(g.analises?g.nome:"Ainda sem análise"))}</h2>
     <div class="mut" style="font-size:13px"><span class="cod">${esc(g.mid)}</span>${g.sistema?" · "+esc(g.sistema):""}${g.serie?" · série "+esc(g.serie):""}</div></div>${seloEt(g.etapa,g.etapa_nome)}</div>
-   ${g.pendencia?`<div class="warnbox"><b>Pendência:</b> ${esc(g.pendencia)}</div>`:""}
+   ${g.pendencia?`<div class="warnbox pend"><span class="pic" aria-hidden="true">⚠</span><div class="grow"><b>Pendência:</b> ${esc(g.pendencia)}<div class="mut" style="font-size:12.5px">Dá para voltar de onde parou ou encerrar este processo como incompleto.</div></div>
+     <button class="pri" id="rgret">${/backup feito/i.test(g.pendencia)?"Retomar de onde parou":"Iniciar o backup"}</button><button id="rgenc">Encerrar como incompleto</button></div>`:""}
+   ${g.etapa==="encerrada"?'<div class="infobox">⚠ Serviço encerrado como incompleto. O próximo backup ou análise abre um serviço novo nesta mesma entrada.</div>':""}
    <div class="etp">${g.etapas.map(([k,t])=>{const e=feito[k];return `<div class="s ${k===g.etapa?"cur":e?"ok":""}"><b>${esc(t)}</b>${e?`${dataBR(e.quando)}<br>${esc(e.tecnico||"—")}`:"&nbsp;"}</div>`}).join("")}</div>
    <div class="row" style="justify-content:flex-end;margin-top:10px">${ent?'<span class="mut grow" style="font-size:13px">Serviço encerrado. Se a máquina voltar, o próximo termo ou análise abre um serviço novo nesta mesma entrada.</span>':'<span class="mut grow" style="font-size:13px">As outras etapas mudam sozinhas, conforme o atendimento avança.</span>'}
     <button id="rgfmt" ${feito.formatada||ent||!rv?"disabled":""} ${rv?"":'title="Defina o que manter antes de formatar"'}>Marcar como formatada</button><button class="pri" id="rgent" ${ent?"disabled":""}>Marcar como entregue</button></div>
@@ -1184,13 +1187,30 @@ function regHtml(g){
   <div class="card"><div class="rg2"><div><h3 style="font-size:15px">Etapas de cada serviço</h3><table style="margin-top:8px">${ser.map((s,i)=>`<tr><th colspan="3" style="color:var(--tx)">Serviço ${i+1}${i===ser.length-1&&!ent?" · em andamento":""}</th></tr>${s.map(e=>`<tr><td style="white-space:nowrap">${dataBR(e.quando)}</td><td>${esc(nome(e.etapa))}${e.origem==="importada"?' <span class="mut" style="font-size:11.5px">(histórico antigo)</span>':e.origem==="manual"?' <span class="mut" style="font-size:11.5px">(marcada à mão)</span>':""}</td><td>${esc(e.tecnico||"—")}</td></tr>`).join("")}`).join("")||'<tr><td class="mut">Nada registrado ainda.</td></tr>'}</table></div>
    <div><h3 style="font-size:15px">Linha do tempo</h3><div style="max-height:440px;overflow:auto;margin-top:10px;padding:2px 0 0 10px"><div class="tl">${(g.historico||[]).slice().reverse().map(e=>`<div class="ev"><b>${esc(e.resumo)}</b>${e.etapa?` <span class="badge ${ETB[e.etapa]||"b-mut"}">${esc(nome(e.etapa))}</span>`:""}<br><small>${dataBR(e.quando)} · ${esc((e.extra||{}).tecnico||"técnico não registrado")}</small></div>`).join("")||'<p class="mut">Sem eventos ainda.</p>'}</div></div></div></div></div>`;
 }
+/* processo parado: volta ao passo a passo do Backup (recarregando o backup guardado) ou encerra como incompleto */
+function retomarBackup(mid,passo){
+  return safe(async()=>{
+    let r;
+    try{r=await api("/api/backup/retomar",{mid})}
+    catch(e){if(e.codigo==="termo")throw e;
+      if(await dialog({titulo:"Não dá para retomar este backup",html:`<p>${esc(e.message)}</p>`,ok:"Encerrar como incompleto",cancelar:"Fechar",perigo:true}))await encerrarIncompleto(mid,true);
+      return}
+    go(passo||r.passo)})
+}
+async function encerrarIncompleto(mid,jaPerguntou){
+  if(!jaPerguntou&&!await dialog({titulo:"Encerrar como incompleto?",html:"<p>O processo desta máquina fecha sem concluir. O backup que já existe continua guardado, mas para formatar será preciso refazer o backup.</p><p class=\"mut\">Fica registrado no histórico da máquina.</p>",ok:"Encerrar como incompleto",perigo:true}))return;
+  await safe(async()=>{await api("/api/maquina/etapa",{mid,etapa:"encerrada"});toast("Processo encerrado como incompleto.","ok");drawMaq(mid)});
+}
 function wireReg(g){
   const mid=g.mid;
   const marca=async(etapa,confirmar)=>{const x=await api("/api/maquina/etapa",{mid,etapa,confirmar:!!confirmar});
     if(x.confirmar){if(await dialog({titulo:"Formatar sem backup verificado?",html:`<p>${esc(x.confirmar)}</p><p class="mut">Use só se o cliente dispensou o backup.</p>`,ok:"Marcar mesmo assim",perigo:true}))return marca(etapa,true);return}
     toast("Máquina marcada como "+x.registro.etapa_nome.toLowerCase()+".","ok");drawMaq(mid)};
   $("#rgfmt").onclick=()=>safe(()=>marca("formatada"));
-  const rm=$("#rgman");if(rm)rm.onclick=()=>nav("manter",mid);
+  const minha=mid===(CTX.t&&CTX.t.mid),bkp=!!g.pendencia&&/backup feito/i.test(g.pendencia);
+  const rm=$("#rgman");if(rm)rm.onclick=()=>bkp&&minha?retomarBackup(mid,5):nav("manter",mid);
+  const rr=$("#rgret");if(rr)rr.onclick=()=>bkp?(minha?retomarBackup(mid):toast("Abra o Destrava! no computador desta máquina para retomar o backup.")):nav("backup");
+  const re=$("#rgenc");if(re)re.onclick=()=>encerrarIncompleto(mid);
   $("#rgent").onclick=()=>safe(async()=>{if(await dialog({titulo:"Marcar como entregue?",html:"<p>Encerra este serviço. Se a máquina voltar, ela continua nesta mesma entrada, com um serviço novo.</p>",ok:"Marcar como entregue"}))await marca("entregue")});
   $("#rgsave").onclick=()=>safe(async()=>{$("#rgerr").innerHTML="";
     try{await api("/api/maquina/registro",{mid,dono_nome:$("#rgdono").value,telefone:$("#rgtel").value,email:$("#rgmail").value,observacoes:$("#rgobs").value});toast("Dados da máquina salvos.","ok")}

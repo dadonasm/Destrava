@@ -1486,9 +1486,10 @@ def hist_get(mid):
 # ----------------------------------------------------------------------------------------------
 ETAPAS = [("recebida", "Recebida"), ("diagnosticada", "Diagnosticada"), ("backup_verificado", "Backup verificado"),
           ("otimizada", "Otimizada"), ("formatada", "Formatada"), ("entregue", "Entregue")]
-ORDEM = [e for e, _ in ETAPAS]
-NOME_ETAPA = dict(ETAPAS)
-MANUAIS = ("formatada", "entregue")  # o agente não tem como saber sozinho: o técnico marca na Ficha da máquina
+ORDEM = [e for e, _ in ETAPAS] + ["encerrada"]
+NOME_ETAPA = dict(ETAPAS, encerrada="Encerrado incompleto")
+MANUAIS = ("formatada", "entregue", "encerrada")  # o agente não tem como saber sozinho: o técnico marca na Ficha da máquina
+TERMINAIS = ("entregue", "encerrada")  # fecham o serviço; o que vier depois abre um serviço novo
 DIAS_PENDENTE = 7  # diagnosticada há mais que isso, sem backup, vira pendência
 
 
@@ -1523,10 +1524,10 @@ def etapa_do_evento(ev):
 
 
 def _servicos(lst):
-    """Cada serviço termina em "entregue"; o que vem depois é a mesma máquina que voltou (mesma entrada, serviço novo)."""
+    """Cada serviço termina em "entregue" (ou "encerrada", incompleto); o que vem depois é a mesma máquina que voltou (serviço novo)."""
     out = []
     for e in lst:
-        if not out or out[-1][-1]["etapa"] == "entregue":
+        if not out or out[-1][-1]["etapa"] in TERMINAIS:
             out.append([])
         out[-1].append(e)
     return out
@@ -1534,7 +1535,7 @@ def _servicos(lst):
 
 def _em_aberto(lst):
     s = _servicos(lst)
-    return [] if not s or s[-1][-1]["etapa"] == "entregue" else s[-1]
+    return [] if not s or s[-1][-1]["etapa"] in TERMINAIS else s[-1]
 
 
 def etapa_de(lst):
@@ -1615,15 +1616,17 @@ def registro(mid, meta=None, hist=None):
 
 
 def marcar_etapa(mid, etapa, confirmar=False):
-    """Formatada e Entregue são marcadas pelo técnico. Formatar sem backup verificado neste serviço pede confirmação."""
+    """Formatada, Entregue e Encerrado incompleto são marcadas pelo técnico. Formatar sem backup verificado neste serviço pede confirmação."""
     if etapa not in MANUAIS:
-        raise ValueError("Só dá para marcar à mão Formatada ou Entregue. As outras etapas mudam sozinhas.")
+        raise ValueError("Só dá para marcar à mão Formatada, Entregue ou Encerrado incompleto. As outras etapas mudam sozinhas.")
     if not existe_maquina(mid):
         raise ValueError("Máquina não encontrada.")
     reg = registro(mid)
     aberto = _em_aberto(reg["etapa_historico"])
     if etapa == "entregue" and reg["etapa"] == "entregue":
         raise ValueError("Esta máquina já foi entregue.")
+    if etapa == "encerrada" and not aberto:
+        raise ValueError("Não há processo em andamento para encerrar.")
     if any(e["etapa"] == etapa for e in aberto):
         raise ValueError("Esta máquina já está marcada como %s neste serviço." % NOME_ETAPA[etapa].lower())
     if etapa == "formatada" and not receita_valida(mid):
@@ -1666,7 +1669,7 @@ def _inicio_servico(lst):
     aberto = _em_aberto(lst)
     if aberto:
         return aberto[0].get("quando", "")
-    return next((e.get("quando", "") for e in reversed(lst) if e.get("etapa") == "entregue"), "")
+    return next((e.get("quando", "") for e in reversed(lst) if e.get("etapa") in TERMINAIS), "")
 
 
 def receita_valida(mid):
@@ -1786,7 +1789,7 @@ def linha_registro(mid, atual=""):
         elif t == "backup":
             backups += 1
             protegido += int(ex.get("bytes") or 0) or _bytes_do_resumo(ev.get("resumo", ""))
-        elif t == "etapa" and ex.get("etapa") == "entregue":
+        elif t == "etapa" and ex.get("etapa") in TERMINAIS:
             novo = True
         elif t == "ficha" and novo and ex.get("nota") is not None:
             antes, depois, novo = ex["nota"], None, False
@@ -1828,7 +1831,7 @@ def painel_resumo(atual=None, agora=None):
 
     def media(v):
         return round(sum(v) / len(v), 1) if v else None
-    return {"maquinas": len(linhas), "em_andamento": sum(1 for x in linhas if x.get("etapa") != "entregue"),
+    return {"maquinas": len(linhas), "em_andamento": sum(1 for x in linhas if x.get("etapa") not in TERMINAIS),
             "concluidos": len(entregas), "concluidos_mes": sum(1 for q in entregas if q.startswith(mes)),
             "maquinas_concluidas": sum(1 for x in linhas if any(e.get("etapa") == "entregue" for e in x.get("etapa_historico") or [])),
             "nota": {"n": len(notas), "antes": media([x["nota_antes"] for x in notas]), "depois": media([x["nota_depois"] for x in notas])},
