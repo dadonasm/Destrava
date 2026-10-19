@@ -108,6 +108,20 @@ class BackupCompleto(unittest.TestCase):
             time.sleep(0.05)
         self.assertEqual(len(mapa.CONF["diferentes"]), 1)
 
+    def test_mapa_guardado_no_registro_da_maquina(self):
+        self.escanear()
+        self.app.start_copy()
+        self.assertEqual(espera(self.app, ("copied", "error")), "copied", self.app.error)
+        self.app.start_verify("completa")
+        self.assertEqual(espera(self.app, ("verified", "error")), "verified", self.app.error)
+        cert = self.app.finish()
+        copia = os.path.join(ficha.pasta(ficha.machine_id_cache()), "mapas", cert["codigo"])
+        self.assertTrue(os.path.isfile(os.path.join(copia, "Mapa", "dados.js")))
+        self.assertTrue(os.path.isfile(os.path.join(copia, "Mapa", "certificado.json")))
+        shutil.rmtree(os.path.join(self.dest, "Backup_Ana"))  # disco do backup desligado
+        achados = dd_backup.mapas_conhecidos()
+        self.assertEqual([m["pasta"] for m in achados if m["codigo"] == cert["codigo"]], [copia], "abre pela cópia do registro")
+
     def test_mapa_nao_sai_da_pasta_do_backup(self):
         self.escanear()
         self.app.start_copy()

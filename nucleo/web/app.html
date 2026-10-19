@@ -738,7 +738,7 @@ function drawerHtml(v){
    <div class="row" style="margin-top:8px"><button class="sm" id="note">Anotar no histórico</button></div></div>`;
 }
 /* ---------- Mapas: o backup como gestão de arquivos ---------- */
-const MP={T:null};
+const MP={T:null,cert:false};
 async function drawMapas(){
   setWide(true);clearTimeout(MP.T);
   const r=await api("/api/mapa/lista");if(view!=="mapas")return;
@@ -764,6 +764,8 @@ async function mapaAberto(m){
   $("#mpcert").onclick=()=>safe(certificadoMapa);
   $("#mpconf").onclick=()=>safe(async()=>{await api("/api/mapa/conferir",{});conferindo()});
   conferindo(true);
+  let vistos=[];try{vistos=JSON.parse(lsGet("dd_cert_vistos","[]"))||[]}catch(e){}
+  if(MP.cert||(m.codigo&&!vistos.includes(m.codigo))){MP.cert=false;if(m.codigo&&!vistos.includes(m.codigo)){vistos.push(m.codigo);lsSet("dd_cert_vistos",JSON.stringify(vistos.slice(-200)))}safe(certificadoMapa)}
 }
 async function certificadoMapa(){
   const c=await api("/api/mapa/certificado"),k=c.contagem,ce=c.cert||{},tot=k.ok+k.falha+k.fora,ok=ce.status==="sem_falhas";
@@ -1646,7 +1648,17 @@ function drawTot(t){
    <div style="margin-top:12px" class="mut">Ocupa ${pct.toFixed(pct<10?1:0)}% do espaço livre no destino (${fmt(t.free)})</div><div class="bar"><i style="width:${pct}%;${pct>90?"background:var(--err)":""}"></i></div>${w}
    <div class="row" style="margin-top:14px"><button id="back3">← Voltar</button><button class="pri grow" id="go3">Iniciar cópia →</button></div>`;
   $("#go3").disabled=!t.cabe||t.fat32_problema||t.sel_n===0;
-  $("#back3").onclick=()=>go(1);$("#go3").onclick=()=>safe(async()=>{await api("/api/copy",{});go(3)});
+  $("#back3").onclick=()=>go(1);$("#go3").onclick=()=>safe(async()=>{
+    const bt=$("#go3"),txt=bt.textContent;bt.disabled=true;bt.textContent="Conferindo as mídias…";
+    try{
+      const pf=await api("/api/preflight",{}),er=pf.checks.filter(c=>c.nivel==="erro"),av=pf.checks.filter(c=>c.nivel==="aviso");
+      const lista=cs=>`<ul style="margin:6px 0 0;padding-left:18px">${cs.map(c=>`<li><b>${esc(c.titulo)}</b><div class="mut" style="font-size:13px">${esc(c.detalhe)}${c.solucao?" · "+esc(c.solucao):""}</div></li>`).join("")}</ul>`;
+      if(er.length){await dialog({titulo:"Não dá para copiar agora",html:`<p>A conferência das mídias, logo antes da cópia, achou problema:</p>${lista(er)}`,ok:"Entendi",semCancelar:true});return}
+      const sim=await dialog({titulo:"Mídias conferidas de novo",html:`<div class="okbox">Origem e destino lidos agora: <b>${nf(t.sel_n)} arquivos (${fmt(t.sel_bytes)})</b> cabem no destino (${fmt(t.free)} livres).</div>${av.length?`<p style="margin:10px 0 0">Avisos:</p>${lista(av)}`:""}`,ok:"Iniciar cópia"});
+      if(!sim)return;
+      await api("/api/copy",{});go(3);
+    }finally{if(document.body.contains(bt)){bt.disabled=false;bt.textContent=txt}}
+  });
 }
 /* ---- lista do backup: painel aberto pelo "Ver lista" (filtro, busca, ordem, Bloco ou Lista, rolagem infinita) ---- */
 const LST={f:{},rot:"",q:"",ord:"nome",dir:"asc",modo:"lista",off:0,fim:false,carregando:false,gen:0,tot:null};
@@ -1823,15 +1835,18 @@ async function draw6(){
   const ok=c.status==="sem_falhas",g=await api("/api/firmware_gate",{}),terc=ownT();
   const rec=c.recuperado_bytes?`<div class="kpi"><div class="mut">Espaço recuperado (Dados)</div><div class="big">${fmt(c.recuperado_bytes)}</div></div>`:"";
   $("#main").innerHTML=`<div class="card"><div class="row" style="gap:18px"><div class="seal">${DD.seal({variant:"ouro",bottom:"flat",bottomText:ok?"BACKUP VERIFICADO":"COM RESSALVAS",size:92})}</div>
-   <div class="grow"><h2 style="font-size:22px">${ok?"Backup concluído. Do jeito D&amp;D.":"Backup concluído com ressalvas, e a gente mostra cada uma."}</h2><p class="h">Código ${esc(c.codigo)} · ${esc(c.metodo)}${c.maquina_nome?" · "+esc(c.maquina_nome):""}</p></div></div>
+   <div class="grow"><h2 style="font-size:22px">${ok?"Backup finalizado. Do jeito D&amp;D.":"Backup finalizado com ressalvas, e a gente mostra cada uma."}</h2><p class="h">Código ${esc(c.codigo)} · ${esc(c.metodo)}${c.maquina_nome?" · "+esc(c.maquina_nome):""}</p></div></div>
+   ${ok?`<div class="okbox"><b>Checagem final: nada se perdeu.</b> ${nf(c.copiados)} arquivos copiados e conferidos um a um, sem nenhuma falha. O Mapa ficou no disco do backup (para o cliente) e uma cópia nos seus registros. <b>Pode seguir com o objetivo.</b></div>`
+     :`<div class="warnbox"><b>Checagem final: ${nf(c.falhas)} falha(s).</b> Veja o que ficou de fora abaixo e refaça as falhas antes de formatar.</div>`}
    <div class="grid"><div class="kpi"><div class="mut">Copiados e conferidos</div><div class="big">${nf(c.copiados)}</div></div><div class="kpi"><div class="mut">Tamanho</div><div class="big">${fmt(c.bytes)}</div></div><div class="kpi"><div class="mut">Falhas</div><div class="big">${c.falhas}</div></div><div class="kpi"><div class="mut">Ficaram de fora (listados)</div><div class="big">${nf(c.ficaram)}</div></div>${rec}</div>
    ${c.motivos.length?`<h3 style="font-size:14px">O que ficou de fora e por quê</h3><table>${c.motivos.map(x=>`<tr><td>${esc(x.motivo)}</td><td>${nf(x.n)}</td><td>${fmt(x.bytes)}</td></tr>`).join("")}</table>`:""}
    <p class="mono mut">Pasta do backup: ${esc(st.dest_root)}<br>Mapa: ${esc(st.dest_root)}/Mapa/visualizador.html</p>
-   <div class="row"><button class="pri" id="omi">Abrir o Mapa no Destrava!</button><button id="om">Visualizador offline</button><button id="newb">Novo backup</button></div></div>
+   <div class="row"><button class="pri" id="omi">Abrir o Mapa no Destrava!</button><button id="ocert">Certificado</button><button id="om">Visualizador offline</button><button id="newb">Novo backup</button></div></div>
   <div class="card"><h2>Formatar a máquina</h2>${g.ok?`<p class="h">Tudo certo para seguir. O computador reinicia direto na tela de firmware (BIOS/UEFI) para você escolher o boot e formatar.</p>
    <label style="display:flex;gap:8px;align-items:center;margin:0 0 12px;color:var(--tx)"><input type="checkbox" id="cf"> Confirmo que o backup foi conferido e que posso formatar.</label><button class="dng" id="fw" disabled>Reiniciar para a BIOS/UEFI</button>`:`<div class="warnbox">Formatação bloqueada: ${esc(g.motivo)}</div>${g.falta_receita?'<button class="pri" id="fwman">Definir o que manter</button>':""}`}</div>`;
   $("#om").onclick=()=>safe(()=>api("/api/open_mapa",{}));
   const omi=$("#omi");if(omi)omi.onclick=()=>safe(async()=>{await api("/api/mapa/abrir",{pasta:st.dest_root});nav("mapas")});
+  $("#ocert").onclick=()=>safe(async()=>{await api("/api/mapa/abrir",{pasta:st.dest_root});MP.cert=true;nav("mapas")});
   $("#newb").onclick=()=>safe(async()=>{await api("/api/reset",{});S.sources=[];S.chosen={};S.dest="";S.folder="";go(0)});
   const fm=$("#fwman");if(fm)fm.onclick=()=>go(5);
   const cf=$("#cf");if(cf){cf.onchange=()=>$("#fw").disabled=!cf.checked;

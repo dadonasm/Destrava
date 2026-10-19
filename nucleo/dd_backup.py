@@ -1626,9 +1626,10 @@ class App(object):
             try:
                 if FICHA:
                     c = self.cert
+                    guardado = self._guardar_mapa(c["codigo"])
                     FICHA.hist_add(FICHA.machine_id_cache(), "backup", "Backup %s: %d arquivos (%s) · código %s" % ("sem falhas" if c["status"] == "sem_falhas" else "com ressalvas", c["copiados"], fmt_bytes(c["bytes"]), c["codigo"]),
                                    {"destino": self.dest_root, "codigo": c["codigo"], "cliente": c.get("cliente", ""), "status": c["status"], "bytes": c["bytes"],
-                                    "tecnico": c.get("tecnico", ""), "tecnico_perfil": c.get("tecnico_perfil") or {}})
+                                    "tecnico": c.get("tecnico", ""), "tecnico_perfil": c.get("tecnico_perfil") or {}, "mapa_registro": guardado})
             except Exception:
                 pass
             return self.cert
@@ -1636,6 +1637,16 @@ class App(object):
             self.error = traceback.format_exc()
             self.phase = "error"
             raise
+
+    def _guardar_mapa(self, codigo):
+        """Cópia do Mapa no registro da máquina (pendrive), para abrir mesmo sem o disco do backup."""
+        try:
+            raiz = os.path.join(FICHA.pasta(FICHA.machine_id_cache()), "mapas", safe_seg(codigo or now_iso().replace(":", "-")))
+            shutil.copytree(self.mapa_dir, os.path.join(raiz, "Mapa"), dirs_exist_ok=True)
+            return raiz
+        except Exception as e:
+            self.log("Aviso: não consegui guardar a cópia do Mapa no registro da máquina (%s)." % e)
+            return ""
 
     def _write_mapa(self):
         os.makedirs(self.mapa_dir, exist_ok=True)
@@ -2679,13 +2690,16 @@ def mapas_conhecidos():
         if destino and k not in vistos and os.path.isfile(os.path.join(mp, "dados.js")):
             vistos.add(k)
             out.append({"pasta": destino, "quando": quando, "codigo": codigo, "cliente": cliente})
+            return True
+        return False
     if APP.dest_root:
         add(APP.dest_root, "esta sessão", (APP.cert or {}).get("codigo", ""), APP.cfg.get("cliente", "") if APP.cfg else "")
     try:
         for h in reversed(FICHA.hist_get(FICHA.machine_id_cache())):
             x = h.get("extra") or {}
             if h.get("tipo") == "backup":
-                add(x.get("destino"), h.get("quando", ""), x.get("codigo", ""), x.get("cliente", ""))
+                if not add(x.get("destino"), h.get("quando", ""), x.get("codigo", ""), x.get("cliente", "")):
+                    add(x.get("mapa_registro"), h.get("quando", ""), x.get("codigo", ""), (x.get("cliente") or "") + " (cópia no registro)")
     except Exception:
         pass
     return out
