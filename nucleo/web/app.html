@@ -245,6 +245,15 @@ body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{d
 .lstn span{color:var(--mut);font-size:12.5px;display:block}.lstn b{font-size:18px}.lstn .arco{width:76px;height:76px;grid-column:3;grid-row:1/span 2}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;background:var(--panel2)}.seg button{border:0;background:transparent}.seg button.on{background:var(--panel);box-shadow:var(--sh);font-weight:700}
 .lstc{flex:1;min-height:0;overflow:auto;border-top:1px solid var(--line)}
+.lstbody{display:flex;gap:16px;flex:1;min-height:0;margin-top:12px}.lstm{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}
+.lsts{width:250px;flex:none;overflow:auto;border-right:1px solid var(--line);padding-right:12px}
+.fxg{border-bottom:1px solid var(--line);padding:8px 0}.fxg summary{cursor:pointer;font-weight:700;font-size:14px;list-style-position:inside}.fxn{display:inline-block;min-width:18px;padding:0 6px;border-radius:99px;background:var(--azul);color:#fff;font-size:11px;text-align:center}
+.fxo{display:flex;gap:8px;align-items:center;padding:4px 2px;margin:0;font-size:13.5px;color:var(--tx);cursor:pointer;border-radius:8px}.fxo:hover{background:var(--panel2)}.fxo small{color:var(--mut);font-size:12px}.fxo.zero{opacity:.45;cursor:default}
+.fxq{margin:6px 0 4px!important;padding:6px 10px!important;font-size:13px!important}.fxm{margin-top:4px}
+.fxr{display:flex;gap:6px;align-items:center;margin-top:8px}.fxr input{margin:0!important;padding:6px 8px!important;font-size:12.5px!important;min-width:0;flex:1}.fxr span{font-size:12px;color:var(--mut)}
+.lstbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 8px}.lstord{display:inline-flex;gap:6px;align-items:center}.lstord label{font-size:13px;color:var(--mut);white-space:nowrap}.lstord #lstord{width:auto;min-width:0;padding:6px 30px 6px 10px;font-size:13px}.lstord #lstdir{padding:6px 10px}.lstchips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.lstfb{display:none}
+@media (max-width:820px){.lsts{display:none;position:absolute;inset:150px 14px 14px;z-index:6;width:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 12px;box-shadow:var(--sh)}.lstb.fopen .lsts{display:block}.lstfb{display:inline-flex}.lstb{position:relative}}
 .lstt{min-width:880px}.lstt thead th{position:sticky;top:0;background:var(--panel);z-index:1}.lstt th button{border:0;background:transparent;padding:0;font:inherit;color:inherit;cursor:pointer;border-radius:0}.lstt th button.on{color:var(--tx);font-weight:700}
 .lstt td{vertical-align:middle}.lstt .ck{width:32px}.lstt .cam{font-size:12px;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lstt tr.desm td{color:var(--mut)}
 button.lnk{border:0;background:transparent;padding:0;color:var(--acc);text-align:left;cursor:pointer;font:inherit;border-radius:0}button.lnk:hover{text-decoration:underline}
@@ -272,6 +281,8 @@ button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-
 .hac b{font-size:15px}.hac small{font-size:12.5px;color:var(--mut);line-height:1.35}
 .warnbox.pend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border-width:2px}.pend .pic{font-size:30px;line-height:1;color:var(--warn);flex:none}
 .idn{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.medbar{display:flex;height:16px;border-radius:99px;overflow:hidden;background:var(--line);margin:10px 0 8px}.medbar i{display:block;height:100%}
+.medleg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px}.medleg span{display:inline-flex;align-items:center;gap:6px}.medleg i{width:10px;height:10px;border-radius:3px;display:inline-block}
 .pcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}.pcols .card{margin-bottom:0}@media (max-width:900px){.pcols{grid-template-columns:1fr}}
 button.pli{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 6px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
 button.pli:hover{background:var(--panel2)}.pli .grow{min-width:0}.pli .cod{display:block}.pli small{display:block;color:var(--mut);font-size:11.5px;text-align:right;margin-top:3px}
@@ -1661,7 +1672,7 @@ async function tick(){
 /* ---- 3 seleção ---- */
 async function draw3(){
   setWide(true);
-  const g=await api("/api/groups"),t=await api("/api/totals"),M=await api("/api/maes");
+  const g=await api("/api/groups"),t=await api("/api/totals"),M=await api("/api/maes"),MD=await api("/api/medicao").catch(()=>({}));
   const cats=g.cats.slice().sort((a,b)=>(CATORD.indexOf(a.cat)+99)%99-(CATORD.indexOf(b.cat)+99)%99);
   const tot=cats.reduce((a,c)=>({n:a.n+c.n,b:a.b+c.bytes}),{n:0,b:0});
   const rv=g.acts.revisar||{n:0,bytes:0};tot.n+=rv.n;tot.b+=rv.bytes;
@@ -1670,9 +1681,10 @@ async function draw3(){
   const pdest=t.free?t.sel_bytes/t.free*100:100;
   const corPct=p=>p>=75?"var(--ok)":p>=45?"var(--warn)":"var(--err)";
   $("#main").innerHTML=`<div class="ptitle"><h1>O que vai para o backup</h1><p>Tudo o que existe nesta máquina, por categoria. Você escolhe — o que não for marcado fica registrado no Mapa e no certificado.</p></div>
-  <div class="kpis">${kpi2("Encontrado","🗂️",fmt(tot.b),nf(tot.n)+" arquivos",tot.b?t.sel_bytes/tot.b*100:0)}${kpi2("Vai para o backup","📥",fmt(t.sel_bytes),nf(t.sel_n)+" arquivos",tot.n?t.sel_n/tot.n*100:0,"var(--ok)")}
+  <div class="kpis">${kpi2("Arquivos pessoais encontrados","🗂️",fmt(tot.b),nf(tot.n)+" arquivos"+(MD.usado?" · de "+fmt(MD.usado)+" usados no disco":""),tot.b?t.sel_bytes/tot.b*100:0)}${kpi2("Vai para o backup","📥",fmt(t.sel_bytes),nf(t.sel_n)+" arquivos",tot.n?t.sel_n/tot.n*100:0,"var(--ok)")}
    ${kpi2("Espaço no destino","💽",fmt(t.free),t.cabe?"livres":"<b style='color:var(--err)'>não cabe</b>",pdest,t.cabe?(pdest>85?"var(--warn)":"var(--azul)"):"var(--err)")}${kpi2("Nuvem","☁️",fmt(nv.bytes),nv.n?nf(nv.n)+" só na nuvem":"nada só na nuvem",nv.bytes?nv.sel_bytes/nv.bytes*100:0,"#f0a020")}</div>
   <div class="cols"><div>
+  <div class="card" id="medc"></div>
   <div class="card"><h2>Categorias</h2><p class="h">Liga e desliga categorias inteiras. Já deixei marcado o que é pessoal.</p><div class="catg">${cats.map(c=>{const p=c.bytes?c.sel_bytes/c.bytes*100:0,all=c.sel_n===c.n;
     return `<div class="catc ${c.sel_n?"":"off"}"><div class="ct"><span style="font-size:20px">${CATICO[c.cat]||"📁"}</span><b>${esc(CATNAME[c.cat]||c.cat)}</b><label class="tg" aria-label="${esc(CATNAME[c.cat]||c.cat)}"><input type="checkbox" data-c="${esc(c.cat)}" ${all?"checked":""} data-ind="${c.sel_n&&!all?1:0}"><s></s></label></div>
      <div class="cb2"><div class="cn">${nf(c.sel_n)} de ${nf(c.n)} arquivos<br><b style="color:var(--tx)">${fmt(c.sel_bytes)}</b> de ${fmt(c.bytes)}</div>${arco(p,c.sel_n?"var(--azul)":"var(--trilho)")}</div>
@@ -1694,7 +1706,24 @@ async function draw3(){
   const ra=$("#revall");if(ra)ra.onclick=()=>safe(async()=>{await api("/api/select",{filter:{act:"revisar"},on:true});draw3()});
   const mo=$("#maeok");if(mo)mo.onclick=()=>safe(async()=>{await api("/api/maes",{chaves:$$(".mck:checked").map(x=>x.value)});toast("Pastas de origem aplicadas.","ok");draw3()});
   $("#vdirs").onclick=()=>safe(async()=>{const r=await api("/api/left");modalHtml("Pastas puladas",`<div class="mono" style="max-height:60vh;overflow:auto">${r.ign_dirs.map(d=>`<div><b>${esc(d[0])}</b><br><span class="mut">${esc(d[1])}</span></div>`).join("<br>")}</div>`)});
-  drawTot(t);
+  drawTot(t);medicaoCard(MD);
+}
+/* onde está o resto do disco: o que a varredura não lê (Windows, programas, caches) medido em segundo plano */
+const MED_COR={"Vai para o backup":"var(--ok)","Pessoal não marcado":"#7fa7ff","Windows e programas":"#8a8f9c","Sistema e programas":"#8a8f9c","Caches e temporários":"#f0a020","Lixeira e sistema":"#c96a6a","Outros pulados":"#b4b4bf","Resto do sistema":"var(--line)"};
+let MEDT=null;
+function medicaoCard(m){
+  clearTimeout(MEDT);const el=$("#medc");if(!el)return;
+  if(!m||m.achado===undefined){el.classList.add("hide");return}
+  el.classList.remove("hide");
+  const seg=[["Vai para o backup",m.marcado],["Pessoal não marcado",Math.max(0,m.achado-m.marcado)],...Object.entries(m.grupos||{}),["Resto do sistema",m.resto||0]].filter(x=>x[1]>0);
+  const tot=Math.max(m.usado||0,seg.reduce((a,x)=>a+x[1],0))||1;
+  const dica={"Windows e programas":"se reinstalam","Sistema e programas":"se reinstalam","Caches e temporários":"se recriam sozinhos","Lixeira e sistema":"não precisa","Resto do sistema":"memória virtual, hibernação, restauração e arquivos protegidos"};
+  el.innerHTML=`<h2>Onde está o resto do disco?</h2><p class="h">${m.usado?`O disco tem <b>${fmt(m.usado)}</b> usados. Seus arquivos pessoais somam <b>${fmt(m.achado)}</b> e <b>${fmt(m.marcado)}</b> estão marcados para o backup. O resto é do Windows, de programas, caches e arquivos de sistema: não precisa de backup.`:`Seus arquivos pessoais somam <b>${fmt(m.achado)}</b>; <b>${fmt(m.marcado)}</b> estão marcados para o backup.`}</p>
+   <div class="medbar" role="img" aria-label="Divisão do espaço usado do disco">${seg.map(([k,v])=>`<i style="width:${Math.max(.6,v/tot*100)}%;background:${MED_COR[k]||"#b4b4bf"}" title="${esc(k)}: ${fmt(v)}"></i>`).join("")}</div>
+   <div class="medleg">${seg.map(([k,v])=>`<span><i style="background:${MED_COR[k]||"#b4b4bf"}"></i>${esc(k)} <b>${fmt(v)}</b>${dica[k]?` <small class="mut">· ${dica[k]}</small>`:""}</span>`).join("")}</div>
+   ${m.rodando?`<p class="mut" style="font-size:12.5px;margin:8px 0 0">Medindo o restante do disco… ${m.pct||0}%</p>`:m.parcial?'<p class="mut" style="font-size:12.5px;margin:8px 0 0">Medição parcial: parte das pastas do sistema não deu tempo de medir.</p>':""}
+   ${(m.fora||[]).length?`<details style="margin-top:8px"><summary class="mut" style="cursor:pointer;font-size:13px">Ver as maiores pastas que ficaram de fora</summary><table style="margin-top:6px">${m.fora.slice(0,10).map(x=>`<tr><td class="mono" style="font-size:12px;word-break:break-all">${esc(x.caminho)}</td><td class="mut" style="font-size:12px">${esc(x.grupo)}</td><td style="white-space:nowrap;text-align:right">${fmt(x.bytes)}</td></tr>`).join("")}</table></details>`:""}`;
+  if(m.rodando)MEDT=setTimeout(async()=>{if(view!=="backup"||step!==2)return;try{medicaoCard(await api("/api/medicao"))}catch(e){}},2000);
 }
 function drawTot(t){
   const pct=t.free?Math.min(100,t.sel_bytes/t.free*100):0;
@@ -1718,7 +1747,7 @@ function drawTot(t){
   });
 }
 /* ---- lista do backup: painel aberto pelo "Ver lista" (filtro, busca, ordem, Bloco ou Lista, rolagem infinita) ---- */
-const LST={f:{},rot:"",q:"",ord:"nome",dir:"asc",modo:"lista",off:0,fim:false,carregando:false,gen:0,tot:null};
+const LST={f:{},rot:"",q:"",ord:"nome",dir:"asc",modo:"lista",off:0,fim:false,carregando:false,gen:0,tot:null,fac:null,mais:{},busca:{},fechado:new Set()};
 const STNOME={ok:"Copiado",pendente:"Pendente",falha:"Falha",revisar:"Revisar",ignorado:"Ignorado",desmarcado:"Desmarcado"};
 const stPill=s=>s?`<span class="pill p-${esc(s)}">${esc(STNOME[s]||s)}</span>`:"";
 const TIPO_IC={PDF:"📕",Word:"📘",Documento:"📄",Planilha:"📗","Apresentação":"📙",Texto:"📝",OneNote:"📓","E-mail":"✉️",Contato:"👤",Compactado:"🗜️",Imagem:"🖼️","Vídeo":"🎬","Áudio":"🎵"};
@@ -1726,67 +1755,120 @@ const ORD_ROT=[["nome","Nome"],["tipo","Tipo"],["categoria","Categoria"],["situa
 const lstUrl=i=>"/api/files/ver?i="+i+"&t="+encodeURIComponent(TOKEN);
 const lstCurto=d=>{const p=String(d||"").split(/[\\/]/).filter(Boolean).slice(0,-1);return p.length?(p.length>2?"…/":"")+p.slice(-2).join("/")+"/":""};
 const lstLinha=x=>({i:x[0],disp:x[1],size:x[2],data:x[3],cat:x[4],act:x[5],inc:!!x[6],motivo:x[7]||"",status:x[8]||"",nome:x[10]||x[1],tipo:x[11]||"",prev:x[13]||""});
+const FX_DATA=[["d30","Últimos 30 dias"],["m6","1 a 6 meses"],["a1","6 meses a 1 ano"],["a3","1 a 3 anos"],["antigo","Mais de 3 anos"],["sem","Sem data"]];
+const FX_TAM=[["p","Até 100 KB"],["m","100 KB a 1 MB"],["g","1 a 10 MB"],["gg","10 a 100 MB"],["xg","Mais de 100 MB"]];
+const FX_GRUPOS=[["cat","Categoria"],["tipo","Tipo de arquivo"],["status","Situação"],["data","Data"],["tam","Tamanho"],["local","Usuário e pasta de origem"],["tag","Etiqueta"]];
+const fVals=k=>String(LST.f[k]||"").split("|").filter(Boolean);
+function fTroca(k,v){const a=fVals(k),i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);if(a.length)LST.f[k]=a.join("|");else delete LST.f[k];lstCarrega(true)}
+function fRotulo(k,v){
+  if(k==="cat")return CATNAME[v]||v;
+  if(k==="status")return STNOME[v]||v;
+  if(k==="data")return (FX_DATA.find(x=>x[0]===v)||[v,v])[1];
+  if(k==="tam")return (FX_TAM.find(x=>x[0]===v)||[v,v])[1];
+  if(k==="local")return /^Pastas_(origem|mae)\//.test(v)?"📁 "+v.replace(/^Pastas_(origem|mae)\//,""):v==="WhatsApp"?"💬 WhatsApp":"👤 "+v;
+  if(k==="tipo")return (TIPO_IC[v]||"📄")+" "+v;
+  return v;
+}
+const mbTxt=b=>String(+(b/1048576).toFixed(2)).replace(".",",");
+/* filtros ativos como etiquetas removíveis (como nas lojas), mais "Limpar tudo" */
+function fChips(){
+  const c=[];
+  if(LST.f.act)c.push([LST.rot||LST.f.act,()=>{delete LST.f.act;LST.rot=""}]);
+  if(LST.f.inc)c.push([LST.f.inc==="1"?"Marcados":"Não marcados",()=>delete LST.f.inc]);
+  FX_GRUPOS.forEach(([k,t])=>fVals(k).forEach(v=>c.push([t+": "+fRotulo(k,v),()=>{const a=fVals(k).filter(x=>x!==v);if(a.length)LST.f[k]=a.join("|");else delete LST.f[k]}])));
+  if(LST.f.dmin||LST.f.dmax)c.push([`Data: ${LST.f.dmin?dataBR(LST.f.dmin):"…"} até ${LST.f.dmax?dataBR(LST.f.dmax):"…"}`,()=>{delete LST.f.dmin;delete LST.f.dmax}]);
+  if(LST.f.smin||LST.f.smax)c.push([`Tamanho: ${LST.f.smin?mbTxt(LST.f.smin)+" MB":"…"} a ${LST.f.smax?mbTxt(LST.f.smax)+" MB":"…"}`,()=>{delete LST.f.smin;delete LST.f.smax}]);
+  if(LST.q)c.push([`Busca: “${LST.q}”`,()=>{LST.q="";const i=$("#lstq");if(i)i.value=""}]);
+  return c;
+}
+function lstSide(){
+  const fac=LST.fac||{},el=$("#lsts");if(!el)return;
+  const opt=(k,v,n,lab)=>{const on=fVals(k).includes(v),z=!n&&!on;return `<label class="fxo ${z?"zero":""}"><input type="checkbox" data-fk="${k}" data-fv="${esc(v)}" ${on?"checked":""} ${z?"disabled":""}><span class="grow">${esc(lab)}</span><small>${nf(n||0)}</small></label>`};
+  const grupo=(k,titulo,corpo,n)=>`<details class="fxg" data-g="${k}" ${LST.fechado.has(k)?"":"open"}><summary>${titulo}${n?` <span class="fxn">${n}</span>`:""}</summary>${corpo}</details>`;
+  const fi=fac.inc||{},n1=fi["1"]||0,n0=fi["0"]||0;
+  let h=grupo("inc","Marcados",[["","Todos",n1+n0],["1","Marcados",n1],["0","Não marcados",n0]].map(([v,t,n])=>`<label class="fxo"><input type="radio" name="fxinc" data-fi="${v}" ${(LST.f.inc||"")===v?"checked":""}><span class="grow">${t}</span><small>${nf(n)}</small></label>`).join(""),LST.f.inc?1:0);
+  for(const [k,t] of FX_GRUPOS){
+    let vals=k==="data"?FX_DATA.map(([v])=>[v,(fac.data||{})[v]||0]):k==="tam"?FX_TAM.map(([v])=>[v,(fac.tam||{})[v]||0]):Object.entries(fac[k]||{}).sort((a,b)=>b[1]-a[1]||String(a[0]).localeCompare(String(b[0])));
+    fVals(k).forEach(v=>{if(!vals.some(x=>x[0]===v))vals.push([v,0])});
+    if(!vals.length)continue;
+    const busca=(LST.busca[k]||"").toLowerCase(),filt=vals.filter(([v])=>!busca||fRotulo(k,v).toLowerCase().includes(busca));
+    const vis=LST.mais[k]||filt.length<=6?filt:filt.slice(0,6);
+    h+=grupo(k,t,`${vals.length>8?`<input type="text" class="fxq" data-fq="${k}" value="${esc(LST.busca[k]||"")}" placeholder="Buscar" aria-label="Buscar em ${esc(t)}" autocomplete="off">`:""}
+      ${vis.map(([v,n])=>opt(k,v,n,fRotulo(k,v))).join("")||'<p class="mut" style="font-size:12.5px;margin:4px 0">Nada encontrado.</p>'}
+      ${filt.length>6?`<button class="sm gh fxm" data-fm="${k}">${LST.mais[k]?"Ver menos":"Ver mais ("+(filt.length-6)+")"}</button>`:""}
+      ${k==="data"?`<div class="fxr"><input type="date" id="fxd1" value="${esc(LST.f.dmin||"")}" aria-label="Data inicial"><span>até</span><input type="date" id="fxd2" value="${esc(LST.f.dmax||"")}" aria-label="Data final"><button class="sm" id="fxdok" aria-label="Aplicar intervalo de datas">OK</button></div>`:""}
+      ${k==="tam"?`<div class="fxr"><input type="text" inputmode="decimal" id="fxs1" value="${LST.f.smin?mbTxt(LST.f.smin):""}" placeholder="mín. MB" aria-label="Tamanho mínimo em MB"><span>a</span><input type="text" inputmode="decimal" id="fxs2" value="${LST.f.smax?mbTxt(LST.f.smax):""}" placeholder="máx. MB" aria-label="Tamanho máximo em MB"><button class="sm" id="fxsok" aria-label="Aplicar faixa de tamanho">OK</button></div>`:""}`,
+      fVals(k).length+(k==="data"&&(LST.f.dmin||LST.f.dmax)?1:0)+(k==="tam"&&(LST.f.smin||LST.f.smax)?1:0));
+  }
+  el.innerHTML=h;
+  $$("details.fxg",el).forEach(d=>d.ontoggle=()=>{if(d.open)LST.fechado.delete(d.dataset.g);else LST.fechado.add(d.dataset.g)});
+  $$("[data-fk]",el).forEach(c=>c.onchange=()=>fTroca(c.dataset.fk,c.dataset.fv));
+  $$("[data-fi]",el).forEach(c=>c.onchange=()=>{if(c.dataset.fi)LST.f.inc=c.dataset.fi;else delete LST.f.inc;lstCarrega(true)});
+  $$("[data-fm]",el).forEach(b=>b.onclick=()=>{LST.mais[b.dataset.fm]=!LST.mais[b.dataset.fm];lstSide()});
+  $$("[data-fq]",el).forEach(i=>i.oninput=()=>{const k=i.dataset.fq,pos=i.selectionStart;LST.busca[k]=i.value;lstSide();const n=$(`[data-fq="${k}"]`,el);if(n){n.focus();n.setSelectionRange(pos,pos)}});
+  const dok=$("#fxdok",el);if(dok)dok.onclick=()=>{const a=$("#fxd1",el).value,b=$("#fxd2",el).value;if(a)LST.f.dmin=a;else delete LST.f.dmin;if(b)LST.f.dmax=b;else delete LST.f.dmax;lstCarrega(true)};
+  const sok=$("#fxsok",el);if(sok)sok.onclick=()=>{const mb=x=>{x=String(x).trim().replace(",",".");return x===""||isNaN(+x)?null:Math.round(+x*1048576)};const a=mb($("#fxs1",el).value),b=mb($("#fxs2",el).value);
+    if(a!=null)LST.f.smin=String(a);else delete LST.f.smin;if(b!=null)LST.f.smax=String(b);else delete LST.f.smax;lstCarrega(true)};
+}
 function abrirLista(filtro,rotulo){
-  Object.assign(LST,{f:filtro||{},rot:rotulo||"",q:"",ord:"nome",dir:"asc",modo:lsGet("dd_lista_modo","lista")==="bloco"?"bloco":"lista",tot:null});
+  Object.assign(LST,{f:Object.assign({},filtro||{}),rot:rotulo||"",q:"",ord:"nome",dir:"asc",modo:lsGet("dd_lista_modo","lista")==="bloco"?"bloco":"lista",tot:null,fac:null,mais:{},busca:{},fechado:new Set(["tag"])});
   const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","lstt");
-  d.innerHTML=`<div class="box lstb"><div class="lsth"><h2 class="grow" id="lstt"></h2><span id="lstf"></span><button class="sm" id="lstx">Fechar</button></div>
+  d.innerHTML=`<div class="box lstb"><div class="lsth"><h2 class="grow" id="lstt"></h2><button class="sm" id="lstx">Fechar</button></div>
    <div class="lstn" id="lstn"></div>
-   <div class="row" style="margin:12px 0 10px"><input type="text" id="lstq" class="grow" placeholder="Buscar: nome, tipo ou caminho" aria-label="Buscar por nome, tipo ou caminho" style="margin:0" autocomplete="off">
-    <div class="seg" role="group" aria-label="Como mostrar"><button class="sm" data-m="bloco">Bloco</button><button class="sm" data-m="lista">Lista</button></div></div>
-   <div class="row" style="margin:0 0 10px">
-    <select id="lstcat" aria-label="Filtrar por categoria" style="margin:0"><option value="">Todas as categorias</option>${CATORD.map(c=>`<option value="${c}">${esc(CATNAME[c]||c)}</option>`).join("")}</select>
-    <select id="lstst" aria-label="Filtrar por situação" style="margin:0"><option value="">Todas as situações</option>${Object.keys(STNOME).map(s=>`<option value="${s}">${STNOME[s]}</option>`).join("")}</select>
-    <label class="tg"><input type="checkbox" id="lstinc"><s></s></label><label for="lstinc" class="pfc" style="margin:0">Só os selecionados</label>
-    <button class="sm gh" id="lstlimpa">Limpar filtros</button></div>
-   <div class="lstc" id="lstc"></div></div>`;
+   <div class="lstbody"><aside class="lsts" id="lsts" aria-label="Filtros"></aside>
+    <div class="lstm">
+     <div class="row" style="margin:0 0 8px"><button class="sm lstfb" id="lstfb">Filtros</button><input type="text" id="lstq" class="grow" placeholder="Buscar: nome, tipo ou caminho" aria-label="Buscar por nome, tipo ou caminho" style="margin:0" autocomplete="off">
+      <span class="lstord"><label for="lstord" style="margin:0">Ordenar por</label><select id="lstord" style="width:auto;margin:0">${ORD_ROT.map(([k,t])=>`<option value="${k}">${t}</option>`).join("")}</select><button class="sm" id="lstdir" aria-label="Inverter a ordem"></button></span>
+      <div class="seg" role="group" aria-label="Como mostrar"><button class="sm" data-m="bloco">Bloco</button><button class="sm" data-m="lista">Lista</button></div></div>
+     <div class="lstbar"><b id="lstres"></b><span class="lstchips" id="lstchips"></span></div>
+     <div class="lstc" id="lstc"></div></div></div></div>`;
   $("#layer").appendChild(d);
-  const fcat=$("#lstcat",d),fst=$("#lstst",d),finc=$("#lstinc",d);
-  fcat.value=LST.f.cat||"";fst.value=LST.f.status||"";finc.checked=!!LST.f.inc;
-  const poe=(k,v)=>{if(v)LST.f[k]=v;else delete LST.f[k];lstCarrega(true)};
-  fcat.onchange=()=>poe("cat",fcat.value);
-  fst.onchange=()=>poe("status",fst.value);
-  finc.onchange=()=>poe("inc",finc.checked?"1":"");
-  $("#lstlimpa",d).onclick=()=>{LST.f={};LST.rot="";LST.q="";$("#lstq",d).value="";fcat.value="";fst.value="";finc.checked=false;lstCarrega(true)};
   const tecla=ev=>{if(ev.key==="Escape"&&$("#layer").lastElementChild===d)fechar()};
   const fechar=()=>{d.remove();document.removeEventListener("keydown",tecla);if(view==="backup"&&step===2)draw3()};
   document.addEventListener("keydown",tecla);
   $("#lstx",d).onclick=fechar;
+  $("#lstfb",d).onclick=()=>$(".lstb",d).classList.toggle("fopen");
   let tq;$("#lstq",d).oninput=e=>{clearTimeout(tq);tq=setTimeout(()=>{LST.q=e.target.value.trim();lstCarrega(true)},300)};
   $$("[data-m]",d).forEach(b=>b.onclick=()=>{LST.modo=b.dataset.m;lsSet("dd_lista_modo",LST.modo);lstCarrega(true)});
+  $("#lstord",d).onchange=e=>{LST.ord=e.target.value;LST.dir=LST.ord==="data"||LST.ord==="tamanho"?"desc":"asc";lstCarrega(true)};
+  $("#lstdir",d).onclick=()=>{LST.dir=LST.dir==="asc"?"desc":"asc";lstCarrega(true)};
   const c=$("#lstc",d);
   c.onscroll=()=>{if(c.scrollTop+c.clientHeight>c.scrollHeight-400)lstCarrega()};
   c.addEventListener("change",e=>{const k=e.target.closest("[data-s]");if(k)safe(()=>lstMarca(k))});
   c.addEventListener("click",e=>{const v=e.target.closest("[data-p]");if(v)verPrevia(lstUrl(v.dataset.p),v.dataset.tp,v.dataset.nm);
     const o=e.target.closest("[data-o]");if(o){const k=o.dataset.o;if(LST.ord===k)LST.dir=LST.dir==="asc"?"desc":"asc";else{LST.ord=k;LST.dir=k==="data"||k==="tamanho"?"desc":"asc"}lstCarrega(true)}});
-  c.addEventListener("change",e=>{if(e.target.id==="lstord"){LST.ord=e.target.value;LST.dir=LST.ord==="data"||LST.ord==="tamanho"?"desc":"asc";lstCarrega(true)}});
   lstCarrega(true);$("#lstq",d).focus();
 }
 function lstCab(){
-  const f=$("#lstf"),fora=LST.rot&&(LST.f.local||LST.f.act);
-  const partes=[fora?LST.rot:"",LST.f.cat?CATNAME[LST.f.cat]||LST.f.cat:"",LST.f.status?STNOME[LST.f.status]:"",LST.f.inc?"só selecionados":""].filter(Boolean);
-  $("#lstt").textContent="Lista: "+(partes.join(" · ")||"todos os arquivos");
-  f.innerHTML=fora?`<span class="chip lchip">Filtro: ${esc(LST.rot)} <button aria-label="Tirar o filtro ${esc(LST.rot)}">✕</button></span>`:"";
-  const x=$("button",f);if(x)x.onclick=()=>{delete LST.f.local;delete LST.f.act;LST.rot="";lstCarrega(true)};
+  $("#lstt").textContent="Lista"+(LST.rot?": "+LST.rot:LST.f.cat&&fVals("cat").length===1?": "+(CATNAME[LST.f.cat]||LST.f.cat):"");
+  const ch=fChips();
+  $("#lstchips").innerHTML=ch.map((x,i)=>`<span class="chip lchip">${esc(x[0])} <button data-ch="${i}" aria-label="Tirar o filtro ${esc(x[0])}">✕</button></span>`).join("")+(ch.length?'<button class="sm gh" id="lstlimpa">Limpar tudo</button>':"");
+  $$("#lstchips [data-ch]").forEach(b=>b.onclick=()=>{ch[+b.dataset.ch][1]();lstCarrega(true)});
+  const lp=$("#lstlimpa");if(lp)lp.onclick=()=>{LST.f={};LST.rot="";LST.q="";$("#lstq").value="";lstCarrega(true)};
+  $("#lstfb").textContent=ch.length?`Filtros (${ch.length})`:"Filtros";
+  $("#lstord").value=LST.ord;$("#lstdir").textContent=LST.dir==="asc"?"▲":"▼";
   $$("[data-m]").forEach(b=>{b.classList.toggle("on",b.dataset.m===LST.modo);b.setAttribute("aria-pressed",b.dataset.m===LST.modo)});
   const seta=k=>LST.ord===k?(LST.dir==="asc"?" ▲":" ▼"):"";
   $("#lstc").innerHTML=(LST.modo==="lista"
    ?`<table class="lstt"><thead><tr><th class="ck"><input type="checkbox" id="lsta" aria-label="Marcar todos desta lista"></th>${[["nome","Nome do arquivo"],["tipo","Tipo"],["categoria","Categoria"],["situacao","Situação"],["data","Data de criação"],["tamanho","Tamanho"],["caminho","Caminho"]].map(([k,t])=>`<th><button data-o="${k}" class="${LST.ord===k?"on":""}">${t}${seta(k)}</button></th>`).join("")}</tr></thead><tbody id="lstl"></tbody></table>`
-   :`<div class="lbbar"><label class="pfc" style="margin:0"><input type="checkbox" id="lsta"> Marcar todos</label><span class="grow"></span><label for="lstord" style="margin:0">Ordenar por</label><select id="lstord" style="width:auto;margin:0">${ORD_ROT.map(([k,t])=>`<option value="${k}" ${LST.ord===k?"selected":""}>${t}</option>`).join("")}</select><button class="sm" data-o="${LST.ord}" aria-label="Inverter a ordem">${LST.dir==="asc"?"▲":"▼"}</button></div><div class="lbg" id="lstl"></div>`)
+   :`<div class="lbbar"><label class="pfc" style="margin:0"><input type="checkbox" id="lsta"> Marcar todos</label></div><div class="lbg" id="lstl"></div>`)
    +'<div id="lstfim" class="mut" style="text-align:center;padding:14px;font-size:13px"></div>';
   $("#lsta").onchange=e=>safe(()=>lstMarcaTodos(e.target.checked));
 }
 async function lstCarrega(reset){
   if(reset){LST.off=0;LST.fim=false;LST.gen++;LST.carregando=false;lstCab()}
   if(LST.carregando||LST.fim)return;
-  LST.carregando=true;const gen=LST.gen;let r;
-  try{r=await api("/api/files?"+new URLSearchParams({...LST.f,q:LST.q,ord:LST.ord,dir:LST.dir,offset:LST.off,limit:200}))}
+  LST.carregando=true;const gen=LST.gen,primeira=LST.off===0;let r;
+  try{r=await api("/api/files?"+new URLSearchParams({...LST.f,q:LST.q,ord:LST.ord,dir:LST.dir,offset:LST.off,limit:200,...(primeira?{facets:1}:{})}))}
   catch(e){LST.carregando=false;return onErr(e)}
   if(gen!==LST.gen||!$("#lstl"))return;
   LST.carregando=false;LST.off+=r.rows.length;LST.fim=!r.rows.length||LST.off>=r.total;
+  if(r.facets){LST.fac=r.facets;lstSide()}
+  $("#lstres").textContent=`${nf(r.total)} resultado${r.total===1?"":"s"}`;
   lstNums(r);
   const os=r.rows.map(lstLinha);
   $("#lstl").insertAdjacentHTML("beforeend",os.map(LST.modo==="lista"?lstTr:lstBloco).join(""));
-  $("#lstfim").textContent=r.total?(LST.fim?`${nf(r.total)} arquivo${r.total>1?"s":""}`:"Carregando mais…"):"Nada com esse filtro.";
+  $("#lstfim").textContent=r.total?(LST.fim?`${nf(r.total)} arquivo${r.total>1?"s":""}`:"Carregando mais…"):"Nada com esses filtros. Tire algum filtro acima.";
   const c=$("#lstc");if(!LST.fim&&c.scrollHeight<=c.clientHeight+400)lstCarrega();
 }
 function lstTr(o){return `<tr class="${o.inc?"":"desm"}"><td class="ck"><input type="checkbox" data-s="${o.i}" data-a="${esc(o.act)}" ${o.inc?"checked":""} aria-label="Marcar ${esc(o.nome)}"></td>

@@ -64,6 +64,33 @@ class Lista(unittest.TestCase):
         r = self.lista(cat="Documentos", inc=1, limit=0)
         self.assertEqual(r["total"], r["sel_n"], "só selecionados: tudo que aparece está marcado")
 
+    def test_facetas_contam_com_os_outros_filtros(self):
+        tudo = self.lista(cat="Documentos", facets=1, limit=0)
+        tipos = tudo["facets"]["tipo"]
+        self.assertEqual((tipos.get("PDF"), tipos.get("Word"), tipos.get("Planilha")), (1, 1, 1))
+        so_pdf = self.lista(cat="Documentos", tipo="PDF", facets=1, limit=0)
+        self.assertEqual(so_pdf["total"], 1)
+        self.assertEqual(so_pdf["facets"]["tipo"], tipos, "marcar PDF não zera as outras opções do mesmo filtro")
+        self.assertEqual(so_pdf["facets"]["cat"].get("Documentos"), 1, "as outras facetas já contam só os PDFs")
+        self.assertEqual(self.lista(cat="Documentos", tipo="PDF|Word")["total"], 2, "OU dentro do filtro")
+        self.assertEqual(self.lista(cat="Documentos|Fotos", tipo="PDF")["total"], 1, "E entre filtros")
+
+    def test_faixas_de_data_e_tamanho(self):
+        f = self.lista(cat="Documentos", facets=1, limit=0)["facets"]
+        self.assertEqual(f["data"].get("d30"), 3, "contrato.pdf (hoje), b_relatorio (30 dias) e c_apresentacao (2 dias)")
+        self.assertEqual(f["data"].get("a3"), 1, "a_orcamento de 400 dias")
+        self.assertEqual(self.nomes(self.lista(cat="Documentos", data="a3")), ["a_orcamento.xlsx"])
+        self.assertEqual(self.nomes(self.lista(cat="Documentos", smin=1000, ord="nome")), ["c_apresentacao.pptx"])
+        self.assertEqual(sorted(self.nomes(self.lista(cat="Documentos", smax=100))), ["a_orcamento.xlsx", "contrato.pdf"])
+        self.assertEqual(f["tam"].get("p"), 4, "todos abaixo de 100 KB")
+
+    def test_marcar_todos_respeita_os_filtros_novos(self):
+        self.app.select({"filter": {"cat": "Documentos"}, "on": False})
+        self.app.select({"filter": {"cat": "Documentos", "tipo": "PDF|Planilha"}, "on": True})
+        marcados = sorted(dd_backup.nome_de(it.disp) for it in self.app.items if it.cat == "Documentos" and it.inc)
+        self.assertEqual(marcados, ["a_orcamento.xlsx", "contrato.pdf"])
+        self.assertEqual(self.lista(cat="Documentos", inc=0, facets=1, limit=0)["facets"]["inc"], {"1": 2, "0": 2})
+
     def test_linha_traz_nome_tipo_local_e_previa(self):
         x = next(x for x in self.lista(cat="Documentos", ord="nome")["rows"] if x[10] == "contrato.pdf")
         self.assertEqual((x[11], x[12], x[13]), ("PDF", self.itens["contrato.pdf"].local, "pdf"))

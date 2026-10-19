@@ -47,3 +47,12 @@ serviço) travava tudo em máquina de terceiros. Decisão: tirar a OS por enquan
 - **Pastas de origem** (antes "pastas-mãe", agora `Pastas_origem/<Nome>/`): `parece_nome_proprio()` soma 30 pontos; pastas com nome
   próprio direto na pasta do usuário também viram candidatas; nota ≥ 65 já vem marcada; memória em `pastas_origem.json` na pasta de
   dados (aceita/recusada por nome, contada ao iniciar a cópia). Mapas antigos com `Pastas_mae/` continuam abrindo.
+
+## F. Disco explicado e filtros estilo e-commerce
+- "Onde está o resto do disco?" na Seleção: depois da varredura, `App.iniciar_medicao()` mede em segundo plano as pastas puladas
+  (Windows, programas, caches, lixeira; `add_ign(..., real)` guarda o caminho real) e compara com o usado do disco
+  (`/api/medicao`). Para ao copiar, varrer de novo ou reset. "Encontrado" virou "Arquivos pessoais encontrados · de X usados no disco".
+- "Ver lista" com barra lateral de filtros (Marcados, Categoria, Tipo, Situação, Data, Tamanho, Usuário/pasta de origem, Etiqueta), contagem
+  em cada opção (calculada com os outros filtros, `App.filtrar`), "Ver mais", busca interna, intervalos de data/tamanho, etiquetas dos
+  filtros ativos com "Limpar tudo", ordenação na linha da busca; no celular vira "Filtros (n)". Listas na URL separadas por `|`
+  (`parse_filtro`), e o "marcar todos" respeita os mesmos filtros.

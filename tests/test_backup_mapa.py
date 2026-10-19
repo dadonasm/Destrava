@@ -79,6 +79,21 @@ class BackupCompleto(unittest.TestCase):
         self.assertNotIn("x.mdb", it, "pasta de fabricante (Microsoft) é pulada")
         self.assertNotIn("pequeno.dbf", it, "arquivo minúsculo não é banco de dados de sistema")
 
+    def test_medicao_do_que_ficou_de_fora(self):
+        self.escanear()
+        m, t = self.app.medicao, time.time()
+        while m["rodando"] and time.time() - t < 20:
+            time.sleep(0.05)
+        self.assertFalse(m["rodando"])
+        self.assertEqual(m["grupos"]["Windows e programas"], 70100, "Program Files e ProgramData menos os bancos de sistema que vão no backup")
+        self.assertEqual(m["grupos"]["Caches e temporários"], 9, "cache do Thunderbird e Temp")
+        self.assertEqual(m["achado"], sum(it.size for it in self.app.items))
+        self.assertGreaterEqual(m["usado"], m["achado"])
+        self.assertIn("C:\\Program Files (x86)", [x["caminho"] for x in m["fora"]])
+        self.app.start_copy()
+        self.assertTrue(self.app.med_parar.is_set(), "a cópia para a medição")
+        espera(self.app, ("copied", "error"))
+
     def test_backup_mapa_e_conferencia(self):
         self.escanear()
         self.app.start_copy()

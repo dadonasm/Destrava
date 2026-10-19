@@ -677,6 +677,85 @@ def build_rel(local, cat, date, name, ext):
 # ----------------------------------------------------------------------------------------------
 # Aplicação / estado
 # ----------------------------------------------------------------------------------------------
+def _medir_pasta(raiz, parar, ate):
+    """(bytes, arquivos, completo) de uma pasta, sem seguir atalhos/junções. O tamanho vem do próprio DirEntry (rápido no Windows)."""
+    tot = n = 0
+    pilha = [raiz]
+    while pilha:
+        if parar.is_set() or time.time() > ate:
+            return tot, n, False
+        d = pilha.pop()
+        try:
+            it = os.scandir(lp(d))
+        except OSError:
+            continue
+        with it:
+            for e in it:
+                try:
+                    if e.is_symlink():
+                        continue
+                    if e.is_dir(follow_symlinks=False):
+                        if IS_WIN and getattr(e.stat(follow_symlinks=False), "st_file_attributes", 0) & 0x400:
+                            continue
+                        pilha.append(e.path)
+                    elif e.is_file(follow_symlinks=False):
+                        tot += e.stat(follow_symlinks=False).st_size
+                        n += 1
+                except OSError:
+                    pass
+    return tot, n, True
+
+
+GRUPO_FORA = (("Sistema operacional", "Windows e programas"), ("Sistema Linux", "Sistema e programas"), ("Cache", "Caches e temporários"),
+              ("Lixeira", "Lixeira e sistema"))
+LINUX_RAIZ_FORA = {"usr", "var", "opt", "snap", "lib", "lib32", "lib64", "libx32", "bin", "sbin", "boot", "etc", "srv"}
+
+
+# ---------------------------- filtros da lista (estilo e-commerce: facetas com contagem) ----------------------------
+FAIXAS_DATA = (("d30", 30), ("m6", 182), ("a1", 365), ("a3", 1095), ("antigo", None))
+FAIXAS_TAM = (("p", 100 * 1024), ("m", 1024 ** 2), ("g", 10 * 1024 ** 2), ("gg", 100 * 1024 ** 2), ("xg", None))
+
+
+def faixa_data(date, hoje=None):
+    if not date:
+        return "sem"
+    try:
+        dias = ((hoje or datetime.date.today()) - datetime.date(*date)).days
+    except (ValueError, TypeError):
+        return "sem"
+    return next(k for k, lim in FAIXAS_DATA if lim is None or dias <= lim)
+
+
+def faixa_tam(size):
+    return next(k for k, lim in FAIXAS_TAM if lim is None or size < lim)
+
+
+def chave_local(local):
+    partes = (local or "").split("/")
+    return "/".join(partes[:2]) if partes[0] in (PASTA_ORIGEM, PASTA_ORIGEM_ANTIGA) else partes[0]
+
+
+def _data_iso(s):
+    try:
+        y, m, d = (int(x) for x in str(s).split("-"))
+        return (y, m, d)
+    except ValueError:
+        return None
+
+
+def parse_filtro(q):
+    """Filtro da lista e do "marcar todos". Listas separadas por | (OU dentro do filtro; E entre filtros)."""
+    f = {k: (v[0] if isinstance(v, list) else v) for k, v in (q or {}).items()}
+    lst = lambda k: [x for x in str(f.get(k) if f.get(k) is not None else "").split("|") if x != ""]
+    inc = f.get("inc")
+    return {"cat": set(lst("cat")), "tipo": set(lst("tipo")), "status": set(lst("status")), "local": lst("local"), "tag": set(lst("tag")),
+            "data": set(lst("data")), "tam": set(lst("tam")), "act": f.get("act") or "",
+            "inc": None if inc in (None, "", "todos") else str(inc) in ("1", "True", "true"),
+            "dmin": _data_iso(f.get("dmin")), "dmax": _data_iso(f.get("dmax")),
+            "smin": int(f["smin"]) if str(f.get("smin") or "").isdigit() else None, "smax": int(f["smax"]) if str(f.get("smax") or "").isdigit() else None,
+            "q": str(f.get("q") or "").lower(), "facets": str(f.get("facets") or "") in ("1", "true")}
+
+
 class App(object):
     def __init__(self):
         self.token = secrets.token_urlsafe(18)
@@ -692,11 +771,14 @@ class App(object):
         self.phase = "idle"
         self.msg = ""
         self.cfg = {}
+        self.parar_medicao()
+        self.medicao = None
         self.maes = []
         self.maes_auto = []
         self.checagens = []
         self.items = []
         self.ign_dirs = []
+        self.ign_reais = []
         self.ign_dirs_total = 0
         self.cancel = threading.Event()
         self.run_ev = threading.Event()
@@ -887,7 +969,7 @@ class App(object):
                 if os.path.isdir(p) and not e_link(p):
                     if low in IGN_WIN_ROOT or low.startswith("$") or low in IGN_ANY:
                         if low != "users":
-                            self.add_ign("%s:\\%s" % (letter, n), "Sistema operacional / programas instalados")
+                            self.add_ign("%s:\\%s" % (letter, n), "Sistema operacional / programas instalados", p)
                         continue
                     plans.append((p, "Disco_%s/%s" % (letter, n), "%s:\\%s" % (letter, n), "\\", "plain"))
             plans.append((root, "Disco_%s" % letter, "%s:\\" % letter, "\\", "toplevel"))
@@ -912,10 +994,12 @@ class App(object):
                 plans.append((root, ("Disco_" if os.path.ismount(root) else "Pasta_") + base, root, os.sep, "plain"))
         return plans
 
-    def add_ign(self, disp, motivo):
+    def add_ign(self, disp, motivo, real=None):
         self.ign_dirs_total += 1
         if len(self.ign_dirs) < 20000:
             self.ign_dirs.append((disp, motivo))
+        if real:  # só o que dá para medir depois (pastas de sistema, caches, lixeira): explica o espaço do disco que não entra
+            self.ign_reais.append((real, disp, motivo))
 
     def dir_ignore(self, name, ctx, parent_is_root):
         low = name.lower()
@@ -972,7 +1056,7 @@ class App(object):
                             if ctx == "winuser" and is_root and name.lower() in SILENT_JUNCTIONS:
                                 continue
                             if why:
-                                self.add_ign(dd.rstrip(sep) + sep + name, why)
+                                self.add_ign(dd.rstrip(sep) + sep + name, why, e.path)
                                 continue
                             m = marca
                             if not m and ctx == "winuser" and is_root and name.lower() == "appdata":
@@ -1050,10 +1134,12 @@ class App(object):
                 raise Busy("Já existe um processo em andamento.")
             if not self.cfg:
                 raise ValueError("Salve a configuração antes de escanear.")
+            self.parar_medicao()
             self.items = []
             self.maes = []
             self.maes_auto = []
             self.ign_dirs = []
+            self.ign_reais = []
             self.ign_dirs_total = 0
             self.sweep = None
             self.verified_mode = ""
@@ -1115,6 +1201,70 @@ class App(object):
         it.local0, it.rel0 = it.local, it.rel
         return it
 
+    # ------------------------------------------------------------------ onde está o resto do disco
+    def iniciar_medicao(self):
+        """Depois da varredura: mede em segundo plano o que ficou de fora, para explicar o espaço usado do disco."""
+        self.parar_medicao()
+        self.med_parar = threading.Event()
+        alvos = []
+        for real, disp, motivo in self.ign_reais:
+            if "junção" not in motivo and "Sem acesso" not in motivo:
+                alvos.append((os.path.abspath(real), disp, motivo))
+        for src in (self.cfg or {}).get("sources", []):
+            if src["kind"] == "linux":
+                for n in sorted(safe_listdir(src["path"])):
+                    p = os.path.join(src["path"], n)
+                    if n in LINUX_RAIZ_FORA and os.path.isdir(p) and not e_link(p):
+                        alvos.append((os.path.abspath(p), "/" + n, "Sistema Linux / programas instalados"))
+        alvos.sort(key=lambda a: len(a[0]))
+        unicos = []
+        for a in alvos:  # pasta dentro de outra já medida não conta duas vezes
+            if not any(_dentro(a[0], u[0]) for u in unicos):
+                unicos.append(a)
+        discos, vistos = [], set()
+        for src in (self.cfg or {}).get("sources", []):
+            if src["kind"] in ("windows", "linux") or os.path.ismount(src["path"]):
+                total, livre = disk_usage(src["path"])
+                if total and (total, livre) not in vistos:
+                    vistos.add((total, livre))
+                    discos.append((total, total - livre))
+        achado = sum(it.size for it in self.items)
+        dentro_sis = sum(it.size for it in self.items if it.cat == "Sistemas")  # bancos de sistema estão dentro de Program Files, já medido
+        self.medicao = {"rodando": True, "pct": 0, "total": sum(d[0] for d in discos), "usado": sum(d[1] for d in discos), "achado": achado,
+                        "marcado": sum(it.size for it in self.items if it.inc), "fora": [], "grupos": {}, "resto": 0, "parcial": False,
+                        "desconto": dentro_sis}
+        threading.Thread(target=self._medir_thread, args=(unicos, self.med_parar), daemon=True).start()
+
+    def parar_medicao(self):
+        ev = getattr(self, "med_parar", None)
+        if ev:
+            ev.set()
+
+    def _medir_thread(self, alvos, parar):
+        m = self.medicao
+        ate = time.time() + 240
+        for i, (real, disp, motivo) in enumerate(alvos):
+            if parar.is_set():
+                break
+            b, n, ok = _medir_pasta(real, parar, ate)
+            if not ok:
+                m["parcial"] = True
+            if b:
+                grupo = next((g for k, g in GRUPO_FORA if k.lower() in motivo.lower()), "Outros pulados")
+                m["fora"].append({"caminho": disp, "motivo": motivo, "bytes": b, "arquivos": n, "grupo": grupo})
+                m["grupos"][grupo] = m["grupos"].get(grupo, 0) + b
+            m["pct"] = int((i + 1) * 100 / max(1, len(alvos)))
+            if time.time() > ate:
+                m["parcial"] = True
+                break
+        if m["grupos"].get("Windows e programas"):
+            m["grupos"]["Windows e programas"] = max(0, m["grupos"]["Windows e programas"] - m["desconto"])
+        medido = sum(m["grupos"].values())
+        m["resto"] = max(0, m["usado"] - m["achado"] - medido) if m["usado"] else 0
+        m["fora"].sort(key=lambda x: -x["bytes"])
+        m["fora"] = m["fora"][:30]
+        m["rodando"] = False
+
     def _scan_thread(self):
         try:
             self.log("Escaneamento iniciado.")
@@ -1135,6 +1285,10 @@ class App(object):
                 self.maes_auto = []
             self.phase = "scanned"
             self.log("Escaneamento concluído: %d arquivos, %d pastas ignoradas." % (len(items), self.ign_dirs_total))
+            try:
+                self.iniciar_medicao()
+            except Exception:
+                pass
         except Cancelled:
             self.phase = "idle"
             self.log("Escaneamento cancelado.")
@@ -1263,24 +1417,50 @@ class App(object):
         return {"maes": self.maes, "sugestoes": self.sugestoes_maes()}
 
     # ------------------------------------------------------------------ seleção e listas
+    def _grupos(self, f):
+        """[(nome, ativo, teste(it), valores(it) ou None)]. "valores" alimenta as facetas (contagem por opção)."""
+        hoje = datetime.date.today()
+        tipo = lambda it: tipo_de(nome_de(it.disp))
+        G = [("cat", bool(f["cat"]), lambda it: it.cat in f["cat"], lambda it: (it.cat,)),
+             ("tipo", bool(f["tipo"]), lambda it: tipo(it) in f["tipo"], lambda it: (tipo(it),)),
+             ("status", bool(f["status"]), lambda it: self.final_status(it) in f["status"], lambda it: (self.final_status(it),)),
+             ("inc", f["inc"] is not None, lambda it: bool(it.inc) == f["inc"], lambda it: ("1" if it.inc else "0",)),
+             ("local", bool(f["local"]), lambda it: any(it.local == v or it.local.startswith(v + "/") for v in f["local"]), lambda it: (chave_local(it.local),)),
+             ("tag", bool(f["tag"]), lambda it: bool(f["tag"] & set((it.tags or "").split("|"))), lambda it: tuple(t for t in (it.tags or "").split("|") if t)),
+             ("data", bool(f["data"] or f["dmin"] or f["dmax"]),
+              lambda it: faixa_data(it.date, hoje) in f["data"] or (bool(f["dmin"] or f["dmax"]) and bool(it.date) and (not f["dmin"] or it.date >= f["dmin"]) and (not f["dmax"] or it.date <= f["dmax"])),
+              lambda it: (faixa_data(it.date, hoje),)),
+             ("tam", bool(f["tam"] or f["smin"] is not None or f["smax"] is not None),
+              lambda it: faixa_tam(it.size) in f["tam"] or ((f["smin"] is not None or f["smax"] is not None) and (f["smin"] is None or it.size >= f["smin"]) and (f["smax"] is None or it.size <= f["smax"])),
+              lambda it: (faixa_tam(it.size),)),
+             ("act", bool(f["act"]), lambda it: it.act == f["act"], None),
+             ("q", bool(f["q"]), lambda it: f["q"] in it.disp.lower() or f["q"] in tipo(it).lower(), None)]
+        return G
+
     def matches(self, it, f):
-        if f.get("local") not in (None, "") and it.local != f["local"] and not it.local.startswith(f["local"] + "/"):
-            return False  # o cartão "TEMP" da Seleção junta TEMP/<usuário>
-        if f.get("cat") not in (None, "") and it.cat != f["cat"]:
-            return False
-        if f.get("act") not in (None, "") and it.act != f["act"]:
-            return False
-        if f.get("inc") in ("1", 1, True) and not it.inc:
-            return False
-        if f.get("inc") in ("0", 0, False) and it.inc:
-            return False
-        if f.get("status") not in (None, ""):
-            if self.final_status(it) != f["status"]:
-                return False
-        q = f.get("q")
-        if q and q not in it.disp.lower() and q not in tipo_de(nome_de(it.disp)).lower():
-            return False
-        return True
+        f = f if "facets" in f else parse_filtro(f)
+        return all(teste(it) for _, ativo, teste, _v in self._grupos(f) if ativo)
+
+    def filtrar(self, f, facetas=False):
+        """Índices que passam no filtro e, se pedido, as facetas: cada opção contada com os OUTROS filtros ativos (marcar PDF não zera Imagem)."""
+        G = self._grupos(f)
+        ativos = [g for g in G if g[1]]
+        fac = {g[0]: {} for g in G if g[3]} if facetas else None
+        idx = []
+        for i, it in enumerate(self.items):
+            falhas = [g for g in ativos if not g[2](it)]
+            if not falhas:
+                idx.append(i)
+                contar = [g for g in G if g[3]] if facetas else ()
+            elif facetas and len(falhas) == 1 and falhas[0][3]:
+                contar = falhas
+            else:
+                continue
+            for g in contar:
+                d = fac[g[0]]
+                for v in g[3](it):
+                    d[v] = d.get(v, 0) + 1
+        return idx, fac
 
     def select(self, d):
         on = bool(d.get("on"))
@@ -1292,15 +1472,13 @@ class App(object):
                     self.items[i].inc = on
                     n += 1
             return n
-        f = dict(d.get("filter") or {})
-        if f.get("q"):
-            f["q"] = f["q"].lower()
-        for it in self.items:
-            if self.matches(it, f):
-                if not f.get("act") and it.act != "copiar":
-                    continue  # chaves de categoria/usuário/busca só mexem no que é pessoal; ignorados/revisar têm botões próprios
-                it.inc = on
-                n += 1
+        f = parse_filtro(d.get("filter") or {})
+        for i in self.filtrar(f)[0]:
+            it = self.items[i]
+            if not f["act"] and it.act != "copiar":
+                continue  # chaves de categoria/usuário/busca só mexem no que é pessoal; ignorados/revisar têm botões próprios
+            it.inc = on
+            n += 1
         return n
 
     def groups(self):
@@ -1341,12 +1519,11 @@ class App(object):
 
     def files(self, q):
         """Lista do backup: filtro, busca (caminho ou tipo), ordem (ord/dir), página e os totais do filtro. limit=0: só os totais."""
+        flt = parse_filtro(q)
         f = {k: (v[0] if isinstance(v, list) else v) for k, v in q.items()}
-        if f.get("q"):
-            f["q"] = f["q"].lower()
         off = max(0, int(f.get("offset") or 0))
         lim = max(0, min(int(f.get("limit", 200)), 500))
-        idx = [i for i, it in enumerate(self.items) if self.matches(it, f)]
+        idx, fac = self.filtrar(flt, flt["facets"])
         sel = [self.items[i] for i in idx if self.items[i].inc]
         chave = (lambda it: self.final_status(it)) if f.get("ord") == "situacao" else self.ORDEM.get(f.get("ord") or "")
         if chave and lim:
@@ -1358,7 +1535,10 @@ class App(object):
             out.append([i, it.disp, it.size, ("%04d-%02d-%02d" % it.date) if it.date else "", it.cat, it.act, 1 if it.inc else 0,
                         it.err or it.motivo, self.final_status(it), it.tags, nome, tipo_de(nome), it.local,
                         "" if it.nuvem or not DADOS else (DADOS.tipo_previa(it.src) or "")])
-        return {"total": len(idx), "rows": out, "bytes": sum(self.items[i].size for i in idx), "sel_n": len(sel), "sel_bytes": sum(it.size for it in sel)}
+        r = {"total": len(idx), "rows": out, "bytes": sum(self.items[i].size for i in idx), "sel_n": len(sel), "sel_bytes": sum(it.size for it in sel)}
+        if fac is not None:
+            r["facets"] = fac
+        return r
 
     def previa(self, i):
         """Prévia de um arquivo da origem pelo índice da lista: a tela nunca manda caminho. Só na nuvem não abre (baixaria o arquivo)."""
@@ -1424,6 +1604,7 @@ class App(object):
                 raise ValueError("Não cabe no destino: precisa de %s e há %s livres." % (fmt_bytes(t["sel_bytes"]), fmt_bytes(t["free"])))
             if t["fat32_problema"]:
                 raise ValueError("O destino é FAT32 e há arquivos maiores que 4 GB. Use outro destino ou formate em exFAT/NTFS.")
+            self.parar_medicao()
             if not retry_only:
                 self._lembrar_origens()
             queue = [it for it in self.items if it.inc and (it.status is None or (retry_only and it.status == "falha"))]
@@ -2527,6 +2708,8 @@ class Handler(BaseHTTPRequestHandler):
             return APP.groups()
         if path == "/api/files":
             return APP.files(q)
+        if path == "/api/medicao":
+            return APP.medicao or {}
         if path == "/api/totals":
             return APP.totals()
         if path == "/api/ficha/estado":
