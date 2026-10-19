@@ -19,7 +19,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 VERSOES = os.path.join(HERE, "_versoes")
 EXT_OK = {".py", ".html", ".js", ".svg", ".txt", ".sh", ".bat", ".png", ".css", ".md", ".command", ".json", ".ico", ".inf"}
 DIRS_DADOS = {"maquinas", "runtime", "_versoes", "_novo_tmp"}
-ARQ_DADOS = {"consentimentos.log", "pastas_origem.json"}
+ARQ_DADOS = {"consentimentos.log", "pastas_origem.json", "erros.log"}
 ARQ_CONFIG = {"etiquetas.txt"}  # o técnico pode ter editado: a nova vai ao lado, como .novo.txt
 MAX_ZIP = 300 * 1024 * 1024
 

@@ -681,6 +681,7 @@ def _medir_pasta(raiz, parar, ate):
     """(bytes, arquivos, completo) de uma pasta, sem seguir atalhos/junções. O tamanho vem do próprio DirEntry (rápido no Windows)."""
     tot = n = 0
     pilha = [raiz]
+    visto = 0
     while pilha:
         if parar.is_set() or time.time() > ate:
             return tot, n, False
@@ -701,6 +702,9 @@ def _medir_pasta(raiz, parar, ate):
                     elif e.is_file(follow_symlinks=False):
                         tot += e.stat(follow_symlinks=False).st_size
                         n += 1
+                    visto += 1
+                    if visto % 500 == 0:
+                        time.sleep(0.001)  # cede a vez às requisições da tela
                 except OSError:
                     pass
     return tot, n, True
@@ -2564,6 +2568,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             return self._json(self.api_get(path, q))
         except Exception as e:
+            if not isinstance(e, (ValueError, Busy, PermissionError, KeyError)):
+                registrar_erro("GET " + path)
             return self._json({"erro": str(e)}, 400)
 
     def do_POST(self):
@@ -2600,6 +2606,7 @@ class Handler(BaseHTTPRequestHandler):
             if type(e).__name__ in ("SemConexao", "ErroServidor"):
                 return self._json({"erro": str(e)}, 503)
             APP.log("ERRO interno: %s" % e)
+            registrar_erro("POST " + self.path.split("?")[0])
             return self._json({"erro": "Erro interno: %s" % e}, 500)
 
     # ---------------------------------------------------------------- permissões e upload
@@ -2708,6 +2715,8 @@ class Handler(BaseHTTPRequestHandler):
             return APP.groups()
         if path == "/api/files":
             return APP.files(q)
+        if path == "/api/ping":
+            return {"ok": True}
         if path == "/api/medicao":
             return APP.medicao or {}
         if path == "/api/totals":
@@ -3136,8 +3145,27 @@ def open_in_browser(url):
     return False
 
 
+def registrar_erro(onde):
+    """Grava o erro em andamento (com o traceback) em erros.log, na pasta de dados: é o que se manda para diagnosticar."""
+    if isinstance(sys.exc_info()[1], (ConnectionError, TimeoutError)):  # navegador fechou ou cancelou a chamada: normal
+        return
+    try:
+        with open(os.path.join(DADOS_DIR[0], "erros.log"), "a", encoding="utf-8") as fh:
+            fh.write("%s  v%s  %s\n%s\n" % (now_iso(), VERSION, onde, traceback.format_exc()))
+    except Exception:
+        pass
+
+
+class Servidor(ThreadingHTTPServer):
+    """Fila de conexões maior (o navegador abre várias ao mesmo tempo) e erros de requisição registrados em erros.log."""
+    request_queue_size = 128
+
+    def handle_error(self, request, client_address):
+        registrar_erro("conexão de %s" % (client_address[0] if client_address else "?"))
+
+
 def serve(port=0, open_browser=True, host="127.0.0.1", token_na_pagina=False):
-    srv = ThreadingHTTPServer((host, port), Handler)
+    srv = Servidor((host, port), Handler)
     p = srv.server_address[1]
     APP.allowed_hosts = {"127.0.0.1:%d" % p, "localhost:%d" % p}
     APP.token_na_pagina = token_na_pagina
