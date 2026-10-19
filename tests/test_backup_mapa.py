@@ -220,11 +220,53 @@ class EscolhaTotal(BackupCompleto):
         self.assertEqual((it["dados.dat"].cat, it["dados.dat"].inc), ("Dados_de_apps", False))
         self.assertTrue(it["contrato.pdf"].inc, "pessoal vem marcado")
         wa = it["IMG-20240105-WA0001.jpg"]
-        self.assertEqual(wa.local, "WhatsApp")
-        self.assertTrue(wa.rel.startswith("WhatsApp/Fotos/2024/01 - Janeiro/"))
-        self.assertEqual(it["WhatsApp Image 2024-02-03 at 10.11.12.jpeg"].local, "WhatsApp")
+        self.assertEqual(wa.local, "WhatsApp (Ana)", "um WhatsApp por usuário")
+        self.assertTrue(wa.rel.startswith("WhatsApp (Ana)/Fotos/2024/01 - Janeiro/"))
+        self.assertEqual(it["WhatsApp Image 2024-02-03 at 10.11.12.jpeg"].local, "WhatsApp (Ana)")
         self.assertEqual(self.app.select({"filter": {"cat": "Programas"}, "on": True}), 1)
         self.assertTrue(it["instalador.exe"].inc)
+
+    def test_whatsapp_de_cada_usuario_e_exemplos(self):
+        escreve(os.path.join(self.disco, "Users", "Bia", "Pictures", "WhatsApp", "IMG-20240301-WA0002.jpg"), b"\xff\xd8\xff" + b"b" * 300)
+        it = self.escanear()
+        self.assertEqual((it["IMG-20240105-WA0001.jpg"].local, it["IMG-20240301-WA0002.jpg"].local), ("WhatsApp (Ana)", "WhatsApp (Bia)"))
+        g = self.app.groups()
+        docs = next(c for c in g["cats"] if c["cat"] == "Documentos")
+        self.assertTrue(1 <= len(docs["ex"]) <= 3 and all(isinstance(x, str) for x in docs["ex"]), "exemplos reais da máquina")
+        self.app.select({"filter": {}, "on": True})
+        self.assertTrue(it["instalador.exe"].inc, "marcar tudo o que foi encontrado")
+        self.app.select({"padrao": True})
+        self.assertEqual((it["instalador.exe"].inc, it["contrato.pdf"].inc), (False, True), "voltar ao padrão: só o pessoal")
+
+    def test_incluir_pasta_que_a_varredura_nao_le(self):
+        j = lambda *p: os.path.join(self.disco, *p)
+        escreve(j("Windows", "System32", "drivers", "etc", "hosts"), b"127.0.0.1 localhost")
+        escreve(j("Windows", "notepad.exe"), b"MZ" * 40)
+        escreve(j("pagefile.sys"), b"p" * 10)
+        self.escanear()
+        antes = self.app.totals()["sel_bytes"]
+        self.app.incluir_pastas([j("Windows"), j("Windows", "System32")])  # a de dentro é descartada
+        t = time.time()
+        while self.app.incl.get("rodando") and time.time() - t < 20:
+            time.sleep(0.05)
+        ex = [x for x in self.app.items if x.cat == "Extras"]
+        self.assertEqual(sorted(x.rel for x in ex), ["Disco_C/Extras/Windows/System32/drivers/etc/hosts", "Disco_C/Extras/Windows/notepad.exe"])
+        self.assertTrue(all(x.inc for x in ex))
+        self.assertEqual(self.app.totals()["sel_bytes"], antes + 19 + 80)
+        self.app.start_copy()
+        self.assertEqual(espera(self.app, ("copied", "error")), "copied", self.app.error)
+        self.assertTrue(os.path.isfile(os.path.join(self.app.dest_root, "Disco_C", "Extras", "Windows", "notepad.exe")))
+        self.app.start_verify("completa")
+        self.assertEqual(espera(self.app, ("verified", "error")), "verified", self.app.error)
+        self.assertEqual((self.app.sweep["n_sumiram"], self.app.sweep["n_novos"]), (0, 0), "a varredura final também olha as pastas incluídas")
+        self.app.phase = "scanned"  # volta para a Seleção do mesmo backup
+        with self.assertRaises(ValueError):
+            self.app.incluir_pastas([j("Windows")])  # já incluída
+        with self.assertRaises(ValueError):
+            self.app.incluir_pastas([self.dest])  # fora das origens
+        self.app.tirar_extras(j("Windows"))
+        self.assertFalse(any(x.cat == "Extras" for x in self.app.items))
+        self.assertEqual(self.app.extras, [])
 
     def test_pastas_de_origem(self):
         it = self.escanear()

@@ -245,8 +245,8 @@ var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){r
 var demo=!window.BKP, B=window.BKP||SAMPLE, F=B.f||[], Mt=B.meta||{};
 var S_=0,D_=1,C_=2,Z_=3,T_=4,ST_=5,G_=6,U_=7,M_=8;
 var ST={ok:['Copiado e verificado','ok'],falha:['Falhou na cópia','bad'],ignorado:['Ignorado (não é pessoal)','mu'],revisar:['Não copiado · revisar','wn'],desmarcado:['Desmarcado por você','wn']};
-var CC={Fotos:'#3fcf8e',Videos:'#b388ff',Audios:'#ff9f6b',Documentos:'#58a6ff',Projetos:'#f06fb0',Email_Contatos:'#e6b800',Conversas:'#3ddbd9',Contas_Senhas:'#ff6b6b',Navegadores:'#9aa5b1',Outros:'#8b98aa'};
-var IC={Fotos:'🖼️',Videos:'🎞️',Audios:'🎵',Documentos:'📄',Projetos:'📐',Email_Contatos:'✉️',Conversas:'💬',Contas_Senhas:'🔑',Navegadores:'🌐',Outros:'📦'};
+var CC={Fotos:'#3fcf8e',Videos:'#b388ff',Audios:'#ff9f6b',Documentos:'#58a6ff',Projetos:'#f06fb0',Email_Contatos:'#e6b800',Conversas:'#3ddbd9',Contas_Senhas:'#ff6b6b',Navegadores:'#9aa5b1',Outros:'#8b98aa',Extras:'#c9a227'};
+var IC={Fotos:'🖼️',Videos:'🎞️',Audios:'🎵',Documentos:'📄',Projetos:'📐',Email_Contatos:'✉️',Conversas:'💬',Contas_Senhas:'🔑',Navegadores:'🌐',Outros:'📦',Extras:'📂'};
 var segs=function(p){return String(p||'').split(/[\\\/]+/).filter(Boolean)};
 var base=function(p){var s=segs(p);return s[s.length-1]||''};
 function rootFromUrl(){if(location.protocol!=='file:')return null;

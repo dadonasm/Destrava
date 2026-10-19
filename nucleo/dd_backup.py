@@ -142,7 +142,7 @@ WA_PASTA = re.compile(r"(^|[\\/])whatsapp( (images|video|audio|documents|animate
 WA_NOME = re.compile(r"^whatsapp (image|video|audio|ptt|document)|^(img|vid|aud|ptt|doc|stk)-\d{8}-wa\d{3,5}", re.I)
 # ordem de cópia: o mais importante primeiro (se o disco de origem estiver morrendo, o essencial já foi)
 PRIORIDADE = ["Documentos", "Email_Contatos", "Contas_Senhas", "Fotos", "Conversas", "Projetos", "Sistemas", "Dados_de_apps", "Navegadores",
-              "Videos", "Audios", "Outros", "Ocultos", "Configuracoes", "Programas", "Temporarios", "Nuvem"]
+              "Videos", "Audios", "Outros", "Ocultos", "Configuracoes", "Programas", "Temporarios", "Extras", "Nuvem"]
 PESSOAL_NOMES = ("foto", "imagem", "picture", "photo", "music", "músic", "music", "video", "vídeo", "download", "whats", "pessoal", "famil",
                  "celular", "backup", "wallpaper", "papel de parede", "screenshot", "captura")
 DOCS_DESK = {"documents", "documentos", "meus documentos", "desktop", "área de trabalho", "area de trabalho"}
@@ -617,10 +617,11 @@ def roots_for_browse():
 # ----------------------------------------------------------------------------------------------
 class Item(object):
     __slots__ = ("raiz", "ctx", "local0", "rel0", "src", "disp", "size", "mtime", "local", "cat", "act", "motivo", "date", "tags", "inc", "rel",
-                 "status", "err", "cause", "sha", "ver", "nuvem")
+                 "status", "err", "cause", "sha", "ver", "nuvem", "inc0")
 
     def __init__(self):
         self.raiz, self.ctx, self.local0, self.rel0 = "", "", None, None
+        self.inc0 = None
         self.status = None
         self.err = ""
         self.cause = ""
@@ -710,6 +711,25 @@ def _medir_pasta(raiz, parar, ate):
     return tot, n, True
 
 
+EXPLICA_PASTA = {
+    "windows": "O Windows em si. Se reinstala ao formatar.", "program files": "Programas instalados (64 bits). Se reinstalam a partir do instalador.",
+    "program files (x86)": "Programas instalados (32 bits). Se reinstalam a partir do instalador.",
+    "programdata": "Dados compartilhados de programas (licenças, bancos de alguns sistemas, configurações de todos os usuários).",
+    "$recycle.bin": "Lixeira do Windows.", "system volume information": "Pontos de restauração do Windows (protegido, não dá para ler).",
+    "recovery": "Partição/arquivos de recuperação do fabricante.", "perflogs": "Registros de desempenho do Windows.", "msocache": "Cópia do instalador do Office.",
+    "config.msi": "Restos de instalações em andamento.", "intel": "Arquivos de driver da Intel.", "amd": "Arquivos de driver da AMD.", "nvidia": "Arquivos de driver da NVIDIA.",
+    "temp": "Arquivos temporários: o Windows e os programas recriam.", "tmp": "Arquivos temporários: os programas recriam.",
+    "inetcache": "Cache da internet (páginas e imagens já vistas).", "cache": "Cache: cópia temporária para abrir mais rápido; se recria sozinho.",
+    "cache2": "Cache do navegador; se recria sozinho.", "code cache": "Cache de programas; se recria sozinho.", "gpucache": "Cache da placa de vídeo; se recria sozinho.",
+    "node_modules": "Bibliotecas de projetos de programação; se baixam de novo.", "usr": "Programas do Linux.", "var": "Dados variáveis do Linux (logs, caches).",
+    "opt": "Programas extras do Linux.", "snap": "Pacotes Snap do Linux.", "boot": "Arquivos de inicialização.", "etc": "Configurações do Linux."}
+
+
+def explica_pasta(caminho):
+    n = os.path.basename(str(caminho).rstrip("\\/")).lower()
+    return EXPLICA_PASTA.get(n) or ("Cache: se recria sozinho." if "cache" in n else "Pasta que a varredura não lê por padrão.")
+
+
 GRUPO_FORA = (("Sistema operacional", "Windows e programas"), ("Sistema Linux", "Sistema e programas"), ("Cache", "Caches e temporários"),
               ("Lixeira", "Lixeira e sistema"))
 LINUX_RAIZ_FORA = {"usr", "var", "opt", "snap", "lib", "lib32", "lib64", "libx32", "bin", "sbin", "boot", "etc", "srv"}
@@ -777,6 +797,9 @@ class App(object):
         self.cfg = {}
         self.parar_medicao()
         self.medicao = None
+        self.extras = []  # pastas que o técnico incluiu (fora do padrão da varredura)
+        self.extras_planos = []  # os planos de varredura delas (a varredura final também repassa)
+        self.incl = {}
         self.maes = []
         self.maes_auto = []
         self.checagens = []
@@ -812,7 +835,7 @@ class App(object):
             pass
 
     def busy(self):
-        return self.phase in ("scanning", "copying", "verifying", "finishing")
+        return self.phase in ("scanning", "copying", "verifying", "finishing") or bool((getattr(self, "incl", None) or {}).get("rodando"))
 
     # ------------------------------------------------------------------ config
     def identificacao(self):
@@ -1056,7 +1079,7 @@ class App(object):
                                     pass
                             if ctx == "sistemas" and is_root and name.lower() in SIS_PULAR:
                                 continue
-                            why = self.dir_ignore(name, ctx, is_root)
+                            why = self.dir_ignore(name, ctx, is_root) if ctx != "extra" else None  # incluída pelo técnico: entra tudo
                             if ctx == "winuser" and is_root and name.lower() in SILENT_JUNCTIONS:
                                 continue
                             if why:
@@ -1140,6 +1163,7 @@ class App(object):
                 raise ValueError("Salve a configuração antes de escanear.")
             self.parar_medicao()
             self.items = []
+            self.extras, self.extras_planos, self.incl = [], [], {}
             self.maes = []
             self.maes_auto = []
             self.ign_dirs = []
@@ -1163,6 +1187,15 @@ class App(object):
             it = Item()
             it.src, it.disp, it.size, it.mtime, it.local = real, disp, st.st_size, st.st_mtime, local
             it.cat, it.act, it.motivo, it.date, it.nuvem, it.tags, it.inc = "Sistemas", "copiar", "Banco de dados de sistema · feche o sistema antes do backup", None, nuvem, "", True
+            partes = [x for x in re.split(r"[\\/]", disp)[1:] if x]
+            it.rel = "/".join([safe_seg(x) for x in local.split("/")] + [safe_seg(x) for x in partes])
+            it.inc0 = True
+            return it
+        if ctx == "extra":  # pasta que a varredura não lê, incluída pelo técnico: caminho original preservado
+            it = Item()
+            it.src, it.disp, it.size, it.mtime, it.local = real, disp, st.st_size, st.st_mtime, local
+            it.cat, it.act, it.motivo, it.date, it.nuvem, it.tags, it.inc = "Extras", "copiar", "Incluído por você (pasta fora do padrão)", stat_date(st), nuvem, "", True
+            it.raiz, it.ctx, it.inc0 = raiz, ctx, True
             partes = [x for x in re.split(r"[\\/]", disp)[1:] if x]
             it.rel = "/".join([safe_seg(x) for x in local.split("/")] + [safe_seg(x) for x in partes])
             return it
@@ -1194,16 +1227,84 @@ class App(object):
             cat, mot, marcado = "Ocultos", "Arquivo oculto (%s)" % cat, False
             it.rel = "%s/Ocultos/%s" % (loc, segs(dentro_n))
         elif cat != "Nuvem" and eh_whatsapp(disp, name):
-            local = it.local = "WhatsApp"  # o WhatsApp vira um "usuário" à parte, mesmo padrão de organização
+            dono = local.split("/")[-1] if ctx in ("winuser", "linuxuser") and local else ""
+            local = it.local = "WhatsApp (%s)" % dono if dono else "WhatsApp"  # o WhatsApp de cada usuário vira um "usuário" à parte
             mot = "WhatsApp (%s)" % cat
-            it.rel = build_rel("WhatsApp", cat, date, name, ext)
+            it.rel = build_rel(local, cat, date, name, ext)
         else:
             it.rel = build_rel(local, cat, date, name, ext)
         it.cat, it.act, it.motivo = cat, act, mot
         it.tags = tag_path(self.rules, disp) if act != "ignorar" else ""
-        it.inc = marcado
+        it.inc = it.inc0 = marcado
         it.local0, it.rel0 = it.local, it.rel
         return it
+
+    # ------------------------------------------------------------------ incluir o que a varredura não lê
+    PULA_SEMPRE = {"pagefile.sys", "hiberfil.sys", "swapfile.sys", "dumpstack.log.tmp", "dumpstack.log"}
+
+    def incluir_pastas(self, caminhos):
+        """Pastas fora do padrão (Windows, Program Files, caches…) escolhidas pelo técnico: varridas sem filtro e marcadas, com o caminho original."""
+        with self.lock:
+            if self.busy():
+                raise Busy("Aguarde o processo atual terminar.")
+            if not self.items or not self.cfg:
+                raise ValueError("Escaneie antes de incluir pastas.")
+            planos = []
+            for c in caminhos or []:
+                p = os.path.abspath(str(c))
+                if not os.path.isdir(p) or e_link(p):
+                    continue
+                src = next((x for x in self.cfg["sources"] if _dentro(p, x["path"])), None)
+                if not src:
+                    raise ValueError("Essa pasta não está em nenhuma origem escolhida: %s" % p)
+                if any(_dentro(p, q) for q in self.extras + [pl[0] for pl in planos]):
+                    continue
+                rel = os.path.relpath(p, src["path"])
+                if src["kind"] == "windows":
+                    letra = src["letter"] or "C"
+                    disp = "%s:\\%s" % (letra, "" if rel == "." else rel.replace("/", "\\"))
+                    planos.append((p, "Disco_%s/Extras" % letra, disp.rstrip("\\") or "%s:" % letra, "\\", "extra"))
+                else:
+                    planos.append((p, "Extras", p, os.sep, "extra"))
+            if not planos:
+                raise ValueError("Nenhuma pasta nova para incluir.")
+            self.incl = {"rodando": True, "arquivos": 0, "bytes": 0, "atual": "", "pastas": [pl[2] for pl in planos], "erro": ""}
+            self.cancel.clear()
+        threading.Thread(target=self._incluir_thread, args=(planos,), daemon=True).start()
+        return {"ok": True, "pastas": self.incl["pastas"]}
+
+    def _incluir_thread(self, planos):
+        novos, inc = [], self.incl
+        try:
+            for plano in planos:
+                for real, disp, name, st, local, marca in self.walk_plan(plano):
+                    if name.lower() in self.PULA_SEMPRE:
+                        continue
+                    novos.append(self.make_item(real, disp, name, st, local, "extra", None, plano[2]))
+                    inc["arquivos"] += 1
+                    inc["bytes"] += st.st_size
+                    inc["atual"] = disp
+            with self.lock:
+                self.items.extend(novos)
+                self.extras.extend(pl[0] for pl in planos)
+                self.extras_planos.extend(planos)
+            self.log("Incluídas no backup: %s (%d arquivos, %s)." % (", ".join(inc["pastas"]), len(novos), fmt_bytes(inc["bytes"])))
+        except Cancelled:
+            inc["erro"] = "cancelado"
+        except Exception as e:
+            inc["erro"] = str(e)
+            registrar_erro("incluir pastas")
+        inc["rodando"] = False
+
+    def tirar_extras(self, caminho):
+        with self.lock:
+            if self.busy():
+                raise Busy("Aguarde o processo atual terminar.")
+            p = os.path.abspath(str(caminho))
+            self.items = [it for it in self.items if not (it.ctx == "extra" and _dentro(it.src, p))]
+            self.extras = [q for q in self.extras if not _dentro(q, p)]
+            self.extras_planos = [pl for pl in self.extras_planos if not _dentro(pl[0], p)]
+        return {"ok": True}
 
     # ------------------------------------------------------------------ onde está o resto do disco
     def iniciar_medicao(self):
@@ -1232,10 +1333,11 @@ class App(object):
                 if total and (total, livre) not in vistos:
                     vistos.add((total, livre))
                     discos.append((total, total - livre))
-        achado = sum(it.size for it in self.items)
+        achado = sum(it.size for it in self.items if it.act != "ignorar")
+        sis_lidos = sum(it.size for it in self.items if it.act == "ignorar")  # lidos, mas do sistema (pagefile, thumbs.db…): não contam como pessoais
         dentro_sis = sum(it.size for it in self.items if it.cat == "Sistemas")  # bancos de sistema estão dentro de Program Files, já medido
         self.medicao = {"rodando": True, "pct": 0, "total": sum(d[0] for d in discos), "usado": sum(d[1] for d in discos), "achado": achado,
-                        "marcado": sum(it.size for it in self.items if it.inc), "fora": [], "grupos": {}, "resto": 0, "parcial": False,
+                        "marcado": sum(it.size for it in self.items if it.inc), "fora": [], "grupos": {"Arquivos do sistema": sis_lidos} if sis_lidos else {}, "resto": 0, "parcial": False,
                         "desconto": dentro_sis}
         threading.Thread(target=self._medir_thread, args=(unicos, self.med_parar), daemon=True).start()
 
@@ -1255,7 +1357,7 @@ class App(object):
                 m["parcial"] = True
             if b:
                 grupo = next((g for k, g in GRUPO_FORA if k.lower() in motivo.lower()), "Outros pulados")
-                m["fora"].append({"caminho": disp, "motivo": motivo, "bytes": b, "arquivos": n, "grupo": grupo})
+                m["fora"].append({"caminho": disp, "real": real, "motivo": motivo, "bytes": b, "arquivos": n, "grupo": grupo, "explica": explica_pasta(real)})
                 m["grupos"][grupo] = m["grupos"].get(grupo, 0) + b
             m["pct"] = int((i + 1) * 100 / max(1, len(alvos)))
             if time.time() > ate:
@@ -1469,6 +1571,10 @@ class App(object):
     def select(self, d):
         on = bool(d.get("on"))
         n = 0
+        if d.get("padrao"):  # volta ao que a varredura marcou sozinha: só o pessoal
+            for it in self.items:
+                it.inc = bool(it.inc0)
+            return len(self.items)
         if "idx" in d:
             idxs = d["idx"] if isinstance(d["idx"], list) else [d["idx"]]
             for i in idxs:
@@ -1489,7 +1595,15 @@ class App(object):
         g = {}
         cats = {}
         acts = {}
+        ex = {}  # até 3 maiores arquivos de cada categoria/ação: exemplos reais desta máquina
         for it in self.items:
+            for k in (("cat", it.cat) if it.act == "copiar" else None, ("act", it.act)):
+                if k:
+                    lst = ex.setdefault(k, [])
+                    if len(lst) < 3 or it.size > lst[-1][0]:
+                        lst.append((it.size, nome_de(it.disp)))
+                        lst.sort(key=lambda x: -x[0])
+                        del lst[3:]
             k = (it.local, it.cat, it.act)
             e = g.get(k)
             if e is None:
@@ -1512,9 +1626,10 @@ class App(object):
                     c[3] += it.size
         glist = [{"local": k[0], "cat": k[1], "act": k[2], "n": v[0], "bytes": v[1], "sel_n": v[2], "sel_bytes": v[3]} for k, v in g.items()]
         glist.sort(key=lambda x: (x["local"].lower(), x["cat"], x["act"]))
-        cl = [{"cat": k, "n": v[0], "bytes": v[1], "sel_n": v[2], "sel_bytes": v[3]} for k, v in cats.items()]
+        exs = lambda k: [n for _, n in ex.get(k, [])]
+        cl = [{"cat": k, "n": v[0], "bytes": v[1], "sel_n": v[2], "sel_bytes": v[3], "ex": exs(("cat", k))} for k, v in cats.items()]
         cl.sort(key=lambda x: -x["bytes"])
-        al = {k: {"n": v[0], "bytes": v[1], "sel_n": v[2], "sel_bytes": v[3]} for k, v in acts.items()}
+        al = {k: {"n": v[0], "bytes": v[1], "sel_n": v[2], "sel_bytes": v[3], "ex": exs(("act", k))} for k, v in acts.items()}
         return {"groups": glist, "cats": cl, "acts": al, "ign_dirs": self.ign_dirs[:600], "ign_dirs_total": self.ign_dirs_total}
 
     ORDEM = {"nome": lambda it: nome_de(it.disp).lower(), "tipo": lambda it: (tipo_de(nome_de(it.disp)), nome_de(it.disp).lower()),
@@ -1808,22 +1923,24 @@ class App(object):
         seen = set()
         novos, alterados = [], []
         n_novos = n_alt = 0
-        for src in self.cfg["sources"]:
-            for plan in self.plan_roots(src):
-                for real, disp, name, st, local, _m in self.walk_plan(plan):
-                    it = known.get(disp)
-                    if it is None:
-                        cat, act, mot, _x = classify_file(name, st.st_size, False)
-                        if act != "ignorar":
-                            n_novos += 1
-                            if len(novos) < 500:
-                                novos.append([disp, st.st_size, "Arquivo novo (apareceu depois do escaneamento)"])
-                        continue
-                    seen.add(disp)
-                    if it.inc and (st.st_size != it.size or abs(st.st_mtime - it.mtime) > 2) and it.status == "ok":
-                        n_alt += 1
-                        if len(alterados) < 500:
-                            alterados.append([disp, st.st_size, "Mudou durante o backup (a cópia é a versão do momento em que foi lida)"])
+        planos = [pl for src in self.cfg["sources"] for pl in self.plan_roots(src)] + list(self.extras_planos)
+        for plan in planos:
+            for real, disp, name, st, local, _m in self.walk_plan(plan):
+                if plan[4] == "extra" and name.lower() in self.PULA_SEMPRE:
+                    continue
+                it = known.get(disp)
+                if it is None:
+                    cat, act, mot, _x = classify_file(name, st.st_size, False)
+                    if act != "ignorar":
+                        n_novos += 1
+                        if len(novos) < 500:
+                            novos.append([disp, st.st_size, "Arquivo novo (apareceu depois do escaneamento)"])
+                    continue
+                seen.add(disp)
+                if it.inc and (st.st_size != it.size or abs(st.st_mtime - it.mtime) > 2) and it.status == "ok":
+                    n_alt += 1
+                    if len(alterados) < 500:
+                        alterados.append([disp, st.st_size, "Mudou durante o backup (a cópia é a versão do momento em que foi lida)"])
         sumiram = [it.disp for it in self.items if it.disp not in seen and it.cat != "Navegadores"]
         self.sweep = {"novos": novos, "n_novos": n_novos, "alterados": alterados, "n_alterados": n_alt,
                       "sumiram": sumiram[:500], "n_sumiram": len(sumiram), "quando": now_iso()}
@@ -2361,6 +2478,10 @@ def atividades():
     elif dst.get("fase") == "varrendo":
         out.append({"id": "dados", "titulo": "Procurando o que pesa", "detalhe": dst.get("atual", ""), "pct": dst.get("pct"),
                     "info": "%d arquivos" % dst.get("arquivos", 0), "tela": "dados"})
+    inc = APP.incl or {}
+    if inc.get("rodando"):
+        out.append({"id": "incluir", "titulo": "Incluindo pastas no backup", "pct": None, "detalhe": inc.get("atual", ""),
+                    "info": "%d arquivos (%s)" % (inc.get("arquivos", 0), fmt_bytes(inc.get("bytes", 0))), "tela": "backup"})
     md = APP.medicao or {}
     if md.get("rodando"):
         feito = sum(md.get("grupos", {}).values())
@@ -2376,7 +2497,8 @@ def atividades():
     fim = {"ficha": {"erro": FT["erro"]}, "backup": {"fase": APP.phase, "erro": bool(APP.error)},
            "dados": {"fase": dst.get("fase", ""), "erros": len(ac.get("erros") or [])},
            "conferencia": {"diferentes": len(cf.get("diferentes") or []), "faltando": len(cf.get("faltando") or []), "erro": cf.get("erro", "")},
-           "medicao": {"parcial": bool(md.get("parcial")), "feita": bool(md) and not md.get("rodando")}}
+           "medicao": {"parcial": bool(md.get("parcial")), "feita": bool(md) and not md.get("rodando")},
+           "incluir": {"erro": inc.get("erro", ""), "feita": bool(inc) and not inc.get("rodando")}}
     return {"atividades": out, "fim": fim}
 
 
@@ -2724,7 +2846,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/ping":
             return {"ok": True}
         if path == "/api/medicao":
-            return APP.medicao or {}
+            return dict(APP.medicao or {}, incluidas=list(APP.extras), incl=dict(APP.incl))
         if path == "/api/totals":
             return APP.totals()
         if path == "/api/ficha/estado":
@@ -2874,6 +2996,10 @@ class Handler(BaseHTTPRequestHandler):
             nome = str(b.get("nome", "")).strip()[:60]
             FICHA.meta_set(mid, nome=nome)
             return {"nome": FICHA.nome_exibicao(mid)}
+        if path == "/api/incluir":
+            return APP.incluir_pastas(b.get("caminhos") or [])
+        if path == "/api/incluir/tirar":
+            return APP.tirar_extras(b.get("caminho") or "")
         if path == "/api/backup/retomar":
             self.exigir("backup")
             return APP.retomar(str(b.get("mid") or FICHA.machine_id_cache()))

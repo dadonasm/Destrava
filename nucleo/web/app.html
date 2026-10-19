@@ -294,6 +294,12 @@ button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-
 .medbar{display:flex;height:16px;border-radius:99px;overflow:hidden;background:var(--line);margin:10px 0 8px}.medbar i{display:block;height:100%}
 .medleg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px}.medleg span{display:inline-flex;align-items:center;gap:6px}.medleg i{width:10px;height:10px;border-radius:3px;display:inline-block}
 .semcon{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9999;background:#b3261e;color:#fff;padding:12px 16px;border-radius:14px;box-shadow:var(--sh);display:flex;gap:12px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 32px);font-size:14px}.semcon button{background:#fff;color:#b3261e;border:0}
+.cblk{border-radius:18px;padding:12px;margin-top:12px;border:1px solid var(--line)}.cb-pessoal{background:color-mix(in srgb,var(--ok) 7%,transparent)}.cb-decide{background:color-mix(in srgb,var(--warn) 7%,transparent)}.cb-sistema{background:color-mix(in srgb,var(--mut) 6%,transparent)}
+.cbh{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin:0 0 10px}.cbh b{font-size:15.5px}.cbh .mut,.cbh small{font-size:12.5px;color:var(--mut)}
+.catc .oque{font-size:12.5px;line-height:1.35;color:var(--tx)}.catc .cex{font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cinfo{font-size:12.5px}.cinfo summary{cursor:pointer;color:var(--acc);list-style:none;padding:4px 6px}.cinfo p{margin:4px 0 0;color:var(--mut)}
+.mfl{display:flex;flex-direction:column;margin-top:8px;max-height:360px;overflow:auto}.mfr{display:flex;gap:10px;align-items:center;padding:8px 4px;border-top:1px solid var(--line);margin:0;cursor:pointer;color:var(--tx)}
+.mfr b{display:block;font-size:12.5px;word-break:break-all}.mfr small{display:block;color:var(--mut);font-size:12px}.mfr .sz{white-space:nowrap;font-size:13px}.mfr.on{background:color-mix(in srgb,var(--ok) 8%,transparent)}
 .pcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}.pcols .card{margin-bottom:0}@media (max-width:900px){.pcols{grid-template-columns:1fr}}
 button.pli{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 6px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
 button.pli:hover{background:var(--panel2)}.pli .grow{min-width:0}.pli .cod{display:block}.pli small{display:block;color:var(--mut);font-size:11.5px;text-align:right;margin-top:3px}
@@ -1261,8 +1267,8 @@ function wireReg(g){
 
 /* ---------- "Dynamic Island": o que está rodando agora (análise, backup, Dados, conferência, envios), mesmo olhando outra tela ---------- */
 const ILHA={ativas:[],aberta:false,t:null,aviso:null,ta:null,fixa:false,sobre:false,tc:null,th:null};
-const ILHA_ORD=["backup","medicao","ficha","dados","conferencia","envio"];
-const ILHA_IC={backup:"backup",medicao:"disk",ficha:"cpu",dados:"dados",conferencia:"shield",envio:"up"};
+const ILHA_ORD=["backup","incluir","medicao","ficha","dados","conferencia","envio"];
+const ILHA_IC={backup:"backup",incluir:"up",medicao:"disk",ficha:"cpu",dados:"dados",conferencia:"shield",envio:"up"};
 const ILHA_PASSO={scanning:1,copying:3,verifying:4,finishing:6};
 const ILHA_FIM={
  ficha:f=>f.erro?["erro","A análise falhou"]:["ok","Análise pronta"],
@@ -1270,6 +1276,7 @@ const ILHA_FIM={
  dados:f=>f.fase==="erro"||f.erros?["erro","Dados: veja o que não deu certo"]:["ok","Dados: pronto"],
  conferencia:f=>f.erro||f.diferentes||f.faltando?["erro","Conferência: "+((f.diferentes||0)+(f.faltando||0))+" problema(s)"]:["ok","Backup conferido sem diferenças"],
  envio:()=>["ok","Tudo enviado ao servidor"],
+ incluir:f=>f.erro?["erro","Não deu para incluir: "+f.erro]:f.feita?["ok","Pastas incluídas no backup"]:null,
  medicao:f=>f.feita?["ok",f.parcial?"Disco medido em parte: veja onde está o resto":"Disco medido: veja onde está o resto"]:null};
 /* completa ao começar algo novo; depois reduz (anel + número de processos) e volta a abrir com o mouse por cima */
 function ilhaCheia(ms){ILHA.aberta=true;clearTimeout(ILHA.tc);ILHA.tc=setTimeout(()=>{if(!ILHA.sobre&&!ILHA.fixa){ILHA.aberta=false;ilhaDesenha()}},ms||6000)}
@@ -1311,7 +1318,7 @@ function ilhaDesenha(){
   $$("[data-ir]",d).forEach(k=>k.onclick=e=>{e.stopPropagation();ilhaIr(k.dataset.ir)});
 }
 function ilhaIr(id){const a=ILHA.ativas.find(x=>x.id===id);ILHA.aberta=false;ILHA.fixa=false;ilhaDesenha();if(!a)return;
-  if(a.id==="backup")go(ILHA_PASSO[a.fase]!=null?ILHA_PASSO[a.fase]:step);else if(a.id==="medicao")go(2);else nav(a.tela)}
+  if(a.id==="backup")go(ILHA_PASSO[a.fase]!=null?ILHA_PASSO[a.fase]:step);else if(a.id==="medicao"||a.id==="incluir")go(2);else nav(a.tela)}
 function ilhaLigar(){
   const el=$("#ilha"),fecha=()=>{ILHA.fixa=false;ILHA.aberta=false;ilhaDesenha()};
   $("#ilhab").onclick=()=>{if(!ILHA.ativas.length)return;ILHA.fixa=!ILHA.fixa;ILHA.aberta=ILHA.fixa||ILHA.sobre;clearTimeout(ILHA.tc);ilhaDesenha()};  // clique/toque fixa
@@ -1566,11 +1573,46 @@ function renderSteps(){
 }
 function go(n){step=n;view="backup";markNav();$("#steps").classList.remove("hide");renderSteps();draw();window.scrollTo(0,0)}
 function draw(){clearInterval(timer);[draw1,draw2,draw3,draw4,draw5,()=>drawManter("",true),draw6][step]()}
-const CATORD=["Documentos","Fotos","Videos","Audios","Projetos","Email_Contatos","Conversas","Contas_Senhas","Dados_de_apps","Sistemas","Navegadores","Outros","Nuvem","Ocultos","Programas","Configuracoes","Temporarios"];
+const CATORD=["Documentos","Fotos","Videos","Audios","Projetos","Email_Contatos","Conversas","Contas_Senhas","Dados_de_apps","Sistemas","Navegadores","Outros","Nuvem","Ocultos","Programas","Configuracoes","Temporarios","Extras"];
 const CATNAME={Fotos:"Fotos",Videos:"Vídeos",Audios:"Áudios",Documentos:"Documentos",Projetos:"Projetos (Photoshop, CAD…)",Email_Contatos:"E-mail e contatos",Conversas:"Conversas (WhatsApp)",Contas_Senhas:"Contas e senhas",Outros:"Outros",Navegadores:"Favoritos dos navegadores",
- Dados_de_apps:"Dados de programas",Sistemas:"Bancos de dados de sistemas",Nuvem:"Só na nuvem (OneDrive/iCloud)",Ocultos:"Arquivos ocultos",Programas:"Programas e instaladores",Configuracoes:"Configurações e atalhos",Temporarios:"Temporários e sistema"};
-const CATICO={Fotos:"🖼️",Videos:"🎬",Audios:"🎵",Documentos:"📄",Projetos:"📐",Email_Contatos:"✉️",Conversas:"💬",Contas_Senhas:"🔑",Outros:"📦",Navegadores:"⭐",Dados_de_apps:"🧩",Sistemas:"🗄️",Nuvem:"☁️",Ocultos:"👻",Programas:"⚙️",Configuracoes:"🛠️",Temporarios:"🧹"};
-const CATDICA={Nuvem:"Marque para baixar da nuvem e copiar (usa a internet).",Ocultos:"Pastas e arquivos escondidos: confira antes de levar.",Programas:"Instaladores e programas: só se o cliente quiser guardar.",Configuracoes:"Configurações de programas e atalhos.",Temporarios:"Se recriam sozinhos: normalmente não precisa.",Dados_de_apps:"Dados internos de programas (AppData). E-mail e notas já vêm marcados."};
+ Dados_de_apps:"Dados de programas",Sistemas:"Bancos de dados de sistemas",Nuvem:"Só na nuvem (OneDrive/iCloud)",Ocultos:"Arquivos ocultos",Programas:"Programas e instaladores",Configuracoes:"Configurações e atalhos",Temporarios:"Temporários e sistema",Extras:"Incluídos por você"};
+const CATICO={Fotos:"🖼️",Videos:"🎬",Audios:"🎵",Documentos:"📄",Projetos:"📐",Email_Contatos:"✉️",Conversas:"💬",Contas_Senhas:"🔑",Outros:"📦",Navegadores:"⭐",Dados_de_apps:"🧩",Sistemas:"🗄️",Nuvem:"☁️",Ocultos:"👻",Programas:"⚙️",Configuracoes:"🛠️",Temporarios:"🧹",Extras:"📂"};
+/* o que é cada categoria, em português simples: bloco, o que é, para que serve guardar, recomendação */
+const CAT_BLOCOS=[["pessoal","Pessoal","Já vem marcado: o que a pessoa criou ou guardou."],["decide","Trabalho e dados de programas","Você decide: pode ser importante, depende do cliente."],["sistema","Sistema e programas","Normalmente não precisa: o Windows e os programas recriam ou se reinstalam."]];
+const CAT_INFO={
+ Documentos:["pessoal","PDF, Word, Excel, PowerPoint, textos e notas.","É o principal do backup: trabalho e vida pessoal.","Levar"],
+ Fotos:["pessoal","Fotos e imagens (JPG, PNG, HEIC…), organizadas por ano e mês.","Lembranças que não voltam se forem perdidas.","Levar"],
+ Videos:["pessoal","Vídeos gravados ou baixados (MP4, MOV…).","Costumam ser grandes: confira se cabe no destino.","Levar"],
+ Audios:["pessoal","Músicas, gravações e áudios (MP3, WAV, OGG…).","Fáceis de esquecer e difíceis de recuperar.","Levar"],
+ Email_Contatos:["pessoal","E-mails e contatos guardados no computador (Outlook .pst, Thunderbird, vCard).","Sem isso some o histórico de e-mails que não está na internet.","Levar"],
+ Contas_Senhas:["pessoal","Cofres de senha, certificados digitais e chaves.","Certificado digital e cofre de senhas não se recuperam.","Levar"],
+ Conversas:["pessoal","Backups de conversas do WhatsApp.","Permitem restaurar as conversas.","Levar"],
+ Projetos:["decide","Arquivos de programas de criação (Photoshop, CorelDRAW, AutoCAD, SketchUp…).","Trabalho de designer, arquiteto ou gráfica: costuma ser essencial.","Você decide"],
+ Sistemas:["decide","Bancos de dados de sistemas de loja, contabilidade e PDV (Firebird, Access, SQL…).","Sem eles a empresa perde vendas, estoque e notas. Feche o sistema antes do backup.","Você decide"],
+ Dados_de_apps:["decide","Dados internos de programas (pasta AppData): perfis, configurações, notas autoadesivas.","E-mail e notas já vêm marcados; o resto só se o cliente usa algum programa específico.","Você decide"],
+ Navegadores:["decide","Favoritos (marcadores) do Chrome, Edge e Firefox.","Pequenos e úteis se a pessoa não sincroniza o navegador com uma conta.","Você decide"],
+ Nuvem:["decide","Arquivos que estão só na nuvem (OneDrive, iCloud): no computador há só um atalho.","Já estão guardados na nuvem; marque para ter uma cópia local (baixa pela internet).","Você decide"],
+ Outros:["decide","Tipos que não se encaixam nas outras categorias (compactados, vazios, formatos raros).","Confira a lista: pode ter algo importante com extensão rara.","Você decide"],
+ Extras:["sistema","Pastas que a varredura não lê e que você incluiu, com o caminho original.","Ficam guardadas como estavam; arquivos em uso aparecem como falha.","Você incluiu"],
+ Programas:["sistema","Instaladores e programas (.exe, .msi, .apk…).","Programas se baixam de novo; leve só instalador raro ou pago que o cliente não acha mais.","Normalmente não"],
+ Configuracoes:["sistema","Configurações, atalhos e registros de programas (.ini, .lnk, .log…).","Os programas recriam; só ajuda em casos específicos.","Normalmente não"],
+ Ocultos:["sistema","Pastas e arquivos escondidos (de sistema ou de programas).","Em geral não são da pessoa; confira antes de levar.","Normalmente não"],
+ Temporarios:["sistema","Temporários e arquivos que o sistema recria sozinho.","Não precisam de backup.","Normalmente não"]};
+const CAT_REC={"Levar":"b-ok","Você decide":"b-warn","Normalmente não":"b-mut","Você incluiu":"b-ok"};
+const catBloco=c=>(CAT_INFO[c]||["decide"])[0];
+function catCartao(c){const p=c.bytes?c.sel_bytes/c.bytes*100:0,all=c.sel_n===c.n,inf=CAT_INFO[c.cat]||["decide","",""," Você decide"],nm=CATNAME[c.cat]||c.cat;
+  return `<div class="catc ${c.sel_n?"":"off"}"><div class="ct"><span style="font-size:20px">${CATICO[c.cat]||"📁"}</span><b>${esc(nm)}</b><label class="tg" aria-label="${esc(nm)}"><input type="checkbox" data-c="${esc(c.cat)}" ${all?"checked":""} data-ind="${c.sel_n&&!all?1:0}"><s></s></label></div>
+   <span class="badge ${CAT_REC[inf[3]]||"b-mut"}" style="align-self:flex-start;margin:0">${esc(inf[3])}</span><div class="oque">${esc(inf[1])}</div>
+   <div class="cb2"><div class="cn">${nf(c.sel_n)} de ${nf(c.n)} arquivos<br><b style="color:var(--tx)">${fmt(c.sel_bytes)}</b> de ${fmt(c.bytes)}</div>${arco(p,c.sel_n?"var(--azul)":"var(--trilho)")}</div>
+   ${(c.ex||[]).length?`<div class="cex" title="${esc(c.ex.join(" · "))}">Ex.: ${esc(c.ex.join(" · "))}</div>`:""}
+   <div class="row" style="gap:6px"><button class="sm gh" data-v="${esc(c.cat)}">Ver lista</button>${inf[2]?`<details class="cinfo"><summary>ⓘ Para que serve</summary><p>${esc(inf[2])}</p></details>`:""}</div></div>`}
+function catEspecial(c){const rev=c.cat==="__revisar";
+  return `<div class="catc"><div class="ct"><span style="font-size:20px">${rev?"❓":"🔒"}</span><b>${rev?"Tipo desconhecido":"Do sistema (não vai)"}</b></div>
+   <span class="badge ${rev?"b-warn":"b-mut"}" style="align-self:flex-start;margin:0">${rev?"Você decide":"Normalmente não"}</span>
+   <div class="oque">${rev?"Arquivos de tipo que o programa não reconhece: vão marcados, por segurança.":"Arquivos que o Windows usa e recria (desktop.ini, thumbs.db, arquivos em uso): não vão."}</div>
+   <div class="cn">${nf(c.n)} arquivos · ${fmt(c.bytes)}${c.sel_n?" · "+nf(c.sel_n)+" marcados":""}</div>
+   ${(c.ex||[]).length?`<div class="cex" title="${esc(c.ex.join(" · "))}">Ex.: ${esc(c.ex.join(" · "))}</div>`:""}
+   <div class="row" style="gap:6px"><button class="sm gh" data-va="${rev?"revisar":"ignorar"}">Ver lista</button>${rev?'<button class="sm" id="revall">Marcar todos</button>':""}</div></div>`}
 
 /* seletor de pasta reutilizável */
 async function pickFolder(input,box,onUse,start){
@@ -1714,7 +1756,7 @@ async function draw3(){
   const g=await api("/api/groups"),t=await api("/api/totals"),M=await api("/api/maes"),MD=await api("/api/medicao").catch(()=>({}));
   const cats=g.cats.slice().sort((a,b)=>(CATORD.indexOf(a.cat)+99)%99-(CATORD.indexOf(b.cat)+99)%99);
   const tot=cats.reduce((a,c)=>({n:a.n+c.n,b:a.b+c.bytes}),{n:0,b:0});
-  const rv=g.acts.revisar||{n:0,bytes:0};tot.n+=rv.n;tot.b+=rv.bytes;
+  const rv=g.acts.revisar||{n:0,bytes:0,sel_n:0,sel_bytes:0,ex:[]},ig=g.acts.ignorar||{n:0,bytes:0,sel_n:0,sel_bytes:0,ex:[]};tot.n+=rv.n;tot.b+=rv.bytes;
   const nv=cats.find(c=>c.cat==="Nuvem")||{n:0,bytes:0,sel_bytes:0};
   const locs={};g.groups.forEach(x=>{const k=/^Pastas_(origem|mae)\//.test(x.local)?x.local:x.local.split("/")[0];const o=locs[k]=locs[k]||{n:0,b:0,sn:0,sb:0};o.n+=x.n;o.b+=x.bytes;o.sn+=x.sel_n;o.sb+=x.sel_bytes});
   const pdest=t.free?t.sel_bytes/t.free*100:100;
@@ -1724,14 +1766,14 @@ async function draw3(){
    ${kpi2("Espaço no destino","💽",fmt(t.free),t.cabe?"livres":"<b style='color:var(--err)'>não cabe</b>",pdest,t.cabe?(pdest>85?"var(--warn)":"var(--azul)"):"var(--err)")}${kpi2("Nuvem","☁️",fmt(nv.bytes),nv.n?nf(nv.n)+" só na nuvem":"nada só na nuvem",nv.bytes?nv.sel_bytes/nv.bytes*100:0,"#f0a020")}</div>
   <div class="cols"><div>
   <div class="card" id="medc"></div>
-  <div class="card"><h2>Categorias</h2><p class="h">Liga e desliga categorias inteiras. Já deixei marcado o que é pessoal.</p><div class="catg">${cats.map(c=>{const p=c.bytes?c.sel_bytes/c.bytes*100:0,all=c.sel_n===c.n;
-    return `<div class="catc ${c.sel_n?"":"off"}"><div class="ct"><span style="font-size:20px">${CATICO[c.cat]||"📁"}</span><b>${esc(CATNAME[c.cat]||c.cat)}</b><label class="tg" aria-label="${esc(CATNAME[c.cat]||c.cat)}"><input type="checkbox" data-c="${esc(c.cat)}" ${all?"checked":""} data-ind="${c.sel_n&&!all?1:0}"><s></s></label></div>
-     <div class="cb2"><div class="cn">${nf(c.sel_n)} de ${nf(c.n)} arquivos<br><b style="color:var(--tx)">${fmt(c.sel_bytes)}</b> de ${fmt(c.bytes)}</div>${arco(p,c.sel_n?"var(--azul)":"var(--trilho)")}</div>
-     ${CATDICA[c.cat]?`<div class="dica">${esc(CATDICA[c.cat])}</div>`:""}<button class="sm gh" data-v="${esc(c.cat)}" style="align-self:flex-start">Ver lista</button></div>`}).join("")}
-    ${rv.n?`<div class="catc"><div class="ct"><span style="font-size:20px">❓</span><b>Tipo desconhecido</b></div><div class="cn">${nf(rv.n)} arquivos · ${fmt(rv.bytes)} · copiados por segurança</div><div class="row"><button class="sm gh" data-va="revisar">Ver lista</button><button class="sm" id="revall">Marcar todos</button></div></div>`:""}</div>
-    <p class="mut" style="font-size:12.5px;margin:12px 0 0">${nf(g.ign_dirs_total)} pastas puladas (sistema, caches e lixeira, que se recriam sozinhas). <button class="sm gh" id="vdirs">Ver quais</button></p>
-    <div class="row" style="margin-top:10px"><button class="sm" id="vtodos">Ver todos os arquivos</button><button class="sm gh" data-va="ignorar">Ver o que não vai (do sistema)</button></div></div>
-  <div class="card"><h2>Usuários e grupos</h2><p class="h">Cada pessoa da máquina, o WhatsApp e as pastas de origem ficam separados no backup.</p><div class="catg">${Object.keys(locs).sort().map(k=>{const o=locs[k],p=o.b?o.sb/o.b*100:0,nome=/^Pastas_(origem|mae)\//.test(k)?"📁 "+k.replace(/^Pastas_(origem|mae)\//,""):k==="WhatsApp"?"💬 WhatsApp":"👤 "+k;
+  <div class="card"><div class="row" style="align-items:flex-start"><div class="grow"><h2>O que tem nesta máquina</h2><p class="h" style="margin:0">Separado em três blocos. <span class="badge b-ok">Levar</span> já vem marcado (pessoal), <span class="badge b-warn">Você decide</span> depende do cliente, <span class="badge b-mut">Normalmente não</span> é sistema e programa. Tudo pode ser marcado ou desmarcado.</p></div>
+    <div class="row"><button class="sm" id="mtudo">Marcar tudo o que foi encontrado</button><button class="sm gh" id="mpad">Voltar ao padrão (só o pessoal)</button></div></div>
+   ${CAT_BLOCOS.map(([bl,tit,txt])=>{const cs=cats.filter(c=>catBloco(c.cat)===bl),esp=bl==="decide"&&rv.n?[{cat:"__revisar",...rv}]:bl==="sistema"&&ig.n?[{cat:"__ignorar",...ig}]:[];
+     if(!cs.length&&!esp.length)return"";const all=[...cs,...esp],n=all.reduce((a,c)=>a+c.n,0),sb=all.reduce((a,c)=>a+c.sel_bytes,0),bt=all.reduce((a,c)=>a+c.bytes,0);
+     return `<div class="cblk cb-${bl}"><div class="cbh"><b>${tit}</b><span class="mut">${txt}</span><span class="grow"></span><small>${fmt(sb)} marcados de ${fmt(bt)} · ${nf(n)} arquivos</small></div><div class="catg">${cs.map(catCartao).join("")}${esp.map(catEspecial).join("")}</div></div>`}).join("")}
+    <p class="mut" style="font-size:12.5px;margin:12px 0 0">${nf(g.ign_dirs_total)} pastas puladas (sistema, caches e lixeira). Veja e inclua no cartão "Onde está o resto do disco?". <button class="sm gh" id="vdirs">Ver quais</button></p>
+    <div class="row" style="margin-top:10px"><button class="sm" id="vtodos">Ver todos os arquivos</button></div></div>
+  <div class="card"><h2>Usuários e grupos</h2><p class="h">Cada pessoa da máquina, o WhatsApp e as pastas de origem ficam separados no backup.</p><div class="catg">${Object.keys(locs).sort().map(k=>{const o=locs[k],p=o.b?o.sb/o.b*100:0,nome=locNome(k);
     return `<div class="catc ${o.sn?"":"off"}"><div class="ct"><b>${esc(nome)}</b><label class="tg" aria-label="${esc(nome)}"><input type="checkbox" data-l="${esc(k)}" ${o.sn===o.n?"checked":""} data-ind="${o.sn&&o.sn<o.n?1:0}"><s></s></label></div><div class="cb2"><div class="cn">${nf(o.sn)} de ${nf(o.n)}<br><b style="color:var(--tx)">${fmt(o.sb)}</b> de ${fmt(o.b)}</div>${arco(p)}</div><button class="sm gh" data-vl="${esc(k)}" data-vn="${esc(nome.replace(/^\S+ /,""))}" style="align-self:flex-start">Ver lista</button></div>`}).join("")}</div></div>
   <div class="card maes"><h2>Pastas de origem</h2><p class="h">Pastas com nome próprio ou de trabalho (ex.: Wefix) vão inteiras para <b>Pastas_origem/</b>, separadas da pasta do usuário. Já marquei as de maior confiança e as que você separou em outras máquinas; revise antes de copiar. A % é a minha confiança.</p>
    ${M.sugestoes.length?M.sugestoes.map(m=>`<label class="mae" style="color:var(--tx);font-size:inherit;margin:0;cursor:pointer"><input type="checkbox" class="mck" value="${esc(m.chave)}" ${m.marcada?"checked":""} style="margin-top:4px"><span class="pctb" style="background:${corPct(m.pct)}">${m.pct}%</span><span class="grow"><b>${esc(m.nome)}</b>${m.auto?' <span class="badge b-ok">marcada sozinha</span>':""} <span class="mut">· ${nf(m.n)} arquivos · ${fmt(m.bytes)}</span><br><span class="mut mono" style="font-size:11.5px">veio de ${esc(m.chave)}</span>${m.motivos.length?`<br><span class="mut" style="font-size:12.5px">${esc(m.motivos.join(" · "))}</span>`:""}</span></label>`).join("")+'<div class="row" style="margin-top:10px"><button class="pri" id="maeok">Aplicar pastas de origem</button><span class="mut" style="font-size:12.5px">Desmarque o que não deve ficar separado e aplique.</span></div>':'<p class="mut">Nenhuma pasta com nome próprio ou de trabalho encontrada.</p>'}</div>
@@ -1743,26 +1785,40 @@ async function draw3(){
   $$("[data-vl]").forEach(b=>b.onclick=()=>abrirLista({local:b.dataset.vl},b.dataset.vn));
   $("#vtodos").onclick=()=>abrirLista({},"");
   const ra=$("#revall");if(ra)ra.onclick=()=>safe(async()=>{await api("/api/select",{filter:{act:"revisar"},on:true});draw3()});
+  $("#mtudo").onclick=()=>safe(async()=>{await api("/api/select",{filter:{},on:true});toast("Tudo o que foi encontrado está marcado. Confira se cabe no destino.","ok");draw3()});
+  $("#mpad").onclick=()=>safe(async()=>{await api("/api/select",{padrao:true});toast("De volta ao padrão: só o pessoal marcado.","ok");draw3()});
   const mo=$("#maeok");if(mo)mo.onclick=()=>safe(async()=>{await api("/api/maes",{chaves:$$(".mck:checked").map(x=>x.value)});toast("Pastas de origem aplicadas.","ok");draw3()});
   $("#vdirs").onclick=()=>safe(async()=>{const r=await api("/api/left");modalHtml("Pastas puladas",`<div class="mono" style="max-height:60vh;overflow:auto">${r.ign_dirs.map(d=>`<div><b>${esc(d[0])}</b><br><span class="mut">${esc(d[1])}</span></div>`).join("<br>")}</div>`)});
-  drawTot(t);medicaoCard(MD);
+  drawTot(t);MED.t=t;medicaoCard(MD);
 }
 /* onde está o resto do disco: o que a varredura não lê (Windows, programas, caches) medido em segundo plano */
-const MED_COR={"Vai para o backup":"var(--ok)","Pessoal não marcado":"#7fa7ff","Windows e programas":"#8a8f9c","Sistema e programas":"#8a8f9c","Caches e temporários":"#f0a020","Lixeira e sistema":"#c96a6a","Outros pulados":"#b4b4bf","Resto do sistema":"var(--line)"};
-let MEDT=null;
+const MED_COR={"Vai para o backup":"var(--ok)","Pessoal não marcado":"#7fa7ff","Windows e programas":"#8a8f9c","Sistema e programas":"#8a8f9c","Caches e temporários":"#f0a020","Lixeira e sistema":"#c96a6a","Arquivos do sistema":"#a07ec9","Outros pulados":"#b4b4bf","Resto do sistema":"var(--line)"};
+let MEDT=null;const MED={aberto:false,t:null};
 function medicaoCard(m){
   clearTimeout(MEDT);const el=$("#medc");if(!el)return;
   if(!m||m.achado===undefined){el.classList.add("hide");return}
   el.classList.remove("hide");
   const seg=[["Vai para o backup",m.marcado],["Pessoal não marcado",Math.max(0,m.achado-m.marcado)],...Object.entries(m.grupos||{}),["Resto do sistema",m.resto||0]].filter(x=>x[1]>0);
   const tot=Math.max(m.usado||0,seg.reduce((a,x)=>a+x[1],0))||1;
-  const dica={"Windows e programas":"se reinstalam","Sistema e programas":"se reinstalam","Caches e temporários":"se recriam sozinhos","Lixeira e sistema":"não precisa","Resto do sistema":"memória virtual, hibernação, restauração e arquivos protegidos"};
+  const dica={"Windows e programas":"se reinstalam","Sistema e programas":"se reinstalam","Caches e temporários":"se recriam sozinhos","Lixeira e sistema":"não precisa","Arquivos do sistema":"memória virtual, miniaturas, arquivos em uso","Resto do sistema":"memória virtual, hibernação, restauração e arquivos protegidos"};
   el.innerHTML=`<h2>Onde está o resto do disco?</h2><p class="h">${m.usado?`O disco tem <b>${fmt(m.usado)}</b> usados. Seus arquivos pessoais somam <b>${fmt(m.achado)}</b> e <b>${fmt(m.marcado)}</b> estão marcados para o backup. O resto é do Windows, de programas, caches e arquivos de sistema: não precisa de backup.`:`Seus arquivos pessoais somam <b>${fmt(m.achado)}</b>; <b>${fmt(m.marcado)}</b> estão marcados para o backup.`}</p>
    <div class="medbar" role="img" aria-label="Divisão do espaço usado do disco">${seg.map(([k,v])=>`<i style="width:${Math.max(.6,v/tot*100)}%;background:${MED_COR[k]||"#b4b4bf"}" title="${esc(k)}: ${fmt(v)}"></i>`).join("")}</div>
    <div class="medleg">${seg.map(([k,v])=>`<span><i style="background:${MED_COR[k]||"#b4b4bf"}"></i>${esc(k)} <b>${fmt(v)}</b>${dica[k]?` <small class="mut">· ${dica[k]}</small>`:""}</span>`).join("")}</div>
    ${m.rodando?`<p class="mut" style="font-size:12.5px;margin:8px 0 0">Medindo o restante do disco… ${m.pct||0}%</p>`:m.parcial?'<p class="mut" style="font-size:12.5px;margin:8px 0 0">Medição parcial: parte das pastas do sistema não deu tempo de medir.</p>':""}
-   ${(m.fora||[]).length?`<details style="margin-top:8px"><summary class="mut" style="cursor:pointer;font-size:13px">Ver as maiores pastas que ficaram de fora</summary><table style="margin-top:6px">${m.fora.slice(0,10).map(x=>`<tr><td class="mono" style="font-size:12px;word-break:break-all">${esc(x.caminho)}</td><td class="mut" style="font-size:12px">${esc(x.grupo)}</td><td style="white-space:nowrap;text-align:right">${fmt(x.bytes)}</td></tr>`).join("")}</table></details>`:""}`;
-  if(m.rodando)MEDT=setTimeout(async()=>{if(view!=="backup"||step!==2)return;try{medicaoCard(await api("/api/medicao"))}catch(e){}},2000);
+   ${(m.fora||[]).length?`<details style="margin-top:8px" ${MED.aberto?"open":""} id="medfora"><summary style="cursor:pointer;font-size:13px;color:var(--acc)">Ver e incluir no backup as pastas que ficaram de fora (${m.fora.length})</summary>
+     <div class="mfl">${m.fora.map(x=>{const inc=(m.incluidas||[]).some(q=>x.real&&(x.real===q||x.real.startsWith(q.replace(/[\\/]$/,"")+(q.includes("\\")?"\\":"/"))));
+       return `<label class="mfr ${inc?"on":""}"><input type="checkbox" data-fr="${esc(x.real||"")}" data-fb="${x.bytes}" ${inc?"checked disabled":""}><span class="grow"><b class="mono">${esc(x.caminho)}</b><small>${esc(x.explica||x.grupo)}</small></span><span class="sz">${fmt(x.bytes)}</span>${inc?`<span class="badge b-ok" style="margin:0">Incluída</span><button class="sm gh" data-tirar="${esc(x.real)}">Tirar</button>`:""}</label>`}).join("")}</div>
+     ${m.incl&&m.incl.rodando?`<p class="mut" style="font-size:12.5px">Incluindo… ${nf(m.incl.arquivos||0)} arquivos (${fmt(m.incl.bytes||0)})</p>`:`<div class="row" style="margin-top:8px"><button class="pri sm" id="mincl" disabled>Incluir as selecionadas</button><span class="mut" style="font-size:12.5px" id="minfo">Marque as pastas que quer levar.</span></div>`}</details>`:""}`;
+  const fo=$("#medfora");if(fo)fo.ontoggle=()=>{MED.aberto=fo.open};
+  const marcadas=()=>$$("#medc [data-fr]:checked:not(:disabled)");
+  $$("#medc [data-fr]").forEach(c=>c.onchange=()=>{const ms=marcadas(),b=ms.reduce((a,x)=>a+(+x.dataset.fb||0),0),t=MED.t||{},cabe=!t.free||(t.sel_bytes||0)+b<=t.free*0.98;
+    $("#mincl").disabled=!ms.length;$("#minfo").innerHTML=ms.length?`${ms.length} pasta${ms.length>1?"s":""} · ${fmt(b)} · ${cabe?'<b style="color:var(--ok)">cabe no destino</b>':'<b style="color:var(--err)">não cabe no destino</b>'}`:"Marque as pastas que quer levar."});
+  const mi=$("#mincl");if(mi)mi.onclick=()=>safe(async()=>{const ms=marcadas(),b=ms.reduce((a,x)=>a+(+x.dataset.fb||0),0);
+    if(!await dialog({titulo:"Incluir no backup?",html:`<p>${ms.length} pasta${ms.length>1?"s":""}, cerca de <b>${fmt(b)}</b>, entram na categoria <b>Incluídos por você</b>, com o caminho original.</p><p class="mut">Windows e programas se reinstalam sozinhos; aqui é só para guardar. Arquivos em uso pelo Windows aparecem como falha, com a explicação.</p>`,ok:"Incluir"}))return;
+    await api("/api/incluir",{caminhos:ms.map(x=>x.dataset.fr)});MED.aberto=true;toast("Incluindo as pastas… acompanhe na ilha do topo.","ok");medicaoCard(await api("/api/medicao"))});
+  $$("#medc [data-tirar]").forEach(b=>b.onclick=e=>{e.preventDefault();safe(async()=>{await api("/api/incluir/tirar",{caminho:b.dataset.tirar});toast("Pasta tirada do backup.","ok");draw3()})});
+  const incl=m.incl&&m.incl.rodando;
+  if(m.rodando||incl)MEDT=setTimeout(async()=>{if(view!=="backup"||step!==2)return;try{const n=await api("/api/medicao");if(incl&&!(n.incl&&n.incl.rodando))return draw3();medicaoCard(n)}catch(e){}},incl?1500:2000);
 }
 function drawTot(t){
   const pct=t.free?Math.min(100,t.sel_bytes/t.free*100):0;
@@ -1794,6 +1850,7 @@ const ORD_ROT=[["nome","Nome"],["tipo","Tipo"],["categoria","Categoria"],["situa
 const lstUrl=i=>"/api/files/ver?i="+i+"&t="+encodeURIComponent(TOKEN);
 const lstCurto=d=>{const p=String(d||"").split(/[\\/]/).filter(Boolean).slice(0,-1);return p.length?(p.length>2?"…/":"")+p.slice(-2).join("/")+"/":""};
 const lstLinha=x=>({i:x[0],disp:x[1],size:x[2],data:x[3],cat:x[4],act:x[5],inc:!!x[6],motivo:x[7]||"",status:x[8]||"",nome:x[10]||x[1],tipo:x[11]||"",prev:x[13]||""});
+const locNome=k=>/^Disco_[A-Z]$/.test(k)?"💽 Disco "+k.slice(-1)+": (fora das pastas de usuário)":/^Pastas_(origem|mae)\//.test(k)?"📁 "+k.replace(/^Pastas_(origem|mae)\//,""):/^WhatsApp( \(|$)/.test(k)?"💬 WhatsApp"+(k.match(/\((.*)\)/)?" de "+k.match(/\((.*)\)/)[1]:""):"👤 "+k;
 const FX_DATA=[["d30","Últimos 30 dias"],["m6","1 a 6 meses"],["a1","6 meses a 1 ano"],["a3","1 a 3 anos"],["antigo","Mais de 3 anos"],["sem","Sem data"]];
 const FX_TAM=[["p","Até 100 KB"],["m","100 KB a 1 MB"],["g","1 a 10 MB"],["gg","10 a 100 MB"],["xg","Mais de 100 MB"]];
 const FX_GRUPOS=[["cat","Categoria"],["tipo","Tipo de arquivo"],["status","Situação"],["data","Data"],["tam","Tamanho"],["local","Usuário e pasta de origem"],["tag","Etiqueta"]];
@@ -1804,7 +1861,7 @@ function fRotulo(k,v){
   if(k==="status")return STNOME[v]||v;
   if(k==="data")return (FX_DATA.find(x=>x[0]===v)||[v,v])[1];
   if(k==="tam")return (FX_TAM.find(x=>x[0]===v)||[v,v])[1];
-  if(k==="local")return /^Pastas_(origem|mae)\//.test(v)?"📁 "+v.replace(/^Pastas_(origem|mae)\//,""):v==="WhatsApp"?"💬 WhatsApp":"👤 "+v;
+  if(k==="local")return locNome(v);
   if(k==="tipo")return (TIPO_IC[v]||"📄")+" "+v;
   return v;
 }

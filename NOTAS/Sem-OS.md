@@ -56,3 +56,10 @@ serviço) travava tudo em máquina de terceiros. Decisão: tirar a OS por enquan
   em cada opção (calculada com os outros filtros, `App.filtrar`), "Ver mais", busca interna, intervalos de data/tamanho, etiquetas dos
   filtros ativos com "Limpar tudo", ordenação na linha da busca; no celular vira "Filtros (n)". Listas na URL separadas por `|`
   (`parse_filtro`), e o "marcar todos" respeita os mesmos filtros.
+
+## G. Seleção que se explica e inclui tudo
+- Categorias em 3 blocos (Pessoal · Você decide · Sistema e programas) com o catálogo `CAT_INFO` (o que é, para que serve, recomendação),
+  exemplos reais de cada categoria (`groups()` → `ex`), "Marcar tudo o que foi encontrado" e "Voltar ao padrão" (`select({padrao})`, `Item.inc0`).
+- WhatsApp por usuário: `local = "WhatsApp (<usuário>)"` e pasta própria no backup.
+- Incluir o que a varredura não lê: `App.incluir_pastas` (categoria `Extras`, caminho original em `Disco_C/Extras/...`, pula pagefile/hiberfil/
+  swapfile), `tirar_extras`; a varredura final repassa as pastas incluídas (`extras_planos`). Cada pasta de fora tem explicação (`EXPLICA_PASTA`).
