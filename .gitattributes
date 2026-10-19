@@ -1,2 +1,5 @@
 *.bat text eol=crlf
 *.sh text eol=lf
+Destrava.bat text eol=lf
+*.inf text eol=crlf
+*.ico binary
