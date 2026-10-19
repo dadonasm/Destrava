@@ -388,6 +388,8 @@ async function api(path,body){
 let toastT=null;
 function toast(m,kind){let t=$(".toast");if(t)t.remove();t=document.createElement("div");t.className="toast "+(kind||"");t.setAttribute("role","status");t.textContent=m;document.body.appendChild(t);clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),kind==="err"?9000:5000)}
 async function safe(fn){try{return await fn()}catch(e){onErr(e)}}
+addEventListener("unhandledrejection",e=>{const r=e.reason;if(r&&r.message==="ORFAOS")return;toast("Erro: "+((r&&r.message)||r),"err")});
+addEventListener("error",e=>{if(e.message)toast("Erro na tela: "+e.message,"err")});
 function onErr(e){
   if(e.codigo==="termo")return openGate();
   if(e.message==="ORFAOS")return;
@@ -1536,7 +1538,12 @@ async function pickFolder(input,box,onUse,start){
 /* ---- 1 origem e destino ---- */
 async function draw1(){
   setWide(false);
-  if(!S.sources.length){S.sources=(await api("/api/sources")).sources;S.sources.forEach(s=>{if(s.kind==="windows"||s.kind==="linux")S.chosen[s.path]=true})}
+  if(!S.sources.length){
+    $("#main").innerHTML='<div class="card"><p class="mut" style="margin:0">Procurando os discos desta máquina…</p></div>';
+    try{S.sources=(await api("/api/sources")).sources}
+    catch(e){$("#main").innerHTML=`<div class="card"><div class="errbox">Não consegui listar os discos: ${esc(e.message||String(e))}</div><button id="d1r">Tentar de novo</button></div>`;$("#d1r").onclick=()=>draw1();return}
+    if(step!==0||view!=="backup")return;
+    S.sources.forEach(s=>{if(s.kind==="windows"||s.kind==="linux")S.chosen[s.path]=true})}
   const t=CTX.t,nome=t?t.nome:info.host||"PC";
   $("#main").innerHTML=`<div class="card fluxo" id="fluxo"></div>
   <div class="od"><div class="card"><div class="eyebrow">ORIGEM</div><h2>De onde vamos copiar?</h2><p class="h">Marque os discos ou pastas de origem. O programa só <b>lê</b> deles: nada é apagado ou alterado.</p><div id="srcs"></div>
