@@ -48,10 +48,13 @@ class BackupCompleto(unittest.TestCase):
         os.makedirs(self.dest)
         self._store = ficha.STORE
         ficha.STORE = os.path.join(self.tmp, "maquinas")
+        self._dados = dd_backup.DADOS_DIR[0]
+        dd_backup.DADOS_DIR[0] = self.tmp  # memória das pastas de origem fora do projeto
         self.app = dd_backup.App()
         self.app.set_config({"sources": [{"path": self.disco, "kind": "windows", "letter": "C"}], "dest": self.dest, "folder": "Backup_Ana", "cliente": "Ana"})
 
     def tearDown(self):
+        dd_backup.DADOS_DIR[0] = self._dados
         ficha.STORE = self._store
         mapa.CANCEL.set()
         mapa.M.update(raiz="", mapa="", meta={}, f=[], partes=[], cert={})
@@ -208,17 +211,35 @@ class EscolhaTotal(BackupCompleto):
         self.assertEqual(self.app.select({"filter": {"cat": "Programas"}, "on": True}), 1)
         self.assertTrue(it["instalador.exe"].inc)
 
-    def test_pastas_mae(self):
+    def test_pastas_de_origem(self):
         it = self.escanear()
         sug = {x["nome"]: x for x in self.app.sugestoes_maes()}
         self.assertIn("Wefix", sug)
         self.assertGreater(sug["Wefix"]["pct"], sug["Fotos da praia"]["pct"], "trabalho pontua mais que pasta pessoal")
-        self.assertTrue(sug["Wefix"]["motivos"])
-        self.app.set_maes([sug["Wefix"]["chave"]])
-        self.assertEqual(it["contrato_cliente.docx"].rel, "Pastas_mae/Wefix/Clientes/contrato_cliente.docx")
-        self.assertEqual(it["contrato_cliente.docx"].local, "Pastas_mae/Wefix")
+        self.assertIn("nome próprio", sug["Wefix"]["motivos"])
+        self.assertEqual((sug["Wefix"]["auto"], sug["Fotos da praia"]["auto"]), (True, False))
+        self.assertEqual(it["contrato_cliente.docx"].rel, "Pastas_origem/Wefix/Clientes/contrato_cliente.docx", "já vem separada da pasta da Ana")
+        self.assertEqual(it["contrato_cliente.docx"].local, "Pastas_origem/Wefix")
         self.app.set_maes([])
         self.assertTrue(it["contrato_cliente.docx"].rel.startswith("Ana/Documentos/"), "desmarcar devolve ao lugar")
+
+    def test_memoria_das_pastas_de_origem(self):
+        self.escanear()
+        self.app.set_maes([])  # o técnico desfez a separação automática da Wefix
+        self.app._lembrar_origens()
+        self.assertEqual(dd_backup.memoria_origens()["wefix"]["recusada"], 1)
+        outro = dd_backup.App()
+        outro.set_config({"sources": [{"path": self.disco, "kind": "windows", "letter": "C"}], "dest": self.dest, "folder": "B2", "cliente": "Ana"})
+        outro.start_scan()
+        self.assertEqual(espera(outro, ("scanned", "error")), "scanned", outro.error)
+        w = next(x for x in outro.sugestoes_maes() if x["nome"] == "Wefix")
+        self.assertEqual((w["auto"], w["marcada"]), (False, False), "recusada antes: não marca sozinha")
+        self.assertIn("você não quis separar antes", w["motivos"])
+        outro.set_maes([w["chave"]])
+        outro._lembrar_origens()
+        outro._lembrar_origens()
+        w = next(x for x in outro.sugestoes_maes() if x["nome"] == "Wefix")
+        self.assertTrue(w["auto"] and "você já separou em outra máquina" in w["motivos"], "aceita mais vezes: volta a marcar sozinha")
 
     def test_destino_falsificado_bloqueia_com_solucao(self):
         import unittest.mock as um

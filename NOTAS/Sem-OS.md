@@ -38,3 +38,12 @@ serviço) travava tudo em máquina de terceiros. Decisão: tirar a OS por enquan
   receita já vale). "Definir o que manter" faz o mesmo quando há backup pendente; a tela avulsa só serve sem backup.
 - Etapa terminal `encerrada` ("Encerrado incompleto") em `ficha.py`, como `entregue` (`TERMINAIS`): fecha o serviço, some a
   pendência, o próximo backup/análise abre serviço novo; a sessão do backup em memória é zerada.
+
+## E. Passo 1 e Seleção mais limpos
+- Identificação do certificado (cliente, técnico, equipamento) vem do cadastro: `App.identificacao()` (dono da máquina, perfil do
+  técnico, nome da máquina); no passo 1 aparece só para leitura, com atalhos para editar no cadastro/perfil.
+- Origens: some a "Pasta pessoal" quando um disco listado já a contém, e o pendrive do próprio programa (só como origem; continua
+  como destino). Origem dentro de outra é descartada (tela avisa, servidor garante).
+- **Pastas de origem** (antes "pastas-mãe", agora `Pastas_origem/<Nome>/`): `parece_nome_proprio()` soma 30 pontos; pastas com nome
+  próprio direto na pasta do usuário também viram candidatas; nota ≥ 65 já vem marcada; memória em `pastas_origem.json` na pasta de
+  dados (aceita/recusada por nome, contada ao iniciar a cópia). Mapas antigos com `Pastas_mae/` continuam abrindo.

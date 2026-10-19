@@ -146,6 +146,48 @@ PRIORIDADE = ["Documentos", "Email_Contatos", "Contas_Senhas", "Fotos", "Convers
 PESSOAL_NOMES = ("foto", "imagem", "picture", "photo", "music", "músic", "music", "video", "vídeo", "download", "whats", "pessoal", "famil",
                  "celular", "backup", "wallpaper", "papel de parede", "screenshot", "captura")
 DOCS_DESK = {"documents", "documentos", "meus documentos", "desktop", "área de trabalho", "area de trabalho"}
+# Pastas de origem: pastas com nome próprio ou de trabalho vão inteiras para Pastas_origem/<Nome>/ (antes era Pastas_mae/)
+PASTA_ORIGEM, PASTA_ORIGEM_ANTIGA = "Pastas_origem", "Pastas_mae"
+NOMES_PADRAO = {"appdata", "application data", "contacts", "contatos", "favorites", "favoritos", "links", "music", "músicas", "musicas", "minhas músicas",
+                "pictures", "imagens", "minhas imagens", "saved games", "jogos salvos", "searches", "pesquisas", "videos", "vídeos", "meus vídeos",
+                "downloads", "3d objects", "objetos 3d", "onedrive", "icloud drive", "dropbox", "google drive", "creative cloud files", "my games",
+                "whatsapp", "zoom", "custom office templates", "modelos personalizados do office", "onenote notebooks", "blocos de anotações do onenote",
+                "outlook files", "arquivos do outlook", "scanned documents", "documentos digitalizados", "fax", "ansel", "intelgraphicsprofiles",
+                "microsoft", "source", "repos", "drivers", "swsetup", "dell", "hp", "lenovo", "acer", "asus", "samsung", "positivo", "intel", "amd",
+                "nvidia", "esd", "inetpub", "xampp", "apps", "games", "onedrivetemp", "windows.old", "boot", "efi", "temp", "tmp", "public", "default"} | DOCS_DESK
+GENERICAS = {"novo", "nova", "new", "backup", "backups", "copia", "copy", "teste", "test", "testes", "arquivo", "arquivos", "pasta", "pastas", "folder",
+             "diversos", "outros", "misc", "antigo", "antigos", "old", "docs", "documentos", "imagens", "fotos", "foto", "videos", "musicas", "downloads",
+             "sem", "titulo", "untitled", "geral", "coisas", "files", "dados", "data", "scan", "scans", "modelos", "templates", "projetos", "projects",
+             "trabalho", "trabalhos", "pessoal", "meus", "minhas", "my", "temp", "tmp", "programas", "instaladores", "setup", "install", "drivers"}
+CONECTIVOS = {"da", "de", "do", "das", "dos", "e"}
+AUTO_ORIGEM = 65  # nota a partir da qual a pasta de origem já vem marcada
+
+
+def _memoria_arq():
+    return os.path.join(DADOS_DIR[0], "pastas_origem.json")
+
+
+def memoria_origens():
+    """Por nome de pasta (sem acento, minúsculo): quantas vezes o técnico separou (aceita) ou desfez a separação automática (recusada)."""
+    try:
+        with open(_memoria_arq(), encoding="utf-8") as fh:
+            d = json.load(fh)
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def parece_nome_proprio(nome):
+    """Wefix, Padaria Ana, Marcio Euripedes: sim. Documentos, Nova pasta, Backup antigo, fotos: não."""
+    n = (nome or "").strip()
+    if not n or n.startswith(".") or n.lower() in NOMES_PADRAO:
+        return False
+    palavras = re.findall(r"[^\W_]+", n)
+    if not 1 <= len(palavras) <= 4 or not any(c.isalpha() for c in n):
+        return False
+    if any(strip_accents(p.lower()) in GENERICAS for p in palavras):
+        return False
+    return all(p[0].isupper() or p.isdigit() or p.lower() in CONECTIVOS for p in palavras) and palavras[0][0].isupper()
 ILLEGAL = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 
 
@@ -494,7 +536,17 @@ def detect_kind(p):
     return "folder", []
 
 
-def list_sources():
+def _dentro(p, pai):
+    """p é pai ou está dentro de pai (mesma regra no Windows, sem diferenciar maiúsculas)."""
+    a, b = os.path.normcase(os.path.abspath(p)), os.path.normcase(os.path.abspath(pai))
+    try:
+        return os.path.commonpath([a, b]) == b
+    except ValueError:  # discos diferentes no Windows
+        return False
+
+
+def list_sources(para_origem=True):
+    """Discos e pastas para escolher. Como origem, some o disco do próprio programa (o pendrive) e a pasta pessoal que já está dentro de um disco listado."""
     out = []
     seen = set()
 
@@ -534,7 +586,10 @@ def list_sources():
                 continue
             add(mp, os.path.basename(mp) or mp, fs + (" (somente leitura)" if opts.split(",")[0] == "ro" else ""))
     home = os.path.expanduser("~")
-    add(home, "Pasta pessoal (%s)" % os.path.basename(home))
+    if not (para_origem and any(_dentro(home, s["path"]) for s in out)):
+        add(home, "Pasta pessoal (%s)" % os.path.basename(home))
+    if para_origem:
+        out = [s for s in out if not (_dentro(HERE, s["path"]) and os.path.ismount(s["path"])) or s["kind"] in ("windows", "linux")]  # o pendrive do programa
     # Windows: sugere letras
     letters = iter("CDEFGHIJ")
     for s in out:
@@ -546,7 +601,7 @@ def list_sources():
 def roots_for_browse():
     res = []
     if IS_WIN:
-        for s in list_sources():
+        for s in list_sources(para_origem=False):
             res.append({"name": s["label"], "path": s["path"]})
     else:
         for p in ("/media", "/mnt", "/run/media", os.path.expanduser("~")):
@@ -638,6 +693,7 @@ class App(object):
         self.msg = ""
         self.cfg = {}
         self.maes = []
+        self.maes_auto = []
         self.checagens = []
         self.items = []
         self.ign_dirs = []
@@ -673,6 +729,19 @@ class App(object):
         return self.phase in ("scanning", "copying", "verifying", "finishing")
 
     # ------------------------------------------------------------------ config
+    def identificacao(self):
+        """Cliente, técnico e equipamento do certificado: vêm do cadastro da máquina e do perfil do técnico, nunca digitados no backup."""
+        out = {"cliente": "", "tecnico": "", "equip": ""}
+        try:
+            mid = FICHA.machine_id_cache()
+            st = TERMO.status(mid) if TERMO else {}
+            out["cliente"] = (st.get("terceiro_nome") or "").strip()
+            out["tecnico"] = (PERFIL.ler().get("nome") or st.get("tecnico") or "").strip()
+            out["equip"] = (FICHA.nome_exibicao(mid) or "").strip()
+        except Exception:
+            pass
+        return out
+
     def set_config(self, d):
         if self.busy():
             raise Busy("Aguarde o processo atual terminar.")
@@ -685,14 +754,16 @@ class App(object):
             srcs.append({"path": p, "kind": kind, "letter": (s.get("letter") or "C").strip()[:1].upper() or "C", "label": s.get("label", "")})
         if not srcs:
             raise ValueError("Escolha pelo menos uma origem.")
+        srcs = [s for s in srcs if not any(o is not s and _dentro(s["path"], o["path"]) and s["path"] != o["path"] for o in srcs)]  # pasta dentro de outra origem: já vai junto
         dest = os.path.abspath(os.path.expanduser(d.get("dest", "")))
         if not d.get("dest") or not os.path.isdir(dest):
             raise ValueError("Escolha uma pasta de destino que exista.")
         folder = safe_seg((d.get("folder") or "").strip() or ("Backup_" + socket.gethostname()))
+        ident = self.identificacao()
         self.cfg = {
             "sources": srcs, "dest": dest, "folder": folder,
-            "cliente": (d.get("cliente") or "").strip(), "tecnico": (d.get("tecnico") or "").strip(),
-            "equip": (d.get("equip") or "").strip() or socket.gethostname(),
+            "cliente": ident["cliente"] or (d.get("cliente") or "").strip(), "tecnico": ident["tecnico"] or (d.get("tecnico") or "").strip(),
+            "equip": ident["equip"] or (d.get("equip") or "").strip() or socket.gethostname(),
         }
         self.dest_root = os.path.join(dest, folder)
         self.mapa_dir = os.path.join(self.dest_root, "Mapa")
@@ -981,6 +1052,7 @@ class App(object):
                 raise ValueError("Salve a configuração antes de escanear.")
             self.items = []
             self.maes = []
+            self.maes_auto = []
             self.ign_dirs = []
             self.ign_dirs_total = 0
             self.sweep = None
@@ -1056,6 +1128,11 @@ class App(object):
                         self.scan_info["bytes"] += st.st_size
                     items.extend(self.bookmark_items(plan))
             self.items = items
+            try:  # pastas de origem marcadas sozinhas (nota alta ou já separadas em outra máquina); o técnico revisa na Seleção
+                self.maes_auto = [c["chave"] for c in self.sugestoes_maes() if c["auto"]]
+                self._aplicar_maes(self.maes_auto)
+            except Exception:
+                self.maes_auto = []
             self.phase = "scanned"
             self.log("Escaneamento concluído: %d arquivos, %d pastas ignoradas." % (len(items), self.ign_dirs_total))
         except Cancelled:
@@ -1080,10 +1157,14 @@ class App(object):
         if len(partes) >= 3 and partes[0].lower() in DOCS_DESK:
             sep = "\\" if "\\" in it.raiz else "/"
             return (it.raiz.rstrip(sep) + sep + partes[0] + sep + partes[1], partes[1])
+        if len(partes) >= 2 and parece_nome_proprio(partes[0]):  # pasta com nome próprio direto na pasta do usuário (C:\Users\marci\Wefix)
+            sep = "\\" if "\\" in it.raiz else "/"
+            return (it.raiz.rstrip(sep) + sep + partes[0], partes[0])
         return None
 
     def sugestoes_maes(self):
-        """Pastas que parecem de trabalho, com a % de acerto da sugestão e o porquê."""
+        """Pastas de origem sugeridas (nome próprio ou de trabalho), com a % de acerto da sugestão e o porquê."""
+        mem = memoria_origens()
         cands = {}
         for it in self.items:
             k = self._chave_mae(it)
@@ -1116,19 +1197,48 @@ class App(object):
                 motivos.append("%d tipos de arquivo" % len(c["ext"]))
             if c["n"] >= 20:
                 pct += 8
+            if parece_nome_proprio(c["nome"]):
+                pct += 30
+                motivos.insert(0, "nome próprio")
             if any(p in c["nome"].lower() for p in PESSOAL_NOMES):
                 pct -= 35
                 motivos.append("o nome parece pessoal")
+            m = mem.get(strip_accents(c["nome"].lower()), {})
+            lembrada, recusada = m.get("aceita", 0) > m.get("recusada", 0), m.get("recusada", 0) > m.get("aceita", 0)
+            if lembrada:
+                pct += 25
+                motivos.insert(0, "você já separou em outra máquina")
+            elif recusada:
+                pct -= 25
+                motivos.insert(0, "você não quis separar antes")
             pct = max(5, min(97, pct))
             out.append({"chave": c["chave"], "nome": c["nome"], "n": c["n"], "bytes": c["bytes"], "pct": pct, "motivos": motivos,
-                        "marcada": c["chave"] in self.maes})
+                        "marcada": c["chave"] in self.maes, "auto": lembrada or (pct >= AUTO_ORIGEM and not recusada)})
         out.sort(key=lambda x: (-x["pct"], -x["bytes"]))
         return out[:40]
 
     def set_maes(self, chaves):
-        """Marca as pastas-mãe: tudo dentro delas vai para Pastas_mae/<Nome>/, com a estrutura de dentro preservada."""
+        """Marca as pastas de origem: tudo dentro delas vai para Pastas_origem/<Nome>/, com a estrutura de dentro preservada."""
         if self.busy():
             raise Busy("Aguarde o processo atual terminar.")
+        return self._aplicar_maes(chaves)
+
+    def _lembrar_origens(self):
+        """Na hora de copiar: o que ficou separado conta como aceito; o que veio marcado sozinho e foi desmarcado, como recusado."""
+        try:
+            nomes = {c["chave"]: c["nome"] for c in self.sugestoes_maes()}
+            mem = memoria_origens()
+            for chave, conta in [(c, "aceita") for c in self.maes] + [(c, "recusada") for c in getattr(self, "maes_auto", []) if c not in self.maes]:
+                if chave in nomes:
+                    m = mem.setdefault(strip_accents(nomes[chave].lower()), {"nome": nomes[chave], "aceita": 0, "recusada": 0})
+                    m[conta] = m.get(conta, 0) + 1
+            if mem:
+                with open(_memoria_arq(), "w", encoding="utf-8") as fh:
+                    json.dump(mem, fh, ensure_ascii=False, indent=1)
+        except Exception:
+            pass
+
+    def _aplicar_maes(self, chaves):
         validas = {c["chave"]: c["nome"] for c in self.sugestoes_maes()}
         for it in self.items:  # tudo volta ao lugar de antes
             k = self._chave_mae(it)
@@ -1147,9 +1257,9 @@ class App(object):
         for it in self.items:
             k = self._chave_mae(it)
             if k and k[0] in nomes:
-                it.local = "Pastas_mae/" + nomes[k[0]]
+                it.local = PASTA_ORIGEM + "/" + nomes[k[0]]
                 dentro = [safe_seg(x) for x in re.split(r"[\\/]", it.disp[len(k[0]):]) if x]
-                it.rel = "Pastas_mae/%s/%s" % (nomes[k[0]], "/".join(dentro))
+                it.rel = "%s/%s/%s" % (PASTA_ORIGEM, nomes[k[0]], "/".join(dentro))
         return {"maes": self.maes, "sugestoes": self.sugestoes_maes()}
 
     # ------------------------------------------------------------------ seleção e listas
@@ -1314,6 +1424,8 @@ class App(object):
                 raise ValueError("Não cabe no destino: precisa de %s e há %s livres." % (fmt_bytes(t["sel_bytes"]), fmt_bytes(t["free"])))
             if t["fat32_problema"]:
                 raise ValueError("O destino é FAT32 e há arquivos maiores que 4 GB. Use outro destino ou formate em exFAT/NTFS.")
+            if not retry_only:
+                self._lembrar_origens()
             queue = [it for it in self.items if it.inc and (it.status is None or (retry_only and it.status == "falha"))]
             queue.sort(key=lambda it: PRIORIDADE.index(it.cat) if it.cat in PRIORIDADE else len(PRIORIDADE))  # o essencial primeiro
             self.cancel.clear()
@@ -1730,7 +1842,7 @@ class App(object):
             "pc": cfg["equip"], "data": datetime.date.today().isoformat(), "raiz": self.dest_root, "dstRel": True,
             "verificacao": ("SHA-256 (completa, %s)" % disco.METODO) if self.verified_mode == "completa" else "Tamanho (rápida)",
             "campos": ["origem", "destino_relativo", "categoria", "tamanho_bytes", "data", "situacao", "etiquetas", "usuario", "motivo", "sha256", "mtime_epoch", "causa"],
-            "checagens": self.checagens, "maes": [x for x in sorted({it.local for it in self.items if it.local.startswith("Pastas_mae/")})],
+            "checagens": self.checagens, "maes": [x for x in sorted({it.local for it in self.items if it.local.startswith(PASTA_ORIGEM + "/")})],
             "ign_dirs": self.ign_dirs[:300], "ign_dirs_total": self.ign_dirs_total,
             "versao": VERSION,
         }
@@ -2459,6 +2571,8 @@ class Handler(BaseHTTPRequestHandler):
             p = os.path.join(os.path.abspath(os.path.expanduser(b.get("path", ""))), safe_seg(b.get("name", "")))
             os.makedirs(p, exist_ok=True)
             return {"path": p}
+        if path == "/api/identificacao":
+            return APP.identificacao()
         if path == "/api/preflight":
             return {"checks": APP.preflight()}
         if path == "/api/scan":

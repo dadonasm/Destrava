@@ -2,6 +2,7 @@
 maquinas/*
 !maquinas/LEIA-ME.txt
 consentimentos.log
+pastas_origem.json
 servidor-dados/
 _dev/
 _cache_servidor/

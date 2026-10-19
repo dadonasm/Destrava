@@ -271,6 +271,7 @@ button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-
 .hac .ic{width:44px;height:44px;border-radius:50%;background:var(--btnpri);color:var(--btnpri-tx);display:flex;align-items:center;justify-content:center;margin-bottom:4px}.hac .ic svg{width:22px;height:22px}
 .hac b{font-size:15px}.hac small{font-size:12.5px;color:var(--mut);line-height:1.35}
 .warnbox.pend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border-width:2px}.pend .pic{font-size:30px;line-height:1;color:var(--warn);flex:none}
+.idn{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
 .pcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}.pcols .card{margin-bottom:0}@media (max-width:900px){.pcols{grid-template-columns:1fr}}
 button.pli{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 6px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
 button.pli:hover{background:var(--panel2)}.pli .grow{min-width:0}.pli .cod{display:block}.pli small{display:block;color:var(--mut);font-size:11.5px;text-align:right;margin-top:3px}
@@ -779,7 +780,7 @@ async function certificadoMapa(){
    ${ce.programas_resumo?`<div class="card"><h2>Programas a reinstalar: ${ce.programas_resumo.n||"nenhum"}</h2>${ce.programas_resumo.n?`<p style="margin:0">${ce.programas_resumo.nomes.map(esc).join(" · ")}</p>`:'<p class="mut" style="margin:0">Combinado com o cliente: nenhum programa para reinstalar.</p>'}</div>`:""}
    <div class="card"><h2>O que não foi copiado, por quê e como resolver</h2>${c.grupos.length?c.grupos.map(gr=>`<div class="grp"><div class="gq" style="color:${(SIT[gr.situacao]||["",""])[1]}">${nf(gr.n)}<div class="mut" style="font-weight:400;font-size:12px">${fmt(gr.bytes)}</div></div><div class="grow"><b>${esc((SIT[gr.situacao]||[gr.situacao])[0])}: ${esc(gr.motivo)}</b><div class="sol" style="margin-top:6px;font-size:13px;padding:8px 10px;border-radius:10px;background:var(--panel2);border-left:3px solid var(--azul)"><b>Como resolver:</b> ${esc(gr.resolver)}</div><div class="mut mono" style="font-size:11.5px;margin-top:4px">${gr.exemplos.map(esc).join("<br>")}</div></div></div>`).join(""):'<p class="okbox">Tudo o que existia foi copiado e conferido. Nada se perdeu.</p>'}
     ${(c.sweep.n_novos||c.sweep.n_alterados||c.sweep.n_sumiram)?`<p class="warnbox">Durante o backup: ${c.sweep.n_novos||0} arquivo(s) novo(s), ${c.sweep.n_alterados||0} alterado(s) e ${c.sweep.n_sumiram||0} que sumiram na origem. <b>Como resolver:</b> rode o backup de novo para pegar a versão final.</p>`:""}</div>
-   ${c.maes.length?`<div class="card"><h2>Pastas-mãe separadas</h2><p>${c.maes.map(m=>"📁 "+esc(m.replace("Pastas_mae/",""))).join(" · ")}</p></div>`:""}
+   ${c.maes.length?`<div class="card"><h2>Pastas de origem separadas</h2><p>${c.maes.map(m=>"📁 "+esc(m.replace(/^Pastas_(origem|mae)\//,""))).join(" · ")}</p></div>`:""}
    <div class="card"><h2>Checagens de origem e destino</h2>${c.checagens.length?`<div class="chks">${c.checagens.map(x=>`<div class="chk2 ${x.nivel}"><span class="ci">${ICK[x.nivel]||"·"}</span><div class="grow"><b>${esc(x.titulo)}</b><div class="mut">${esc(x.detalhe)}</div>${x.solucao?`<div class="sol"><b>Como resolver:</b> ${esc(x.solucao)}</div>`:""}</div></div>`).join("")}</div>`:'<p class="mut">Este backup foi feito por uma versão sem o registro das checagens.</p>'}
     ${c.ign_dirs_total?`<p class="mut" style="font-size:12.5px;margin-top:10px">${nf(c.ign_dirs_total)} pastas puladas (sistema, caches e lixeira, que se recriam sozinhas).</p>`:""}</div>`;
   $("#cvolta").onclick=()=>drawMapas();
@@ -1506,7 +1507,7 @@ function dadosFim(a){
 
 /* ================= Backup (jornada) ================= */
 const STEPS=["Origem e destino","Checagens","Seleção","Cópia","Verificação","O que manter","Conclusão"];
-let step=0,S={sources:[],chosen:{},dest:"",folder:"",cliente:"",tecnico:"",equip:""},st=null,timer=null;
+let step=0,S={sources:[],chosen:{},dest:"",folder:""},st=null,timer=null;
 function renderSteps(){
   const el=$("#steps");if(view!=="backup"){el.innerHTML="";return}
   el.innerHTML=`<div class="jn done" title="Termo aceito"><span class="c">✓</span>Termo</div>`+STEPS.map((t,i)=>`<div class="jn ${i===step?"on":i<step?"done":""}" ${i===step?'aria-current="step"':""}><span class="c">${i<step?"✓":i+1}</span>${esc(t)}</div>`).join("");
@@ -1543,28 +1544,45 @@ async function draw1(){
   <div class="card"><div class="eyebrow">DESTINO</div><h2>Para onde vai o backup?</h2><p class="h">Qualquer disco ou pasta com espaço. Para poder formatar depois, escolha um disco <b>diferente</b> do que será formatado.</p>
    <div class="row"><input type="text" id="dest" class="grow" value="${esc(S.dest)}" placeholder="Pasta de destino" aria-label="Pasta de destino"><button id="pick">Escolher…</button></div><div id="br"></div><div id="destinfo" class="mut" style="margin-top:6px"></div>
    <label for="folder">Nome da pasta do backup</label><input type="text" id="folder" value="${esc(S.folder||("Backup_"+nome.replace(/[^\w\-]+/g,"_")))}"></div></div>
-  <div class="card"><h2>Identificação <span class="tag">opcional</span></h2><p class="h">Aparece no certificado.</p>
-   <div class="row"><div class="grow"><label for="cli">Cliente</label><input type="text" id="cli" value="${esc(S.cliente||(ownT()?t.status.terceiro_nome||"":""))}"></div><div class="grow"><label for="tec">Técnico</label><input type="text" id="tec" value="${esc(S.tecnico||(PERFIL&&PERFIL.no_certificado.includes("nome")?PERFIL.nome:""))}"></div><div class="grow"><label for="eq">Equipamento</label><input type="text" id="eq" value="${esc(S.equip||nome)}"></div></div></div>
+  <div class="card"><h2>Identificação <span class="tag">do cadastro</span></h2><p class="h">Vem do cadastro da máquina e do seu perfil. Para mudar, edite lá.</p><div id="ident" class="mut">Carregando…</div></div>
   <div class="row"><span class="grow"></span><button class="pri" id="next1">Continuar →</button></div>`;
   drawSrcs();
   $("#folder").oninput=drawFluxo;
   $("#addm").onclick=()=>safe(async()=>{const p=$("#manual").value.trim();if(!p)return;const r=await api("/api/ls?path="+encodeURIComponent(p));
-    S.sources.push({path:r.path,label:r.path,fs:r.fs,kind:r.kind||"folder",users:r.users||[],total:r.total,free:r.free,letter:r.kind==="windows"?"C":""});S.chosen[r.path]=true;$("#manual").value="";drawSrcs()});
+    S.sources.push({path:r.path,label:r.path,fs:r.fs,kind:r.kind||"folder",users:r.users||[],total:r.total,free:r.free,letter:r.kind==="windows"?"C":""});S.chosen[r.path]=true;srcSemRepetir(r.path);$("#manual").value="";drawSrcs()});
   $("#pick").onclick=()=>pickFolder($("#dest"),$("#br"),destInfo);
   $("#dest").oninput=e=>{S.dest=e.target.value;destInfo()};
   $("#next1").onclick=()=>safe(async()=>{
-    S.dest=$("#dest").value.trim();S.folder=$("#folder").value.trim();S.cliente=$("#cli").value.trim();S.tecnico=$("#tec").value.trim();S.equip=$("#eq").value.trim();
+    S.dest=$("#dest").value.trim();S.folder=$("#folder").value.trim();
     const sources=S.sources.filter(s=>S.chosen[s.path]).map(s=>({path:s.path,kind:s.kind,letter:s.letter||"C",label:s.label}));
     if(!sources.length)return toast("Marque pelo menos uma origem.","err");
     if(!S.dest)return toast("Escolha o destino do backup.","err");
-    await api("/api/config",{sources,dest:S.dest,folder:S.folder,cliente:S.cliente,tecnico:S.tecnico,equip:S.equip});go(1)});
-  destInfo();
+    await api("/api/config",{sources,dest:S.dest,folder:S.folder});go(1)});
+  destInfo();identBackup();
+}
+async function identBackup(){
+  const el=$("#ident");if(!el)return;
+  let r;try{r=await api("/api/identificacao",{})}catch(e){el.textContent="Não deu para ler o cadastro: "+e.message;return}
+  const campo=(t,v,vazio)=>`<div><span class="mut" style="font-size:12px">${t}</span><b style="display:block;color:${v?"var(--tx)":"var(--warn)"}">${v?esc(v):"⚠ "+vazio}</b></div>`;
+  el.innerHTML=`<div class="idn">${campo("Cliente (dono da máquina)",r.cliente,"Sem dono cadastrado")}${campo("Técnico",r.tecnico,"Sem nome no seu perfil")}${campo("Equipamento",r.equip,"Sem nome")}</div>
+   <div class="row" style="margin-top:10px"><button class="sm gh" id="idmq">Editar no cadastro da máquina</button><button class="sm gh" id="idpf">Editar meu perfil</button></div>`;
+  $("#idmq").onclick=()=>nav("maq",CTX.t&&CTX.t.mid);$("#idpf").onclick=()=>nav("perfil");
+}
+/* origem dentro de outra origem marcada: os arquivos iriam duas vezes */
+const srcNorm=p=>{let x=String(p).replace(/\\/g,"/");if(/^[a-z]:/i.test(x))x=x.toLowerCase();return x.endsWith("/")?x:x+"/"};
+function srcSemRepetir(p){
+  const a=srcNorm(p),nome=q=>(S.sources.find(s=>s.path===q)||{}).label||q;
+  const pai=Object.keys(S.chosen).find(q=>S.chosen[q]&&q!==p&&a.startsWith(srcNorm(q)));
+  if(pai){S.chosen[p]=false;return toast(`Não precisa: ${nome(p)} já está dentro de ${nome(pai)}, que está marcado.`)}
+  const filhos=Object.keys(S.chosen).filter(q=>S.chosen[q]&&q!==p&&srcNorm(q).startsWith(a));
+  filhos.forEach(q=>S.chosen[q]=false);
+  if(filhos.length)toast(`Desmarquei ${filhos.map(nome).join(", ")}: já está dentro de ${nome(p)}.`);
 }
 function drawSrcs(){
   $("#srcs").innerHTML=S.sources.map((s,i)=>`<label class="src ${S.chosen[s.path]?"sel":""}"><input type="checkbox" data-i="${i}" ${S.chosen[s.path]?"checked":""}>
    <div class="t"><b>${esc(s.label)} ${s.kind==="windows"?'<span class="tag win">Windows</span>':s.kind==="linux"?'<span class="tag lin">Linux</span>':'<span class="tag">pasta</span>'} ${s.fs?`<span class="tag">${esc(s.fs)}</span>`:""}</b><span>${esc(s.path)} · ${fmt(s.total-s.free)} usados de ${fmt(s.total)}${s.users&&s.users.length?" · usuários: "+esc(s.users.join(", ")):""}</span></div>
    ${s.kind==="windows"?`<div class="mut" style="font-size:12px">Letra<br><input type="text" class="l" data-l="${i}" value="${esc(s.letter||"C")}" maxlength="1" aria-label="Letra do disco"></div>`:""}</label>`).join("")||'<p class="mut">Nenhum disco encontrado. Digite o caminho abaixo.</p>';
-  $$("#srcs input[type=checkbox]").forEach(c=>c.onchange=()=>{S.chosen[S.sources[+c.dataset.i].path]=c.checked;drawSrcs()});
+  $$("#srcs input[type=checkbox]").forEach(c=>c.onchange=()=>{const p=S.sources[+c.dataset.i].path;S.chosen[p]=c.checked;if(c.checked)srcSemRepetir(p);drawSrcs()});
   $$("#srcs input.l").forEach(c=>{c.onclick=e=>e.stopPropagation();c.oninput=()=>{S.sources[+c.dataset.l].letter=c.value.toUpperCase()}});
   drawFluxo();
 }
@@ -1641,7 +1659,7 @@ async function draw3(){
   const tot=cats.reduce((a,c)=>({n:a.n+c.n,b:a.b+c.bytes}),{n:0,b:0});
   const rv=g.acts.revisar||{n:0,bytes:0};tot.n+=rv.n;tot.b+=rv.bytes;
   const nv=cats.find(c=>c.cat==="Nuvem")||{n:0,bytes:0,sel_bytes:0};
-  const locs={};g.groups.forEach(x=>{const k=x.local.startsWith("Pastas_mae/")?x.local:x.local.split("/")[0];const o=locs[k]=locs[k]||{n:0,b:0,sn:0,sb:0};o.n+=x.n;o.b+=x.bytes;o.sn+=x.sel_n;o.sb+=x.sel_bytes});
+  const locs={};g.groups.forEach(x=>{const k=/^Pastas_(origem|mae)\//.test(x.local)?x.local:x.local.split("/")[0];const o=locs[k]=locs[k]||{n:0,b:0,sn:0,sb:0};o.n+=x.n;o.b+=x.bytes;o.sn+=x.sel_n;o.sb+=x.sel_bytes});
   const pdest=t.free?t.sel_bytes/t.free*100:100;
   const corPct=p=>p>=75?"var(--ok)":p>=45?"var(--warn)":"var(--err)";
   $("#main").innerHTML=`<div class="ptitle"><h1>O que vai para o backup</h1><p>Tudo o que existe nesta máquina, por categoria. Você escolhe — o que não for marcado fica registrado no Mapa e no certificado.</p></div>
@@ -1655,10 +1673,10 @@ async function draw3(){
     ${rv.n?`<div class="catc"><div class="ct"><span style="font-size:20px">❓</span><b>Tipo desconhecido</b></div><div class="cn">${nf(rv.n)} arquivos · ${fmt(rv.bytes)} · copiados por segurança</div><div class="row"><button class="sm gh" data-va="revisar">Ver lista</button><button class="sm" id="revall">Marcar todos</button></div></div>`:""}</div>
     <p class="mut" style="font-size:12.5px;margin:12px 0 0">${nf(g.ign_dirs_total)} pastas puladas (sistema, caches e lixeira, que se recriam sozinhas). <button class="sm gh" id="vdirs">Ver quais</button></p>
     <div class="row" style="margin-top:10px"><button class="sm" id="vtodos">Ver todos os arquivos</button><button class="sm gh" data-va="ignorar">Ver o que não vai (do sistema)</button></div></div>
-  <div class="card"><h2>Usuários e grupos</h2><p class="h">Cada pessoa da máquina, o WhatsApp e as pastas-mãe ficam separados no backup.</p><div class="catg">${Object.keys(locs).sort().map(k=>{const o=locs[k],p=o.b?o.sb/o.b*100:0,nome=k.startsWith("Pastas_mae/")?"📁 "+k.slice(11):k==="WhatsApp"?"💬 WhatsApp":"👤 "+k;
+  <div class="card"><h2>Usuários e grupos</h2><p class="h">Cada pessoa da máquina, o WhatsApp e as pastas de origem ficam separados no backup.</p><div class="catg">${Object.keys(locs).sort().map(k=>{const o=locs[k],p=o.b?o.sb/o.b*100:0,nome=/^Pastas_(origem|mae)\//.test(k)?"📁 "+k.replace(/^Pastas_(origem|mae)\//,""):k==="WhatsApp"?"💬 WhatsApp":"👤 "+k;
     return `<div class="catc ${o.sn?"":"off"}"><div class="ct"><b>${esc(nome)}</b><label class="tg" aria-label="${esc(nome)}"><input type="checkbox" data-l="${esc(k)}" ${o.sn===o.n?"checked":""} data-ind="${o.sn&&o.sn<o.n?1:0}"><s></s></label></div><div class="cb2"><div class="cn">${nf(o.sn)} de ${nf(o.n)}<br><b style="color:var(--tx)">${fmt(o.sb)}</b> de ${fmt(o.b)}</div>${arco(p)}</div><button class="sm gh" data-vl="${esc(k)}" data-vn="${esc(nome.replace(/^\S+ /,""))}" style="align-self:flex-start">Ver lista</button></div>`}).join("")}</div></div>
-  <div class="card maes"><h2>Pastas-mãe (trabalho)</h2><p class="h">Pastas que parecem de trabalho vão inteiras para <b>Pastas_mae/</b>, sem misturar com o pessoal. A % é a minha confiança na sugestão; você decide.</p>
-   ${M.sugestoes.length?M.sugestoes.map(m=>`<label class="mae" style="color:var(--tx);font-size:inherit;margin:0;cursor:pointer"><input type="checkbox" class="mck" value="${esc(m.chave)}" ${m.marcada?"checked":""} style="margin-top:4px"><span class="pctb" style="background:${corPct(m.pct)}">${m.pct}%</span><span class="grow"><b>${esc(m.nome)}</b> <span class="mut">· ${nf(m.n)} arquivos · ${fmt(m.bytes)}</span><br><span class="mut mono" style="font-size:11.5px">${esc(m.chave)}</span>${m.motivos.length?`<br><span class="mut" style="font-size:12.5px">${esc(m.motivos.join(" · "))}</span>`:""}</span></label>`).join("")+'<div class="row" style="margin-top:10px"><button class="pri" id="maeok">Aplicar pastas-mãe</button><span class="mut" style="font-size:12.5px">Marque as que são de trabalho e aplique.</span></div>':'<p class="mut">Nenhuma pasta com cara de trabalho encontrada.</p>'}</div>
+  <div class="card maes"><h2>Pastas de origem</h2><p class="h">Pastas com nome próprio ou de trabalho (ex.: Wefix) vão inteiras para <b>Pastas_origem/</b>, separadas da pasta do usuário. Já marquei as de maior confiança e as que você separou em outras máquinas; revise antes de copiar. A % é a minha confiança.</p>
+   ${M.sugestoes.length?M.sugestoes.map(m=>`<label class="mae" style="color:var(--tx);font-size:inherit;margin:0;cursor:pointer"><input type="checkbox" class="mck" value="${esc(m.chave)}" ${m.marcada?"checked":""} style="margin-top:4px"><span class="pctb" style="background:${corPct(m.pct)}">${m.pct}%</span><span class="grow"><b>${esc(m.nome)}</b>${m.auto?' <span class="badge b-ok">marcada sozinha</span>':""} <span class="mut">· ${nf(m.n)} arquivos · ${fmt(m.bytes)}</span><br><span class="mut mono" style="font-size:11.5px">veio de ${esc(m.chave)}</span>${m.motivos.length?`<br><span class="mut" style="font-size:12.5px">${esc(m.motivos.join(" · "))}</span>`:""}</span></label>`).join("")+'<div class="row" style="margin-top:10px"><button class="pri" id="maeok">Aplicar pastas de origem</button><span class="mut" style="font-size:12.5px">Desmarque o que não deve ficar separado e aplique.</span></div>':'<p class="mut">Nenhuma pasta com nome próprio ou de trabalho encontrada.</p>'}</div>
   </div>
   <aside class="side card" id="tot" aria-label="Resumo da seleção"></aside></div>`;
   $$("[data-c],[data-l]").forEach(c=>{if(c.dataset.ind==="1")c.indeterminate=true;c.onchange=()=>safe(async()=>{await api("/api/select",{filter:c.dataset.c?{cat:c.dataset.c,act:""}:{local:c.dataset.l,act:""},on:c.checked});draw3()})});
@@ -1667,7 +1685,7 @@ async function draw3(){
   $$("[data-vl]").forEach(b=>b.onclick=()=>abrirLista({local:b.dataset.vl},b.dataset.vn));
   $("#vtodos").onclick=()=>abrirLista({},"");
   const ra=$("#revall");if(ra)ra.onclick=()=>safe(async()=>{await api("/api/select",{filter:{act:"revisar"},on:true});draw3()});
-  const mo=$("#maeok");if(mo)mo.onclick=()=>safe(async()=>{await api("/api/maes",{chaves:$$(".mck:checked").map(x=>x.value)});toast("Pastas-mãe aplicadas.","ok");draw3()});
+  const mo=$("#maeok");if(mo)mo.onclick=()=>safe(async()=>{await api("/api/maes",{chaves:$$(".mck:checked").map(x=>x.value)});toast("Pastas de origem aplicadas.","ok");draw3()});
   $("#vdirs").onclick=()=>safe(async()=>{const r=await api("/api/left");modalHtml("Pastas puladas",`<div class="mono" style="max-height:60vh;overflow:auto">${r.ign_dirs.map(d=>`<div><b>${esc(d[0])}</b><br><span class="mut">${esc(d[1])}</span></div>`).join("<br>")}</div>`)});
   drawTot(t);
 }
