@@ -1287,6 +1287,18 @@ function drawOS(){
   $("#main").innerHTML=`<div class="card empty"><div class="eyebrow">ORDEM DE SERVIÇO</div><h2>Em breve</h2><p>Por enquanto tudo fica registrado por máquina: dono, contato, notas e histórico ficam na aba <b>Máquinas</b>.</p><button class="pri" id="osmq">Ir para Máquinas</button></div>`;
   $("#osmq").onclick=()=>nav("maq");
 }
+/* ================= Dados (gerenciamento de espaço) ================= */
+let DT=null;const DS={tab:"verde",sel:new Set(),init:false,q:"",modo:"limpar",usr:"",usrAtual:"",exp:null,expT:null,marc:{}};
+const ZN={verde:["Limpeza imediata","Zero risco: o sistema ou o app recria sozinho."],ambar:["Arquivos parados","Valor para você: backup antes de remover, e a decisão é sua."],vermelha:["Bloqueado","Sistema, bibliotecas de apps e credenciais: dá para ver o que tem dentro, mas nunca limpar por aqui."]};
+async function drawDados(){
+  setWide(false);clearInterval(DT);DS.exp=null;clearTimeout(DS.expT);
+  const e=await api("/api/dados/estado");
+  if(view!=="dados")return;
+  if(e.acao&&e.acao.rodando)return dadosAcao();
+  if(e.fase==="varrendo")return dadosVarrendo();
+  if(e.fase==="pronto"||e.fase==="cancelado"||e.n_itens)return dadosResultado(e);  // n_itens: marcados ao explorar, mesmo sem varredura
+  dadosIntro(e);
+}
 async function dadosIntro(e){
   const p=await api("/api/permissoes");
   $("#main").innerHTML=`<div class="card"><div class="row" style="gap:16px;align-items:flex-start"><div style="width:54px;height:54px;border-radius:16px;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--acc);flex:none"><span style="width:28px;height:28px;display:block">${ic("dados")}</span></div>

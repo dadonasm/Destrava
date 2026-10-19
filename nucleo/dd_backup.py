@@ -175,6 +175,16 @@ def lp(p):
     return p
 
 
+def e_link(p):
+    """Symlink ou junção: no Windows o os.path.islink não pega junção (ex.: "Todos os Usuários", "Documents and Settings")."""
+    try:
+        if os.path.islink(p) or (hasattr(os.path, "isjunction") and os.path.isjunction(p)):
+            return True
+        return IS_WIN and bool(getattr(os.lstat(p), "st_file_attributes", 0) & 0x400)
+    except OSError:
+        return False
+
+
 def strip_accents(s):
     return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
 
@@ -470,7 +480,7 @@ def detect_kind(p):
         try:
             for n in sorted(os.listdir(os.path.join(p, names.get("users", "Users")))):
                 up = os.path.join(p, names.get("users", "Users"), n)
-                if os.path.isdir(up) and not os.path.islink(up) and n.lower() not in IGN_WIN_USERS and not re.match(r"^defaultuser\d+$", n, re.I):
+                if os.path.isdir(up) and not e_link(up) and n.lower() not in IGN_WIN_USERS and not re.match(r"^defaultuser\d+$", n, re.I):
                     users.append(n)
         except OSError:
             pass
@@ -478,7 +488,7 @@ def detect_kind(p):
     if "home" in names and "etc" in names and "usr" in names:
         try:
             hp = os.path.join(p, names["home"])
-            return "linux", sorted(n for n in os.listdir(hp) if os.path.isdir(os.path.join(hp, n)) and not os.path.islink(os.path.join(hp, n)))
+            return "linux", sorted(n for n in os.listdir(hp) if os.path.isdir(os.path.join(hp, n)) and not e_link(os.path.join(hp, n)))
         except OSError:
             return "linux", []
     return "folder", []
@@ -791,7 +801,7 @@ class App(object):
             if ud:
                 for u in sorted(safe_listdir(os.path.join(root, ud))):
                     up = os.path.join(root, ud, u)
-                    if not os.path.isdir(up) or os.path.islink(up) or u.lower() in IGN_WIN_USERS or re.match(r"^defaultuser\d+$", u, re.I):
+                    if not os.path.isdir(up) or e_link(up) or u.lower() in IGN_WIN_USERS or re.match(r"^defaultuser\d+$", u, re.I):
                         continue
                     if u.lower() == "public":
                         local = "Publico"
@@ -803,7 +813,7 @@ class App(object):
             for n in sorted(safe_listdir(root)):
                 p = os.path.join(root, n)
                 low = n.lower()
-                if os.path.isdir(p) and not os.path.islink(p):
+                if os.path.isdir(p) and not e_link(p):
                     if low in IGN_WIN_ROOT or low.startswith("$") or low in IGN_ANY:
                         if low != "users":
                             self.add_ign("%s:\\%s" % (letter, n), "Sistema operacional / programas instalados")
@@ -817,10 +827,10 @@ class App(object):
             hp = os.path.join(root, "home")
             for u in sorted(safe_listdir(hp)):
                 up = os.path.join(hp, u)
-                if os.path.isdir(up) and not os.path.islink(up):
+                if os.path.isdir(up) and not e_link(up):
                     plans.append((up, u, "/home/" + u, "/", "linuxuser"))
             rp = os.path.join(root, "root")
-            if os.path.isdir(rp) and not os.path.islink(rp):
+            if os.path.isdir(rp) and not e_link(rp):
                 plans.append((rp, "root", "/root", "/", "linuxuser"))
         else:
             base = os.path.basename(root.rstrip("/\\")) or root
@@ -2247,9 +2257,6 @@ class Handler(BaseHTTPRequestHandler):
                 cod = str(e)
                 if cod == "termo":
                     return self._json({"erro": "Aceite o termo de responsabilidade para continuar.", "codigo": "termo"}, 403)
-                esc = cod.split(":", 1)[1] if ":" in cod else ""
-                nm = {k: v for k, v, _ in TERMO.ESCOPOS}.get(esc, esc)
-                return self._json({"erro": "Máquina de terceiros: falta a autorização do cliente para “%s”. Registre na aba OS." % nm, "codigo": "os", "escopo": esc}, 403)
             return self._json({"erro": str(e)}, 403)
         except (Busy, ValueError) as e:
             return self._json({"erro": str(e)}, 400)
