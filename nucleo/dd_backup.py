@@ -2361,6 +2361,11 @@ def atividades():
     elif dst.get("fase") == "varrendo":
         out.append({"id": "dados", "titulo": "Procurando o que pesa", "detalhe": dst.get("atual", ""), "pct": dst.get("pct"),
                     "info": "%d arquivos" % dst.get("arquivos", 0), "tela": "dados"})
+    md = APP.medicao or {}
+    if md.get("rodando"):
+        feito = sum(md.get("grupos", {}).values())
+        out.append({"id": "medicao", "titulo": "Medindo o restante do disco", "pct": md.get("pct", 0), "detalhe": "Windows, programas e caches: só para explicar o espaço usado",
+                    "info": "%s medidos" % fmt_bytes(feito), "tela": "backup"})
     cf = MAPA.CONF
     if cf.get("rodando"):
         out.append({"id": "conferencia", "titulo": "Conferindo o backup no disco", "pct": _pct(cf.get("feitos", 0), cf.get("total", 0)),
@@ -2370,7 +2375,8 @@ def atividades():
         out.append({"id": "envio", "titulo": "Enviando ao servidor", "pct": None, "info": "%d pendente(s)" % len(con.pendentes), "tela": ""})
     fim = {"ficha": {"erro": FT["erro"]}, "backup": {"fase": APP.phase, "erro": bool(APP.error)},
            "dados": {"fase": dst.get("fase", ""), "erros": len(ac.get("erros") or [])},
-           "conferencia": {"diferentes": len(cf.get("diferentes") or []), "faltando": len(cf.get("faltando") or []), "erro": cf.get("erro", "")}}
+           "conferencia": {"diferentes": len(cf.get("diferentes") or []), "faltando": len(cf.get("faltando") or []), "erro": cf.get("erro", "")},
+           "medicao": {"parcial": bool(md.get("parcial")), "feita": bool(md) and not md.get("rodando")}}
     return {"atividades": out, "fim": fim}
 
 

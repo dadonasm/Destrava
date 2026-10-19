@@ -229,6 +229,16 @@ body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{d
 #ilhab .sinal{width:38px;height:38px;flex:none;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;background:rgba(255,255,255,.12)}
 #ilha.ok .sinal{background:#1f7a4d;color:#fff}#ilha.erro .sinal{background:#b3261e;color:#fff}
 #ilha.aberta{border-radius:26px;width:min(440px,calc(100vw - 24px))}
+/* vidro do iPhone/Mac: o que sobe para o cabeçalho vai desfocando e esmaecendo; o logo, o menu e a ilha ficam nítidos por cima */
+#vidro,#vidrob{position:fixed;left:0;right:0;z-index:14;pointer-events:none;-webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6)}
+#vidro{top:0;height:96px;-webkit-mask-image:linear-gradient(#000 45%,transparent);mask-image:linear-gradient(#000 45%,transparent);
+ background:linear-gradient(color-mix(in srgb,var(--bg) 80%,transparent),color-mix(in srgb,var(--bg) 45%,transparent) 55%,transparent)}
+#vidrob{bottom:0;height:150px;display:none;-webkit-mask-image:linear-gradient(transparent,#000 55%);mask-image:linear-gradient(transparent,#000 55%);
+ background:linear-gradient(transparent,color-mix(in srgb,var(--bg) 45%,transparent) 45%,color-mix(in srgb,var(--bg) 80%,transparent))}
+@media (max-width:720px){#vidrob{display:block}}
+@media print{#vidro,#vidrob{display:none}}
+#ilha.reduzida #ilhab{padding:0 10px;gap:0}.anelc{position:relative;width:38px;height:38px;flex:none;display:inline-block}.anelc .anel{width:38px;height:38px;display:block}
+.anelc .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
 #ilhad{padding:2px 18px 16px;display:flex;flex-direction:column;gap:14px}
 .ilt{display:flex;flex-direction:column;gap:6px}.ilt .l1{display:flex;gap:8px;align-items:center;min-width:0}.ilt .ico svg{width:18px;height:18px;display:block}
 .ilt .det{font:11.5px ui-monospace,Menlo,Consolas,monospace;color:#a4a9b6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -371,7 +381,7 @@ button{border-radius:999px}
   <button class="sm" id="hperf" title="Configurações" aria-label="Configurações"></button>
 </header>
 <div class="shell">
-<div id="topo"><aside id="gaveta" aria-label="Menu"></aside><div id="ilha" class="hide"><button id="ilhab" aria-expanded="false" aria-controls="ilhad"></button><div id="ilhad" class="hide"></div></div><button id="ilha2" class="hide" aria-label="Mais atividades rodando"></button></div><span id="ilhavivo" class="sr" aria-live="polite"></span>
+<div id="vidro" aria-hidden="true"></div><div id="vidrob" aria-hidden="true"></div><div id="topo"><aside id="gaveta" aria-label="Menu"></aside><div id="ilha" class="hide"><button id="ilhab" aria-expanded="false" aria-controls="ilhad"></button><div id="ilhad" class="hide"></div></div><button id="ilha2" class="hide" aria-label="Mais atividades rodando"></button></div><span id="ilhavivo" class="sr" aria-live="polite"></span>
 <div class="content"><div class="journey hide" id="steps"></div>
 <main id="main"></main></div>
 </div>
@@ -1250,16 +1260,19 @@ function wireReg(g){
 }
 
 /* ---------- "Dynamic Island": o que está rodando agora (análise, backup, Dados, conferência, envios), mesmo olhando outra tela ---------- */
-const ILHA={ativas:[],aberta:false,t:null,aviso:null,ta:null};
-const ILHA_ORD=["backup","ficha","dados","conferencia","envio"];
-const ILHA_IC={backup:"backup",ficha:"cpu",dados:"dados",conferencia:"shield",envio:"up"};
+const ILHA={ativas:[],aberta:false,t:null,aviso:null,ta:null,fixa:false,sobre:false,tc:null,th:null};
+const ILHA_ORD=["backup","medicao","ficha","dados","conferencia","envio"];
+const ILHA_IC={backup:"backup",medicao:"disk",ficha:"cpu",dados:"dados",conferencia:"shield",envio:"up"};
 const ILHA_PASSO={scanning:1,copying:3,verifying:4,finishing:6};
 const ILHA_FIM={
  ficha:f=>f.erro?["erro","A análise falhou"]:["ok","Análise pronta"],
  backup:f=>f.erro||f.fase==="error"?["erro","O backup parou com erro"]:({scanned:["ok","Escaneamento pronto"],copied:["ok","Cópia concluída"],verified:["ok","Verificação concluída"],done:["ok","Mapa e certificado prontos"]})[f.fase]||null,
  dados:f=>f.fase==="erro"||f.erros?["erro","Dados: veja o que não deu certo"]:["ok","Dados: pronto"],
  conferencia:f=>f.erro||f.diferentes||f.faltando?["erro","Conferência: "+((f.diferentes||0)+(f.faltando||0))+" problema(s)"]:["ok","Backup conferido sem diferenças"],
- envio:()=>["ok","Tudo enviado ao servidor"]};
+ envio:()=>["ok","Tudo enviado ao servidor"],
+ medicao:f=>f.feita?["ok",f.parcial?"Disco medido em parte: veja onde está o resto":"Disco medido: veja onde está o resto"]:null};
+/* completa ao começar algo novo; depois reduz (anel + número de processos) e volta a abrir com o mouse por cima */
+function ilhaCheia(ms){ILHA.aberta=true;clearTimeout(ILHA.tc);ILHA.tc=setTimeout(()=>{if(!ILHA.sobre&&!ILHA.fixa){ILHA.aberta=false;ilhaDesenha()}},ms||6000)}
 function ilhaEta(s){s=Math.round(s||0);if(!s)return"";if(s<60)return"menos de 1 min";const h=Math.floor(s/3600),m=Math.round(s%3600/60);return "faltam "+(h?h+"h"+(m?" "+m+"min":""):m+" min")}
 function ilhaAnel(p){const r=15,C=2*Math.PI*r;
   return `<svg class="anel ${p==null?"gira":""}" viewBox="0 0 38 38" aria-hidden="true"><circle cx="19" cy="19" r="${r}" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="4"/><circle cx="19" cy="19" r="${r}" fill="none" stroke="var(--azul)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-(p==null?28:p)/100)).toFixed(1)}" transform="rotate(-90 19 19)"/></svg>`}
@@ -1271,20 +1284,24 @@ async function ilhaPoll(){
   try{r=await api("/api/atividades")}catch(e){ILHA.t=setTimeout(ilhaPoll,5000);return}
   const agora=r.atividades.sort((a,b)=>ILHA_ORD.indexOf(a.id)-ILHA_ORD.indexOf(b.id)),ids=new Set(agora.map(a=>a.id));
   ILHA.ativas.forEach(a=>{if(!ids.has(a.id)){const f=(ILHA_FIM[a.id]||(()=>null))(r.fim[a.id]||{});if(f)ilhaAviso(f[0],f[1])}});
-  agora.forEach(a=>{if(!ILHA.ativas.some(b=>b.id===a.id))ilhaVivo(a.titulo)});
-  ILHA.ativas=agora;ilhaDesenha();
+  const novas=agora.filter(a=>!ILHA.ativas.some(b=>b.id===a.id));
+  novas.forEach(a=>ilhaVivo(a.titulo));
+  ILHA.ativas=agora;if(novas.length)ilhaCheia();ilhaDesenha();
   ILHA.t=setTimeout(ilhaPoll,agora.length?1000:4000);
 }
 function ilhaDesenha(){
   const el=$("#ilha"),b=$("#ilhab"),e2=$("#ilha2"),d=$("#ilhad");if(!el)return;
   const a=ILHA.ativas[0],av=ILHA.aviso;
-  if(!a)ILHA.aberta=false;
-  el.classList.toggle("hide",!a&&!av);e2.classList.toggle("hide",ILHA.ativas.length<2);e2.textContent="+"+(ILHA.ativas.length-1);
+  if(!a){ILHA.aberta=false;ILHA.fixa=false}
+  const mini=!!a&&!av&&!ILHA.aberta,n=ILHA.ativas.length;
+  el.classList.toggle("hide",!a&&!av);el.classList.toggle("reduzida",mini);e2.classList.add("hide");
   el.classList.toggle("ok",!!av&&av.tipo==="ok");el.classList.toggle("erro",!!av&&av.tipo==="erro");
   if(av)b.innerHTML=`<span class="sinal">${av.tipo==="ok"?"✓":"✕"}</span><span class="txt"><b>${esc(av.texto)}</b></span>`;  // o aviso de fim passa na frente por 6 s
-  else if(a)b.innerHTML=`${ilhaAnel(a.pct)}<span class="txt"><b>${esc(ilhaTitulo(a))}</b>${a.pct!=null?" "+a.pct+"%":""}</span>${a.eta||a.info?`<span class="eta">${esc(a.eta?ilhaEta(a.eta):a.info)}</span>`:""}`;
+  else if(mini)b.innerHTML=`<span class="anelc">${ilhaAnel(a.pct)}<b class="num">${n}</b></span>`;
+  else if(a)b.innerHTML=`${ilhaAnel(a.pct)}<span class="txt"><b>${esc(ilhaTitulo(a))}</b>${a.pct!=null?" "+a.pct+"%":""}</span>${n>1?`<span class="eta">+${n-1}</span>`:a.eta||a.info?`<span class="eta">${esc(a.eta?ilhaEta(a.eta):a.info)}</span>`:""}`;
   b.setAttribute("aria-expanded",ILHA.aberta);b.disabled=!a;
-  b.setAttribute("aria-label",a?ILHA.ativas.map(x=>ilhaTitulo(x)+(x.pct!=null?" "+x.pct+"%":"")).join("; ")+". Mostrar detalhes":av?av.texto:"");
+  b.setAttribute("aria-label",a?(n>1?n+" processos rodando: ":"")+ILHA.ativas.map(x=>ilhaTitulo(x)+(x.pct!=null?" "+x.pct+"%":"")).join("; ")+". Mostrar detalhes":av?av.texto:"");
+  b.title=mini?ILHA.ativas.map(ilhaTitulo).join(" · "):"";
   el.classList.toggle("aberta",ILHA.aberta);d.classList.toggle("hide",!ILHA.aberta);
   if(!ILHA.aberta)return;
   d.innerHTML=ILHA.ativas.map(x=>`<div class="ilt"><div class="l1"><span class="ico">${ic(ILHA_IC[x.id]||"hist")}</span><b class="grow">${esc(ilhaTitulo(x))}</b><span class="eta">${x.pct!=null?x.pct+"%":""}</span></div>
@@ -1293,13 +1310,17 @@ function ilhaDesenha(){
     ${x.detalhe?`<div class="det" title="${esc(x.detalhe)}">${esc(x.detalhe)}</div>`:""}</div>`).join("");
   $$("[data-ir]",d).forEach(k=>k.onclick=e=>{e.stopPropagation();ilhaIr(k.dataset.ir)});
 }
-function ilhaIr(id){const a=ILHA.ativas.find(x=>x.id===id);ILHA.aberta=false;ilhaDesenha();if(!a)return;
-  if(a.id==="backup")go(ILHA_PASSO[a.fase]!=null?ILHA_PASSO[a.fase]:step);else nav(a.tela)}
+function ilhaIr(id){const a=ILHA.ativas.find(x=>x.id===id);ILHA.aberta=false;ILHA.fixa=false;ilhaDesenha();if(!a)return;
+  if(a.id==="backup")go(ILHA_PASSO[a.fase]!=null?ILHA_PASSO[a.fase]:step);else if(a.id==="medicao")go(2);else nav(a.tela)}
 function ilhaLigar(){
-  const t=()=>{if(!ILHA.ativas.length)return;ILHA.aberta=!ILHA.aberta;ilhaDesenha()};
-  $("#ilhab").onclick=t;$("#ilha2").onclick=t;
-  document.addEventListener("click",e=>{if(ILHA.aberta&&!e.target.closest("#ilha,#ilha2")){ILHA.aberta=false;ilhaDesenha()}});
-  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&ILHA.aberta){ILHA.aberta=false;ilhaDesenha();$("#ilhab").focus()}});
+  const el=$("#ilha"),fecha=()=>{ILHA.fixa=false;ILHA.aberta=false;ilhaDesenha()};
+  $("#ilhab").onclick=()=>{if(!ILHA.ativas.length)return;ILHA.fixa=!ILHA.fixa;ILHA.aberta=ILHA.fixa||ILHA.sobre;clearTimeout(ILHA.tc);ilhaDesenha()};  // clique/toque fixa
+  el.addEventListener("mouseenter",()=>{ILHA.sobre=true;clearTimeout(ILHA.th);ILHA.th=setTimeout(()=>{if(ILHA.ativas.length&&!ILHA.aberta){ILHA.aberta=true;ilhaDesenha()}},120)});
+  el.addEventListener("mouseleave",()=>{ILHA.sobre=false;clearTimeout(ILHA.th);ILHA.th=setTimeout(()=>{if(!ILHA.fixa&&ILHA.aberta){ILHA.aberta=false;ilhaDesenha()}},350)});
+  el.addEventListener("focusin",()=>{if(ILHA.ativas.length&&!ILHA.aberta){ILHA.aberta=true;ilhaDesenha()}});
+  el.addEventListener("focusout",e=>{if(!el.contains(e.relatedTarget)&&!ILHA.fixa&&!ILHA.sobre){ILHA.aberta=false;ilhaDesenha()}});
+  document.addEventListener("click",e=>{if(ILHA.aberta&&!e.target.closest("#ilha,#ilha2"))fecha()});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&ILHA.aberta){fecha();$("#ilhab").focus()}});
   ilhaPoll();
 }
 

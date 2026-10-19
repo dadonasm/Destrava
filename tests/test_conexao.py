@@ -41,6 +41,21 @@ class Conexao(unittest.TestCase):
             dd_backup.registrar_erro("conexão")
         self.assertEqual(self.log(), "")
 
+    def test_medicao_aparece_na_ilha(self):
+        salvo = dd_backup.APP.medicao
+        try:
+            dd_backup.APP.medicao = {"rodando": True, "pct": 40, "grupos": {"Windows e programas": 1024 ** 3}, "parcial": False}
+            r = dd_backup.atividades()
+            m = next(a for a in r["atividades"] if a["id"] == "medicao")
+            self.assertEqual((m["pct"], m["titulo"]), (40, "Medindo o restante do disco"))
+            self.assertIn("1,00 GB", m["info"])
+            dd_backup.APP.medicao["rodando"] = False
+            r = dd_backup.atividades()
+            self.assertFalse(any(a["id"] == "medicao" for a in r["atividades"]))
+            self.assertEqual(r["fim"]["medicao"], {"parcial": False, "feita": True})
+        finally:
+            dd_backup.APP.medicao = salvo
+
     def test_fila_de_conexoes_maior(self):
         self.assertGreaterEqual(dd_backup.Servidor.request_queue_size, 64)
 
