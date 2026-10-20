@@ -35,8 +35,13 @@ class PaginaInteira(unittest.TestCase):
             m = re.search(r'\b%s:\["(pessoal|decide|sistema)","([^"]+)","([^"]*)","([^"]+)"\]' % cat, info)
             self.assertTrue(m, "categoria sem explicação: " + cat)
 
+    def test_perfil_da_maquina_em_abas(self):
+        self.assertIn('const PABAS=[["geral","Visão geral"],["otim","Otimização"],["diag","Diagnóstico"],["hist","Histórico e backups"]]', self.js)
+        for aba in ("otim", "geral", "hist"):
+            self.assertIn('data-aba="%s"' % aba, self.js, "algum bloco vai para a aba " + aba)
+
     def test_funcoes_chamadas_existem(self):
-        chamadas = set(re.findall(r"\b((?:draw|lst|dados|mq|ilha)[A-Z][A-Za-z0-9_]*|retomarBackup|encerrarIncompleto|catCartao|catEspecial|locNome|medicaoCard[A-Za-z0-9_]*)\(", self.js))
+        chamadas = set(re.findall(r"\b((?:draw|lst|dados|mq|ilha)[A-Z][A-Za-z0-9_]*|retomarBackup|encerrarIncompleto|catCartao|catEspecial|locNome|medicaoCard|perfilAbas|showRes5|fixTexto[A-Za-z0-9_]*)\(", self.js))
         self.assertEqual(sorted(chamadas - self.definidos), [], "função chamada que não existe na página")
 
 

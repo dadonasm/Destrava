@@ -303,6 +303,7 @@ button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-
 .fgrid{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden}.fgr{border-top:1px solid var(--line)}.fgr:first-child{border-top:0}
 .fgh{display:flex;gap:14px;align-items:center;width:100%;text-align:left;border:0;border-radius:0;background:transparent;padding:10px 14px;font-size:14px}.fgh:hover{background:var(--panel2)}.fgh .chev{width:12px;color:var(--mut)}
 .fgl{padding:4px 14px 12px 40px;max-height:320px;overflow:auto}.fgi{font-size:12px;padding:2px 0;word-break:break-all}
+.pabas{margin:0 0 14px}.pabas .tb{font-size:14px;padding:8px 16px}.pabas .tb .n{background:var(--azul);color:#fff;opacity:1;border-radius:99px;padding:0 7px;font-weight:700}
 .pcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}.pcols .card{margin-bottom:0}@media (max-width:900px){.pcols{grid-template-columns:1fr}}
 button.pli{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 6px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
 button.pli:hover{background:var(--panel2)}.pli .grow{min-width:0}.pli .cod{display:block}.pli small{display:block;color:var(--mut);font-size:11.5px;text-align:right;margin-top:3px}
@@ -746,7 +747,7 @@ function drawApresentacao(r,est,p){
    ["dados","Otimizar e liberar espaço","Acha o que pesa e limpa com o seu sim.",()=>nav("dados")],
    ["maq","Máquinas e clientes","Dono, contato, notas e histórico de cada máquina.",()=>nav("maq",{})],
    ["mapa","Abrir um Mapa","O que foi copiado, com busca e o certificado.",()=>nav("mapas")],
-   ["gear","Configurações","Permissões do sistema e seus dados de técnico.",()=>nav("perfil")]];
+   ["refresh","Otimizar o desempenho","Programas ao ligar, memória e disco, com o ganho de cada ajuste e desfazer.",()=>{PERFIL_ABA="otim";nav("maq",CTX.t&&CTX.t.mid)}]];
   const lin=(m,txt)=>`<button class="pli" data-mid="${esc(m.mid)}"><span class="grow"><b>${nomeM(m)}</b>${m.dono_nome?`<span style="display:block;font-size:13px">${esc(m.dono_nome)}</span>`:""}<span class="cod">${esc(m.mid)}</span>${txt?`<span class="pd">⚠ ${esc(txt)}</span>`:""}</span><span>${seloEt(m.etapa,m.etapa_nome)}<small>${dataBR(m.ultimo)}</small></span></button>`;
   $("#main").innerHTML=`<div class="ptitle"><h1>Destrava!</h1><p>Backup conferido, máquina mais rápida e tudo registrado por máquina. Clique em qualquer item.</p></div>
    ${est.erro?`<div class="errbox">A última análise falhou: ${esc(est.erro)}</div>`:""}
@@ -855,7 +856,7 @@ function otimHtml(a,r,atual){
   const todas=a.otimizacoes||[],res=a.otim_resumo||{},filtro=lsGet("dd_otim","rec");
   const ini=todas.filter(s=>s.categoria==="Inicialização");
   const outras=todas.filter(s=>s.categoria!=="Inicialização"&&(filtro==="todas"||s.recomendado||!s.aplicavel&&s.botao));
-  let h=`<div class="card" id="otim"><div class="row"><h2 class="grow" style="margin:0">Otimizações</h2><div class="tabs" role="tablist" style="margin:0">${[["rec","Recomendadas"],["todas","Todas"]].map(t=>`<button class="tb ${filtro===t[0]?"on":""}" data-of="${t[0]}" role="tab">${t[1]}</button>`).join("")}</div></div>
+  let h=`<div class="card" id="otim" data-aba="otim"><div class="row"><h2 class="grow" style="margin:0">Otimizações</h2><div class="tabs" role="tablist" style="margin:0">${[["rec","Recomendadas"],["todas","Todas"]].map(t=>`<button class="tb ${filtro===t[0]?"on":""}" data-of="${t[0]}" role="tab">${t[1]}</button>`).join("")}</div></div>
    <p class="h">${res.n?`<b>${res.n}</b> recomendada(s)${res.pontos?` · até <b>+${res.pontos} pontos</b>`:""}. `:""}Cada item mostra o ganho; ⚠ indica um ônus (passe o mouse ou toque). Vêm marcadas só as recomendadas sem ônus.</p>`;
   if(ini.length){
     h+=`<h3 style="margin:14px 0 4px">Inicialização</h3><p class="mut" style="font-size:12.5px;margin:0 0 6px">O mesmo que o Gerenciador de Tarefas mostra. O interruptor liga ou desliga na hora (reversível).</p>
@@ -933,23 +934,23 @@ function renderFicha(r,atual){
    ${atual?`<div class="row" style="margin-top:10px"><button class="sm" id="exp">Exportar dados para suporte</button><span class="mut" style="font-size:12px">Grava a coleta desta análise num arquivo na Área de Trabalho, para reproduzir e investigar em outro computador.</span></div>`:""}</details></div>`;
   // pesados agora
   const ph=u.pesados||[],mx=Math.max(1,...ph.map(x=>x.ram_mb));
-  h+=`<div class="card"><h2>Quem pesa na máquina agora</h2><p class="h"><b>${a.pesados_n}</b> programa(s) pesado(s) (${esc(a.pesados_limite)}). ${a.inicio_n?`<b>${a.inicio_n}</b> iniciam junto com o sistema: veja em Otimizações › Inicialização.`:""}</p>
+  h+=`<div class="card" data-aba="otim"><h2>Quem pesa na máquina agora</h2><p class="h"><b>${a.pesados_n}</b> programa(s) pesado(s) (${esc(a.pesados_limite)}). ${a.inicio_n?`<b>${a.inicio_n}</b> iniciam junto com o sistema: veja em Otimizações › Inicialização.`:""}</p>
    <table><tr><th>Programa</th><th style="width:90px">RAM</th><th style="width:40%"></th></tr>${ph.slice(0,10).map(x=>`<tr><td>${esc(x.nome)}${x.instancias>1?` <span class="mut">×${x.instancias}</span>`:""}</td><td>${x.ram_mb} MB</td><td><div class="mini"><i style="width:${x.ram_mb/mx*100}%;background:var(--acc)"></i></div></td></tr>`).join("")}</table></div>`;
   h+=progCard(v,u);
   // SO ideal
   h+=`<div class="card"><h2>Sistema ideal para esta máquina</h2><p class="h">Nota estimada para o sistema recém-instalado, com o hardware atual. É uma projeção, não uma garantia.</p><div class="ossel">${a.sistemas.map(s=>`<div class="os ${s.compativel?"":"bad"} ${s.melhor_nota?"best":""}"><div class="sc" style="color:${COR(s.nota)};border-color:${COR(s.nota)}">${s.nota}</div><div><h4>${esc(s.nome)}</h4>
     ${s.melhor_nota?'<span class="badge b-gold">MELHOR NOTA</span>':""}${s.melhor_windows?'<span class="badge b-ok">MELHOR MANTENDO PROGRAMAS WINDOWS</span>':""}${s.compativel?"":'<span class="badge b-bad">NÃO COMPATÍVEL</span>'}
     <small>${esc(s.obs)}</small>${(s.motivos||[]).map(m=>`<small>• ${esc(m)}</small>`).join("")}</div></div>`).join("")}</div></div>`;
-  if(a.cenarios.length)h+=`<div class="card"><h2>E se…?</h2><p class="h">Quanto a nota sobe com cada melhoria (estimativa).</p>
+  if(a.cenarios.length)h+=`<div class="card" data-aba="otim"><h2>E se…?</h2><p class="h">Quanto a nota sobe com cada melhoria (estimativa).</p>
    <div class="cen"><div class="nm">Hoje</div><div class="bar"><i style="width:${n.geral}%;background:${COR(n.geral)}"></i></div><b>${n.geral}</b></div>
    ${a.cenarios.map(c=>`<div class="cen"><div class="nm">${esc(c.nome)}</div><div class="bar"><i style="width:${c.nota}%;background:${COR(c.nota)}"></i></div><b style="color:${COR(c.nota)}">${c.nota} (+${c.delta})</b></div>`).join("")}</div>`;
   h+=otimHtml(a,r,atual);
   const man=a.dicas.filter(d=>!d.aplicavel);
-  h+=`<div class="card">`;
+  h+=`<div class="card" data-aba="otim">`;
   if(man.length)h+=`<h3 style="margin:0 0 4px">Recomendações para o técnico (hardware e alertas)</h3>${man.map(d=>`<div class="tip"><span style="font-size:18px">${d.tipo==="alerta"?"⚠️":"🔧"}</span><div class="tx"><b>${esc(d.titulo)} <span class="badge ${d.ganho==="crítico"||d.ganho==="alto"?"b-bad":d.ganho==="médio"?"b-warn":"b-mut"}">${esc(d.ganho)}</span></b><span>${esc(d.detalhe)}</span></div></div>`).join("")}`;
   else h+=`<p class="mut" style="margin:0">Nenhuma recomendação de hardware.</p>`;
   h+=`</div><p class="mut" style="font-size:12px;text-align:center">Notas são indicadores comparativos medidos neste momento; variam com o que está aberto e com o estado do sistema. Dados guardados no pendrive (pasta maquinas/${esc(mid)}).</p>
-   <div class="card"><details><summary style="cursor:pointer;font-weight:700">Dados desta máquina no pendrive</summary><p class="h" style="margin-top:8px">Remove fichas, históricos e documentos desta máquina do pendrive (útil ao final do serviço de um cliente). O registro de consentimento é mantido por segurança.</p><button class="dng sm" id="wipe">Remover esta máquina do pendrive…</button></details></div></div>`;
+   <div class="card" data-aba="hist"><details><summary style="cursor:pointer;font-weight:700">Dados desta máquina no pendrive</summary><p class="h" style="margin-top:8px">Remove fichas, históricos e documentos desta máquina do pendrive (útil ao final do serviço de um cliente). O registro de consentimento é mantido por segurança.</p><button class="dng sm" id="wipe">Remover esta máquina do pendrive…</button></details></div></div>`;
   h+=`<aside class="dr ${open?"open":""}" id="dr" aria-label="Histórico da máquina">${drawerHtml(v)}</aside></div>`;
   $("#main").innerHTML=h;
   wireFicha(r,atual,v,mid);
@@ -1212,6 +1213,30 @@ async function drawMaqFicha(mid){
   else{toast("Máquina não encontrada.","err");return drawMaq()}
   $("#vm").onclick=()=>drawMaq();
   if(g)wireReg(g);
+  perfilAbas(r);
+}
+/* perfil da máquina em abas: cada bloco já marcado com data-aba vai para o seu painel (os botões continuam ligados) */
+let PERFIL_ABA=null;
+const PABAS=[["geral","Visão geral"],["otim","Otimização"],["diag","Diagnóstico"],["hist","Histórico e backups"]];
+function perfilAbas(r){
+  const raiz=$("#main .fm")||$("#main"),kids=[...raiz.children],back=kids.find(k=>k.querySelector&&k.querySelector("#vm"));
+  const nRec=r.visao?((r.visao.analise||{}).otim_resumo||{}).n||0:0;
+  const bar=document.createElement("div");bar.className="tabs pabas";bar.setAttribute("role","tablist");bar.setAttribute("aria-label","Partes do perfil da máquina");
+  bar.innerHTML=PABAS.map(([k,t])=>`<button class="tb" role="tab" data-pa="${k}">${t}${k==="otim"&&nRec?`<span class="n">${nRec}</span>`:""}</button>`).join("");
+  const pain={};PABAS.forEach(([k])=>{const d=document.createElement("div");d.dataset.painel=k;d.setAttribute("role","tabpanel");pain[k]=d});
+  kids.forEach(k=>{if(k!==back)pain[(k.dataset&&k.dataset.aba)||"diag"].appendChild(k)});
+  const sem=k=>r.atual?`<div class="card empty"><div class="shield">${ic("cpu")}</div><h2>Esta máquina ainda não foi analisada</h2><p>A análise mede velocidade, memória, disco e o que inicia junto com o sistema, e mostra as otimizações com o ganho de cada uma. Leva de 15 a 60 segundos e só lê.</p><button class="pri" data-anal>Analisar esta máquina</button></div>`
+    :`<div class="card empty"><h2>Sem ${k==="otim"?"otimizações":"diagnóstico"} ainda</h2><p>A análise e a otimização são feitas no computador dela, com o Destrava! aberto lá.</p></div>`;
+  const ot=pain.otim.querySelector("#otim");if(ot)pain.otim.insertBefore(ot,pain.otim.firstChild);  // a lista de otimizações primeiro
+  if(!pain.otim.children.length)pain.otim.innerHTML=sem("otim");
+  else if(!r.atual)pain.otim.insertAdjacentHTML("afterbegin",'<div class="infobox">Somente leitura: só dá para aplicar otimizações no computador em que o Destrava! está aberto.</div>');
+  if(!pain.diag.children.length)pain.diag.innerHTML=sem("diag");
+  const ref=back?back.nextSibling:raiz.firstChild;
+  raiz.insertBefore(bar,ref);PABAS.forEach(([k])=>raiz.insertBefore(pain[k],ref));
+  const mostra=k=>{PERFIL_ABA=k;lsSet("dd_perfil_aba",k);$$("[data-pa]",bar).forEach(b=>{const on=b.dataset.pa===k;b.classList.toggle("on",on);b.setAttribute("aria-selected",on)});PABAS.forEach(([n])=>pain[n].classList.toggle("hide",n!==k))};
+  $$("[data-pa]",bar).forEach(b=>b.onclick=()=>mostra(b.dataset.pa));
+  $$("[data-anal]",raiz).forEach(b=>b.onclick=()=>safe(async()=>{await api("/api/ficha/coletar",{fase:"antes"});HOMEP=true;nav("home")}));
+  mostra(PERFIL_ABA||lsGet("dd_perfil_aba","geral"));PERFIL_ABA=null;
 }
 function regHtml(g){
   const nome=k=>k==="encerrada"?"Encerrado incompleto":(g.etapas.find(e=>e[0]===k)||[k,k])[1],ser=[];
@@ -1219,7 +1244,7 @@ function regHtml(g){
   const feito={};(ser[ser.length-1]||[]).forEach(e=>feito[e.etapa]=e);
   const ent=g.etapa==="entregue"||g.etapa==="encerrada",tel=dig(g.telefone),nbk=(g.historico||[]).filter(e=>e.tipo==="backup").length,rc=g.receita,rv=!!(rc&&rc.valida);
   const dono=`<label for="rgdono">Dono (cliente) ${g.dono==="terceiros"?'<span class="badge b-warn">Terceiros</span>':g.dono==="particular"?'<span class="badge b-mut">Particular</span>':""}</label><input type="text" id="rgdono" autocomplete="off" maxlength="120" placeholder="Nome do cliente, empresa ou pessoa" value="${esc(g.dono_nome)}">`;
-  return `<div class="card"><div class="row" style="align-items:flex-start"><div class="grow"><div class="eyebrow">PERFIL DA MÁQUINA (CLIENTE)</div><h2 style="font-size:22px">${esc(g.modelo||(g.analises?g.nome:"Ainda sem análise"))}</h2>
+  return `<div class="card" data-aba="geral"><div class="row" style="align-items:flex-start"><div class="grow"><div class="eyebrow">PERFIL DA MÁQUINA (CLIENTE)</div><h2 style="font-size:22px">${esc(g.modelo||(g.analises?g.nome:"Ainda sem análise"))}</h2>
     <div class="mut" style="font-size:13px"><span class="cod">${esc(g.mid)}</span>${g.sistema?" · "+esc(g.sistema):""}${g.serie?" · série "+esc(g.serie):""}</div></div>${seloEt(g.etapa,g.etapa_nome)}</div>
    ${g.pendencia?`<div class="warnbox pend"><span class="pic" aria-hidden="true">⚠</span><div class="grow"><b>Pendência:</b> ${esc(g.pendencia)}<div class="mut" style="font-size:12.5px">Dá para voltar de onde parou ou encerrar este processo como incompleto.</div></div>
      <button class="pri" id="rgret">${/backup feito/i.test(g.pendencia)?"Retomar de onde parou":"Iniciar o backup"}</button><button id="rgenc">Encerrar como incompleto</button></div>`:""}
@@ -1235,7 +1260,7 @@ function regHtml(g){
      ${tel?`<p style="margin:8px 0 0"><a href="https://wa.me/${tel.length<=11?"55"+tel:tel}" target="_blank" rel="noopener" style="color:var(--acc)">Abrir conversa no WhatsApp</a></p>`:""}</div>
     <div><h3 style="font-size:15px">Observações</h3><label for="rgobs">Anotações livres sobre a máquina e o cliente (nada de senhas)</label><textarea id="rgobs" maxlength="2000">${esc(g.observacoes)}</textarea></div></div>
    <div id="rgerr"></div><div class="row" style="justify-content:flex-end;margin-top:10px"><button id="rgsave">Salvar dono, contato e observações</button></div></div>
-  <div class="card"><div class="rg2"><div><h3 style="font-size:15px">Etapas de cada serviço</h3><table style="margin-top:8px">${ser.map((s,i)=>`<tr><th colspan="3" style="color:var(--tx)">Serviço ${i+1}${i===ser.length-1&&!ent?" · em andamento":""}</th></tr>${s.map(e=>`<tr><td style="white-space:nowrap">${dataBR(e.quando)}</td><td>${esc(nome(e.etapa))}${e.origem==="importada"?' <span class="mut" style="font-size:11.5px">(histórico antigo)</span>':e.origem==="manual"?' <span class="mut" style="font-size:11.5px">(marcada à mão)</span>':""}</td><td>${esc(e.tecnico||"—")}</td></tr>`).join("")}`).join("")||'<tr><td class="mut">Nada registrado ainda.</td></tr>'}</table></div>
+  <div class="card" data-aba="hist"><div class="rg2"><div><h3 style="font-size:15px">Etapas de cada serviço</h3><table style="margin-top:8px">${ser.map((s,i)=>`<tr><th colspan="3" style="color:var(--tx)">Serviço ${i+1}${i===ser.length-1&&!ent?" · em andamento":""}</th></tr>${s.map(e=>`<tr><td style="white-space:nowrap">${dataBR(e.quando)}</td><td>${esc(nome(e.etapa))}${e.origem==="importada"?' <span class="mut" style="font-size:11.5px">(histórico antigo)</span>':e.origem==="manual"?' <span class="mut" style="font-size:11.5px">(marcada à mão)</span>':""}</td><td>${esc(e.tecnico||"—")}</td></tr>`).join("")}`).join("")||'<tr><td class="mut">Nada registrado ainda.</td></tr>'}</table></div>
    <div><h3 style="font-size:15px">Linha do tempo</h3><div style="max-height:440px;overflow:auto;margin-top:10px;padding:2px 0 0 10px"><div class="tl">${(g.historico||[]).slice().reverse().map(e=>`<div class="ev"><b>${esc(e.resumo)}</b>${e.etapa?` <span class="badge ${ETB[e.etapa]||"b-mut"}">${esc(nome(e.etapa))}</span>`:""}<br><small>${dataBR(e.quando)} · ${esc((e.extra||{}).tecnico||"técnico não registrado")}</small></div>`).join("")||'<p class="mut">Sem eventos ainda.</p>'}</div></div></div></div></div>`;
 }
 /* processo parado: volta ao passo a passo do Backup (recarregando o backup guardado) ou encerra como incompleto */
