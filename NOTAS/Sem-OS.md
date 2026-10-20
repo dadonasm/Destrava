@@ -63,3 +63,13 @@ serviço) travava tudo em máquina de terceiros. Decisão: tirar a OS por enquan
 - WhatsApp por usuário: `local = "WhatsApp (<usuário>)"` e pasta própria no backup.
 - Incluir o que a varredura não lê: `App.incluir_pastas` (categoria `Extras`, caminho original em `Disco_C/Extras/...`, pula pagefile/hiberfil/
   swapfile), `tirar_extras`; a varredura final repassa as pastas incluídas (`extras_planos`). Cada pasta de fora tem explicação (`EXPLICA_PASTA`).
+
+## H. Erros do Windows sem ruído, Otimização nas máquinas e Seleção em grade
+- Print do Windows (`BKP-Pro/Erros/`): milhares de "Acesso negado" no cache do Edge e no `Comms` do Windows, e `Errno 22` nos atalhos de
+  `WindowsApps`. Agora: atalho de aplicativo (`APPEXECLINK`) não entra; falha por permissão/em uso fora do pessoal (`NAO_PESSOAIS`) vira
+  `em_uso` (não é falha, não dá ressalva, fica no Mapa e no certificado em `nao_copiados_em_uso`); Verificação mostra as falhas pessoais primeiro
+  e as de programas agrupadas por programa (`/api/falhas`, `/api/falhas/desmarcar`); dica de permissão certa quando já é administrador.
+- Perfil da máquina em abas (`perfilAbas`, blocos com `data-aba`): Visão geral · Otimização · Diagnóstico · Histórico e backups. Home tem
+  "Otimizar o desempenho" (abre a aba Otimização).
+- Seleção: painel único em grade (`selGrade`/`selCorpo`/`selAtualiza`): abas Por categoria / Por usuário e pasta, filtro por bloco, busca, ordem,
+  grupos recolhíveis, linha com detalhe; marcar atualiza só números (sem redesenhar). Estado em `localStorage` (`dd_sel`).

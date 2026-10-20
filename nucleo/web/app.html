@@ -294,16 +294,32 @@ button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-
 .medbar{display:flex;height:16px;border-radius:99px;overflow:hidden;background:var(--line);margin:10px 0 8px}.medbar i{display:block;height:100%}
 .medleg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px}.medleg span{display:inline-flex;align-items:center;gap:6px}.medleg i{width:10px;height:10px;border-radius:3px;display:inline-block}
 .semcon{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9999;background:#b3261e;color:#fff;padding:12px 16px;border-radius:14px;box-shadow:var(--sh);display:flex;gap:12px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 32px);font-size:14px}.semcon button{background:#fff;color:#b3261e;border:0}
-.cblk{border-radius:18px;padding:12px;margin-top:12px;border:1px solid var(--line)}.cb-pessoal{background:color-mix(in srgb,var(--ok) 7%,transparent)}.cb-decide{background:color-mix(in srgb,var(--warn) 7%,transparent)}.cb-sistema{background:color-mix(in srgb,var(--mut) 6%,transparent)}
-.cbh{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin:0 0 10px}.cbh b{font-size:15.5px}.cbh .mut,.cbh small{font-size:12.5px;color:var(--mut)}
-.catc .oque{font-size:12.5px;line-height:1.35;color:var(--tx)}.catc .cex{font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cinfo{font-size:12.5px}.cinfo summary{cursor:pointer;color:var(--acc);list-style:none;padding:4px 6px}.cinfo p{margin:4px 0 0;color:var(--mut)}
 .mfl{display:flex;flex-direction:column;margin-top:8px;max-height:360px;overflow:auto}.mfr{display:flex;gap:10px;align-items:center;padding:8px 4px;border-top:1px solid var(--line);margin:0;cursor:pointer;color:var(--tx)}
 .mfr b{display:block;font-size:12.5px;word-break:break-all}.mfr small{display:block;color:var(--mut);font-size:12px}.mfr .sz{white-space:nowrap;font-size:13px}.mfr.on{background:color-mix(in srgb,var(--ok) 8%,transparent)}
 .fgrid{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden}.fgr{border-top:1px solid var(--line)}.fgr:first-child{border-top:0}
 .fgh{display:flex;gap:14px;align-items:center;width:100%;text-align:left;border:0;border-radius:0;background:transparent;padding:10px 14px;font-size:14px}.fgh:hover{background:var(--panel2)}.fgh .chev{width:12px;color:var(--mut)}
 .fgl{padding:4px 14px 12px 40px;max-height:320px;overflow:auto}.fgi{font-size:12px;padding:2px 0;word-break:break-all}
 .pabas{margin:0 0 14px}.pabas .tb{font-size:14px;padding:8px 16px}.pabas .tb .n{background:var(--azul);color:#fff;opacity:1;border-radius:99px;padding:0 7px;font-weight:700}
+.sgp{padding:0;overflow:hidden}
+.sg-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 16px 10px}
+.sg-abas{display:flex;gap:2px;background:var(--panel2);border-radius:12px;padding:3px;flex:none}.sg-abas button{border:0;background:transparent;padding:7px 14px;border-radius:9px;font-size:13.5px;box-shadow:none}.sg-abas button.on{background:var(--panel);box-shadow:var(--sh);font-weight:700}
+.sg-chips{display:flex;gap:6px;flex-wrap:wrap}.sg-chip{border:1px solid var(--line);background:transparent;border-radius:99px;padding:5px 12px;font-size:13px;box-shadow:none}.sg-chip span{opacity:.6;margin-left:2px}.sg-chip.on{background:var(--azul);color:#fff;border-color:var(--azul)}.sg-chip.on span{opacity:.85}
+.sg-q{flex:1;min-width:170px;margin:0!important;padding:8px 12px!important;font-size:13.5px!important}.sg-o{width:auto!important;margin:0!important;padding:8px 30px 8px 10px!important;font-size:13px!important}
+.sg-acoes{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 16px 12px;font-size:12.5px}
+.sg-head,.sg-row{display:grid;grid-template-columns:20px minmax(0,2.6fr) 118px 62px 82px minmax(0,1fr) 46px 78px;gap:10px;align-items:center;padding:10px 16px}
+.sg-row [data-sl]{padding:5px 8px;font-size:12.5px;white-space:nowrap}
+.sg-head{font-size:11.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--panel2)}.sg-head button{border:0;background:transparent;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;text-align:left;box-shadow:none;cursor:pointer}.sg-head .sg-num{text-align:right}
+.sg-grp{display:flex;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px;flex-wrap:nowrap}.sg-grp>b{white-space:nowrap}
+.sg-grp>.sg-gd{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sg-grp>.grow{display:none}.sg-grp>.mut:not(.sg-gd){white-space:nowrap}.sg-grp b{font-size:14.5px}.sg-grp:hover{background:var(--panel2)}.sg-chev{width:14px;color:var(--mut)}
+.sg-g-pessoal{box-shadow:inset 4px 0 0 var(--ok)}.sg-g-decide{box-shadow:inset 4px 0 0 var(--warn)}.sg-g-sistema{box-shadow:inset 4px 0 0 var(--mut)}.sg-g-usuario,.sg-g-whats,.sg-g-origem,.sg-g-disco{box-shadow:inset 4px 0 0 var(--azul)}
+.sg-row{border-bottom:1px solid var(--line);font-size:13.5px}.sg-row:hover{background:color-mix(in srgb,var(--azul) 5%,transparent)}.sg-row.off .sg-nome b{color:var(--mut)}
+.sg-x{border:0;background:transparent;padding:2px;color:var(--mut);font-size:12px;box-shadow:none}
+.sg-nome{display:flex;gap:10px;align-items:center;min-width:0}.sg-nome .ic{font-size:20px;line-height:1;flex:none}.sg-nome b{display:block;font-size:14px}.sg-nome small{display:block;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sg-nome small.sg-meta{display:none}
+.sg-num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.sg-bar{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--mut);white-space:nowrap}.sg-bar i{display:block;height:6px;border-radius:99px;background:var(--line);overflow:hidden}.sg-bar i b{display:block;height:100%;background:var(--azul);border-radius:99px}
+.sg-det{padding:4px 16px 14px 62px;font-size:13px;color:var(--mut);border-bottom:1px solid var(--line);background:var(--panel2)}.sg-det p{margin:8px 0 0}.sg-det .chip{font-size:12px}.sg-sub{margin-top:8px;font-size:12.5px}.sg-sub td{padding:4px 10px 4px 0;border:0}
+.sg-pe{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 16px;font-size:12.5px}
+@media (max-width:760px){.sg-head{display:none}.sg-row{grid-template-columns:20px 1fr 50px;gap:8px}.sg-row>.sg-rec,.sg-row>.sg-n,.sg-row>.sg-b,.sg-row>.sg-bar,.sg-row>[data-sl]{display:none}.sg-nome small.sg-meta{display:block}.sg-gd{display:none}.sg-grp{flex-wrap:wrap}.sg-grp>.mut{flex:1}.sg-top{overflow-x:auto;flex-wrap:nowrap}.sg-chips{flex-wrap:nowrap}.sg-det{padding-left:16px}}
 .pcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}.pcols .card{margin-bottom:0}@media (max-width:900px){.pcols{grid-template-columns:1fr}}
 button.pli{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 6px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
 button.pli:hover{background:var(--panel2)}.pli .grow{min-width:0}.pli .cod{display:block}.pli small{display:block;color:var(--mut);font-size:11.5px;text-align:right;margin-top:3px}
@@ -1628,19 +1644,6 @@ const CAT_INFO={
  Temporarios:["sistema","Temporários e arquivos que o sistema recria sozinho.","Não precisam de backup.","Normalmente não"]};
 const CAT_REC={"Levar":"b-ok","Você decide":"b-warn","Normalmente não":"b-mut","Você incluiu":"b-ok"};
 const catBloco=c=>(CAT_INFO[c]||["decide"])[0];
-function catCartao(c){const p=c.bytes?c.sel_bytes/c.bytes*100:0,all=c.sel_n===c.n,inf=CAT_INFO[c.cat]||["decide","",""," Você decide"],nm=CATNAME[c.cat]||c.cat;
-  return `<div class="catc ${c.sel_n?"":"off"}"><div class="ct"><span style="font-size:20px">${CATICO[c.cat]||"📁"}</span><b>${esc(nm)}</b><label class="tg" aria-label="${esc(nm)}"><input type="checkbox" data-c="${esc(c.cat)}" ${all?"checked":""} data-ind="${c.sel_n&&!all?1:0}"><s></s></label></div>
-   <span class="badge ${CAT_REC[inf[3]]||"b-mut"}" style="align-self:flex-start;margin:0">${esc(inf[3])}</span><div class="oque">${esc(inf[1])}</div>
-   <div class="cb2"><div class="cn">${nf(c.sel_n)} de ${nf(c.n)} arquivos<br><b style="color:var(--tx)">${fmt(c.sel_bytes)}</b> de ${fmt(c.bytes)}</div>${arco(p,c.sel_n?"var(--azul)":"var(--trilho)")}</div>
-   ${(c.ex||[]).length?`<div class="cex" title="${esc(c.ex.join(" · "))}">Ex.: ${esc(c.ex.join(" · "))}</div>`:""}
-   <div class="row" style="gap:6px"><button class="sm gh" data-v="${esc(c.cat)}">Ver lista</button>${inf[2]?`<details class="cinfo"><summary>ⓘ Para que serve</summary><p>${esc(inf[2])}</p></details>`:""}</div></div>`}
-function catEspecial(c){const rev=c.cat==="__revisar";
-  return `<div class="catc"><div class="ct"><span style="font-size:20px">${rev?"❓":"🔒"}</span><b>${rev?"Tipo desconhecido":"Do sistema (não vai)"}</b></div>
-   <span class="badge ${rev?"b-warn":"b-mut"}" style="align-self:flex-start;margin:0">${rev?"Você decide":"Normalmente não"}</span>
-   <div class="oque">${rev?"Arquivos de tipo que o programa não reconhece: vão marcados, por segurança.":"Arquivos que o Windows usa e recria (desktop.ini, thumbs.db, arquivos em uso): não vão."}</div>
-   <div class="cn">${nf(c.n)} arquivos · ${fmt(c.bytes)}${c.sel_n?" · "+nf(c.sel_n)+" marcados":""}</div>
-   ${(c.ex||[]).length?`<div class="cex" title="${esc(c.ex.join(" · "))}">Ex.: ${esc(c.ex.join(" · "))}</div>`:""}
-   <div class="row" style="gap:6px"><button class="sm gh" data-va="${rev?"revisar":"ignorar"}">Ver lista</button>${rev?'<button class="sm" id="revall">Marcar todos</button>':""}</div></div>`}
 
 /* seletor de pasta reutilizável */
 async function pickFolder(input,box,onUse,start){
@@ -1781,43 +1784,117 @@ async function tick(){
 /* ---- 3 seleção ---- */
 async function draw3(){
   setWide(true);
-  const g=await api("/api/groups"),t=await api("/api/totals"),M=await api("/api/maes"),MD=await api("/api/medicao").catch(()=>({}));
-  const cats=g.cats.slice().sort((a,b)=>(CATORD.indexOf(a.cat)+99)%99-(CATORD.indexOf(b.cat)+99)%99);
-  const tot=cats.reduce((a,c)=>({n:a.n+c.n,b:a.b+c.bytes}),{n:0,b:0});
-  const rv=g.acts.revisar||{n:0,bytes:0,sel_n:0,sel_bytes:0,ex:[]},ig=g.acts.ignorar||{n:0,bytes:0,sel_n:0,sel_bytes:0,ex:[]};tot.n+=rv.n;tot.b+=rv.bytes;
-  const nv=cats.find(c=>c.cat==="Nuvem")||{n:0,bytes:0,sel_bytes:0};
-  const locs={};g.groups.forEach(x=>{const k=/^Pastas_(origem|mae)\//.test(x.local)?x.local:x.local.split("/")[0];const o=locs[k]=locs[k]||{n:0,b:0,sn:0,sb:0};o.n+=x.n;o.b+=x.bytes;o.sn+=x.sel_n;o.sb+=x.sel_bytes});
-  const pdest=t.free?t.sel_bytes/t.free*100:100;
+  const [g,t,M,MD]=await Promise.all([api("/api/groups"),api("/api/totals"),api("/api/maes"),api("/api/medicao").catch(()=>({}))]);
+  if(view!=="backup"||step!==2)return;
   const corPct=p=>p>=75?"var(--ok)":p>=45?"var(--warn)":"var(--err)";
-  $("#main").innerHTML=`<div class="ptitle"><h1>O que vai para o backup</h1><p>Tudo o que existe nesta máquina, por categoria. Você escolhe — o que não for marcado fica registrado no Mapa e no certificado.</p></div>
-  <div class="kpis">${kpi2("Arquivos pessoais encontrados","🗂️",fmt(tot.b),nf(tot.n)+" arquivos"+(MD.usado?" · de "+fmt(MD.usado)+" usados no disco":""),tot.b?t.sel_bytes/tot.b*100:0)}${kpi2("Vai para o backup","📥",fmt(t.sel_bytes),nf(t.sel_n)+" arquivos",tot.n?t.sel_n/tot.n*100:0,"var(--ok)")}
-   ${kpi2("Espaço no destino","💽",fmt(t.free),t.cabe?"livres":"<b style='color:var(--err)'>não cabe</b>",pdest,t.cabe?(pdest>85?"var(--warn)":"var(--azul)"):"var(--err)")}${kpi2("Nuvem","☁️",fmt(nv.bytes),nv.n?nf(nv.n)+" só na nuvem":"nada só na nuvem",nv.bytes?nv.sel_bytes/nv.bytes*100:0,"#f0a020")}</div>
+  $("#main").innerHTML=`<div class="ptitle"><h1>O que vai para o backup</h1><p>Tudo o que existe nesta máquina, organizado. Você escolhe — o que não for marcado fica registrado no Mapa e no certificado.</p></div>
+  <div class="kpis" id="selkpi"></div>
   <div class="cols"><div>
   <div class="card" id="medc"></div>
-  <div class="card"><div class="row" style="align-items:flex-start"><div class="grow"><h2>O que tem nesta máquina</h2><p class="h" style="margin:0">Separado em três blocos. <span class="badge b-ok">Levar</span> já vem marcado (pessoal), <span class="badge b-warn">Você decide</span> depende do cliente, <span class="badge b-mut">Normalmente não</span> é sistema e programa. Tudo pode ser marcado ou desmarcado.</p></div>
-    <div class="row"><button class="sm" id="mtudo">Marcar tudo o que foi encontrado</button><button class="sm gh" id="mpad">Voltar ao padrão (só o pessoal)</button></div></div>
-   ${CAT_BLOCOS.map(([bl,tit,txt])=>{const cs=cats.filter(c=>catBloco(c.cat)===bl),esp=bl==="decide"&&rv.n?[{cat:"__revisar",...rv}]:bl==="sistema"&&ig.n?[{cat:"__ignorar",...ig}]:[];
-     if(!cs.length&&!esp.length)return"";const all=[...cs,...esp],n=all.reduce((a,c)=>a+c.n,0),sb=all.reduce((a,c)=>a+c.sel_bytes,0),bt=all.reduce((a,c)=>a+c.bytes,0);
-     return `<div class="cblk cb-${bl}"><div class="cbh"><b>${tit}</b><span class="mut">${txt}</span><span class="grow"></span><small>${fmt(sb)} marcados de ${fmt(bt)} · ${nf(n)} arquivos</small></div><div class="catg">${cs.map(catCartao).join("")}${esp.map(catEspecial).join("")}</div></div>`}).join("")}
-    <p class="mut" style="font-size:12.5px;margin:12px 0 0">${nf(g.ign_dirs_total)} pastas puladas (sistema, caches e lixeira). Veja e inclua no cartão "Onde está o resto do disco?". <button class="sm gh" id="vdirs">Ver quais</button></p>
-    <div class="row" style="margin-top:10px"><button class="sm" id="vtodos">Ver todos os arquivos</button></div></div>
-  <div class="card"><h2>Usuários e grupos</h2><p class="h">Cada pessoa da máquina, o WhatsApp e as pastas de origem ficam separados no backup.</p><div class="catg">${Object.keys(locs).sort().map(k=>{const o=locs[k],p=o.b?o.sb/o.b*100:0,nome=locNome(k);
-    return `<div class="catc ${o.sn?"":"off"}"><div class="ct"><b>${esc(nome)}</b><label class="tg" aria-label="${esc(nome)}"><input type="checkbox" data-l="${esc(k)}" ${o.sn===o.n?"checked":""} data-ind="${o.sn&&o.sn<o.n?1:0}"><s></s></label></div><div class="cb2"><div class="cn">${nf(o.sn)} de ${nf(o.n)}<br><b style="color:var(--tx)">${fmt(o.sb)}</b> de ${fmt(o.b)}</div>${arco(p)}</div><button class="sm gh" data-vl="${esc(k)}" data-vn="${esc(nome.replace(/^\S+ /,""))}" style="align-self:flex-start">Ver lista</button></div>`}).join("")}</div></div>
+  <div class="card sgp" id="selp"></div>
   <div class="card maes"><h2>Pastas de origem</h2><p class="h">Pastas com nome próprio ou de trabalho (ex.: Wefix) vão inteiras para <b>Pastas_origem/</b>, separadas da pasta do usuário. Já marquei as de maior confiança e as que você separou em outras máquinas; revise antes de copiar. A % é a minha confiança.</p>
    ${M.sugestoes.length?M.sugestoes.map(m=>`<label class="mae" style="color:var(--tx);font-size:inherit;margin:0;cursor:pointer"><input type="checkbox" class="mck" value="${esc(m.chave)}" ${m.marcada?"checked":""} style="margin-top:4px"><span class="pctb" style="background:${corPct(m.pct)}">${m.pct}%</span><span class="grow"><b>${esc(m.nome)}</b>${m.auto?' <span class="badge b-ok">marcada sozinha</span>':""} <span class="mut">· ${nf(m.n)} arquivos · ${fmt(m.bytes)}</span><br><span class="mut mono" style="font-size:11.5px">veio de ${esc(m.chave)}</span>${m.motivos.length?`<br><span class="mut" style="font-size:12.5px">${esc(m.motivos.join(" · "))}</span>`:""}</span></label>`).join("")+'<div class="row" style="margin-top:10px"><button class="pri" id="maeok">Aplicar pastas de origem</button><span class="mut" style="font-size:12.5px">Desmarque o que não deve ficar separado e aplique.</span></div>':'<p class="mut">Nenhuma pasta com nome próprio ou de trabalho encontrada.</p>'}</div>
   </div>
   <aside class="side card" id="tot" aria-label="Resumo da seleção"></aside></div>`;
-  $$("[data-c],[data-l]").forEach(c=>{if(c.dataset.ind==="1")c.indeterminate=true;c.onchange=()=>safe(async()=>{await api("/api/select",{filter:c.dataset.c?{cat:c.dataset.c,act:""}:{local:c.dataset.l,act:""},on:c.checked});draw3()})});
-  $$("[data-v]").forEach(b=>b.onclick=()=>abrirLista({cat:b.dataset.v},CATNAME[b.dataset.v]||b.dataset.v));
-  $$("[data-va]").forEach(b=>b.onclick=()=>abrirLista({act:b.dataset.va},b.dataset.va==="ignorar"?"do sistema (não vai)":"Tipo desconhecido"));
-  $$("[data-vl]").forEach(b=>b.onclick=()=>abrirLista({local:b.dataset.vl},b.dataset.vn));
-  $("#vtodos").onclick=()=>abrirLista({},"");
-  const ra=$("#revall");if(ra)ra.onclick=()=>safe(async()=>{await api("/api/select",{filter:{act:"revisar"},on:true});draw3()});
-  $("#mtudo").onclick=()=>safe(async()=>{await api("/api/select",{filter:{},on:true});toast("Tudo o que foi encontrado está marcado. Confira se cabe no destino.","ok");draw3()});
-  $("#mpad").onclick=()=>safe(async()=>{await api("/api/select",{padrao:true});toast("De volta ao padrão: só o pessoal marcado.","ok");draw3()});
+  selKpis(g,t,MD);selGrade(g);
   const mo=$("#maeok");if(mo)mo.onclick=()=>safe(async()=>{await api("/api/maes",{chaves:$$(".mck:checked").map(x=>x.value)});toast("Pastas de origem aplicadas.","ok");draw3()});
-  $("#vdirs").onclick=()=>safe(async()=>{const r=await api("/api/left");modalHtml("Pastas puladas",`<div class="mono" style="max-height:60vh;overflow:auto">${r.ign_dirs.map(d=>`<div><b>${esc(d[0])}</b><br><span class="mut">${esc(d[1])}</span></div>`).join("<br>")}</div>`)});
   drawTot(t);MED.t=t;medicaoCard(MD);
+}
+/* ---- Seleção em grade (padrão de painel corporativo): abas, filtro por bloco, busca, ordem, grupos recolhíveis, linhas expansíveis ---- */
+const USR_BLOCOS=[["usuario","Usuários da máquina","Pasta de cada pessoa que usa o computador."],["whats","WhatsApp","Fotos, vídeos, áudios e documentos do WhatsApp de cada usuário."],
+ ["origem","Pastas de origem","Pastas com nome próprio ou de trabalho, separadas da pasta do usuário."],["disco","Fora das pastas de usuário","Arquivos soltos no disco e bancos de dados de sistemas."]];
+const SEL=Object.assign({aba:"cat",filtro:"todos",q:"",ordem:"padrao",fechados:[],abertas:[]},(()=>{try{return JSON.parse(lsGet("dd_sel","{}"))||{}}catch(e){return {}}})());
+let SELG=null;
+const selSalva=()=>lsSet("dd_sel",JSON.stringify({aba:SEL.aba,filtro:SEL.filtro,ordem:SEL.ordem,fechados:SEL.fechados,abertas:SEL.abertas}));
+const selTog=(lista,k)=>{const i=lista.indexOf(k);if(i>=0)lista.splice(i,1);else lista.push(k)};
+function selLinhasCat(g){
+  const rows=g.cats.map(c=>{const inf=CAT_INFO[c.cat]||["decide","","","Você decide"];
+    return {key:"c:"+c.cat,bloco:inf[0],ico:CATICO[c.cat]||"📁",nome:CATNAME[c.cat]||c.cat,oque:inf[1],serve:inf[2],rec:inf[3],n:c.n,b:c.bytes,sn:c.sel_n,sb:c.sel_bytes,ex:c.ex||[],
+      sel:{cat:c.cat,act:""},lista:[{cat:c.cat},CATNAME[c.cat]||c.cat],ord:CATORD.indexOf(c.cat)}});
+  const rv=g.acts.revisar,ig=g.acts.ignorar;
+  if(rv&&rv.n)rows.push({key:"a:revisar",bloco:"decide",ico:"❓",nome:"Tipo desconhecido",oque:"Tipos que o programa não reconhece: vão marcados, por segurança.",serve:"Confira a lista: pode ter algo importante com extensão rara.",
+    rec:"Você decide",n:rv.n,b:rv.bytes,sn:rv.sel_n,sb:rv.sel_bytes,ex:rv.ex||[],sel:{act:"revisar"},lista:[{act:"revisar"},"Tipo desconhecido"],ord:90});
+  if(ig&&ig.n)rows.push({key:"a:ignorar",bloco:"sistema",ico:"🔒",nome:"Do sistema (não vai)",oque:"Arquivos que o Windows usa e recria (desktop.ini, thumbs.db, memória virtual).",serve:"Não precisam de backup; muitos ficam em uso e não dá para copiar.",
+    rec:"Normalmente não",n:ig.n,b:ig.bytes,sn:ig.sel_n,sb:ig.sel_bytes,ex:ig.ex||[],sel:{act:"ignorar"},lista:[{act:"ignorar"},"do sistema (não vai)"],ord:91});
+  return rows;
+}
+function selLinhasUsr(g){
+  const L={};
+  g.groups.forEach(x=>{const k=/^Pastas_(origem|mae)\//.test(x.local)?x.local:x.local.split("/")[0],o=L[k]=L[k]||{n:0,b:0,sn:0,sb:0,cats:{}};
+    o.n+=x.n;o.b+=x.bytes;o.sn+=x.sel_n;o.sb+=x.sel_bytes;const c=o.cats[x.cat]=o.cats[x.cat]||{n:0,b:0,sn:0,sb:0};c.n+=x.n;c.b+=x.bytes;c.sn+=x.sel_n;c.sb+=x.sel_bytes});
+  const desc={usuario:"Pasta pessoal deste usuário.",whats:"Mídias e documentos do WhatsApp deste usuário.",origem:"Pasta separada da pasta do usuário.",disco:"Fora das pastas de usuário."};
+  return Object.entries(L).map(([k,o])=>{const bl=/^WhatsApp/.test(k)?"whats":/^Pastas_(origem|mae)\//.test(k)?"origem":/^Disco_/.test(k)?"disco":"usuario",nm=locNome(k);
+    return {key:"l:"+k,bloco:bl,ico:nm.split(" ")[0],nome:nm.replace(/^\S+\s/,""),oque:desc[bl],serve:"",rec:"",n:o.n,b:o.b,sn:o.sn,sb:o.sb,ex:[],cats:o.cats,
+      sel:{local:k,act:""},lista:[{local:k},nm.replace(/^\S+\s/,"")],ord:0}});
+}
+function selGrade(g){
+  if(g)SELG=g;const el=$("#selp");if(!el||!SELG)return;
+  const cat=SEL.aba==="cat",rows=cat?selLinhasCat(SELG):selLinhasUsr(SELG),cont={todos:rows.length};
+  CAT_BLOCOS.forEach(([b])=>cont[b]=rows.filter(r=>r.bloco===b).length);
+  el.innerHTML=`<div class="sg-top"><div class="sg-abas" role="tablist">${[["cat","Por categoria"],["usr","Por usuário e pasta"]].map(([k,t])=>`<button role="tab" aria-selected="${SEL.aba===k}" class="${SEL.aba===k?"on":""}" data-sa="${k}">${t}</button>`).join("")}</div>
+    ${cat?`<div class="sg-chips" role="group" aria-label="Filtrar por bloco">${[["todos","Todos"],["pessoal","Pessoal"],["decide","Você decide"],["sistema","Sistema"]].map(([k,t])=>`<button class="sg-chip ${SEL.filtro===k?"on":""}" data-sf="${k}">${t} <span>${cont[k]||0}</span></button>`).join("")}</div>`:""}
+    <input type="search" class="sg-q" id="sgq" placeholder="Buscar ${cat?"categoria ou tipo":"usuário ou pasta"}" aria-label="Buscar" value="${esc(SEL.q)}" autocomplete="off">
+    <select id="sgo" aria-label="Ordenar" class="sg-o">${[["padrao","Ordem padrão"],["maior","Maior primeiro"],["menor","Menor primeiro"],["nome","Nome (A–Z)"]].map(([k,t])=>`<option value="${k}" ${SEL.ordem===k?"selected":""}>${t}</option>`).join("")}</select>
+    <button class="sm gh" id="sgexp">${SEL.fechados.length?"Expandir tudo":"Recolher tudo"}</button></div>
+   <div class="sg-acoes"><span class="mut">Padrão: só o pessoal vai marcado. Você pode marcar ou desmarcar qualquer linha.</span><span class="grow"></span><button class="sm" id="mtudo">Marcar tudo o que foi encontrado</button><button class="sm gh" id="mpad">Voltar ao padrão (só o pessoal)</button></div>
+   <div class="sg-head" aria-hidden="true"><span></span><button data-so="nome">${cat?"Categoria":"Usuário ou pasta"}</button><span>${cat?"Recomendação":""}</span><button data-so="maior" class="sg-num">Arquivos</button><button data-so="maior" class="sg-num">Tamanho</button><span>Marcado</span><span>Levar</span><span></span></div>
+   <div id="sgbody"></div>
+   <div class="sg-pe"><span class="mut">${nf(SELG.ign_dirs_total)} pastas puladas (sistema, caches e lixeira): veja e inclua em "Onde está o resto do disco?".</span><span class="grow"></span><button class="sm gh" id="vdirs">Ver quais</button><button class="sm" id="vtodos">Ver todos os arquivos</button></div>`;
+  $$("[data-sa]",el).forEach(b=>b.onclick=()=>{SEL.aba=b.dataset.sa;SEL.q="";selSalva();selGrade()});
+  $$("[data-sf]",el).forEach(b=>b.onclick=()=>{SEL.filtro=b.dataset.sf;selSalva();selGrade()});
+  let tq;$("#sgq",el).oninput=e=>{clearTimeout(tq);tq=setTimeout(()=>{SEL.q=e.target.value;selCorpo()},150)};
+  $("#sgo",el).onchange=e=>{SEL.ordem=e.target.value;selSalva();selCorpo()};
+  $$("[data-so]",el).forEach(b=>b.onclick=()=>{SEL.ordem=b.dataset.so===SEL.ordem&&b.dataset.so==="maior"?"menor":b.dataset.so;$("#sgo",el).value=SEL.ordem;selSalva();selCorpo()});
+  $("#sgexp",el).onclick=()=>{const bl=(SEL.aba==="cat"?CAT_BLOCOS:USR_BLOCOS).map(x=>SEL.aba+":"+x[0]);SEL.fechados=SEL.fechados.length?[]:bl;selSalva();selGrade()};
+  $("#mtudo",el).onclick=()=>safe(async()=>{await api("/api/select",{filter:{},on:true});toast("Tudo o que foi encontrado está marcado. Confira se cabe no destino.","ok");selAtualiza()});
+  $("#mpad",el).onclick=()=>safe(async()=>{await api("/api/select",{padrao:true});toast("De volta ao padrão: só o pessoal marcado.","ok");selAtualiza()});
+  $("#vtodos",el).onclick=()=>abrirLista({},"");
+  $("#vdirs",el).onclick=()=>safe(async()=>{const r=await api("/api/left");modalHtml("Pastas puladas",`<div class="mono" style="max-height:60vh;overflow:auto">${r.ign_dirs.map(d=>`<div><b>${esc(d[0])}</b><br><span class="mut">${esc(d[1])}</span></div>`).join("<br>")}</div>`)});
+  selCorpo();
+}
+function selCorpo(){
+  const el=$("#sgbody");if(!el||!SELG)return;
+  const cat=SEL.aba==="cat",rows=cat?selLinhasCat(SELG):selLinhasUsr(SELG),blocos=cat?CAT_BLOCOS:USR_BLOCOS,q=semAc(SEL.q.trim());
+  const vis=r=>(!cat||SEL.filtro==="todos"||r.bloco===SEL.filtro)&&(!q||semAc([r.nome,r.oque,...r.ex].join(" ")).includes(q));
+  const ord={padrao:(a,b)=>a.ord-b.ord||b.b-a.b,maior:(a,b)=>b.b-a.b,menor:(a,b)=>a.b-b.b,nome:(a,b)=>a.nome.localeCompare(b.nome,"pt-BR")}[SEL.ordem]||((a,b)=>0);
+  const pct=(s,n)=>n?Math.round(s/n*100):0;
+  const linha=r=>{const ab=SEL.abertas.includes(r.key),all=r.sn===r.n,p=pct(r.sb,r.b);
+    return `<div class="sg-row ${r.sn?"":"off"}"><button class="sg-x" data-sx="${esc(r.key)}" aria-expanded="${ab}" aria-label="Detalhes de ${esc(r.nome)}">${ab?"▾":"▸"}</button>
+     <div class="sg-nome"><span class="ic">${r.ico}</span><div style="min-width:0"><b>${esc(r.nome)}</b><small title="${esc(r.oque)}">${esc(r.oque)}</small><small class="sg-meta">${nf(r.n)} arquivos · ${fmt(r.b)} · ${nf(r.sn)} marcados</small></div></div>
+     <span class="sg-rec">${r.rec?`<span class="badge ${CAT_REC[r.rec]||"b-mut"}" style="margin:0">${esc(r.rec)}</span>`:""}</span>
+     <span class="sg-num sg-n">${nf(r.n)}</span><span class="sg-num sg-b">${fmt(r.b)}</span>
+     <span class="sg-bar"><i><b style="width:${p}%"></b></i>${nf(r.sn)} de ${nf(r.n)} · ${p}%</span>
+     <label class="tg" aria-label="Levar ${esc(r.nome)}"><input type="checkbox" data-sk="${esc(r.key)}" ${all?"checked":""} data-ind="${r.sn&&!all?1:0}"><s></s></label>
+     <button class="sm gh" data-sl="${esc(r.key)}">Ver lista</button></div>
+     ${ab?`<div class="sg-det">${r.serve?`<p><b>Para que serve:</b> ${esc(r.serve)}</p>`:""}${r.ex.length?`<p><b>Exemplos desta máquina:</b> ${r.ex.map(x=>`<span class="chip">${esc(x)}</span>`).join(" ")}</p>`:""}
+       ${r.cats?`<table class="sg-sub">${Object.entries(r.cats).sort((a,b)=>b[1].b-a[1].b).map(([c,o])=>`<tr><td>${CATICO[c]||"📁"} ${esc(CATNAME[c]||c)}</td><td class="sg-num">${nf(o.n)} arquivos</td><td class="sg-num">${fmt(o.b)}</td><td class="sg-num">${pct(o.sb,o.b)}% marcado</td></tr>`).join("")}</table>`:""}</div>`:""}`};
+  let h="";
+  blocos.forEach(([b,tit,txt])=>{const rs=rows.filter(r=>r.bloco===b&&vis(r)).sort(ord);if(!rs.length)return;
+    const gk=SEL.aba+":"+b,fe=SEL.fechados.includes(gk),n=rs.reduce((a,r)=>a+r.n,0),sn=rs.reduce((a,r)=>a+r.sn,0),bt=rs.reduce((a,r)=>a+r.b,0),sb=rs.reduce((a,r)=>a+r.sb,0);
+    h+=`<div class="sg-grp sg-g-${b}" data-sg="${gk}" role="button" tabindex="0" aria-expanded="${!fe}"><span class="sg-chev">${fe?"▸":"▾"}</span><b>${tit}</b><span class="mut sg-gd">${txt}</span><span class="grow"></span>
+      <span class="mut">${rs.length} ${rs.length>1?"itens":"item"} · ${fmt(sb)} de ${fmt(bt)} marcados</span><label class="tg" aria-label="Levar todo o bloco ${esc(tit)}"><input type="checkbox" data-gt="${b}" ${sn===n?"checked":""} data-ind="${sn&&sn<n?1:0}"><s></s></label></div>
+      ${fe?"":rs.map(linha).join("")}`});
+  el.innerHTML=h||`<p class="mut" style="padding:16px">Nada com essa busca.</p>`;
+  $$("[data-ind]",el).forEach(c=>{if(c.dataset.ind==="1")c.indeterminate=true});
+  const acha=k=>rows.find(r=>r.key===k);
+  $$("[data-sg]",el).forEach(d=>{const t=e=>{if(e.target.closest(".tg"))return;selTog(SEL.fechados,d.dataset.sg);selSalva();selCorpo()};d.onclick=t;d.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();t(e)}}});
+  $$("[data-sx]",el).forEach(b=>b.onclick=()=>{selTog(SEL.abertas,b.dataset.sx);selSalva();selCorpo()});
+  $$("[data-sl]",el).forEach(b=>b.onclick=()=>{const r=acha(b.dataset.sl);if(r)abrirLista(r.lista[0],r.lista[1])});
+  $$("[data-sk]",el).forEach(c=>c.onchange=()=>safe(async()=>{const r=acha(c.dataset.sk);await api("/api/select",{filter:r.sel,on:c.checked});await selAtualiza()}));
+  $$("[data-gt]",el).forEach(c=>{c.onclick=e=>e.stopPropagation();c.onchange=()=>safe(async()=>{for(const r of rows.filter(r=>r.bloco===c.dataset.gt))await api("/api/select",{filter:r.sel,on:c.checked});await selAtualiza()})});
+}
+/* depois de marcar/desmarcar: só os números mudam (linha, grupos, cartões do topo e resumo), sem redesenhar a página */
+async function selAtualiza(){
+  const [g,t,MD]=await Promise.all([api("/api/groups"),api("/api/totals"),api("/api/medicao").catch(()=>({}))]);
+  if(view!=="backup"||step!==2)return;
+  SELG=g;selKpis(g,t,MD);selCorpo();drawTot(t);MED.t=t;
+}
+function selKpis(g,t,MD){
+  const el=$("#selkpi");if(!el)return;
+  const cats=g.cats,tot=cats.reduce((a,c)=>({n:a.n+c.n,b:a.b+c.bytes}),{n:0,b:0}),rv=g.acts.revisar||{n:0,bytes:0};tot.n+=rv.n;tot.b+=rv.bytes;
+  const nv=cats.find(c=>c.cat==="Nuvem")||{n:0,bytes:0,sel_bytes:0},pdest=t.free?t.sel_bytes/t.free*100:100;
+  el.innerHTML=`${kpi2("Arquivos pessoais encontrados","🗂️",fmt(tot.b),nf(tot.n)+" arquivos"+(MD&&MD.usado?" · de "+fmt(MD.usado)+" usados no disco":""),tot.b?t.sel_bytes/tot.b*100:0)}${kpi2("Vai para o backup","📥",fmt(t.sel_bytes),nf(t.sel_n)+" arquivos",tot.n?t.sel_n/tot.n*100:0,"var(--ok)")}
+   ${kpi2("Espaço no destino","💽",fmt(t.free),t.cabe?"livres":"<b style='color:var(--err)'>não cabe</b>",pdest,t.cabe?(pdest>85?"var(--warn)":"var(--azul)"):"var(--err)")}${kpi2("Nuvem","☁️",fmt(nv.bytes),nv.n?nf(nv.n)+" só na nuvem":"nada só na nuvem",nv.bytes?nv.sel_bytes/nv.bytes*100:0,"#f0a020")}`;
 }
 /* onde está o resto do disco: o que a varredura não lê (Windows, programas, caches) medido em segundo plano */
 const MED_COR={"Vai para o backup":"var(--ok)","Pessoal não marcado":"#7fa7ff","Windows e programas":"#8a8f9c","Sistema e programas":"#8a8f9c","Caches e temporários":"#f0a020","Lixeira e sistema":"#c96a6a","Arquivos do sistema":"#a07ec9","Outros pulados":"#b4b4bf","Resto do sistema":"var(--line)"};

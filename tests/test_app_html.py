@@ -41,7 +41,7 @@ class PaginaInteira(unittest.TestCase):
             self.assertIn('data-aba="%s"' % aba, self.js, "algum bloco vai para a aba " + aba)
 
     def test_funcoes_chamadas_existem(self):
-        chamadas = set(re.findall(r"\b((?:draw|lst|dados|mq|ilha)[A-Z][A-Za-z0-9_]*|retomarBackup|encerrarIncompleto|catCartao|catEspecial|locNome|medicaoCard|perfilAbas|showRes5|fixTexto[A-Za-z0-9_]*)\(", self.js))
+        chamadas = set(re.findall(r"\b((?:draw|lst|dados|mq|ilha)[A-Z][A-Za-z0-9_]*|retomarBackup|encerrarIncompleto|locNome|selGrade|selCorpo|selAtualiza|selKpis|medicaoCard|perfilAbas|showRes5|fixTexto[A-Za-z0-9_]*)\(", self.js))
         self.assertEqual(sorted(chamadas - self.definidos), [], "função chamada que não existe na página")
 
 
