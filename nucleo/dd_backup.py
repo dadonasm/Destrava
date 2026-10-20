@@ -262,7 +262,50 @@ def classify_err(e):
         return "io", "ERRO: Erro de leitura/gravação (I/O) - possível setor defeituoso no dispositivo"
     if en == errno.EROFS:
         return "somente_leitura", "ERRO: Destino somente leitura"
+    if en == errno.EINVAL:  # atalho de aplicativo do Windows (WindowsApps\*_Alias.exe): não é um arquivo de verdade
+        return "atalho_app", "ERRO: Atalho de aplicativo do Windows (não é um arquivo de verdade)"
     return "outro", "ERRO: %s" % (e,)
+
+
+# Falha "esperada": arquivo de programa em uso (navegador aberto, serviços do Windows) fora do que é pessoal. Não é perda de dado da pessoa.
+MOTIVO_EM_USO = "Em uso por um programa aberto (%s): normal em pastas de programas, não é arquivo pessoal"
+NAO_PESSOAIS = {"Dados_de_apps", "Ocultos", "Temporarios", "Programas", "Configuracoes", "Extras"}
+CAUSAS_EM_USO = {"permissao", "em_uso", "atalho_app"}
+APPEXECLINK = 0x8000001B  # reparse dos atalhos de aplicativo (WindowsApps): abrir dá "Invalid argument"
+
+
+def falha_esperada(it):
+    return it.status == "falha" and it.cat in NAO_PESSOAIS and it.cause in CAUSAS_EM_USO
+
+
+def eh_admin():
+    try:
+        if IS_WIN:
+            import ctypes
+            return bool(ctypes.windll.shell32.IsUserAnAdmin())
+        return hasattr(os, "geteuid") and os.geteuid() == 0
+    except Exception:
+        return False
+
+
+PROGRAMAS_PASTA = (("/microsoft/edge/", "Edge (navegador)"), ("/google/chrome/", "Chrome (navegador)"), ("/bravesoftware/", "Brave (navegador)"),
+                   ("/mozilla/firefox/", "Firefox (navegador)"), ("/opera software/", "Opera (navegador)"), ("/microsoft/windowsapps/", "Atalhos de aplicativos do Windows"),
+                   ("/comms/", "Windows (Comms)"), ("/microsoft/windows/", "Windows"), ("/packages/", "Aplicativos da Microsoft Store"),
+                   ("/microsoft/onedrive/", "OneDrive"), ("/microsoft/teams/", "Teams"), ("/whatsapp", "WhatsApp"), ("/spotify/", "Spotify"))
+
+
+def programa_de(disp):
+    """Nome do programa (ou pasta) a que um arquivo pertence, para agrupar as falhas: "Edge (navegador)", "Windows (Comms)"…"""
+    p = str(disp).replace("\\", "/")
+    low = p.lower()
+    for chave, nome in PROGRAMAS_PASTA:
+        if chave in low:
+            return nome
+    m = re.search(r"/appdata/(?:local|roaming|locallow)/([^/]+)/", p, re.I)
+    if m:
+        return m.group(1)
+    partes = [x for x in p.split("/") if x]
+    return partes[-2] if len(partes) >= 2 else "Outras pastas"
 
 
 # ---------------------------- EXIF (data da foto, JPEG) ----------------------------
@@ -1034,6 +1077,8 @@ class App(object):
             return "Lixeira / sistema"
         if low in CACHE_DIRS:
             return "Cache/temporário (recriado sozinho)"
+        if low == "windowsapps":
+            return "Atalhos de aplicativos do Windows (não são arquivos de verdade)"
         return None
 
     def walk_plan(self, plan):
@@ -1093,6 +1138,8 @@ class App(object):
                             stack.append((e.path, dd.rstrip(sep) + sep + name, False, m))
                         elif e.is_file(follow_symlinks=False):
                             st = e.stat(follow_symlinks=False)
+                            if getattr(st, "st_reparse_tag", 0) == APPEXECLINK:  # atalho de aplicativo: não é arquivo de verdade
+                                continue
                             if ctx == "sistemas" and (os.path.splitext(name.lower())[1] not in DB_EXT or st.st_size < 65536):
                                 continue
                             m = marca or ("oculto" if ctx != "toplevel" and (name.startswith(".") or (IS_WIN and getattr(st, "st_file_attributes", 0) & 2)) else None)
@@ -1696,6 +1743,8 @@ class App(object):
         if it.inc:
             if it.status == "ok":
                 return "ok"
+            if falha_esperada(it):
+                return "em_uso"
             return "falha" if it.status in ("falha",) or self.phase in ("copied", "verified", "done") else "pendente"
         if it.act == "ignorar":
             return "ignorado"
@@ -1965,8 +2014,8 @@ class App(object):
         agg = {}
         for it in self.items:
             st = self.final_status(it)
-            if st in ("ignorado", "revisar", "desmarcado"):
-                k = (st, it.motivo if st != "desmarcado" else "Desmarcado por você na seleção")
+            if st in ("ignorado", "revisar", "desmarcado", "em_uso"):
+                k = (st, MOTIVO_EM_USO % programa_de(it.disp) if st == "em_uso" else it.motivo if st != "desmarcado" else "Desmarcado por você na seleção")
                 e = agg.setdefault(k, [0, 0])
                 e[0] += 1
                 e[1] += it.size
@@ -1975,11 +2024,48 @@ class App(object):
         return out
 
     def failures(self):
+        """Só as falhas de verdade; arquivo de programa em uso fora do pessoal vai em falhas_agrupadas()."""
         out = []
         for i, it in enumerate(self.items):
-            if it.inc and it.status == "falha":
+            if it.inc and it.status == "falha" and not falha_esperada(it):
                 out.append({"idx": i, "disp": it.disp, "size": it.size, "err": it.err, "cause": it.cause})
         return out
+
+    def falhas_agrupadas(self, grupo="", off=0, limit=50):
+        """Falhas de verdade (pessoais) e as esperadas agrupadas por causa e programa, com página de arquivos de um grupo."""
+        reais, grupos = [], {}
+        for i, it in enumerate(self.items):
+            if not (it.inc and it.status == "falha"):
+                continue
+            if not falha_esperada(it):
+                reais.append(i)
+                continue
+            k = it.cause + "|" + programa_de(it.disp)
+            g = grupos.setdefault(k, {"chave": k, "causa": it.cause, "programa": programa_de(it.disp), "n": 0, "bytes": 0, "idx": []})
+            g["n"] += 1
+            g["bytes"] += it.size
+            g["idx"].append(i)
+        linha = lambda i: {"idx": i, "disp": self.items[i].disp, "size": self.items[i].size, "err": self.items[i].err, "cause": self.items[i].cause,
+                           "cat": self.items[i].cat}
+        gl = sorted(grupos.values(), key=lambda g: -g["n"])
+        out = {"admin": eh_admin(), "n_reais": len(reais), "n_esperadas": sum(g["n"] for g in gl), "bytes_esperadas": sum(g["bytes"] for g in gl),
+               "grupos": [dict({k: v for k, v in g.items() if k != "idx"}, ex=[linha(i) for i in g["idx"][:3]]) for g in gl]}
+        if grupo == "reais":
+            out["pagina"] = [linha(i) for i in reais[off:off + limit]]
+        elif grupo in grupos:
+            out["pagina"] = [linha(i) for i in grupos[grupo]["idx"][off:off + limit]]
+        else:
+            out["pagina"] = [linha(i) for i in reais[:limit]]
+        return out
+
+    def desmarcar_esperadas(self, grupo=""):
+        """Tira do backup os arquivos em uso de um grupo (ou de todos): ficam registrados como não escolhidos."""
+        n = 0
+        for it in self.items:
+            if it.inc and falha_esperada(it) and (not grupo or it.cause + "|" + programa_de(it.disp) == grupo):
+                it.inc = False
+                n += 1
+        return {"n": n}
 
     def _ritmo(self):
         """Velocidade (bytes/s nos últimos ~10 s) e tempo restante da cópia ou da verificação."""
@@ -2032,7 +2118,8 @@ class App(object):
             "speed": speed, "eta": eta, "log": list(self.logs)[-60:], "cfg": self.cfg, "sweep": self.sweep, "verified_mode": self.verified_mode,
             "n_items": len(self.items), "finished": self.finished, "cert": self.cert, "dest_root": self.dest_root,
             "same_disk": getattr(self, "same_disk", False), "failures": self.failures()[:300] if self.phase in ("copied", "verified", "done") else [],
-            "n_failures": sum(1 for it in self.items if it.inc and it.status == "falha"),
+            "n_failures": sum(1 for it in self.items if it.inc and it.status == "falha" and not falha_esperada(it)),
+            "n_em_uso": sum(1 for it in self.items if it.inc and falha_esperada(it)), "admin": eh_admin(),
         }
 
     # ------------------------------------------------------------------ mapa e certificado
@@ -2119,7 +2206,7 @@ class App(object):
         os.makedirs(self.mapa_dir, exist_ok=True)
         cfg = self.cfg
         f = []
-        c_ok = c_fail = c_left = 0
+        c_ok = c_fail = c_left = n_uso = b_uso = 0
         b_ok = 0
         for it in self.items:
             st = self.final_status(it)
@@ -2133,10 +2220,14 @@ class App(object):
                 c_fail += 1
             else:
                 c_left += 1
+                if st == "em_uso":
+                    n_uso += 1
+                    b_uso += it.size
             dst = it.rel if st in ("ok", "falha") else ""
-            mot = "" if st == "ok" else (it.err if st == "falha" else (it.motivo if st != "desmarcado" else "Desmarcado por você na seleção"))
+            mot = "" if st == "ok" else (it.err if st == "falha" else MOTIVO_EM_USO % programa_de(it.disp) if st == "em_uso" else
+                                          (it.motivo if st != "desmarcado" else "Desmarcado por você na seleção"))
             f.append([it.disp, dst, it.cat, it.size, ("%04d-%02d-%02d" % it.date) if it.date else "", st, it.tags, it.local, mot, it.sha, int(it.mtime),
-                      it.cause if st == "falha" else ("nao_escolhido" if st == "desmarcado" else "")])
+                      it.cause if st == "falha" else ("nao_escolhido" if st == "desmarcado" else "em_uso_esperado" if st == "em_uso" else "")])
         sw = self.sweep or {}
         ressalvas = c_fail + int(sw.get("n_novos", 0)) + int(sw.get("n_alterados", 0)) + int(sw.get("n_sumiram", 0))
         status = "sem_falhas" if ressalvas == 0 else "ressalvas"
@@ -2153,6 +2244,7 @@ class App(object):
             "status": status, "cliente": cfg["cliente"], "tecnico": cfg["tecnico"], "equipamento": cfg["equip"],
             "data": meta["data"], "hora": datetime.datetime.now().strftime("%H:%M"), "metodo": meta["verificacao"],
             "copiados": c_ok, "bytes": b_ok, "falhas": c_fail, "ficaram": c_left, "pastas_ign": self.ign_dirs_total,
+            "nao_copiados_em_uso": {"n": n_uso, "bytes": b_uso},
             "motivos": left[:12], "sweep": {k: sw.get(k, 0) for k in ("n_novos", "n_alterados", "n_sumiram")},
             "sistema": "%s %s" % (platform.system(), platform.release()), "versao": VERSION,
         }
@@ -2845,6 +2937,9 @@ class Handler(BaseHTTPRequestHandler):
             return APP.files(q)
         if path == "/api/ping":
             return {"ok": True}
+        if path == "/api/falhas":
+            g = lambda k, d="": (q.get(k) or [d])[0]
+            return APP.falhas_agrupadas(g("grupo"), int(g("off", "0") or 0), min(200, int(g("limit", "50") or 50)))
         if path == "/api/medicao":
             return dict(APP.medicao or {}, incluidas=list(APP.extras), incl=dict(APP.incl))
         if path == "/api/totals":
@@ -2996,6 +3091,8 @@ class Handler(BaseHTTPRequestHandler):
             nome = str(b.get("nome", "")).strip()[:60]
             FICHA.meta_set(mid, nome=nome)
             return {"nome": FICHA.nome_exibicao(mid)}
+        if path == "/api/falhas/desmarcar":
+            return APP.desmarcar_esperadas(str(b.get("grupo") or ""))
         if path == "/api/incluir":
             return APP.incluir_pastas(b.get("caminhos") or [])
         if path == "/api/incluir/tirar":

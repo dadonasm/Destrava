@@ -268,6 +268,52 @@ class EscolhaTotal(BackupCompleto):
         self.assertFalse(any(x.cat == "Extras" for x in self.app.items))
         self.assertEqual(self.app.extras, [])
 
+    def travado(self, *partes):
+        arq = os.path.join(self.disco, *partes)
+        escreve(arq, b"em uso")
+        os.chmod(arq, 0)
+        self.addCleanup(lambda: os.path.exists(arq) and os.chmod(arq, 0o644))
+        return arq
+
+    def backup_ate_o_fim(self):
+        self.app.select({"filter": {}, "on": True})  # "Marcar tudo o que foi encontrado"
+        self.app.start_copy()
+        self.assertEqual(espera(self.app, ("copied", "error")), "copied", self.app.error)
+        self.app.start_verify("completa")
+        self.assertEqual(espera(self.app, ("verified", "error")), "verified", self.app.error)
+        return self.app.finish()
+
+    def test_arquivo_de_programa_em_uso_nao_e_falha(self):
+        if os.geteuid() == 0:
+            self.skipTest("root lê arquivo sem permissão")
+        self.travado("Users", "Ana", "AppData", "Local", "Microsoft", "Edge", "User Data", "Default", "LOCK")
+        self.escanear()
+        cert = self.backup_ate_o_fim()
+        self.assertEqual(cert["status"], "sem_falhas", "cache do navegador em uso não é perda de dado pessoal")
+        self.assertEqual(cert["nao_copiados_em_uso"]["n"], 1)
+        self.assertEqual(self.app.failures(), [])
+        f = self.app.falhas_agrupadas()
+        self.assertEqual((f["n_reais"], f["n_esperadas"], f["grupos"][0]["programa"]), (0, 1, "Edge (navegador)"))
+        self.assertEqual(self.app.desmarcar_esperadas(f["grupos"][0]["chave"])["n"], 1)
+
+    def test_arquivo_pessoal_travado_continua_falha(self):
+        if os.geteuid() == 0:
+            self.skipTest("root lê arquivo sem permissão")
+        self.travado("Users", "Ana", "Documents", "relatorio_travado.docx")
+        self.escanear()
+        cert = self.backup_ate_o_fim()
+        self.assertEqual(cert["status"], "ressalvas")
+        f = self.app.falhas_agrupadas(grupo="reais")
+        self.assertEqual((f["n_reais"], f["pagina"][0]["cause"]), (1, "permissao"))
+        self.assertTrue(f["pagina"][0]["disp"].endswith("relatorio_travado.docx"))
+
+    def test_atalho_de_aplicativo(self):
+        import errno as E
+        self.assertEqual(dd_backup.classify_err(OSError(E.EINVAL, "Invalid argument"))[0], "atalho_app")
+        self.assertEqual(dd_backup.programa_de("C:\\Users\\marci\\AppData\\Local\\Microsoft\\WindowsApps\\GameBar_Alias.exe"), "Atalhos de aplicativos do Windows")
+        self.assertEqual(dd_backup.programa_de("C:\\Users\\User\\AppData\\Local\\Comms\\UnistoreDB\\store.vol"), "Windows (Comms)")
+        self.assertEqual(dd_backup.App().dir_ignore("WindowsApps", "winuser", False), "Atalhos de aplicativos do Windows (não são arquivos de verdade)")
+
     def test_pastas_de_origem(self):
         it = self.escanear()
         sug = {x["nome"]: x for x in self.app.sugestoes_maes()}

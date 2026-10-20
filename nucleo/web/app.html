@@ -89,8 +89,8 @@ button.sm{padding:5px 10px;font-size:12.5px;border-radius:8px}
 table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;color:var(--mut);font-weight:500;padding:6px 8px;border-bottom:1px solid var(--line)}
 td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top;word-break:break-word}
 .pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px;font-weight:600}
-.p-ok{background:#16382b;color:#6fe0a8}.p-falha{background:#4a1f1c;color:#ff9189}.p-ignorado{background:#2c2c33;color:#aaa}.p-revisar{background:#4a3a14;color:#ffd27a}.p-desmarcado{background:#2c2c33;color:#c9c9d6}.p-pendente{background:#26304a;color:#9bb8ff}
-:root[data-theme=light] .p-ok{background:#d9f3e6;color:#17714a}:root[data-theme=light] .p-falha{background:#fde0de;color:#a3241d}:root[data-theme=light] .p-ignorado,:root[data-theme=light] .p-desmarcado{background:#e8e8ee;color:#555}:root[data-theme=light] .p-revisar{background:#fdecc6;color:#7a5a05}:root[data-theme=light] .p-pendente{background:#dfe6fb;color:#2f4fa8}
+.p-ok{background:#16382b;color:#6fe0a8}.p-falha{background:#4a1f1c;color:#ff9189}.p-ignorado{background:#2c2c33;color:#aaa}.p-revisar{background:#4a3a14;color:#ffd27a}.p-desmarcado{background:#2c2c33;color:#c9c9d6}.p-pendente{background:#26304a;color:#9bb8ff}.p-em_uso{background:#2c2c33;color:#c9c9d6}
+:root[data-theme=light] .p-ok{background:#d9f3e6;color:#17714a}:root[data-theme=light] .p-falha{background:#fde0de;color:#a3241d}:root[data-theme=light] .p-ignorado,:root[data-theme=light] .p-desmarcado{background:#e8e8ee;color:#555}:root[data-theme=light] .p-revisar{background:#fdecc6;color:#7a5a05}:root[data-theme=light] .p-pendente{background:#dfe6fb;color:#2f4fa8}:root[data-theme=light] .p-em_uso{background:#e8e8ee;color:#555}
 .log{max-height:150px;overflow:auto;background:var(--panel2);border-radius:10px;padding:8px;border:1px solid var(--line)}
 .browser{border:1px solid var(--line);border-radius:12px;margin-top:8px;background:var(--panel2)}
 .browser .path{padding:8px 10px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -300,6 +300,9 @@ button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-
 .cinfo{font-size:12.5px}.cinfo summary{cursor:pointer;color:var(--acc);list-style:none;padding:4px 6px}.cinfo p{margin:4px 0 0;color:var(--mut)}
 .mfl{display:flex;flex-direction:column;margin-top:8px;max-height:360px;overflow:auto}.mfr{display:flex;gap:10px;align-items:center;padding:8px 4px;border-top:1px solid var(--line);margin:0;cursor:pointer;color:var(--tx)}
 .mfr b{display:block;font-size:12.5px;word-break:break-all}.mfr small{display:block;color:var(--mut);font-size:12px}.mfr .sz{white-space:nowrap;font-size:13px}.mfr.on{background:color-mix(in srgb,var(--ok) 8%,transparent)}
+.fgrid{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden}.fgr{border-top:1px solid var(--line)}.fgr:first-child{border-top:0}
+.fgh{display:flex;gap:14px;align-items:center;width:100%;text-align:left;border:0;border-radius:0;background:transparent;padding:10px 14px;font-size:14px}.fgh:hover{background:var(--panel2)}.fgh .chev{width:12px;color:var(--mut)}
+.fgl{padding:4px 14px 12px 40px;max-height:320px;overflow:auto}.fgi{font-size:12px;padding:2px 0;word-break:break-all}
 .pcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}.pcols .card{margin-bottom:0}@media (max-width:900px){.pcols{grid-template-columns:1fr}}
 button.pli{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 6px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
 button.pli:hover{background:var(--panel2)}.pli .grow{min-width:0}.pli .cod{display:block}.pli small{display:block;color:var(--mut);font-size:11.5px;text-align:right;margin-top:3px}
@@ -818,7 +821,7 @@ async function mapaAberto(m){
 }
 async function certificadoMapa(){
   const c=await api("/api/mapa/certificado"),k=c.contagem,ce=c.cert||{},tot=k.ok+k.falha+k.fora,ok=ce.status==="sem_falhas";
-  const SIT={falha:["Falhou","var(--err)"],revisar:["Para revisar","var(--warn)"],desmarcado:["Não escolhido","var(--mut)"],ignorado:["Do sistema","var(--mut)"]};
+  const SIT={falha:["Falhou","var(--err)"],revisar:["Para revisar","var(--warn)"],em_uso:["Em uso por programa aberto (normal)","var(--mut)"],desmarcado:["Não escolhido","var(--mut)"],ignorado:["Do sistema","var(--mut)"]};
   const ICK={ok:"✓",aviso:"!",erro:"✕"};
   $("#main").innerHTML=`<div class="ptitle row"><div class="grow"><h1>Certificado de conclusão</h1><p>${esc(c.pc||"")} · ${esc(c.data||"")}${ce.cliente?" · cliente "+esc(ce.cliente):""}${ce.tecnico?" · técnico "+esc(ce.tecnico):""} · código <b class="mono">${esc(c.codigo||"—")}</b></p></div><div class="row noprint"><button class="sm" onclick="window.print()">Imprimir / PDF</button><button class="sm" id="cvolta">Voltar ao Mapa</button></div></div>
    <div class="kpis">${kpi2(ok?"Concluído sem falhas":"Concluído com ressalvas",ok?"✅":"⚠️",nf(k.ok),"arquivos copiados e conferidos",tot?k.ok/tot*100:0,ok?"var(--ok)":"var(--warn)")}${kpi2("Tamanho copiado","📥",fmt(k.bytes),esc(c.verificacao||""),100,"var(--azul)")}
@@ -1843,7 +1846,7 @@ function drawTot(t){
 }
 /* ---- lista do backup: painel aberto pelo "Ver lista" (filtro, busca, ordem, Bloco ou Lista, rolagem infinita) ---- */
 const LST={f:{},rot:"",q:"",ord:"nome",dir:"asc",modo:"lista",off:0,fim:false,carregando:false,gen:0,tot:null,fac:null,mais:{},busca:{},fechado:new Set()};
-const STNOME={ok:"Copiado",pendente:"Pendente",falha:"Falha",revisar:"Revisar",ignorado:"Ignorado",desmarcado:"Desmarcado"};
+const STNOME={ok:"Copiado",pendente:"Pendente",falha:"Falha",em_uso:"Em uso (normal)",revisar:"Revisar",ignorado:"Ignorado",desmarcado:"Desmarcado"};
 const stPill=s=>s?`<span class="pill p-${esc(s)}">${esc(STNOME[s]||s)}</span>`:"";
 const TIPO_IC={PDF:"📕",Word:"📘",Documento:"📄",Planilha:"📗","Apresentação":"📙",Texto:"📝",OneNote:"📓","E-mail":"✉️",Contato:"👤",Compactado:"🗜️",Imagem:"🖼️","Vídeo":"🎬","Áudio":"🎵"};
 const ORD_ROT=[["nome","Nome"],["tipo","Tipo"],["categoria","Categoria"],["situacao","Situação"],["data","Data de criação"],["tamanho","Tamanho"],["caminho","Caminho"]];
@@ -2048,17 +2051,34 @@ const FIX={sumiu:"O arquivo foi apagado ou movido enquanto o backup rodava. Norm
  espaco:"Libere espaço no destino ou escolha outro, depois “Refazer”.",caminho_longo:"O caminho é longo demais. Copie esse arquivo manualmente para uma pasta mais curta.",
  io:"Possível setor defeituoso no dispositivo. Tente de novo; se persistir, o arquivo pode estar corrompido na origem.",
  divergente:"A cópia não confere com o original. Use “Refazer só os que falharam”: ele apaga a cópia ruim e copia de novo.",somente_leitura:"O destino está somente leitura. Remonte com escrita ou escolha outro.",outro:"Veja a mensagem e tente refazer."};
+const CAUSA_NOME={permissao:"Sem permissão de leitura",em_uso:"Em uso por outro programa",atalho_app:"Atalho de aplicativo do Windows"};
+const fixTexto=(c,admin)=>c==="permissao"&&admin?"Um programa aberto (ex.: o navegador) ou o próprio Windows está usando este arquivo. Feche o programa e use “Refazer só os que falharam”.":FIX[c]||FIX.outro;
+const RES5={abertos:{},pag:{}};
 async function showRes5(){
-  st=await api("/api/status");const f=st.failures||[],sw=st.sweep||{},nsw=(sw.n_novos||0)+(sw.n_alterados||0)+(sw.n_sumiram||0);
+  st=await api("/api/status");const F=await api("/api/falhas?grupo=reais&limit=50"),sw=st.sweep||{},nsw=(sw.n_novos||0)+(sw.n_alterados||0)+(sw.n_sumiram||0);
+  const linhaF=x=>`<tr><td class="mono" style="word-break:break-all">${esc(x.disp)}<br><span class="mut">${fmt(x.size)}</span></td><td>${esc(x.err)}</td><td>${esc(fixTexto(x.cause,F.admin))}</td></tr>`;
   let h="";
-  if(!f.length&&!nsw)h+=`<div class="rc g"><span class="ic2">✅</span><div><b>Tudo conferido.</b><div class="mut">Nenhuma falha, e a varredura final não encontrou diferenças.</div></div></div>`;
-  if(f.length)h+=`<div class="rc r"><span class="ic2">⛔</span><div class="grow"><b>${nf(st.n_failures)} arquivo(s) com problema</b><div class="mut">Cada um mostra o motivo e como resolver.</div></div></div>
-   <div class="card"><table><tr><th>Arquivo</th><th>Por quê</th><th>Como resolver</th></tr>${f.map(x=>`<tr><td class="mono">${esc(x.disp)}<br><span class="mut">${fmt(x.size)}</span></td><td>${esc(x.err)}</td><td>${esc(FIX[x.cause]||FIX.outro)}</td></tr>`).join("")}</table><div class="row" style="margin-top:10px"><button class="pri" id="retry">Refazer só os que falharam</button></div></div>`;
+  if(!F.n_reais&&!F.n_esperadas&&!nsw)h+=`<div class="rc g"><span class="ic2">✅</span><div><b>Tudo conferido.</b><div class="mut">Nenhuma falha, e a varredura final não encontrou diferenças.</div></div></div>`;
+  if(F.n_reais)h+=`<div class="rc r"><span class="ic2">⛔</span><div class="grow"><b>${nf(F.n_reais)} arquivo(s) importante(s) com problema</b><div class="mut">Arquivos pessoais ou de sistemas da empresa: cada um mostra o motivo e como resolver.</div></div></div>
+   <div class="card"><table><tr><th>Arquivo</th><th>Por quê</th><th>Como resolver</th></tr><tbody id="r5reais">${F.pagina.map(linhaF).join("")}</tbody></table>
+    ${F.n_reais>F.pagina.length?`<button class="sm" id="r5mais" style="margin-top:8px">Mostrar mais (${nf(F.n_reais-F.pagina.length)})</button>`:""}<div class="row" style="margin-top:10px"><button class="pri" id="retry">Refazer só os que falharam</button></div></div>`;
+  if(F.n_esperadas)h+=`<div class="rc y"><span class="ic2">ℹ️</span><div class="grow"><b>${nf(F.n_esperadas)} arquivo(s) de programas não foram copiados porque estavam em uso (${fmt(F.bytes_esperadas)})</b>
+     <div class="mut">É normal: são pastas de programas (navegador aberto, serviços do Windows), não arquivos pessoais. Não contam como falha no certificado. Se quiser mesmo levar, feche os programas e use “Refazer”.</div></div></div>
+   <div class="card"><div class="fgrid">${F.grupos.map(g=>`<div class="fgr"><button class="fgh" data-fg="${esc(g.chave)}" aria-expanded="${!!RES5.abertos[g.chave]}"><span class="chev">${RES5.abertos[g.chave]?"▾":"▸"}</span><b class="grow">${esc(g.programa)}</b><span class="mut">${esc(CAUSA_NOME[g.causa]||g.causa)}</span><span>${nf(g.n)} arquivo${g.n>1?"s":""}</span><span class="mut">${fmt(g.bytes)}</span></button>
+      <div class="fgl ${RES5.abertos[g.chave]?"":"hide"}" id="fg_${esc(g.chave).replace(/[^\w]/g,"_")}">${g.ex.map(x=>`<div class="mono fgi">${esc(x.disp)} <span class="mut">${fmt(x.size)}</span></div>`).join("")}${g.n>3?`<button class="sm gh" data-fm="${esc(g.chave)}">Ver os ${nf(g.n)} arquivos</button>`:""}</div></div>`).join("")}</div>
+    <div class="row" style="margin-top:10px"><button id="r5des">Desmarcar todos estes e continuar</button>${F.n_reais?"":'<button class="sm gh" id="retry">Refazer (depois de fechar os programas)</button>'}</div></div>`;
   if(nsw){h+=`<div class="rc y"><span class="ic2">⚠️</span><div><b>Varredura final</b><div class="mut">${nf(sw.n_novos)} novo(s), ${nf(sw.n_alterados)} alterado(s) e ${nf(sw.n_sumiram)} que sumiram da origem desde o escaneamento.</div></div></div>`;
     const rows=[...(sw.novos||[]).map(x=>[x,"Novo"]),...(sw.alterados||[]).map(x=>[x,"Alterado"])];
-    if(rows.length)h+=`<div class="card"><table><tr><th>Arquivo</th><th>Situação</th></tr>${rows.slice(0,80).map(r=>`<tr><td class="mono">${esc(r[0][0])}</td><td>${r[1]}: ${esc(r[0][2])}</td></tr>`).join("")}</table>${sw.n_novos?'<p class="mut">Para incluir os novos, volte ao passo 2 e escaneie de novo (o que já foi copiado é reaproveitado).</p>':""}</div>`}
+    if(rows.length)h+=`<div class="card"><table><tr><th>Arquivo</th><th>Situação</th></tr>${rows.slice(0,80).map(r=>`<tr><td class="mono">${esc(r[0][0])}</td><td>${r[1]}: ${esc(r[0][2])}</td></tr>`).join("")}</table>${sw.n_novos?'<p class="mut">Para incluir os novos, volte ao passo 2 e escaneie de novo.</p>':""}</div>`}
   h+=`<div class="row"><span class="grow"></span><button class="pri" id="fin">Continuar: o que manter →</button></div>`;
   $("#res5").innerHTML=h;
+  $$("#res5 [data-fg]").forEach(b=>b.onclick=()=>{const k=b.dataset.fg;RES5.abertos[k]=!RES5.abertos[k];showRes5()});
+  $$("#res5 [data-fm]").forEach(b=>b.onclick=()=>safe(async()=>{const k=b.dataset.fm,el=b.parentNode;let off=0,tot=1e9;el.innerHTML="";
+    while(off<tot&&off<2000){const r=await api("/api/falhas?"+new URLSearchParams({grupo:k,off,limit:200}));tot=(r.grupos.find(g=>g.chave===k)||{n:0}).n;
+      el.insertAdjacentHTML("beforeend",r.pagina.map(x=>`<div class="mono fgi">${esc(x.disp)} <span class="mut">${fmt(x.size)}</span></div>`).join(""));if(!r.pagina.length)break;off+=r.pagina.length}}));
+  const rm=$("#r5mais");if(rm)rm.onclick=()=>safe(async()=>{const n=$$("#r5reais tr").length,r=await api("/api/falhas?"+new URLSearchParams({grupo:"reais",off:n,limit:200}));
+    $("#r5reais").insertAdjacentHTML("beforeend",r.pagina.map(linhaF).join(""));if(n+r.pagina.length>=F.n_reais)rm.remove()});
+  const dz=$("#r5des");if(dz)dz.onclick=()=>safe(async()=>{const x=await api("/api/falhas/desmarcar",{});toast(nf(x.n)+" arquivo(s) de programas tirados do backup. Ficam registrados no Mapa.","ok");showRes5()});
   const r=$("#retry");if(r)r.onclick=()=>safe(async()=>{await api("/api/retry",{});go(3)});
   $("#fin").onclick=()=>go(5);
 }
@@ -2073,6 +2093,7 @@ async function draw6(){
    <div class="grow"><h2 style="font-size:22px">${ok?"Backup finalizado. Do jeito D&amp;D.":"Backup finalizado com ressalvas, e a gente mostra cada uma."}</h2><p class="h">Código ${esc(c.codigo)} · ${esc(c.metodo)}${c.maquina_nome?" · "+esc(c.maquina_nome):""}</p></div></div>
    ${ok?`<div class="okbox"><b>Checagem final: nada se perdeu.</b> ${nf(c.copiados)} arquivos copiados e conferidos um a um, sem nenhuma falha. O Mapa ficou no disco do backup (para o cliente) e uma cópia nos seus registros. <b>Pode seguir com o objetivo.</b></div>`
      :`<div class="warnbox"><b>Checagem final: ${nf(c.falhas)} falha(s).</b> Veja o que ficou de fora abaixo e refaça as falhas antes de formatar.</div>`}
+   ${c.nao_copiados_em_uso&&c.nao_copiados_em_uso.n?`<p class="mut" style="font-size:13px">ℹ️ ${nf(c.nao_copiados_em_uso.n)} arquivo(s) de programas estavam em uso e não foram copiados (${fmt(c.nao_copiados_em_uso.bytes)}): é normal, não são arquivos pessoais e estão listados no Mapa.</p>`:""}
    <div class="grid"><div class="kpi"><div class="mut">Copiados e conferidos</div><div class="big">${nf(c.copiados)}</div></div><div class="kpi"><div class="mut">Tamanho</div><div class="big">${fmt(c.bytes)}</div></div><div class="kpi"><div class="mut">Falhas</div><div class="big">${c.falhas}</div></div><div class="kpi"><div class="mut">Ficaram de fora (listados)</div><div class="big">${nf(c.ficaram)}</div></div>${rec}</div>
    ${c.motivos.length?`<h3 style="font-size:14px">O que ficou de fora e por quê</h3><table>${c.motivos.map(x=>`<tr><td>${esc(x.motivo)}</td><td>${nf(x.n)}</td><td>${fmt(x.bytes)}</td></tr>`).join("")}</table>`:""}
    <p class="mono mut">Pasta do backup: ${esc(st.dest_root)}<br>Mapa: ${esc(st.dest_root)}/Mapa/visualizador.html</p>
