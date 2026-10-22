@@ -42,6 +42,7 @@ if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 VERSION = "3.1"
+BUILD = "2026-10-21.1"  # igual ao BUILD do app.html: se forem diferentes, o pendrive tem arquivos de versões misturadas
 import disco  # noqa: E402  (conferência lendo do disco, não da memória)
 import mapa as MAPA  # noqa: E402
 import perfil as PERFIL  # noqa: E402
@@ -195,6 +196,10 @@ class Cancelled(Exception):
     pass
 
 
+class Pulado(Exception):
+    """O técnico mandou pular o arquivo em que a cópia travou."""
+
+
 class Busy(Exception):
     pass
 
@@ -270,7 +275,7 @@ def classify_err(e):
 # Falha "esperada": arquivo de programa em uso (navegador aberto, serviços do Windows) fora do que é pessoal. Não é perda de dado da pessoa.
 MOTIVO_EM_USO = "Em uso por um programa aberto (%s): normal em pastas de programas, não é arquivo pessoal"
 NAO_PESSOAIS = {"Dados_de_apps", "Ocultos", "Temporarios", "Programas", "Configuracoes", "Extras"}
-CAUSAS_EM_USO = {"permissao", "em_uso", "atalho_app"}
+CAUSAS_EM_USO = {"permissao", "em_uso", "atalho_app", "pulado"}
 APPEXECLINK = 0x8000001B  # reparse dos atalhos de aplicativo (WindowsApps): abrir dá "Invalid argument"
 
 
@@ -773,6 +778,85 @@ def explica_pasta(caminho):
     return EXPLICA_PASTA.get(n) or ("Cache: se recria sozinho." if "cache" in n else "Pasta que a varredura não lê por padrão.")
 
 
+# ---------------------------- antecipar falhas: programas abertos, energia, sono ----------------------------
+# processo -> (nome para mostrar, teste do arquivo marcado que esse programa costuma travar)
+_ext = lambda *e: (lambda it: os.path.splitext(it.disp.lower())[1] in e)
+_pasta = lambda *t: (lambda it: any(x in it.disp.lower().replace("\\", "/") for x in t))
+PROGRAMAS_TRAVAM = {
+    "msedge.exe": ("Edge", _pasta("/microsoft/edge/")), "chrome.exe": ("Chrome", _pasta("/google/chrome/")), "brave.exe": ("Brave", _pasta("/bravesoftware/")),
+    "firefox.exe": ("Firefox", _pasta("/mozilla/firefox/")), "thunderbird.exe": ("Thunderbird", _pasta("/thunderbird/")), "outlook.exe": ("Outlook", _ext(".pst", ".ost")),
+    "fbserver.exe": ("Firebird (sistema da loja)", _ext(".fdb", ".gdb")), "fbguard.exe": ("Firebird (sistema da loja)", _ext(".fdb", ".gdb")),
+    "excel.exe": ("Excel", _ext(".xls", ".xlsx", ".xlsm")), "winword.exe": ("Word", _ext(".doc", ".docx")), "powerpnt.exe": ("PowerPoint", _ext(".ppt", ".pptx")),
+    "msaccess.exe": ("Access", _ext(".mdb", ".accdb")),
+    "google chrome": ("Chrome", _pasta("/google/chrome/")), "firefox": ("Firefox", _pasta("/mozilla/firefox/")), "thunderbird": ("Thunderbird", _pasta("/thunderbird/")),
+    "microsoft edge": ("Edge", _pasta("/microsoft edge/", "/microsoft/edge/"))}
+
+
+def processos_abertos():
+    """Nomes (minúsculos) dos processos em execução; vazio se não der para listar."""
+    try:
+        if IS_WIN:
+            out = subprocess.run(["tasklist", "/FO", "CSV", "/NH"], capture_output=True, text=True, timeout=10, creationflags=0x08000000).stdout
+            return {l.split('","')[0].strip('"').lower() for l in out.splitlines() if l.strip()}
+        out = subprocess.run(["ps", "-A", "-o", "comm="], capture_output=True, text=True, timeout=10).stdout
+        return {os.path.basename(l.strip()).lower() for l in out.splitlines() if l.strip()}
+    except Exception:
+        return set()
+
+
+def energia():
+    """{"bateria": True se está na bateria, "nivel": % ou None}."""
+    try:
+        if IS_WIN:
+            import ctypes
+
+            class S(ctypes.Structure):
+                _fields_ = [("AC", ctypes.c_ubyte), ("Flag", ctypes.c_ubyte), ("Pct", ctypes.c_ubyte), ("R", ctypes.c_ubyte), ("L", ctypes.c_ulong), ("F", ctypes.c_ulong)]
+            st = S()
+            ctypes.windll.kernel32.GetSystemPowerStatus(ctypes.byref(st))
+            return {"bateria": st.AC == 0, "nivel": None if st.Pct == 255 else int(st.Pct)}
+        if sys.platform == "darwin":
+            out = subprocess.run(["pmset", "-g", "batt"], capture_output=True, text=True, timeout=5).stdout
+            m = re.search(r"(\d+)%", out)
+            return {"bateria": "Battery Power" in out, "nivel": int(m.group(1)) if m else None}
+        base = "/sys/class/power_supply"
+        for n in os.listdir(base):
+            if n.startswith("AC") or n.startswith("ADP"):
+                with open(os.path.join(base, n, "online")) as fh:
+                    return {"bateria": fh.read().strip() == "0", "nivel": None}
+    except Exception:
+        pass
+    return {"bateria": False, "nivel": None}
+
+
+class SemSono(object):
+    """Impede a suspensão do computador durante a cópia e a verificação (SetThreadExecutionState no Windows, caffeinate no Mac)."""
+    def __init__(self):
+        self.proc = None
+
+    def __enter__(self):
+        try:
+            if IS_WIN:
+                import ctypes
+                ctypes.windll.kernel32.SetThreadExecutionState(0x80000001)  # CONTINUOUS | SYSTEM_REQUIRED, vale para a thread que chamou
+            elif sys.platform == "darwin" and shutil.which("caffeinate"):
+                self.proc = subprocess.Popen(["caffeinate", "-i", "-w", str(os.getpid())])
+        except Exception:
+            pass
+        return self
+
+    def __exit__(self, *a):
+        try:
+            if IS_WIN:
+                import ctypes
+                ctypes.windll.kernel32.SetThreadExecutionState(0x80000000)
+            if self.proc:
+                self.proc.terminate()
+        except Exception:
+            pass
+
+
+CAUSA_NOME_SRV = {"permissao": "sem permissão de leitura", "em_uso": "em uso por outro programa", "atalho_app": "atalho de aplicativo", "pulado": "pulado por você", "io": "erro de leitura"}
 GRUPO_FORA = (("Sistema operacional", "Windows e programas"), ("Sistema Linux", "Sistema e programas"), ("Cache", "Caches e temporários"),
               ("Lixeira", "Lixeira e sistema"))
 LINUX_RAIZ_FORA = {"usr", "var", "opt", "snap", "lib", "lib32", "lib64", "libx32", "bin", "sbin", "boot", "etc", "srv"}
@@ -839,7 +923,15 @@ class App(object):
         self.msg = ""
         self.cfg = {}
         self.parar_medicao()
+        self.parar_ensaio()
+        self.ensaio = None
         self.medicao = None
+        self.alertas = []  # avisos do vigilante e do pré-voo (id, nível, texto, ação, resolvido)
+        self.eventos = []  # tudo o que o vigilante avisou durante o backup (vai para o certificado)
+        self.falhas_recentes = collections.deque(maxlen=100)
+        self.pular = None
+        self.item_atual = None
+        self.vigia_id = 0
         self.extras = []  # pastas que o técnico incluiu (fora do padrão da varredura)
         self.extras_planos = []  # os planos de varredura delas (a varredura final também repassa)
         self.incl = {}
@@ -989,6 +1081,7 @@ class App(object):
         try:
             os.makedirs(self.dest_root, exist_ok=True)
             mb, vel = teste_destino(self.dest_root, min(512, int(free / 1048576 * 0.5)))
+            self.vel_destino = vel
             add("ok", "Gravou e releu %d MB do disco de destino sem diferenças" % mb, "Gravação %.0f MB/s · leitura do disco (%s)." % (vel, disco.METODO))
             if vel < 8:
                 add("aviso", "Destino lento (%.0f MB/s)" % vel, "A cópia vai demorar.", "Use uma porta USB 3 (azul) ou outro disco.")
@@ -1285,6 +1378,228 @@ class App(object):
         it.inc = it.inc0 = marcado
         it.local0, it.rel0 = it.local, it.rel
         return it
+
+    # ------------------------------------------------------------------ vigilante durante a cópia e a verificação
+    LIMITE_PARADA = 45      # segundos sem nenhum byte novo
+    LIMITE_LENTA = 1048576  # bytes/s; abaixo disso por 60 s é lenta
+
+    def alerta(self, id_, nivel, texto, acao="", acoes=()):
+        """Cria ou atualiza um aviso (sem repetir o mesmo id); o novo vai para o Registro e para o certificado."""
+        for a in self.alertas:
+            if a["id"] == id_ and not a.get("resolvido"):
+                a.update(texto=texto, acao=acao, acoes=list(acoes), nivel=nivel)
+                return a
+        a = {"id": id_, "nivel": nivel, "texto": texto, "acao": acao, "acoes": list(acoes), "resolvido": False, "quando": now_iso()}
+        self.alertas.append(a)
+        self.log("ALERTA: %s %s" % (texto, acao))
+        if texto not in [e["texto"] for e in self.eventos]:
+            self.eventos.append({"quando": a["quando"], "texto": texto})
+        return a
+
+    def resolver(self, id_):
+        for a in self.alertas:
+            if a["id"] == id_ and not a.get("resolvido"):
+                a["resolvido"] = True
+                self.log("Resolvido: %s" % a["texto"])
+
+    def iniciar_vigia(self):
+        self.vigia_id += 1
+        threading.Thread(target=self._vigia, args=(self.vigia_id,), daemon=True).start()
+
+    def _vigia(self, meu):
+        ultimo, t_mov, janela, pausou = None, time.time(), collections.deque(maxlen=30), False
+        while self.phase in ("copying", "verifying") and self.vigia_id == meu:
+            time.sleep(2)
+            agora = time.time()
+            copiando = self.phase == "copying"
+            prog = self.cp["done_bytes"] if copiando else self.vf["bytes_done"]
+            em_pausa = not self.run_ev.is_set()
+            janela.append((agora, prog))
+            if prog != ultimo or em_pausa:
+                ultimo, t_mov = prog, agora
+            parado = agora - t_mov
+            atual = self.cp["current"] if copiando else self.vf["current"]
+            adiado = getattr(self, "adiar_parada", 0) > agora
+            if parado >= self.LIMITE_PARADA and not adiado:
+                self.alerta("parada", "aviso", "%s parada há %d s em %s." % ("A cópia" if copiando else "A conferência", parado, os.path.basename(str(atual)) or "um arquivo"),
+                            "Disco travado, arquivo enorme ou leitura ruim. Pode esperar ou pular o arquivo (vale quando o Windows devolver a leitura).", ("pular", "esperar") if copiando else ("esperar",))
+            elif parado < 5:
+                self.resolver("parada")
+            if len(janela) >= 25 and not em_pausa and parado < self.LIMITE_PARADA:
+                t0, b0 = janela[0]
+                vel = (prog - b0) / max(1, agora - t0)
+                resta = (self.cp["total_bytes"] - prog) if copiando else (self.vf["bytes_total"] - prog)
+                if vel < self.LIMITE_LENTA and resta > 50 * 1048576:
+                    self.alerta("lenta", "aviso", "Velocidade muito baixa (%s/s há 1 minuto)." % fmt_bytes(vel),
+                                "Causas comuns: porta USB 2, setor ruim no disco de origem, antivírus lendo cada arquivo ou o computador ocupado.")
+                elif vel > 2 * self.LIMITE_LENTA:
+                    self.resolver("lenta")
+            if copiando and self.dest_root:
+                if not os.path.isdir(self.dest_root):
+                    self.alerta("destino", "erro", "O destino do backup sumiu (disco ou pendrive desconectado?).", "Reconecte: a cópia retoma sozinha.")
+                    if self.run_ev.is_set():
+                        self.run_ev.clear()
+                        pausou = True
+                else:
+                    self.resolver("destino")
+                    total, livre = disk_usage(self.dest_root)
+                    falta = max(0, self.cp["total_bytes"] - self.cp["done_bytes"])
+                    if total and livre < falta * 1.02 + 64 * 1048576:
+                        self.alerta("espaco", "erro", "O destino está ficando sem espaço: faltam %s e há %s livres." % (fmt_bytes(falta), fmt_bytes(livre)),
+                                    "Libere espaço no destino: a cópia está pausada e continua sozinha.")
+                        if self.run_ev.is_set():
+                            self.run_ev.clear()
+                            pausou = True
+                    else:
+                        self.resolver("espaco")
+                    if pausou and not self.run_ev.is_set() and not any(a["id"] in ("destino", "espaco") and not a.get("resolvido") for a in self.alertas):
+                        self.run_ev.set()
+                        pausou = False
+            rec = [k for t, k in self.falhas_recentes if agora - t < 300]
+            if len(rec) >= 20:
+                k, n = collections.Counter(rec).most_common(1)[0]
+                if n >= 20:
+                    causa, prog_ = k.split("|", 1)
+                    self.alerta("falhas:" + k, "aviso", "%d arquivos de %s falharam seguidos (%s)." % (n, prog_, CAUSA_NOME_SRV.get(causa, causa)),
+                                "Se for um programa aberto, feche-o e use Refazer; ou desmarque essa pasta na Seleção.")
+        for a in self.alertas:
+            if self.vigia_id == meu and a["id"] in ("parada", "lenta"):
+                a["resolvido"] = True
+
+    # ------------------------------------------------------------------ antecipar falhas antes da cópia
+    def antes_de_copiar(self):
+        """Avisos acionáveis antes de começar: programas abertos que travam o que está marcado, bateria, tempo estimado."""
+        alertas = []
+        abertos = processos_abertos()
+        marcados = [it for it in self.items if it.inc]
+        vistos = {}
+        for proc, (nome, teste) in PROGRAMAS_TRAVAM.items():
+            if proc in abertos or any(proc == a.replace(".exe", "") for a in abertos):
+                n = sum(1 for it in marcados if teste(it))
+                if n and nome not in vistos:
+                    vistos[nome] = n
+                    alertas.append({"id": "aberto:" + nome, "nivel": "aviso", "texto": "O %s está aberto e %d arquivo(s) marcados dele ficam travados." % (nome, n),
+                                    "acao": "Feche o %s e clique em Verificar de novo (ou copie assim mesmo: esses arquivos aparecem como \"em uso\", não como falha)." % nome})
+        en = energia()
+        if en["bateria"]:
+            alertas.append({"id": "bateria", "nivel": "aviso", "texto": "O computador está na bateria%s." % (" (%d%%)" % en["nivel"] if en["nivel"] is not None else ""),
+                            "acao": "Ligue na tomada: uma cópia longa pode acabar a bateria no meio."})
+        total = sum(it.size for it in marcados)
+        vel = getattr(self, "vel_destino", 0) or 0
+        seg = int(total / (vel * 1048576)) if vel else 0
+        if seg > 7200:
+            alertas.append({"id": "tempo", "nivel": "aviso", "texto": "Tempo previsto: cerca de %dh%02dmin (%s a %.0f MB/s)." % (seg // 3600, seg % 3600 // 60, fmt_bytes(total), vel),
+                            "acao": "Use uma porta USB 3 (azul) ou outro disco de destino, ou desmarque o que não precisa."})
+        return {"alertas": alertas, "estimativa": {"segundos": seg, "bytes": total, "vel": vel}, "energia": en, "abertos": sorted(vistos)}
+
+    def ensaio_leitura(self):
+        """Em segundo plano: abre e lê o começo de cada arquivo marcado, para achar antes da cópia o que não dá para ler (em uso, sem permissão)."""
+        with self.lock:
+            if self.busy():
+                raise Busy("Aguarde o processo atual terminar.")
+            if not self.items:
+                raise ValueError("Escaneie antes.")
+            self.parar_ensaio()
+            self.ens_parar = threading.Event()
+            alvos = [i for i, it in enumerate(self.items) if it.inc and not it.nuvem and it.size > 0]
+            self.ensaio = {"rodando": True, "total": len(alvos), "feitos": 0, "problemas": []}
+        threading.Thread(target=self._ensaio_thread, args=(alvos, self.ens_parar, self.ensaio), daemon=True).start()
+        return {"ok": True, "total": len(alvos)}
+
+    def parar_ensaio(self):
+        ev = getattr(self, "ens_parar", None)
+        if ev:
+            ev.set()
+
+    def _ensaio_thread(self, alvos, parar, ens):
+        for n, i in enumerate(alvos):
+            if parar.is_set():
+                break
+            it = self.items[i]
+            try:
+                with open(lp(it.src), "rb") as fh:
+                    fh.read(4096)
+            except OSError as e:
+                if len(ens["problemas"]) < 50000:
+                    ens["problemas"].append((i, classify_err(e)[0]))
+            ens["feitos"] = n + 1
+            if n % 200 == 199:
+                time.sleep(0.001)  # cede a vez
+        ens["rodando"] = False
+
+    def ensaio_estado(self, grupo="", off=0, limit=50):
+        ens = getattr(self, "ensaio", None)
+        if not ens:
+            return {"existe": False}
+        reais, grupos = [], {}
+        for i, causa in list(ens["problemas"]):
+            it = self.items[i]
+            if not it.inc:
+                continue
+            if it.cat in NAO_PESSOAIS and causa in CAUSAS_EM_USO:
+                k = causa + "|" + programa_de(it.disp)
+                g = grupos.setdefault(k, {"chave": k, "causa": causa, "programa": programa_de(it.disp), "n": 0, "bytes": 0, "ex": []})
+                g["n"] += 1
+                g["bytes"] += it.size
+                if len(g["ex"]) < 3:
+                    g["ex"].append(it.disp)
+            else:
+                reais.append((i, causa))
+        out = {"existe": True, "rodando": ens["rodando"], "total": ens["total"], "feitos": ens["feitos"], "n_reais": len(reais),
+               "reais": [{"disp": self.items[i].disp, "cause": c, "size": self.items[i].size} for i, c in reais[:50]],
+               "grupos": sorted(grupos.values(), key=lambda g: -g["n"]), "n_esperadas": sum(g["n"] for g in grupos.values())}
+        return out
+
+    # ------------------------------------------------------------------ diagnóstico do próprio programa
+    def diagnostico(self):
+        pagina = getattr(self, "autoteste_pagina", None) or {}
+        testes = autoteste_servidor()
+        if pagina.get("faltando"):
+            testes.append({"ok": False, "titulo": "A tela perdeu partes", "detalhe": "Faltam: %s" % ", ".join(pagina["faltando"][:12])})
+        elif pagina:
+            testes.append({"ok": True, "titulo": "Telas e recursos do navegador completos", "detalhe": ""})
+        erros = ler_erros(50)
+        try:
+            livre = shutil.disk_usage(DADOS_DIR[0]).free
+        except OSError:
+            livre = 0
+        return {"versao": VERSION, "build": BUILD, "so": "%s %s" % (platform.system(), platform.release()), "python": platform.python_version(), "admin": eh_admin(),
+                "pasta_dados": DADOS_DIR[0], "livre": livre, "testes": testes, "saudavel": all(t["ok"] for t in testes) and not any(a.get("nivel") == "erro" for a in self.alertas_ativas()),
+                "erros": erros, "n_erros": len(erros), "alertas": self.alertas_ativas(), "registro": list(self.logs)[-200:], "fase": self.phase}
+
+    def alertas_ativas(self):
+        return [a for a in getattr(self, "alertas", []) if not a.get("resolvido")]
+
+    def relatorio(self):
+        """Texto único com tudo que o desenvolvedor precisa: sistema, testes, alertas, erros recentes e o Registro. Também grava em Erros/ no pendrive."""
+        d = self.diagnostico()
+        L = ["RELATÓRIO DO DESTRAVA!  %s" % now_iso(), "Versão %s (build %s) · %s · Python %s · administrador: %s" % (d["versao"], d["build"], d["so"], d["python"], "sim" if d["admin"] else "não"),
+             "Pasta de dados: %s (%s livres)" % (d["pasta_dados"], fmt_bytes(d["livre"])), "Fase do backup: %s" % d["fase"], "", "AUTOTESTE"]
+        L += ["  [%s] %s%s" % ("ok" if t["ok"] else "FALHOU", t["titulo"], "" if t["ok"] or not t["detalhe"] else " — " + t["detalhe"]) for t in d["testes"]]
+        L += ["", "ALERTAS ATIVOS (%d)" % len(d["alertas"])] + ["  [%s] %s" % (a.get("nivel", "?"), a.get("texto", "")) for a in d["alertas"]]
+        if self.cfg:
+            L += ["", "CONFIGURAÇÃO DO BACKUP", "  origens: %s" % "; ".join("%s (%s)" % (x["path"], x["kind"]) for x in self.cfg.get("sources", [])), "  destino: %s" % self.cfg.get("dest", "")]
+        if self.checagens:
+            L += ["", "CHECAGENS"] + ["  [%s] %s — %s" % (c.get("nivel"), c.get("titulo"), c.get("detalhe")) for c in self.checagens]
+        if self.medicao:
+            m = self.medicao
+            L += ["", "DISCO: usado %s, pessoal %s, marcado %s, resto %s%s" % (fmt_bytes(m.get("usado", 0)), fmt_bytes(m.get("achado", 0)), fmt_bytes(m.get("marcado", 0)),
+                                                                          fmt_bytes(m.get("resto", 0)), " (medição parcial)" if m.get("parcial") else "")]
+        L += ["", "ERROS RECENTES (%d, do mais novo ao mais antigo)" % len(d["erros"])]
+        for e in d["erros"][:30]:
+            L += ["--- %s  %s" % (e["quando"], e["onde"]), e["texto"].rstrip()]
+        L += ["", "REGISTRO DO BACKUP (últimas %d linhas)" % len(d["registro"])] + d["registro"]
+        txt = "\n".join(L) + "\n"
+        arq = ""
+        try:
+            pasta = os.path.join(DADOS_DIR[0], "Erros")
+            os.makedirs(pasta, exist_ok=True)
+            arq = os.path.join(pasta, "relatorio-%s.txt" % datetime.datetime.now().strftime("%Y-%m-%d-%H%M"))
+            with open(arq, "w", encoding="utf-8") as fh:
+                fh.write(txt)
+        except OSError:
+            arq = ""
+        return {"texto": txt, "arquivo": arq}
 
     # ------------------------------------------------------------------ incluir o que a varredura não lê
     PULA_SEMPRE = {"pagefile.sys", "hiberfil.sys", "swapfile.sys", "dumpstack.log.tmp", "dumpstack.log"}
@@ -1773,6 +2088,7 @@ class App(object):
             if t["fat32_problema"]:
                 raise ValueError("O destino é FAT32 e há arquivos maiores que 4 GB. Use outro destino ou formate em exFAT/NTFS.")
             self.parar_medicao()
+            self.parar_ensaio()
             if not retry_only:
                 self._lembrar_origens()
             queue = [it for it in self.items if it.inc and (it.status is None or (retry_only and it.status == "falha"))]
@@ -1785,8 +2101,13 @@ class App(object):
             self.samples.clear()
             os.makedirs(self.mapa_dir, exist_ok=True)
         threading.Thread(target=self._copy_thread, args=(queue, retry_only), daemon=True).start()
+        self.iniciar_vigia()
 
     def _copy_thread(self, queue, retry_only):
+        with SemSono():
+            self._copy_thread2(queue, retry_only)
+
+    def _copy_thread2(self, queue, retry_only):
         try:
             self.log("%s: %d arquivos (%s)." % ("Refazendo falhas" if retry_only else "Cópia iniciada", len(queue), fmt_bytes(self.cp["total_bytes"])))
             os.makedirs(self.dest_root, exist_ok=True)
@@ -1799,6 +2120,7 @@ class App(object):
             for it in queue:
                 self.check_run()
                 self.cp["current"] = it.disp
+                self.item_atual = it
                 self.copy_item(it)
                 self.cp["done_files"] += 1
             self.phase = "copied"
@@ -1823,6 +2145,9 @@ class App(object):
                 return
             except Cancelled:
                 raise
+            except Pulado:
+                last = ("pulado", "ERRO: Você mandou pular este arquivo (a leitura estava travada)")
+                break
             except OSError as e:
                 cause, msg = classify_err(e)
                 last = (cause, msg)
@@ -1832,6 +2157,7 @@ class App(object):
                 break
         it.status = "falha"
         it.cause, it.err = last
+        self.falhas_recentes.append((time.time(), it.cause + "|" + programa_de(it.disp)))
         self.cp["errors"] += 1
         self.cp["done_bytes"] += it.size
         self.log("FALHA: %s -> %s" % (it.disp, it.err))
@@ -1863,6 +2189,9 @@ class App(object):
             with open(lp(it.src), "rb") as fi, open(lp(tmp), "wb") as fo:
                 while True:
                     self.check_run()
+                    if self.pular is it:
+                        self.pular = None
+                        raise Pulado()
                     buf = fi.read(CHUNK)
                     if not buf:
                         break
@@ -1903,6 +2232,7 @@ class App(object):
             self.phase = "verifying"
             self.samples.clear()
         threading.Thread(target=self._verify_thread, args=(targets, mode, sweep), daemon=True).start()
+        self.iniciar_vigia()
 
     def hash_file(self, path, drop_cache=False):
         """drop_cache: lê do DISCO, não da memória (disco.py). É o que vale para conferir o backup."""
@@ -1914,6 +2244,10 @@ class App(object):
         return h.hexdigest()
 
     def _verify_thread(self, targets, mode, sweep):
+        with SemSono():
+            self._verify_thread2(targets, mode, sweep)
+
+    def _verify_thread2(self, targets, mode, sweep):
         try:
             self.log("Verificação %s iniciada (%d arquivos)." % (mode, len(targets)))
             try:
@@ -2119,7 +2453,7 @@ class App(object):
             "n_items": len(self.items), "finished": self.finished, "cert": self.cert, "dest_root": self.dest_root,
             "same_disk": getattr(self, "same_disk", False), "failures": self.failures()[:300] if self.phase in ("copied", "verified", "done") else [],
             "n_failures": sum(1 for it in self.items if it.inc and it.status == "falha" and not falha_esperada(it)),
-            "n_em_uso": sum(1 for it in self.items if it.inc and falha_esperada(it)), "admin": eh_admin(),
+            "n_em_uso": sum(1 for it in self.items if it.inc and falha_esperada(it)), "admin": eh_admin(), "alertas": self.alertas_ativas(),
         }
 
     # ------------------------------------------------------------------ mapa e certificado
@@ -2244,7 +2578,7 @@ class App(object):
             "status": status, "cliente": cfg["cliente"], "tecnico": cfg["tecnico"], "equipamento": cfg["equip"],
             "data": meta["data"], "hora": datetime.datetime.now().strftime("%H:%M"), "metodo": meta["verificacao"],
             "copiados": c_ok, "bytes": b_ok, "falhas": c_fail, "ficaram": c_left, "pastas_ign": self.ign_dirs_total,
-            "nao_copiados_em_uso": {"n": n_uso, "bytes": b_uso},
+            "nao_copiados_em_uso": {"n": n_uso, "bytes": b_uso}, "eventos": list(self.eventos)[:30],
             "motivos": left[:12], "sweep": {k: sw.get(k, 0) for k in ("n_novos", "n_alterados", "n_sumiram")},
             "sistema": "%s %s" % (platform.system(), platform.release()), "versao": VERSION,
         }
@@ -2570,6 +2904,10 @@ def atividades():
     elif dst.get("fase") == "varrendo":
         out.append({"id": "dados", "titulo": "Procurando o que pesa", "detalhe": dst.get("atual", ""), "pct": dst.get("pct"),
                     "info": "%d arquivos" % dst.get("arquivos", 0), "tela": "dados"})
+    en = getattr(APP, "ensaio", None) or {}
+    if en.get("rodando"):
+        out.append({"id": "ensaio", "titulo": "Ensaiando a leitura dos arquivos", "pct": _pct(en.get("feitos", 0), en.get("total", 0)),
+                    "info": "%d de %d" % (en.get("feitos", 0), en.get("total", 0)), "detalhe": "Só lê o começo de cada arquivo marcado", "tela": "backup"})
     inc = APP.incl or {}
     if inc.get("rodando"):
         out.append({"id": "incluir", "titulo": "Incluindo pastas no backup", "pct": None, "detalhe": inc.get("atual", ""),
@@ -2591,7 +2929,7 @@ def atividades():
            "conferencia": {"diferentes": len(cf.get("diferentes") or []), "faltando": len(cf.get("faltando") or []), "erro": cf.get("erro", "")},
            "medicao": {"parcial": bool(md.get("parcial")), "feita": bool(md) and not md.get("rodando")},
            "incluir": {"erro": inc.get("erro", ""), "feita": bool(inc) and not inc.get("rodando")}}
-    return {"atividades": out, "fim": fim}
+    return {"atividades": out, "fim": fim, "alertas": APP.alertas_ativas()}
 
 
 def ficha_coletar(fase):
@@ -2937,6 +3275,12 @@ class Handler(BaseHTTPRequestHandler):
             return APP.files(q)
         if path == "/api/ping":
             return {"ok": True}
+        if path == "/api/diagnostico":
+            return APP.diagnostico()
+        if path == "/api/diagnostico/relatorio":
+            return APP.relatorio()
+        if path == "/api/ensaio":
+            return APP.ensaio_estado()
         if path == "/api/falhas":
             g = lambda k, d="": (q.get(k) or [d])[0]
             return APP.falhas_agrupadas(g("grupo"), int(g("off", "0") or 0), min(200, int(g("limit", "50") or 50)))
@@ -3091,6 +3435,24 @@ class Handler(BaseHTTPRequestHandler):
             nome = str(b.get("nome", "")).strip()[:60]
             FICHA.meta_set(mid, nome=nome)
             return {"nome": FICHA.nome_exibicao(mid)}
+        if path == "/api/erro_tela":
+            return {"ok": registrar_erro_tela(b.get("mensagem", ""), b.get("pilha", ""), b.get("tela", ""))}
+        if path == "/api/autoteste":
+            APP.autoteste_pagina = {"build": str(b.get("build") or ""), "faltando": [str(x)[:80] for x in (b.get("faltando") or [])][:50]}
+            return {"ok": True}
+        if path == "/api/alerta/acao":
+            ac = str(b.get("acao") or "")
+            if ac == "pular" and APP.item_atual is not None:
+                APP.pular = APP.item_atual
+                APP.log("Você mandou pular: %s" % APP.item_atual.disp)
+            elif ac == "esperar":
+                APP.adiar_parada = time.time() + 180
+                APP.resolver("parada")
+            return {"ok": True}
+        if path == "/api/antes_de_copiar":
+            return APP.antes_de_copiar()
+        if path == "/api/ensaio/iniciar":
+            return APP.ensaio_leitura()
         if path == "/api/falhas/desmarcar":
             return APP.desmarcar_esperadas(str(b.get("grupo") or ""))
         if path == "/api/incluir":
@@ -3374,15 +3736,85 @@ def open_in_browser(url):
     return False
 
 
+def _erros_log():
+    return os.path.join(DADOS_DIR[0], "erros.log")
+
+
+def _gravar_erro(onde, texto):
+    """Uma entrada no erros.log (rotaciona em 1 MB e guarda a anterior em erros.log.1)."""
+    try:
+        p = _erros_log()
+        if os.path.exists(p) and os.path.getsize(p) > 1024 * 1024:
+            os.replace(p, p + ".1")
+        with open(p, "a", encoding="utf-8") as fh:
+            fh.write("%s  v%s  %s\n%s\n" % (now_iso(), VERSION, onde, texto))
+    except Exception:
+        pass
+
+
 def registrar_erro(onde):
     """Grava o erro em andamento (com o traceback) em erros.log, na pasta de dados: é o que se manda para diagnosticar."""
     if isinstance(sys.exc_info()[1], (ConnectionError, TimeoutError)):  # navegador fechou ou cancelou a chamada: normal
         return
+    _gravar_erro(onde, traceback.format_exc())
+
+
+_TELA_VISTOS = collections.OrderedDict()
+
+
+def registrar_erro_tela(mensagem, pilha="", tela=""):
+    """Erro da página (JavaScript) vindo do navegador: no máximo 200 por sessão e sem repetir o mesmo."""
+    chave = (str(mensagem)[:200], str(pilha)[:200])
+    if chave in _TELA_VISTOS or len(_TELA_VISTOS) >= 200:
+        return False
+    _TELA_VISTOS[chave] = 1
+    _gravar_erro("TELA %s" % (str(tela)[:60] or "?"), "%s\n%s" % (str(mensagem)[:500], str(pilha)[:1500]))
+    return True
+
+
+def ler_erros(n=50):
+    """As últimas n entradas do erros.log: [{quando, onde, resumo, texto}], da mais nova para a mais antiga."""
     try:
-        with open(os.path.join(DADOS_DIR[0], "erros.log"), "a", encoding="utf-8") as fh:
-            fh.write("%s  v%s  %s\n%s\n" % (now_iso(), VERSION, onde, traceback.format_exc()))
-    except Exception:
-        pass
+        with open(_erros_log(), encoding="utf-8", errors="replace") as fh:
+            txt = fh.read()
+    except OSError:
+        return []
+    blocos = re.split(r"(?m)^(?=\d{4}-\d\d-\d\d \d\d:\d\d:\d\d  v)", txt)
+    out = []
+    for b in blocos:
+        m = re.match(r"(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)  v\S+  (.*)\n", b)
+        if not m:
+            continue
+        linhas = [x for x in b[m.end():].splitlines() if x.strip()]
+        resumo = next((x.strip() for x in reversed(linhas) if not x.startswith(" ")), linhas[-1].strip() if linhas else "")
+        out.append({"quando": m.group(1), "onde": m.group(2).strip(), "resumo": resumo[:300], "texto": b[m.end():][:3000]})
+    return out[-n:][::-1]
+
+
+def autoteste_servidor():
+    """Verificações rápidas do próprio programa na abertura: [{ok, titulo, detalhe}]."""
+    r = []
+    add = lambda ok, t, d="": r.append({"ok": bool(ok), "titulo": t, "detalhe": d})
+    add(sys.version_info >= (3, 8), "Python %d.%d.%d" % sys.version_info[:3], "O programa precisa do Python 3.8 ou mais novo.")
+    pasta = DADOS_DIR[0]
+    try:
+        tmp = os.path.join(pasta, ".dd_teste_%d" % os.getpid())
+        with open(tmp, "w") as fh:
+            fh.write("x")
+        os.remove(tmp)
+        livre = shutil.disk_usage(pasta).free
+        add(livre > 50 * 1024 * 1024, "Pasta de dados grava (%s livres)" % fmt_bytes(livre), "Fichas e registros ficam aqui: %s" % pasta)
+    except OSError as e:
+        add(False, "A pasta de dados não grava", "%s (%s). O pendrive pode estar só para leitura ou cheio." % (pasta, e))
+    add(2024 <= datetime.date.today().year <= 2100, "Relógio do computador plausível (%s)" % datetime.date.today().isoformat(), "Data errada estraga as fichas e os certificados.")
+    try:
+        with open(os.path.join(WEB, "app.html"), encoding="utf-8") as fh:
+            m = re.search(r'const BUILD="([^"]+)"', fh.read())
+        pagina = m.group(1) if m else ""
+        add(pagina == BUILD, "Programa e tela na mesma versão (%s)" % BUILD, "A tela é da versão %s e o programa da %s: copie a pasta do programa inteira de novo." % (pagina or "?", BUILD))
+    except OSError:
+        add(False, "Não achei a tela do programa (web/app.html)", "A pasta web está incompleta.")
+    return r
 
 
 class Servidor(ThreadingHTTPServer):

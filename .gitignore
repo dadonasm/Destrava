@@ -30,3 +30,4 @@ staticfiles/
 # perfil do técnico: fica só no computador
 perfil.json
 perfil.json.tmp
+Erros/

@@ -227,6 +227,7 @@ body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{d
 #ilhab .txt{overflow:hidden;text-overflow:ellipsis}#ilhab .eta,#ilhad .eta{color:#a4a9b6;font-variant-numeric:tabular-nums;font-size:13px}
 #ilhab .anel{width:38px;height:38px;flex:none}#ilhab .anel circle{transition:stroke-dashoffset .6s}.anel.gira{animation:ilha-gira 1.1s linear infinite}@keyframes ilha-gira{to{transform:rotate(360deg)}}
 #ilhab .sinal{width:38px;height:38px;flex:none;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;background:rgba(255,255,255,.12)}
+#ilha.alerta{box-shadow:0 0 0 2px #e5a23a,0 10px 30px rgba(0,0,0,.3)}#ilha.alerta .anelc::after{content:"!";position:absolute;right:-6px;top:-6px;width:16px;height:16px;border-radius:50%;background:#e5a23a;color:#111;font:800 11px/16px system-ui;text-align:center}
 #ilha.ok .sinal{background:#1f7a4d;color:#fff}#ilha.erro .sinal{background:#b3261e;color:#fff}
 #ilha.aberta{border-radius:26px;width:min(440px,calc(100vw - 24px))}
 /* vidro do iPhone/Mac: o que sobe para o cabeçalho vai desfocando e esmaecendo; o logo, o menu e a ilha ficam nítidos por cima */
@@ -446,7 +447,9 @@ async function api(path,body){
 let toastT=null;
 function toast(m,kind){let t=$(".toast");if(t)t.remove();t=document.createElement("div");t.className="toast "+(kind||"");t.setAttribute("role","status");t.textContent=m;document.body.appendChild(t);clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),kind==="err"?9000:5000)}
 async function safe(fn){try{return await fn()}catch(e){onErr(e)}}
-addEventListener("unhandledrejection",e=>{const r=e.reason,m=(r&&r.message)||String(r);if(m==="ORFAOS"||REDE.test(m))return;toast("Erro: "+m,"err")});
+const BUILD="2026-10-21.1";  // igual ao BUILD do dd_backup.py
+const erroTela=(m,p)=>{try{fetch("/api/erro_tela",{method:"POST",headers:{"X-DD-Token":TOKEN},body:JSON.stringify({mensagem:String(m),pilha:String(p||""),tela:(typeof view!=="undefined"?view:"")+(typeof step!=="undefined"&&view==="backup"?":"+step:"")})}).catch(()=>{})}catch(e){}};
+addEventListener("unhandledrejection",e=>{const r=e.reason,m=(r&&r.message)||String(r);if(m==="ORFAOS"||REDE.test(m))return;erroTela(m,r&&r.stack);toast("Erro: "+m,"err")});
 /* contato com o programa: só avisa depois de 3 falhas seguidas; some sozinho quando volta */
 const CONEX={falhas:0,t:null,
   ok(){if(this.falhas>=3){const b=$("#semcon");if(b)b.remove();toast("Contato com o programa de volta.","ok")}this.falhas=0},
@@ -454,7 +457,7 @@ const CONEX={falhas:0,t:null,
     catch(e){this.falhas++;if(this.falhas===3&&!$("#semcon")){document.body.insertAdjacentHTML("beforeend",'<div id="semcon" class="semcon" role="alert"><b>Sem contato com o programa.</b> Confira se a janela preta do Destrava! continua aberta. Se ela fechou, abra o Destrava! de novo.<button class="sm" id="semconb">Tentar de novo</button></div>');$("#semconb").onclick=()=>this.sonda()}}
     this.t=setTimeout(()=>this.sonda(),4000)}};
 setTimeout(()=>CONEX.sonda(),4000);
-addEventListener("error",e=>{if(e.message)toast("Erro na tela: "+e.message,"err")});
+addEventListener("error",e=>{if(e.message){erroTela(e.message,(e.error&&e.error.stack)||(e.filename+":"+e.lineno));toast("Erro na tela: "+e.message,"err")}});
 function onErr(e){
   if(e.codigo==="termo")return openGate();
   if(e.message==="ORFAOS")return;
@@ -707,6 +710,7 @@ async function drawPerfil(){
   const IM={nome:'autocomplete="name"',empresa:'autocomplete="organization"',email:'inputmode="email" autocomplete="email"',telefone:'inputmode="tel" autocomplete="tel"',site:'inputmode="url"'};
   $("#main").innerHTML=`<div class="ptitle"><h1>Configurações</h1><p>Permissões do sistema e quem atende. Fica só neste computador, não vai para o git nem para a internet.</p></div>
    <div class="card"><h2>Permissões do sistema</h2><div id="cfperm" class="mut">Verificando…</div></div>
+   <div class="card" id="cfdiag"><h2>Diagnóstico do programa</h2><div id="cfdiagc" class="mut">Verificando…</div></div>
    <div class="card"><h2>Seus dados (técnico)</h2><p class="mut" style="margin-top:0">Marque o que aparece no certificado entregue ao cliente. Redes sociais são opcionais.</p>
    ${r.campos.map(([c,rot])=>`<div class="pfl"><div class="grow"><label for="pf_${c}">${esc(rot)}</label><input type="text" id="pf_${c}" data-c="${c}" value="${esc(p[c]||"")}" maxlength="120" ${IM[c]||""}></div><label class="pfc"><input type="checkbox" data-cert="${c}" ${marc.has(c)?"checked":""}> no certificado</label></div>`).join("")}
    <div id="pferr"></div><div class="row" style="justify-content:flex-end;margin-top:14px"><button class="pri" id="pfsave">Salvar perfil</button></div></div>
@@ -717,7 +721,31 @@ async function drawPerfil(){
   $$("#main input").forEach(i=>{i.addEventListener("input",prev);i.addEventListener("change",prev)});prev();
   $("#pfsave").onclick=()=>safe(async()=>{$("#pferr").innerHTML="";
     try{const x=await api("/api/perfil",coletar());PERFIL=x.perfil;toast("Perfil salvo.","ok")}catch(e){$("#pferr").innerHTML=`<div class="errbox" style="margin-top:10px">${esc(e.message)}</div>`}});
-  cfgPerm();
+  cfgPerm();cfgDiag();
+}
+/* diagnóstico: autoteste, alertas, erros recentes e relatório para enviar (vai também para a pasta Erros do pendrive) */
+const RECURSOS=["drawHome","drawDados","drawMaq","drawMapas","drawPerfil","drawOS","draw1","draw2","draw3","draw4","draw5","draw6","drawManter","abrirLista","selGrade","showRes5","perfilAbas","medicaoCard","ilhaPoll"];
+function autotestePagina(){
+  const faltando=RECURSOS.filter(f=>{try{return typeof eval(f)!=="function"}catch(e){return true}});
+  ["fetch","localStorage","Promise"].forEach(r=>{if(!(r in window))faltando.push(r)});
+  if(!(window.CSS&&CSS.supports&&CSS.supports("backdrop-filter","blur(2px)")||CSS.supports("-webkit-backdrop-filter","blur(2px)")))faltando.push("backdrop-filter (só deixa de ter o vidro)");
+  api("/api/autoteste",{build:BUILD,faltando:faltando.filter(x=>!/backdrop/.test(x))}).catch(()=>{});
+  return faltando;
+}
+async function cfgDiag(){
+  const el=$("#cfdiagc");if(!el)return;
+  let d;try{d=await api("/api/diagnostico")}catch(e){el.innerHTML=`<div class="errbox">Não consegui ler o diagnóstico: ${esc(e.message)}</div>`;return}
+  const nivel=a=>a.nivel==="erro"?"✕":a.nivel==="aviso"?"⚠":"ℹ";
+  el.innerHTML=`<div class="row" style="gap:10px;margin-bottom:8px"><span class="badge ${d.saudavel?"b-ok":"b-warn"}" style="margin:0">${d.saudavel?"✓ Tudo certo":"⚠ Tem algo para ver"}</span>
+    <span class="mut" style="font-size:12.5px">Versão ${esc(d.versao)} · build ${esc(d.build)} · ${esc(d.so)} · Python ${esc(d.python)} · ${d.admin?"administrador":"sem administrador"}</span></div>
+   <ul class="chkl" style="margin:0">${d.testes.map(t=>`<li style="display:flex;gap:10px;padding:6px 0"><span class="ci" style="${t.ok?"background:var(--ok);border-color:var(--ok);color:#fff":"border-color:var(--err);color:var(--err)"}">${t.ok?"✓":"✕"}</span><div><b style="font-size:13.5px">${esc(t.titulo)}</b>${t.ok||!t.detalhe?"":`<div class="mut" style="font-size:12.5px">${esc(t.detalhe)}</div>`}</div></li>`).join("")}</ul>
+   ${d.alertas.length?`<h3 style="font-size:14px;margin:12px 0 4px">Avisos agora</h3>${d.alertas.map(a=>`<div class="warnbox" style="margin:4px 0">${nivel(a)} ${esc(a.texto)}</div>`).join("")}`:""}
+   <h3 style="font-size:14px;margin:12px 0 4px">Erros recentes (${d.n_erros})</h3>
+   ${d.erros.length?`<div class="mfl" style="max-height:260px">${d.erros.slice(0,15).map(e=>`<details class="mfr" style="display:block"><summary style="cursor:pointer"><b style="font-size:13px">${esc(e.onde)}</b> <span class="mut" style="font-size:12px">· ${esc(e.quando)}</span><div class="mut" style="font-size:12px">${esc(e.resumo)}</div></summary><pre class="mono" style="font-size:11.5px;white-space:pre-wrap;margin:6px 0 0">${esc(e.texto)}</pre></details>`).join("")}</div>`:'<p class="mut" style="margin:0;font-size:13px">Nenhum erro registrado.</p>'}
+   <div class="row" style="margin-top:12px"><button id="dgcopia">Copiar relatório</button><button id="dgsalva">Salvar relatório no pendrive</button><button class="sm gh" id="dgreg">Ver o registro do backup</button></div><div id="dgmsg" class="mut" style="font-size:12.5px;margin-top:6px"></div>`;
+  $("#dgcopia").onclick=()=>safe(async()=>{const r=await api("/api/diagnostico/relatorio");try{await navigator.clipboard.writeText(r.texto);toast("Relatório copiado. Cole onde quiser enviar.","ok")}catch(e){modalHtml("Relatório",`<pre class="mono" style="max-height:60vh;overflow:auto;font-size:11.5px">${esc(r.texto)}</pre>`)}$("#dgmsg").textContent=r.arquivo?"Também salvo em: "+r.arquivo:""});
+  $("#dgsalva").onclick=()=>safe(async()=>{const r=await api("/api/diagnostico/relatorio");$("#dgmsg").textContent=r.arquivo?"Salvo em: "+r.arquivo:"Não consegui gravar na pasta do pendrive.";toast(r.arquivo?"Relatório salvo na pasta Erros.":"Não consegui salvar.",r.arquivo?"ok":"err")});
+  $("#dgreg").onclick=()=>modalHtml("Registro do backup",`<pre class="mono" style="max-height:60vh;overflow:auto;font-size:11.5px;white-space:pre-wrap">${esc(d.registro.join("\n")||"(vazio)")}</pre>`);
 }
 async function cfgPerm(){
   const el=$("#cfperm");if(!el)return;
@@ -1310,9 +1338,9 @@ function wireReg(g){
 }
 
 /* ---------- "Dynamic Island": o que está rodando agora (análise, backup, Dados, conferência, envios), mesmo olhando outra tela ---------- */
-const ILHA={ativas:[],aberta:false,t:null,aviso:null,ta:null,fixa:false,sobre:false,tc:null,th:null};
-const ILHA_ORD=["backup","incluir","medicao","ficha","dados","conferencia","envio"];
-const ILHA_IC={backup:"backup",incluir:"up",medicao:"disk",ficha:"cpu",dados:"dados",conferencia:"shield",envio:"up"};
+const ILHA={ativas:[],alertas:[],aberta:false,t:null,aviso:null,ta:null,fixa:false,sobre:false,tc:null,th:null};
+const ILHA_ORD=["backup","ensaio","incluir","medicao","ficha","dados","conferencia","envio"];
+const ILHA_IC={backup:"backup",ensaio:"shield",incluir:"up",medicao:"disk",ficha:"cpu",dados:"dados",conferencia:"shield",envio:"up"};
 const ILHA_PASSO={scanning:1,copying:3,verifying:4,finishing:6};
 const ILHA_FIM={
  ficha:f=>f.erro?["erro","A análise falhou"]:["ok","Análise pronta"],
@@ -1337,14 +1365,15 @@ async function ilhaPoll(){
   ILHA.ativas.forEach(a=>{if(!ids.has(a.id)){const f=(ILHA_FIM[a.id]||(()=>null))(r.fim[a.id]||{});if(f)ilhaAviso(f[0],f[1])}});
   const novas=agora.filter(a=>!ILHA.ativas.some(b=>b.id===a.id));
   novas.forEach(a=>ilhaVivo(a.titulo));
-  ILHA.ativas=agora;if(novas.length)ilhaCheia();ilhaDesenha();
+  const antes=ILHA.alertas.length;ILHA.alertas=r.alertas||[];
+  ILHA.ativas=agora;if(novas.length||ILHA.alertas.length>antes)ilhaCheia();ilhaDesenha();
   ILHA.t=setTimeout(ilhaPoll,agora.length?1000:4000);
 }
 function ilhaDesenha(){
   const el=$("#ilha"),b=$("#ilhab"),e2=$("#ilha2"),d=$("#ilhad");if(!el)return;
   const a=ILHA.ativas[0],av=ILHA.aviso;
   if(!a){ILHA.aberta=false;ILHA.fixa=false}
-  const mini=!!a&&!av&&!ILHA.aberta,n=ILHA.ativas.length;
+  const mini=!!a&&!av&&!ILHA.aberta,n=ILHA.ativas.length;el.classList.toggle("alerta",!!ILHA.alertas.length&&!av);
   el.classList.toggle("hide",!a&&!av);el.classList.toggle("reduzida",mini);e2.classList.add("hide");
   el.classList.toggle("ok",!!av&&av.tipo==="ok");el.classList.toggle("erro",!!av&&av.tipo==="erro");
   if(av)b.innerHTML=`<span class="sinal">${av.tipo==="ok"?"✓":"✕"}</span><span class="txt"><b>${esc(av.texto)}</b></span>`;  // o aviso de fim passa na frente por 6 s
@@ -1362,7 +1391,7 @@ function ilhaDesenha(){
   $$("[data-ir]",d).forEach(k=>k.onclick=e=>{e.stopPropagation();ilhaIr(k.dataset.ir)});
 }
 function ilhaIr(id){const a=ILHA.ativas.find(x=>x.id===id);ILHA.aberta=false;ILHA.fixa=false;ilhaDesenha();if(!a)return;
-  if(a.id==="backup")go(ILHA_PASSO[a.fase]!=null?ILHA_PASSO[a.fase]:step);else if(a.id==="medicao"||a.id==="incluir")go(2);else nav(a.tela)}
+  if(a.id==="backup")go(ILHA_PASSO[a.fase]!=null?ILHA_PASSO[a.fase]:step);else if(a.id==="medicao"||a.id==="incluir"||a.id==="ensaio")go(2);else nav(a.tela)}
 function ilhaLigar(){
   const el=$("#ilha"),fecha=()=>{ILHA.fixa=false;ILHA.aberta=false;ilhaDesenha()};
   $("#ilhab").onclick=()=>{if(!ILHA.ativas.length)return;ILHA.fixa=!ILHA.fixa;ILHA.aberta=ILHA.fixa||ILHA.sobre;clearTimeout(ILHA.tc);ilhaDesenha()};  // clique/toque fixa
@@ -1934,17 +1963,36 @@ function drawTot(t){
    <div style="margin-top:12px" class="mut">Ocupa ${pct.toFixed(pct<10?1:0)}% do espaço livre no destino (${fmt(t.free)})</div><div class="bar"><i style="width:${pct}%;${pct>90?"background:var(--err)":""}"></i></div>${w}
    <div class="row" style="margin-top:14px"><button id="back3">← Voltar</button><button class="pri grow" id="go3">Iniciar cópia →</button></div>`;
   $("#go3").disabled=!t.cabe||t.fat32_problema||t.sel_n===0;
-  $("#back3").onclick=()=>go(1);$("#go3").onclick=()=>safe(async()=>{
-    const bt=$("#go3"),txt=bt.textContent;bt.disabled=true;bt.textContent="Conferindo as mídias…";
-    try{
-      const pf=await api("/api/preflight",{}),er=pf.checks.filter(c=>c.nivel==="erro"),av=pf.checks.filter(c=>c.nivel==="aviso");
-      const lista=cs=>`<ul style="margin:6px 0 0;padding-left:18px">${cs.map(c=>`<li><b>${esc(c.titulo)}</b><div class="mut" style="font-size:13px">${esc(c.detalhe)}${c.solucao?" · "+esc(c.solucao):""}</div></li>`).join("")}</ul>`;
-      if(er.length){await dialog({titulo:"Não dá para copiar agora",html:`<p>A conferência das mídias, logo antes da cópia, achou problema:</p>${lista(er)}`,ok:"Entendi",semCancelar:true});return}
-      const sim=await dialog({titulo:"Mídias conferidas de novo",html:`<div class="okbox">Origem e destino lidos agora: <b>${nf(t.sel_n)} arquivos (${fmt(t.sel_bytes)})</b> cabem no destino (${fmt(t.free)} livres).</div>${av.length?`<p style="margin:10px 0 0">Avisos:</p>${lista(av)}`:""}`,ok:"Iniciar cópia"});
-      if(!sim)return;
-      await api("/api/copy",{});go(3);
-    }finally{if(document.body.contains(bt)){bt.disabled=false;bt.textContent=txt}}
-  });
+  $("#back3").onclick=()=>go(1);$("#go3").onclick=()=>safe(()=>preVoo(t));
+}
+/* pré-voo: confere as mídias de novo, avisa dos programas abertos e da bateria e ensaia a leitura dos arquivos marcados antes de copiar */
+async function preVoo(t){
+  const bt=$("#go3"),txt=bt?bt.textContent:"";if(bt){bt.disabled=true;bt.textContent="Conferindo…"}
+  let pf,ab;
+  try{[pf,ab]=await Promise.all([api("/api/preflight",{}),api("/api/antes_de_copiar",{})]);await api("/api/ensaio/iniciar",{}).catch(()=>{})}
+  finally{if(bt&&document.body.contains(bt)){bt.disabled=false;bt.textContent=txt}}
+  const er=pf.checks.filter(c=>c.nivel==="erro"),av=pf.checks.filter(c=>c.nivel==="aviso");
+  const lista=cs=>`<ul style="margin:6px 0 0;padding-left:18px">${cs.map(c=>`<li><b>${esc(c.titulo)}</b><div class="mut" style="font-size:13px">${esc(c.detalhe)}${c.solucao?" · "+esc(c.solucao):""}</div></li>`).join("")}</ul>`;
+  if(er.length)return dialog({titulo:"Não dá para copiar agora",html:`<p>A conferência das mídias, logo antes da cópia, achou problema:</p>${lista(er)}`,ok:"Entendi",semCancelar:true});
+  const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
+  d.innerHTML=`<div class="box" style="max-width:720px"><h2>Pronto para copiar?</h2>
+   <div class="okbox">Origem e destino lidos agora: <b>${nf(t.sel_n)} arquivos (${fmt(t.sel_bytes)})</b> cabem no destino (${fmt(t.free)} livres).${ab.estimativa.segundos&&ab.estimativa.segundos<7200?` Tempo previsto: cerca de ${ab.estimativa.segundos<90?"1 minuto":Math.round(ab.estimativa.segundos/60)+" minutos"}.`:""}</div>
+   <div id="pvav">${[...av.map(c=>({texto:c.titulo,acao:[c.detalhe,c.solucao].filter(Boolean).join(" · ")})),...ab.alertas].map(a=>`<div class="warnbox" style="margin:8px 0">⚠ <b>${esc(a.texto)}</b><div style="font-size:13px">${esc(a.acao||"")}</div></div>`).join("")}</div>
+   <div id="pven" class="infobox" style="margin:8px 0">Ensaiando a leitura dos arquivos marcados…</div>
+   <div class="row" style="margin-top:16px;justify-content:flex-end"><button id="pvc">Cancelar</button><button id="pvv">Verificar de novo</button><button class="pri" id="pvok">Iniciar cópia</button></div></div>`;
+  $("#layer").appendChild(d);
+  let vivo=true;const fecha=()=>{vivo=false;d.remove()};
+  const poll=async()=>{if(!vivo)return;let e;try{e=await api("/api/ensaio")}catch(x){return setTimeout(poll,2000)}
+    const el=$("#pven",d);if(!el)return;
+    if(!e.existe){el.textContent="";return}
+    if(e.rodando){el.innerHTML=`Ensaiando a leitura dos arquivos marcados… ${nf(e.feitos)} de ${nf(e.total)} (${e.total?Math.round(e.feitos/e.total*100):0}%)`;return setTimeout(poll,800)}
+    const reais=e.n_reais?`<div class="warnbox" style="margin:6px 0"><b>${nf(e.n_reais)} arquivo(s) pessoais não dá para ler agora</b>${e.reais.slice(0,5).map(x=>`<div class="mono" style="font-size:12px;word-break:break-all">${esc(x.disp)}</div>`).join("")}<div style="font-size:13px">${esc(fixTexto(e.reais[0].cause,ab.admin))}</div></div>`:"";
+    const esp=e.n_esperadas?`<div class="infobox" style="margin:6px 0">ℹ️ <b>${nf(e.n_esperadas)} arquivo(s) de programas estão em uso</b> (${e.grupos.slice(0,4).map(g=>esc(g.programa)+" "+g.n).join(" · ")}). Se copiar assim mesmo, ficam como "em uso (normal)". Para levar, feche os programas e clique em Verificar de novo.</div>`:"";
+    el.className="";el.innerHTML=reais+esp+(!e.n_reais&&!e.n_esperadas?`<div class="okbox" style="margin:6px 0">✓ Todos os ${nf(e.total)} arquivos marcados podem ser lidos agora.</div>`:"")};
+  poll();
+  $("#pvc",d).onclick=fecha;
+  $("#pvv",d).onclick=()=>{fecha();safe(()=>preVoo(t))};
+  $("#pvok",d).onclick=()=>safe(async()=>{fecha();await api("/api/copy",{});go(3)});
 }
 /* ---- lista do backup: painel aberto pelo "Ver lista" (filtro, busca, ordem, Bloco ou Lista, rolagem infinita) ---- */
 const LST={f:{},rot:"",q:"",ord:"nome",dir:"asc",modo:"lista",off:0,fim:false,carregando:false,gen:0,tot:null,fac:null,mais:{},busca:{},fechado:new Set()};
@@ -2102,7 +2150,7 @@ function ringP(p,txt,sub){const r=70,c=2*Math.PI*r;return `<div class="ringp"><s
 function setRing(p,txt,sub){const c=2*Math.PI*70,e=$("#rgc");if(!e)return;e.setAttribute("stroke-dashoffset",c*(1-Math.min(100,p)/100));$("#rgt").textContent=txt;$("#rgs").textContent=sub||""}
 function draw4(){
   setWide(false);
-  $("#main").innerHTML=`<div class="card"><div class="row" style="gap:24px;align-items:center">${ringP(0,"0%","copiado")}
+  $("#main").innerHTML=`<div id="alv4"></div><div class="card"><div class="row" style="gap:24px;align-items:center">${ringP(0,"0%","copiado")}
    <div class="grow"><h2 id="t4" style="margin-top:0">Copiando…</h2><p class="h">Cada arquivo é gravado, conferido e catalogado. Você pode pausar ou cancelar; o que já foi copiado fica.</p><div class="mono mut" id="cur4" style="word-break:break-all;min-height:18px"></div>
    <div class="row" style="margin-top:10px"><button id="pz">Pausar</button><button class="dng" id="cn">Cancelar</button></div></div></div>
    <div class="grid" style="margin-top:14px"><div class="kpi"><div class="mut">Arquivos</div><div class="big" id="k1">0</div></div><div class="kpi"><div class="mut">Copiado</div><div class="big" id="k2">0</div></div><div class="kpi"><div class="mut">Velocidade</div><div class="big" id="k3">–</div></div><div class="kpi"><div class="mut">Tempo restante</div><div class="big" id="k4">–</div></div><div class="kpi"><div class="mut">Falhas</div><div class="big" id="k5">0</div></div></div>
@@ -2112,10 +2160,18 @@ function draw4(){
   $("#cn").onclick=()=>safe(async()=>{const x=await dialog({titulo:"Cancelar a cópia?",html:"<p>O que já foi copiado continua no destino.</p>",ok:"Cancelar a cópia",cancelar:"Continuar copiando",perigo:true});if(x)api("/api/cancel",{})});
   $("#to5").onclick=()=>go(4);poll();
 }
+/* avisos do vigilante (parada, lenta, destino sumiu, sem espaço, falhas iguais), com a ação possível */
+function alertasFaixa(sel,al){
+  const el=$(sel);if(!el)return;al=al||[];
+  const chave=al.map(a=>a.id+a.texto+a.acao).join("|");if(el.dataset.k===chave)return;el.dataset.k=chave;
+  el.innerHTML=al.map(a=>`<div class="${a.nivel==="erro"?"errbox":"warnbox"} alv" style="margin-bottom:10px"><div class="grow"><b>${a.nivel==="erro"?"✕":"⚠"} ${esc(a.texto)}</b><div style="font-size:13px">${esc(a.acao||"")}</div></div>${(a.acoes||[]).map(x=>`<button class="sm" data-aa="${esc(a.id)}" data-ac="${x}">${x==="pular"?"Pular este arquivo":"Continuar esperando"}</button>`).join("")}</div>`).join("");
+  $$("[data-aa]",el).forEach(b=>b.onclick=()=>safe(async()=>{await api("/api/alerta/acao",{id:b.dataset.aa,acao:b.dataset.ac});toast(b.dataset.ac==="pular"?"Vou pular o arquivo assim que a leitura voltar.":"Ok, continuo esperando.","ok")}));
+}
 function tick4(){
   if(!st||!$("#k1"))return;const c=st.copy,p=c.total_bytes?Math.min(100,c.done_bytes/c.total_bytes*100):100;
   setRing(p,Math.floor(p)+"%",st.eta?"faltam "+fdur(st.eta):"copiado");
   $("#k1").textContent=`${nf(c.done_files)} / ${nf(c.total_files)}`;$("#k2").textContent=fmt(c.done_bytes);$("#k3").textContent=st.speed?fmt(st.speed)+"/s":"–";$("#k4").textContent=st.eta?fdur(st.eta):"–";$("#k5").textContent=c.errors;
+  alertasFaixa("#alv4",st.alertas);
   $("#cur4").textContent=c.current;$("#pz").textContent=st.paused?"Continuar":"Pausar";$("#lg").innerHTML=st.log.map(esc).join("<br>");$("#lg").scrollTop=1e9;
   if(st.phase==="copied"){clearInterval(timer);$("#t4").textContent="Cópia terminada";setRing(100,"100%","copiado");$("#after4").classList.remove("hide");$("#pz").disabled=$("#cn").disabled=true}
   if(st.phase==="error"){clearInterval(timer);toast("Erro: "+st.error,"err")}
@@ -2195,6 +2251,7 @@ async function draw6(){
    <div class="grow"><h2 style="font-size:22px">${ok?"Backup finalizado. Do jeito D&amp;D.":"Backup finalizado com ressalvas, e a gente mostra cada uma."}</h2><p class="h">Código ${esc(c.codigo)} · ${esc(c.metodo)}${c.maquina_nome?" · "+esc(c.maquina_nome):""}</p></div></div>
    ${ok?`<div class="okbox"><b>Checagem final: nada se perdeu.</b> ${nf(c.copiados)} arquivos copiados e conferidos um a um, sem nenhuma falha. O Mapa ficou no disco do backup (para o cliente) e uma cópia nos seus registros. <b>Pode seguir com o objetivo.</b></div>`
      :`<div class="warnbox"><b>Checagem final: ${nf(c.falhas)} falha(s).</b> Veja o que ficou de fora abaixo e refaça as falhas antes de formatar.</div>`}
+   ${(c.eventos||[]).length?`<details style="margin:8px 0"><summary class="mut" style="cursor:pointer;font-size:13px">ℹ️ ${c.eventos.length} aviso(s) durante o backup</summary><ul style="margin:6px 0 0;padding-left:18px;font-size:13px">${c.eventos.map(e=>`<li>${esc(e.quando.slice(11))} · ${esc(e.texto)}</li>`).join("")}</ul></details>`:""}
    ${c.nao_copiados_em_uso&&c.nao_copiados_em_uso.n?`<p class="mut" style="font-size:13px">ℹ️ ${nf(c.nao_copiados_em_uso.n)} arquivo(s) de programas estavam em uso e não foram copiados (${fmt(c.nao_copiados_em_uso.bytes)}): é normal, não são arquivos pessoais e estão listados no Mapa.</p>`:""}
    <div class="grid"><div class="kpi"><div class="mut">Copiados e conferidos</div><div class="big">${nf(c.copiados)}</div></div><div class="kpi"><div class="mut">Tamanho</div><div class="big">${fmt(c.bytes)}</div></div><div class="kpi"><div class="mut">Falhas</div><div class="big">${c.falhas}</div></div><div class="kpi"><div class="mut">Ficaram de fora (listados)</div><div class="big">${nf(c.ficaram)}</div></div>${rec}</div>
    ${c.motivos.length?`<h3 style="font-size:14px">O que ficou de fora e por quê</h3><table>${c.motivos.map(x=>`<tr><td>${esc(x.motivo)}</td><td>${nf(x.n)}</td><td>${fmt(x.bytes)}</td></tr>`).join("")}</table>`:""}
@@ -2223,7 +2280,7 @@ async function draw6(){
   try{PERFIL=(await api("/api/perfil")).perfil}catch(e){}
   FB=/darwin|mac/i.test(info.os||"")?1000:1024;
   $("#hver").onclick=()=>{if(info.servidor){toast("No modo servidor o programa já vem na versão do servidor.");return}safe(openUpdate)};
-  await loadCtx();
+  await loadCtx();setTimeout(autotestePagina,1500);
   let s;try{s=await api("/api/status")}catch(e){s={phase:"idle"}}
   st=s;
   const map={idle:0,scanning:1,scanned:2,copying:3,copied:4,verifying:4,verified:4,finishing:6,done:6,error:0};

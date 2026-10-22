@@ -307,6 +307,45 @@ class EscolhaTotal(BackupCompleto):
         self.assertEqual((f["n_reais"], f["pagina"][0]["cause"]), (1, "permissao"))
         self.assertTrue(f["pagina"][0]["disp"].endswith("relatorio_travado.docx"))
 
+    def test_antes_de_copiar_avisa_do_programa_aberto(self):
+        import unittest.mock as um
+        self.travado("Users", "Ana", "AppData", "Local", "Microsoft", "Edge", "User Data", "Default", "Cookies")
+        self.escanear()
+        self.app.select({"filter": {}, "on": True})
+        with um.patch.object(dd_backup, "processos_abertos", return_value={"msedge.exe", "explorer.exe"}), um.patch.object(dd_backup, "energia", return_value={"bateria": True, "nivel": 40}):
+            self.app.vel_destino = 1
+            r = self.app.antes_de_copiar()
+        ids = [a["id"] for a in r["alertas"]]
+        self.assertIn("aberto:Edge", ids)
+        self.assertIn("bateria", ids)
+        self.assertEqual(r["abertos"], ["Edge"])
+        with um.patch.object(dd_backup, "processos_abertos", return_value={"explorer.exe"}), um.patch.object(dd_backup, "energia", return_value={"bateria": False, "nivel": None}):
+            self.assertEqual([a for a in self.app.antes_de_copiar()["alertas"] if a["id"].startswith("aberto")], [], "programa fechado: sem aviso")
+
+    def test_ensaio_de_leitura_acha_antes_da_copia(self):
+        if os.geteuid() == 0:
+            self.skipTest("root lê arquivo sem permissão")
+        self.travado("Users", "Ana", "AppData", "Local", "Microsoft", "Edge", "User Data", "Default", "LOCK")
+        self.travado("Users", "Ana", "Documents", "pessoal_travado.docx")
+        self.escanear()
+        self.app.select({"filter": {}, "on": True})
+        self.app.ensaio_leitura()
+        t = time.time()
+        while self.app.ensaio["rodando"] and time.time() - t < 20:
+            time.sleep(0.05)
+        e = self.app.ensaio_estado()
+        self.assertEqual((e["n_reais"], e["n_esperadas"]), (1, 1))
+        self.assertTrue(e["reais"][0]["disp"].endswith("pessoal_travado.docx"))
+        self.assertEqual(e["grupos"][0]["programa"], "Edge (navegador)")
+        self.assertEqual(e["feitos"], e["total"])
+        self.app.start_copy()
+        self.assertTrue(self.app.ens_parar.is_set(), "a cópia para o ensaio")
+        espera(self.app, ("copied", "error"))
+
+    def test_sem_sono_nao_quebra(self):
+        with dd_backup.SemSono():
+            pass
+
     def test_atalho_de_aplicativo(self):
         import errno as E
         self.assertEqual(dd_backup.classify_err(OSError(E.EINVAL, "Invalid argument"))[0], "atalho_app")

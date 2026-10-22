@@ -73,3 +73,12 @@ serviço) travava tudo em máquina de terceiros. Decisão: tirar a OS por enquan
   "Otimizar o desempenho" (abre a aba Otimização).
 - Seleção: painel único em grade (`selGrade`/`selCorpo`/`selAtualiza`): abas Por categoria / Por usuário e pasta, filtro por bloco, busca, ordem,
   grupos recolhíveis, linha com detalhe; marcar atualiza só números (sem redesenhar). Estado em `localStorage` (`dd_sel`).
+
+## I. Diagnóstico dentro do sistema
+- **Ver e enviar**: Configurações → "Diagnóstico do programa": autoteste, avisos, erros recentes (`erros.log`, agora com rotação e com os erros da tela via
+  `/api/erro_tela`), "Copiar relatório" e "Salvar relatório no pendrive" (`BKP-Pro/Erros/relatorio-*.txt`, `App.relatorio`). `BUILD` igual em `dd_backup.py`
+  e `app.html` (autoteste detecta pendrive com versões misturadas; `tests/test_diagnostico.py` garante a igualdade no repositório — mude nos dois a cada release).
+- **Antes da cópia** (`preVoo`, `/api/antes_de_copiar`, `/api/ensaio`): programas abertos que travam o que está marcado (`PROGRAMAS_TRAVAM`), bateria, tempo
+  estimado e **ensaio de leitura** em segundo plano dos arquivos marcados (agrupado como as falhas). Cópia e verificação impedem a suspensão (`SemSono`).
+- **Durante** (`App._vigia`): avisos de parada (45 s, com "Pular este arquivo"/"Continuar esperando"), lenta (< 1 MB/s por 1 min), destino sumido/sem espaço (pausa e
+  retoma sozinho) e falhas iguais seguidas; aparecem na tela de Cópia, na ilha (selo) e no certificado ("avisos durante o backup").
