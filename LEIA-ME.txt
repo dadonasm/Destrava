@@ -10,10 +10,19 @@ PREPARAR O PENDRIVE (uma vez)
      python.org/downloads/windows e extraia dentro de  Destrava\runtime  (precisa existir runtime\python.exe).
   Resultado: o pendrive serve para (a) iniciar o Zorin e (b) rodar o Destrava! direto no Windows.
 
+ABRIR RÁPIDO (um arquivo só, qualquer sistema)
+  Windows:    duplo clique em  Destrava  (pede administrador).
+  Linux/Mac:  sudo sh Destrava.bat
+  Ele acha o programa sozinho: pode ficar na raiz do pendrive ou dentro da pasta do programa.
+  Para o pendrive aparecer como "Destrava! - D&D Technology" com o logo no Windows, copie também
+  autorun.inf e Destrava.ico para a RAIZ do pendrive. A pasta continua abrindo normal.
+  Por segurança, nenhum sistema (Windows, Linux ou Mac) abre programa sozinho ao plugar um pendrive:
+  o primeiro clique é sempre seu.
+
 USAR
   A) Windows LIGADO (ficha completa: boot, programas de inicialização, programas pesados, aplicar melhorias):
-     abra o pendrive > Destrava > duplo clique em  Iniciar-Windows.bat  (pede administrador).
-     Home > "Permitir e analisar esta máquina". As fichas vão para  Destrava\maquinas  no pendrive.
+     abra o pendrive > duplo clique em  Destrava  (ou Iniciar-Windows.bat; pede administrador).
+     Home > "Analisar esta máquina". As fichas vão para  Destrava\maquinas  no pendrive.
   B) Backup seguro: inicie o PC pelo pendrive no Zorin ("Experimentar"), monte os discos (clique neles no
      gerenciador de arquivos) e rode  sudo sh Iniciar-Linux.sh  dentro da pasta Destrava.
      Na Home dá para rodar a ficha também (hardware e disco; boot e inicialização do Windows não são medidos no Live).

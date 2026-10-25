@@ -16,7 +16,7 @@ from django.conf import settings
 from nucleo import atualizador
 
 SO_SERVIDOR = {"__init__.py", "baixar_runtimes.py"}
-DA_RAIZ = ("Iniciar-Linux.sh", "Iniciar-Windows.bat", "Testar-Windows.bat", "testar-local.sh", "LEIA-ME.txt")
+DA_RAIZ = ("Destrava.bat", "Destrava.ico", "autorun.inf", "Iniciar-Linux.sh", "Iniciar-Windows.bat", "Testar-Windows.bat", "testar-local.sh", "LEIA-ME.txt")
 _PACOTE = {"assinatura": None, "zip": b"", "sha256": "", "versao": ""}
 _LOCK = threading.Lock()
 

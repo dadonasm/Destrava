@@ -2,6 +2,8 @@
 maquinas/*
 !maquinas/LEIA-ME.txt
 consentimentos.log
+pastas_origem.json
+erros.log
 servidor-dados/
 _dev/
 _cache_servidor/
@@ -24,3 +26,8 @@ __pycache__/
 *.sqlite3
 staticfiles/
 .env
+
+# perfil do técnico: fica só no computador
+perfil.json
+perfil.json.tmp
+Erros/

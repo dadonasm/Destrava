@@ -217,6 +217,9 @@ RESOLVER = {
     "divergente": "A cópia não conferiu com o original: refaça; se repetir, troque o disco de destino.",
     "nao_escolhido": "Não foi escolhido no passo de seleção: se o cliente precisar, faça um novo backup marcando essa categoria.",
     "ignorado": "Arquivo do sistema que se recria sozinho: não precisa de backup.",
+    "em_uso_esperado": "Estava em uso por um programa aberto (navegador, serviços do Windows) numa pasta de programa: é normal e não é arquivo pessoal. "
+                       "Se precisar, feche o programa e refaça só as falhas.",
+    "atalho_app": "Atalho de aplicativo do Windows: não é um arquivo de verdade, o aplicativo recria ao ser instalado.",
     "outro": "Veja o detalhe do erro; refaça as falhas e, se repetir, verifique o disco de origem.",
 }
 
@@ -237,7 +240,7 @@ def certificado():
         g["bytes"] += e[Z_] or 0
         if len(g["exemplos"]) < 3:
             g["exemplos"].append(e[S_])
-    ordem = {"falha": 0, "revisar": 1, "desmarcado": 2, "ignorado": 3}
+    ordem = {"falha": 0, "revisar": 1, "em_uso": 2, "desmarcado": 3, "ignorado": 4}
     meta = M["meta"]
     return dict(resumo(), grupos=sorted(grupos.values(), key=lambda g: (ordem.get(g["situacao"], 9), -g["bytes"])),
                 checagens=meta.get("checagens") or [], maes=meta.get("maes") or [], ign_dirs_total=meta.get("ign_dirs_total", 0),
