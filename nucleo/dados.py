@@ -14,8 +14,10 @@ import os
 import re
 import shutil
 import socket
+import sqlite3
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import unicodedata
@@ -90,6 +92,10 @@ _VERM_SEG = {".ssh", ".gnupg", ".aws", ".azure", ".kube", ".password-store", "ke
 _VERM_PARTES = ("library/keychains", "library/mail", "library/messages", "library/safari", "library/application support/addressbook",
                 "library/containers/com.apple", "library/group containers", ".config/gcloud", "appdata/roaming/microsoft/credentials", "appdata/local/microsoft/credentials",
                 "appdata/roaming/microsoft/protect", ".local/share/keyrings", "library/accounts", "library/cookies", "library/preferences")
+# o que a tela mostra para cada trava (os prefixos que não estão aqui ficam com o motivo genérico)
+_VERM_MOTIVO = {"library/keychains": "Chaves e senhas do macOS", "library/mail": "E-mails do Mail", "library/messages": "Mensagens",
+                "library/safari": "Dados do Safari", "library/group containers": "Dados internos de aplicativos: use o próprio aplicativo"}
+_MOTIVO_ONEDRIVE = "Cópia local do OneDrive: libere o espaço pelo próprio OneDrive"
 _VERM_EXT = {".pem", ".key", ".p12", ".pfx", ".kdbx", ".gpg", ".keychain", ".keychain-db", ".ppk"}
 _VERM_BIBLIO = (".photoslibrary", ".fcpbundle", ".imovielibrary", ".tvlibrary", ".musiclibrary", ".lrlibrary", ".app")
 
@@ -187,7 +193,9 @@ def zona_vermelha(path):
         return "credenciais, chaves ou repositório ativo"
     for parte in _VERM_PARTES:
         if rel == parte or rel.startswith(parte + "/"):
-            return "dados de sistema, contas ou credenciais"
+            if parte == "library/group containers" and "onedrive" in rel:
+                return _MOTIVO_ONEDRIVE
+            return _VERM_MOTIVO.get(parte, "dados de sistema, contas ou credenciais")
     ext = os.path.splitext(rel)[1]
     if ext in _VERM_EXT:
         return "arquivo de chave/credencial"
@@ -387,6 +395,7 @@ def _orfaos(agora, idle_dias, pular, h):
             b_, n_, ult = tamanho_dir(p, CANCEL)
             ST["arquivos"] += n_
             ST["bytes"] += b_
+            _ib_arq(p, _USR[0], "pasta", "Dados de programas", "apps", b_, n_, ult)
             dias = int((agora - ult) / 86400) if ult else 9999
             if b_ >= 50 * 1024 * 1024 and dias >= idle_dias:
                 _add({"path": p, "tipo": "pasta", "zona": "ambar", "cat": "Restos de programas (provável sem uso)", "titulo": nome,
@@ -408,6 +417,7 @@ def reset():
     with LOCK:
         ITENS.clear()
         RES["cockpit"] = None
+        _idx_apagar()
         ST.update({"fase": "ocioso", "pct": 0, "arquivos": 0, "pastas": 0, "bytes": 0, "atual": "", "erro": "", "bloqueados": 0})
         ST["acao"] = {"tipo": "", "feito": 0, "total": 0, "bytes_feito": 0, "bytes_total": 0, "atual": "", "erros": [], "resultado": None, "rodando": False}
 
@@ -537,6 +547,9 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
                 if b >= 20 * 1024 * 1024:
                     _add({"path": q, "tipo": "pasta", "zona": "verde", "cat": "Limpeza imediata", "titulo": "%s › %s" % (tit, s), "motivo": mot, "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": True})
                     verde_bytes += b
+                    _ib_arq(q, usr, "pasta", "Limpeza imediata", "limpavel", b, n, ult)
+                else:
+                    _ib_arq(q, usr, "pasta", "Caches e temporários", "apps", b, n, ult)
         else:
             b, n, ult = tamanho_dir(p, CANCEL)
             ST["arquivos"] += n
@@ -544,6 +557,9 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
             if b >= 5 * 1024 * 1024:
                 _add({"path": p, "tipo": "pasta", "zona": "verde", "cat": "Limpeza imediata", "titulo": tit, "motivo": mot, "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": True})
                 verde_bytes += b
+                _ib_arq(p, usr, "pasta", "Limpeza imediata", "limpavel", b, n, ult)
+            elif n:
+                _ib_arq(p, usr, "pasta", "Caches e temporários", "apps", b, n, ult)
         ST["pct"] = 3 + int(12.0 * (i + 1) / max(1, len(alvos)))
 
     # 1b) backups de iPhone/iPad (Mac): grandes e muitas vezes esquecidos; mover para HD externo é o caminho
@@ -568,6 +584,7 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
             b, n, ult = tamanho_dir(q, CANCEL)
             ST["bytes"] += b
             ST["arquivos"] += n
+            _ib_arq(q, usr, "pasta", "Backups de iPhone/iPad", "apps", b, n, ult)
             data = info.get("Last Backup Date")
             _add({"path": q, "tipo": "pasta", "zona": "ambar", "cat": "Backups de iPhone/iPad", "titulo": "Backup de %s" % (info.get("Device Name") or d[:12]),
                   "motivo": "Último backup em %s. Pode ser o único backup do aparelho: prefira mover para um HD externo." % (data.strftime("%d/%m/%Y") if hasattr(data, "strftime") else "?"),
@@ -582,6 +599,7 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
         b, n, ult = tamanho_dir(q, CANCEL)
         ST["bytes"] += b
         ST["arquivos"] += n
+        _ib_arq(q, usr, "pasta", "Projetos do CapCut", "apps", b, n, ult)
         dias = int((agora - ult) / 86400) if ult else 9999
         if dias >= 30 and b >= 20 * 1024 * 1024:
             _add({"path": q, "tipo": "pasta", "zona": "ambar", "cat": "Projetos do CapCut", "titulo": "Projeto CapCut: %s" % os.path.basename(q), "motivo": "Sem edição há %d dias." % dias,
@@ -607,6 +625,7 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
         except OSError:
             continue
         ST["pastas"] += 1
+        _ib_pasta(d, usr)
         em_dl = os.path.basename(d).lower() in nomes_dl and _norm(os.path.dirname(d)) == _norm(h)
         with it:
             for e in it:
@@ -622,6 +641,7 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
                             if ln.endswith(_VERM_BIBLIO):
                                 b, n, ult = tamanho_dir(e.path, CANCEL)
                                 ST["bytes"] += b
+                                _ib_arq(e.path, usr, "pasta", "Bibliotecas e apps", "apps", b, n, ult, zona_vermelha(e.path) or "biblioteca de aplicativo")
                                 if b >= min_b:
                                     _add({"path": e.path, "tipo": "pasta", "zona": "vermelha", "cat": "Bibliotecas e apps", "titulo": nome, "motivo": zona_vermelha(e.path) or "biblioteca de aplicativo", "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": False})
                             continue
@@ -651,16 +671,19 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
                 ST["bytes"] += tam
                 ST["atual"] = e.path
                 cat = categoria(nome)
-                cat_bytes[cat] = cat_bytes.get(cat, 0) + tam
                 ult = max(st.st_mtime, st.st_atime)
                 dias = int((agora - ult) / 86400)
                 ext = os.path.splitext(nome.lower())[1]
-                # instaladores residuais em Downloads/Desktop: zona verde
-                if ext in INSTAL and tam >= 5 * 1024 * 1024 and dias >= 14 and (em_dl or os.path.basename(d).lower() in ("desktop", "área de trabalho")) and not zona_vermelha(e.path):
+                verm = zona_vermelha(e.path)
+                # instaladores residuais em Downloads/Desktop: zona verde (contam só no "Limpável" do cockpit, não também na categoria)
+                if ext in INSTAL and tam >= 5 * 1024 * 1024 and dias >= 14 and (em_dl or os.path.basename(d).lower() in ("desktop", "área de trabalho")) and not verm:
                     _add({"path": e.path, "tipo": "arquivo", "zona": "verde", "cat": "Limpeza imediata", "titulo": "Instalador: %s" % nome, "motivo": "Instalador já usado (parado há %d dias)." % dias, "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": True})
                     verde_bytes += tam
+                    _ib_arq(e.path, usr, "arquivo", cat, "limpavel", tam, 1, ult)
                     continue
-                if zona_vermelha(e.path):
+                cat_bytes[cat] = cat_bytes.get(cat, 0) + tam
+                _ib_arq(e.path, usr, "arquivo", cat, bloco_de(cat), tam, 1, ult, verm or "")
+                if verm:
                     continue
                 if _gravacao_tela(nome) and dias >= 30 and tam >= 20 * 1024 * 1024:
                     _add({"path": e.path, "tipo": "arquivo", "zona": "ambar", "cat": "Gravações de tela", "titulo": nome, "motivo": "Gravação de tela parada há %d dias." % dias, "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": False})
@@ -687,6 +710,10 @@ def _varrer(idle_dias, min_mb):
         ST["usuarios"] = [u for u, _ in usuarios]
         ST["usuario_atual"] = usuarios[0][0] if usuarios else ""
         ST["sem_acesso"] = list(SEM_ACESSO)
+        try:
+            _IB[0] = _Construtor()
+        except Exception:
+            _IB[0] = None  # sem índice, a varredura de sugestões segue igual
         cat_bytes = {}
         por_usuario = {}
         verde_bytes = 0
@@ -720,21 +747,70 @@ def _varrer(idle_dias, min_mb):
         ambar = sum(i["bytes"] for i in ITENS.values() if i["zona"] == "ambar")
         RES["cockpit"] = {"por_usuario": por_usuario, "total": total, "livre": livre, "usado": usado, "midias": midia, "documentos": docs, "apps": apps, "limpavel": limpavel, "parado": ambar,
                           "sistema": sistema, "medido": medido, "aviso": aviso, "nuvem_n": ST["nuvem_n"], "nuvem_bytes": ST["nuvem_bytes"], "por_tipo": cat_bytes, "base": int(base_unidade())}
+        if _IB[0]:
+            ST["atual"] = "Gravando o índice de arquivos"
+            try:
+                _IB[0].fechar(CANCEL.is_set(), {"cockpit": RES["cockpit"], "st": {k: ST.get(k) for k in _ST_SALVO},
+                                                "itens": list(ITENS.values()), "params": {"idle_dias": idle_dias, "min_mb": min_mb}})
+            except Exception:
+                _IB[0].descartar()
+            _IB[0] = None
         ST["pct"] = 100
         ST["fase"] = "cancelado" if CANCEL.is_set() else "pronto"
         ST["atual"] = ""
     except Exception as e:
+        if _IB[0]:
+            _IB[0].descartar()
+            _IB[0] = None
         ST["erro"] = "%s: %s" % (type(e).__name__, e)
         ST["fase"] = "erro"
 
 
+_ST_SALVO = ("arquivos", "pastas", "bytes", "bloqueados", "usuarios", "usuario_atual", "sem_acesso", "nuvem_n", "nuvem_bytes", "acesso_total")
+
+
+def restaurar():
+    """Depois de reiniciar o programa: traz de volta a última varredura (cockpit e sugestões) gravada junto do índice."""
+    if ITENS or RES["cockpit"] is not None or ST["fase"] != "ocioso" or _IB[0]:
+        return False
+    c = _idx_con()
+    if not c:
+        return False
+    try:
+        m = {r[0]: r[1] for r in c.execute("SELECT k,v FROM meta WHERE k IN ('cockpit','st','itens','parcial')")}
+    except sqlite3.DatabaseError:
+        return False
+    finally:
+        c.close()
+    if not m.get("cockpit"):
+        return False
+    try:
+        ck, st, itens = json.loads(m["cockpit"]), json.loads(m.get("st") or "{}"), json.loads(m.get("itens") or "[]")
+    except ValueError:
+        return False
+    if not ck:
+        return False
+    with LOCK:
+        if ITENS or RES["cockpit"] is not None or ST["fase"] != "ocioso":
+            return False
+        for it in itens:
+            ITENS[int(it["id"])] = it
+        _SEQ[0] = max([_SEQ[0]] + list(ITENS))  # um item novo nunca herda o id de um restaurado
+        RES["cockpit"] = ck
+        ST.update({k: v for k, v in st.items() if k in _ST_SALVO})
+        ST.update({"fase": "cancelado" if m.get("parcial") else "pronto", "pct": 100, "atual": ""})
+    return True
+
+
 def estado():
+    restaurar()
     with LOCK:
         d = dict(ST)
         d["acao"] = dict(ST["acao"])
         d["acao"]["erros"] = list(ST["acao"]["erros"][-30:])
     d["cockpit"] = RES["cockpit"]
     d["n_itens"] = len(ITENS)
+    d["indice"] = indice_estado()
     return d
 
 
@@ -970,6 +1046,524 @@ def marcar(nid):
     return it["id"]
 
 
+def marcar_nos(nos):
+    """Vários nós de uma vez (Gerenciamento de dados): devolve os ids na lista de ações, na mesma ordem."""
+    return [marcar(n) for n in nos]
+
+
+# ----------------------------------------------------------------------------------------------
+# índice de arquivos (Gerenciamento de dados): cada arquivo das pastas dos usuários, gravado na varredura num SQLite local
+# (na pasta temporária DESTE computador, nunca no pendrive: são os caminhos dos arquivos do cliente)
+# ----------------------------------------------------------------------------------------------
+BLOCOS = ("midias", "documentos", "apps", "limpavel")
+_IB = [None]  # construtor do índice durante a varredura
+IDX_LOCK = threading.Lock()
+_ORDEM_SQL = {"maior": "bytes DESC", "menor": "bytes ASC", "parado": "uso ASC", "nome": "nome COLLATE NOCASE ASC"}
+_SCHEMA = """
+CREATE TABLE IF NOT EXISTS arq(id INTEGER PRIMARY KEY, usuario TEXT, pasta TEXT, dir TEXT, nome TEXT, busca TEXT, tipo TEXT, cat TEXT, bloco TEXT,
+  bytes INTEGER, narq INTEGER, uso REAL, zona TEXT);
+CREATE TABLE IF NOT EXISTS pasta(chave TEXT PRIMARY KEY, path TEXT, pai TEXT, usuario TEXT, n INTEGER, bytes INTEGER, uso REAL,
+  b_midias INTEGER DEFAULT 0, b_documentos INTEGER DEFAULT 0, b_apps INTEGER DEFAULT 0, b_limpavel INTEGER DEFAULT 0,
+  n_midias INTEGER DEFAULT 0, n_documentos INTEGER DEFAULT 0, n_apps INTEGER DEFAULT 0, n_limpavel INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
+"""
+# pasta = chave de comparação da pasta do arquivo (no Windows em minúsculas com "/"; no Mac e no Linux o próprio caminho);
+# dir = a pasta como está no disco, só quando difere da chave (Windows). O caminho é dir|pasta + nome: não se guarda duas vezes.
+_INDICES = """
+CREATE INDEX IF NOT EXISTS arq_b ON arq(bytes);
+CREATE INDEX IF NOT EXISTS arq_bb ON arq(bloco, bytes);
+CREATE INDEX IF NOT EXISTS arq_bcb ON arq(bloco, cat, bytes);
+CREATE INDEX IF NOT EXISTS arq_pasta ON arq(pasta);
+CREATE INDEX IF NOT EXISTS pasta_pai ON pasta(pai);
+"""
+
+
+def _idx_arquivo():
+    d = H.get("indice_dir")
+    d = d() if callable(d) else d
+    return os.path.join(d or tempfile.gettempdir(), "destrava_indice_%s.sqlite" % getattr(os, "getuid", lambda: 0)())
+
+
+def _sem_acento(s):
+    return "".join(c for c in unicodedata.normalize("NFD", (s or "").lower()) if unicodedata.category(c) != "Mn")
+
+
+def bloco_de(cat):
+    """Bloco do cockpit de um arquivo, pela categoria (a mesma conta do cockpit em _varrer)."""
+    if cat in CAT_MIDIA:
+        return "midias"
+    return "apps" if cat == "Outros" else "documentos"
+
+
+def _kk(p):
+    return _norm(p) if IS_WIN else os.path.abspath(p)
+
+
+def _homes_chaves():
+    return {_kk(h) for _, h in homes()}
+
+
+def _faixa(col, k):
+    """"este caminho ou qualquer coisa dentro dele" por faixa (usa o índice; sem LIKE, que tropeça em nomes com % e _)."""
+    k = k.rstrip("/")
+    return "(%s=? OR (%s>=? AND %s<?))" % (col, col, col), [k, k + "/", k + "0"]  # "0" vem logo depois de "/"
+
+
+def _onde(k):
+    """Linhas de arq que são o caminho k ou estão dentro dele."""
+    k = k.rstrip("/")
+    pai, nome = k.rsplit("/", 1) if IS_WIN else (os.path.dirname(k), os.path.basename(k))  # no Windows a chave já vem com "/"
+    f, w = _faixa("pasta", k)
+    return "((pasta=? AND %s=?) OR %s)" % ("pylower(nome)" if IS_WIN else "nome", f), [pai, nome] + w
+
+
+def _caminho(r):
+    return os.path.join(r["dir"] or r["pasta"], r["nome"])
+
+
+def _busca_pastas(c, termos):
+    """Para cada termo, uma tabela temporária com as pastas cujo caminho (dentro da pasta do usuário) tem o termo: roda uma vez só."""
+    hs = homes()
+    args = []
+    for u, h in hs:
+        args += [u, len(os.path.abspath(h)) + 2]
+    expr = "semac(CASE usuario %s ELSE path END)" % " ".join("WHEN ? THEN substr(path,?)" for _ in hs) if hs else "semac(path)"
+    for i, t in enumerate(termos):
+        c.execute("CREATE TEMP TABLE IF NOT EXISTS hit%d(chave TEXT PRIMARY KEY)" % i)
+        c.execute("DELETE FROM hit%d" % i)
+        c.execute("INSERT OR IGNORE INTO hit%d SELECT chave FROM pasta WHERE instr(%s, ?) > 0" % (i, expr), args + [t])
+
+
+class _Pastas:
+    """Soma o tamanho de cada pasta e de todas acima dela (por bloco do cockpit), em memória, para gravar de uma vez."""
+
+    def __init__(self, para, homes_ch):
+        self.d = {}
+        self.para = para  # chaves onde a subida para (inclusive)
+        self.homes = homes_ch
+
+    def soma(self, dirpath, usr, b, n, uso, bloco):
+        p = os.path.abspath(dirpath)
+        while True:
+            k = _kk(p)
+            e = self.d.get(k)
+            if e is None:
+                e = self.d[k] = {"path": p, "pai": "" if k in self.homes else _kk(os.path.dirname(p)), "usuario": usr, "n": 0, "bytes": 0, "uso": 0, "b": {}, "nb": {}}
+            e["n"] += n
+            e["bytes"] += b
+            e["uso"] = max(e["uso"], uso or 0)
+            if bloco:
+                e["b"][bloco] = e["b"].get(bloco, 0) + b
+                e["nb"][bloco] = e["nb"].get(bloco, 0) + n
+            if k in self.para or k in self.homes:
+                return
+            pai = os.path.dirname(p)
+            if pai == p:
+                return
+            p = pai
+
+    def gravar(self, db):
+        db.executemany("INSERT OR REPLACE INTO pasta(chave,path,pai,usuario,n,bytes,uso,%s,%s) VALUES (?,?,?,?,?,?,?,%s)" % (
+            ",".join("b_" + x for x in BLOCOS), ",".join("n_" + x for x in BLOCOS), ",".join("?" * (2 * len(BLOCOS)))),
+            [(k, e["path"], e["pai"], e["usuario"], e["n"], e["bytes"], e["uso"]) + tuple(e["b"].get(x, 0) for x in BLOCOS) + tuple(e["nb"].get(x, 0) for x in BLOCOS)
+             for k, e in self.d.items()])
+
+
+def _linha_arq(path, usr, tipo, cat, bloco, b, n, uso, zona):
+    p = os.path.abspath(path)
+    d, nome = os.path.dirname(p), os.path.basename(p)
+    k = _kk(d)
+    return (usr, k, d if d != k else None, nome, _sem_acento(nome), tipo, cat, bloco, int(b or 0), int(n or 0), uso or 0, zona or "")
+
+
+_INS_ARQ = "INSERT INTO arq(usuario,pasta,dir,nome,busca,tipo,cat,bloco,bytes,narq,uso,zona) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+
+
+class _Construtor:
+    """Índice novo gravado num arquivo à parte; só troca o antigo no fim (quem está lendo não vê a varredura pela metade)."""
+
+    def __init__(self):
+        self.destino = _idx_arquivo()
+        self.tmp = self.destino + ".novo"
+        try:
+            os.remove(self.tmp)
+        except OSError:
+            pass
+        self.db = sqlite3.connect(self.tmp, check_same_thread=False)
+        self.db.execute("PRAGMA journal_mode=OFF")
+        self.db.execute("PRAGMA synchronous=OFF")
+        self.db.executescript(_SCHEMA)
+        self.lote = []
+        self.n = 0
+        self.pastas = _Pastas(set(), _homes_chaves())
+
+    def pasta_vista(self, d, usr):
+        self.pastas.soma(d, usr, 0, 0, 0, None)
+
+    def arq(self, path, usr, tipo, cat, bloco, b, n, uso, zona=""):
+        self.lote.append(_linha_arq(path, usr, tipo, cat, bloco, b, n, uso, zona))
+        self.pastas.soma(os.path.dirname(os.path.abspath(path)), usr, int(b or 0), int(n or 0), uso, bloco)
+        self.n += 1
+        if len(self.lote) >= 5000:
+            self.db.executemany(_INS_ARQ, self.lote)
+            self.lote = []
+
+    def fechar(self, parcial, extra=None):
+        """extra: o que a tela precisa para mostrar esta varredura depois de reiniciar o programa (cockpit, sugestões, parâmetros)."""
+        if self.lote:
+            self.db.executemany(_INS_ARQ, self.lote)
+        self.pastas.gravar(self.db)
+        meta = [("quando", str(time.time())), ("parcial", "1" if parcial else ""), ("n", str(self.n)), ("mexidas", "0")]
+        meta += [(k, json.dumps(v, ensure_ascii=False)) for k, v in (extra or {}).items()]
+        self.db.executemany("INSERT OR REPLACE INTO meta(k,v) VALUES (?,?)", meta)
+        self.db.executescript(_INDICES)
+        self.db.commit()
+        self.db.close()
+        for _ in range(20):  # no Windows, um leitor com o arquivo aberto segura a troca por um instante
+            try:
+                os.replace(self.tmp, self.destino)
+                return
+            except OSError:
+                time.sleep(0.15)
+        raise OSError("Não consegui trocar o índice de arquivos.")
+
+    def descartar(self):
+        try:
+            self.db.close()
+            os.remove(self.tmp)
+        except Exception:
+            pass
+
+
+def _ib_arq(*a, **k):
+    if _IB[0]:
+        _IB[0].arq(*a, **k)
+
+
+def _ib_pasta(d, usr):
+    if _IB[0]:
+        _IB[0].pasta_vista(d, usr)
+
+
+def _idx_con():
+    f = _idx_arquivo()
+    if not os.path.isfile(f):
+        return None
+    c = sqlite3.connect(f, timeout=10, check_same_thread=False)
+    c.row_factory = sqlite3.Row
+    c.create_function("semac", 1, _sem_acento)
+    c.create_function("pylower", 1, lambda x: (x or "").lower())
+    return c
+
+
+def _idx_apagar():
+    for f in (_idx_arquivo(), _idx_arquivo() + ".novo"):
+        try:
+            os.remove(f)
+        except OSError:
+            pass
+
+
+def _idx_subir(c, dirpath, delta):
+    """Ajusta o total das pastas acima (de dirpath até a pasta do usuário). delta: {bloco: (bytes, n)} (negativo para tirar)."""
+    if not delta:
+        return
+    hs = _homes_chaves()
+    usr, _ = dono(dirpath)
+    tb, tn = sum(v[0] for v in delta.values()), sum(v[1] for v in delta.values())
+    sets = ",".join("b_%s=b_%s+?,n_%s=n_%s+?" % (x, x, x, x) for x in BLOCOS)
+    vals = []
+    for x in BLOCOS:
+        vals += [delta.get(x, (0, 0))[0], delta.get(x, (0, 0))[1]]
+    p = os.path.abspath(dirpath)
+    while True:
+        k = _kk(p)
+        c.execute("INSERT OR IGNORE INTO pasta(chave,path,pai,usuario,n,bytes,uso) VALUES (?,?,?,?,0,0,0)", (k, p, "" if k in hs else _kk(os.path.dirname(p)), usr or ""))
+        c.execute("UPDATE pasta SET n=n+?,bytes=bytes+?,%s WHERE chave=?" % sets, [tn, tb] + vals + [k])
+        pai = os.path.dirname(p)
+        if k in hs or pai == p:
+            return
+        p = pai
+
+
+def _idx_tirar(c, path):
+    """Tira um caminho (arquivo ou pasta inteira) do índice e desconta das pastas acima."""
+    fa, wa = _onde(_kk(path))
+    fp, wp = _faixa("chave", _kk(path))
+    delta = {r[0]: (-int(r[1] or 0), -int(r[2] or 0)) for r in c.execute("SELECT bloco,SUM(bytes),SUM(narq) FROM arq WHERE %s GROUP BY bloco" % fa, wa)}
+    c.execute("DELETE FROM arq WHERE " + fa, wa)
+    c.execute("DELETE FROM pasta WHERE " + fp, wp)
+    _idx_subir(c, os.path.dirname(os.path.abspath(path)), delta)
+
+
+def _idx_por(c, path):
+    """Põe no índice o que existe agora em path (depois de renomear, mover, copiar ou criar)."""
+    p = os.path.abspath(path)
+    usr, _ = dono(p)
+    usr = usr or ""
+    linhas = []
+    pastas = _Pastas({_kk(p)}, _homes_chaves())
+    def um(fp, st):
+        tam = _aloc(st)
+        ult = max(st.st_mtime, st.st_atime)
+        cat = categoria(os.path.basename(fp))
+        bl = bloco_de(cat)
+        linhas.append(_linha_arq(fp, usr, "arquivo", cat, bl, tam, 1, ult, zona_vermelha(fp) or ""))
+        return tam, ult, bl
+    if os.path.isdir(p) and not os.path.islink(p):
+        stack = [p]
+        while stack:
+            d = stack.pop()
+            pastas.soma(d, usr, 0, 0, 0, None)
+            try:
+                with os.scandir(d) as it:
+                    for e in it:
+                        try:
+                            if e.is_symlink():
+                                continue
+                            if e.is_dir(follow_symlinks=False):
+                                stack.append(e.path)
+                                continue
+                            st = e.stat(follow_symlinks=False)
+                        except OSError:
+                            continue
+                        if _nuvem(st):
+                            continue
+                        tam, ult, bl = um(e.path, st)
+                        pastas.soma(d, usr, tam, 1, ult, bl)
+            except OSError:
+                continue
+        c.executemany(_INS_ARQ, linhas)
+        pastas.gravar(c)
+        raiz = pastas.d.get(_kk(p))
+        delta = {x: (raiz["b"].get(x, 0), raiz["nb"].get(x, 0)) for x in BLOCOS} if raiz else {}
+    elif os.path.isfile(p) and not os.path.islink(p):
+        st = os.lstat(p)
+        if _nuvem(st):
+            return
+        tam, ult, bl = um(p, st)
+        c.executemany(_INS_ARQ, linhas)
+        delta = {bl: (tam, 1)}
+    else:
+        return
+    _idx_subir(c, os.path.dirname(p), {k: v for k, v in delta.items() if v[0] or v[1]})
+
+
+def _idx_mexer(tirar=(), por=()):
+    """Atualiza o índice depois de uma operação, sem nova varredura. Falha no índice nunca derruba a operação."""
+    c = _idx_con()
+    if not c:
+        return
+    try:
+        with IDX_LOCK:
+            for t in tirar:
+                _idx_tirar(c, t)
+            for p in por:
+                _idx_por(c, p)
+            # quantos itens mudaram desde a varredura (mover conta uma vez, não "tirar + pôr")
+            c.execute("INSERT OR REPLACE INTO meta(k,v) VALUES ('mexidas', CAST(COALESCE((SELECT v FROM meta WHERE k='mexidas'),'0') AS INTEGER) + ?)",
+                      (max(len(tirar), len(por)),))
+            c.commit()
+    except Exception:
+        pass
+    finally:
+        c.close()
+
+
+def _idx_bytes(path):
+    c = _idx_con()
+    if not c:
+        return 0
+    try:
+        f, w = _onde(_kk(path))
+        r = c.execute("SELECT SUM(bytes) FROM arq WHERE " + f, w).fetchone()
+        return int(r[0] or 0)
+    finally:
+        c.close()
+
+
+def indice_estado():
+    c = _idx_con()
+    if not c:
+        return {"existe": False, "construindo": bool(_IB[0])}
+    try:
+        m = {r[0]: r[1] for r in c.execute("SELECT k,v FROM meta WHERE k IN ('quando','parcial','n','mexidas','params')")}
+        try:
+            params = json.loads(m.get("params") or "{}")
+        except ValueError:
+            params = {}
+        return {"existe": True, "construindo": bool(_IB[0]), "parcial": bool(m.get("parcial")), "quando": float(m.get("quando") or 0), "n": int(m.get("n") or 0),
+                "mexidas": int(m.get("mexidas") or 0), "idle_dias": params.get("idle_dias"), "min_mb": params.get("min_mb")}
+    except sqlite3.DatabaseError:
+        return {"existe": False, "construindo": bool(_IB[0])}
+    finally:
+        c.close()
+
+
+def _migalhas_pasta(p):
+    usr, h = dono(p)
+    hn = os.path.abspath(h)
+    out = [{"no": no_de(hn, usr), "nome": usr}]
+    cur = hn
+    for parte in [x for x in os.path.relpath(os.path.abspath(p), hn).replace("\\", "/").split("/") if x not in ("", ".")]:
+        cur = os.path.join(cur, parte)
+        out.append({"no": no_de(cur, usr), "nome": parte})
+    return out
+
+
+def onedrive_pasta(home_dir=None):
+    """Pasta do OneDrive que o Finder/Explorer sabe abrir (é onde se libera o espaço), ou None."""
+    try:
+        if IS_WIN:
+            d = os.environ.get("OneDrive") or os.environ.get("OneDriveConsumer") or ""
+            return d if d and os.path.isdir(d) else None
+        base = os.path.join(home_dir or home(), "Library", "CloudStorage")
+        for n in sorted(os.listdir(base)):
+            if n.lower().startswith("onedrive") and os.path.isdir(os.path.join(base, n)):
+                return os.path.join(base, n)
+    except OSError:
+        pass
+    return None
+
+
+def _linha_saida(r, agora):
+    p = _caminho(r)
+    trava = (zona_vermelha(p) or r["zona"]) if r["zona"] else ""  # motivo de agora: índices antigos também ganham os textos novos
+    out = {"id": r["id"], "no": no_de(p, r["usuario"]), "nome": r["nome"], "path": p, "tipo": r["tipo"], "cat": r["cat"], "bloco": r["bloco"], "bytes": r["bytes"],
+           "arquivos": r["narq"], "dias": int((agora - r["uso"]) / 86400) if r["uso"] else None, "usuario": r["usuario"], "zona": "vermelha" if trava else "",
+           "motivo": trava, "previa": tipo_previa(p) if r["tipo"] == "arquivo" and not trava else None, "pode_abrir": pode_abrir(p), "pode_marcar": not trava,
+           "ajuda_no": None}
+    if trava == _MOTIVO_ONEDRIVE:
+        od = onedrive_pasta(dono(p)[1])
+        out["ajuda_no"] = no_de(od, r["usuario"]) if od else None
+    return out
+
+
+def indice_consulta(bloco="", cat="", pasta=None, usuario="", q="", ordem="maior", offset=0, limit=200, visao="arquivos"):
+    """Tudo que a tela do Gerenciamento precisa para o filtro atual: totais por bloco e por categoria, a página de arquivos,
+    as subpastas (visão por pasta) e a trilha. pasta: nó (id), nunca caminho."""
+    est = indice_estado()
+    if not est["existe"]:
+        return {"estado": est, "rows": [], "total": 0, "bytes": 0, "blocos": {}, "cats": [], "pastas": [], "migalhas": []}
+    agora = time.time()
+    pp = caminho_no(pasta) if pasta else None
+    if pp and not os.path.isdir(pp):
+        raise ValueError("Escolha uma pasta.")
+    base, args = [], []
+    if usuario:
+        base.append("usuario=?")
+        args.append(usuario)
+    if pp:
+        ch = _kk(pp)
+        if visao == "pastas":
+            base.append("pasta=?")
+            args.append(ch)
+        else:
+            f, w = _faixa("pasta", ch)
+            base.append(f)
+            args += w
+    termos = _sem_acento(q).split()
+    for i, t in enumerate(termos):
+        base.append("(instr(busca, ?) > 0 OR pasta IN (SELECT chave FROM hit%d))" % i)  # no nome do arquivo ou no caminho da pasta
+        args.append(t)
+    if visao == "pastas" and not pp:
+        base.append("0")  # na raiz (usuários) só há pastas
+    c = _idx_con()
+    try:
+        _busca_pastas(c, termos)
+        if not q.strip() and not (pp and usuario):
+            # sem busca: os totais já estão somados por pasta (a pasta atual, ou a pasta de cada usuário)
+            if pp:
+                tp = [c.execute("SELECT * FROM pasta WHERE chave=?", (_kk(pp),)).fetchone()]
+            else:
+                tp = [c.execute("SELECT * FROM pasta WHERE chave=?", (_kk(h),)).fetchone() for u, h in homes() if not usuario or u == usuario]
+            tp = [r for r in tp if r]
+            blocos = {x: {"n": sum(r["n_" + x] for r in tp), "bytes": sum(r["b_" + x] for r in tp)} for x in BLOCOS}
+            blocos = {x: v for x, v in blocos.items() if v["n"] or v["bytes"]}
+        else:
+            w = (" WHERE " + " AND ".join(base)) if base else ""
+            blocos = {r[0]: {"n": int(r[1] or 0), "bytes": int(r[2] or 0)} for r in c.execute("SELECT bloco,SUM(narq),SUM(bytes) FROM arq%s GROUP BY bloco" % w, args)}
+        wb, ab = list(base), list(args)
+        if bloco:
+            wb.append("bloco=?")
+            ab.append(bloco)
+        wsql = (" WHERE " + " AND ".join(wb)) if wb else ""
+        cats = [{"cat": r[0], "n": int(r[1] or 0), "bytes": int(r[2] or 0)} for r in c.execute("SELECT cat,SUM(narq),SUM(bytes) FROM arq%s GROUP BY cat ORDER BY SUM(bytes) DESC" % wsql, ab)]
+        if cat:
+            wb.append("cat=?")
+            ab.append(cat)
+        wsql = (" WHERE " + " AND ".join(wb)) if wb else ""
+        tot = c.execute("SELECT COUNT(*),SUM(bytes) FROM arq%s" % wsql, ab).fetchone()
+        rows = [_linha_saida(r, agora) for r in c.execute("SELECT * FROM arq%s ORDER BY %s, id LIMIT ? OFFSET ?" % (wsql, _ORDEM_SQL.get(ordem, _ORDEM_SQL["maior"])),
+                                                           ab + [max(1, min(int(limit), 1000)), max(0, int(offset))])]
+        pastas = []
+        if visao == "pastas" and not q.strip() and not cat:
+            if pp:
+                sub = c.execute("SELECT * FROM pasta WHERE pai=?", (_kk(pp),)).fetchall()
+            else:
+                hs = [(u, h) for u, h in homes() if not usuario or u == usuario]
+                sub = [r for r in (c.execute("SELECT * FROM pasta WHERE chave=?", (_kk(h),)).fetchone() for _, h in hs) if r]
+            for r in sub:
+                b = r["b_" + bloco] if bloco else r["bytes"]
+                n = r["n_" + bloco] if bloco else r["n"]
+                if bloco and not n:
+                    continue
+                trava = zona_vermelha(r["path"]) or ""
+                pastas.append({"no": no_de(r["path"], r["usuario"]), "nome": os.path.basename(r["path"]) if pp else r["usuario"], "path": r["path"], "tipo": "pasta",
+                               "bytes": b, "arquivos": n, "dias": int((agora - r["uso"]) / 86400) if r["uso"] else None, "usuario": r["usuario"],
+                               "motivo": trava, "pode_renomear": not trava, "raiz": not pp})
+            pastas.sort(key=lambda x: (-(x["bytes"] or 0), x["nome"].lower()) if ordem != "nome" else x["nome"].lower())
+        return {"estado": est, "rows": rows, "total": int(tot[0] or 0), "bytes": int(tot[1] or 0), "blocos": blocos, "cats": cats, "pastas": pastas,
+                "migalhas": _migalhas_pasta(pp) if pp else [], "pasta_no": int(pasta) if pp else 0, "usuarios": [u for u, _ in homes()]}
+    finally:
+        c.close()
+
+
+
+def indice_panorama(usuario="", n=5):
+    """Painel inicial: onde está o peso (maiores pastas, descendo até onde ele se concentra), maiores arquivos e os
+    arquivos grandes parados há mais tempo. Tudo do índice, sem tocar no disco."""
+    est = indice_estado()
+    vazio = {"estado": est, "pastas": [], "arquivos": [], "parados": []}
+    if not est["existe"]:
+        return vazio
+    agora = time.time()
+    c = _idx_con()
+    try:
+        cand = {}
+        for u, h in homes():
+            if usuario and u != usuario:
+                continue
+            for r in c.execute("SELECT * FROM pasta WHERE pai=? ORDER BY bytes DESC LIMIT ?", (_kk(h), n * 3)).fetchall():
+                for _ in range(30):  # desce enquanto uma subpasta guardar 60% ou mais do peso
+                    f = c.execute("SELECT * FROM pasta WHERE pai=? ORDER BY bytes DESC LIMIT 1", (r["chave"],)).fetchone()
+                    if not f or not r["bytes"] or f["bytes"] < 0.6 * r["bytes"]:
+                        break
+                    r = f
+                if r["bytes"]:
+                    cand[r["chave"]] = r
+        pastas = []
+        for r in sorted(cand.values(), key=lambda r: -r["bytes"])[:n]:
+            usr, hh = dono(r["path"])
+            trava = zona_vermelha(r["path"]) or ""
+            pastas.append({"no": no_de(r["path"], r["usuario"]), "nome": os.path.basename(r["path"]), "path": r["path"],
+                           "sub": os.path.relpath(r["path"], hh) if hh else r["path"], "usuario": r["usuario"], "bytes": r["bytes"], "arquivos": r["n"],
+                           "dias": int((agora - r["uso"]) / 86400) if r["uso"] else None, "motivo": trava})
+        fu, au = (" AND usuario=?", [usuario]) if usuario else ("", [])
+        def linhas(sql, args):
+            out = []
+            for r in c.execute(sql, args).fetchall():
+                x = _linha_saida(r, agora)
+                x["pasta_no"] = no_de(os.path.dirname(x["path"]), r["usuario"])
+                out.append(x)
+            return out
+        arquivos = linhas("SELECT * FROM arq WHERE tipo='arquivo'%s ORDER BY bytes DESC LIMIT ?" % fu, au + [n])
+        parados = linhas("SELECT * FROM arq WHERE tipo='arquivo' AND bytes>=?%s ORDER BY uso ASC LIMIT ?" % fu, [50 * 1000 * 1000] + au + [n])
+        return {"estado": est, "pastas": pastas, "arquivos": arquivos, "parados": parados}
+    finally:
+        c.close()
+
+
 # ----------------------------------------------------------------------------------------------
 # lixeira
 # ----------------------------------------------------------------------------------------------
@@ -1192,6 +1786,7 @@ def _limpar_thread(itens, definitivo, depois):
         a["erros"].append("%s: %s" % (type(e).__name__, e))
         a["resultado"] = {"itens": ok, "falhas": len(a["erros"]), "bytes_lixeira": b_lixo, "bytes_removidos": b_def, "modo": "definitivo" if definitivo else "lixeira"}
     finally:
+        _idx_mexer(tirar=[i["path"] for i in itens if not os.path.lexists(i["path"])])
         a["rodando"] = False
         if depois:
             try:
@@ -1362,6 +1957,240 @@ def _offload_thread(itens, dest, definitivo, depois):
         a["erros"].append("%s: %s" % (type(e).__name__, e))
         a["resultado"] = {"itens": ok, "falhas": len(a["erros"]), "bytes_movidos": b_ok, "destino": raiz, "modo": "definitivo" if definitivo else "lixeira"}
     finally:
+        _idx_mexer(tirar=[i["path"] for i in itens if not os.path.lexists(i["path"])])
+        a["rodando"] = False
+        if depois:
+            try:
+                depois(a["resultado"])
+            except Exception:
+                pass
+
+
+# ----------------------------------------------------------------------------------------------
+# gerenciar: renomear, nova pasta, mover e copiar (dentro das pastas dos usuários; nunca sobrescreve)
+# ----------------------------------------------------------------------------------------------
+_RESERVADOS_WIN = {"con", "prn", "aux", "nul"} | {"com%d" % i for i in range(1, 10)} | {"lpt%d" % i for i in range(1, 10)}
+
+
+def _nome_valido(nome):
+    n = unicodedata.normalize("NFC", (nome or "").strip())
+    if not n or n in (".", ".."):
+        raise ValueError("Escreva um nome.")
+    if "/" in n or "\\" in n or "\0" in n:
+        raise ValueError("O nome não pode ter / nem \\.")
+    if len(n.encode("utf-8")) > 255:
+        raise ValueError("Nome comprido demais.")
+    if IS_WIN:
+        if re.search(r'[<>:"|?*\x00-\x1f]', n) or n.endswith((".", " ")):
+            raise ValueError('No Windows o nome não pode ter < > : " | ? * nem terminar com ponto ou espaço.')
+        if os.path.splitext(n)[0].lower() in _RESERVADOS_WIN:
+            raise ValueError("Esse nome é reservado pelo Windows.")
+    return n
+
+
+def _origem(no):
+    p = caminho_no(no)
+    mot = zona_vermelha(p)
+    if mot:
+        raise ValueError("Bloqueado (%s): %s" % (mot, os.path.basename(p)))
+    return p
+
+
+def _destino(no):
+    """Pasta de destino: dentro de uma pasta de usuário; as pastas principais (Documentos, Downloads...) e a própria pasta do usuário servem."""
+    p = caminho_no(no)
+    if not os.path.isdir(p):
+        raise ValueError("O destino precisa ser uma pasta.")
+    mot = zona_vermelha(p)
+    if mot and not mot.startswith(("pasta do usuário", "pasta principal")):
+        raise ValueError("Destino bloqueado (%s)." % mot)
+    return p
+
+
+def _dentro(p, base):
+    a, b = _norm(p), _norm(base).rstrip("/")
+    return a == b or a.startswith(b + "/")
+
+
+def _itens_seguem(antigo, novo=None):
+    """Itens da lista de ações que estavam em antigo: seguem para novo (renomear) ou saem da lista."""
+    for it in list(ITENS.values()):
+        if _dentro(it["path"], antigo):
+            if novo:
+                if _norm(it["path"]) == _norm(antigo):
+                    it["path"], it["titulo"] = novo, os.path.basename(novo)
+                else:
+                    it["path"] = os.path.join(novo, os.path.relpath(it["path"], antigo))
+            else:
+                ITENS.pop(it["id"], None)
+
+
+def renomear(no, novo_nome):
+    p = _origem(no)
+    nome = _nome_valido(novo_nome)
+    dst = os.path.join(os.path.dirname(p), nome)
+    if os.path.basename(p) == nome:
+        return {"no": int(no), "nome": nome}
+    if os.path.lexists(dst):
+        try:
+            mesmo = os.path.samefile(dst, p)  # disco que não diferencia maiúsculas: "foto.JPG" -> "foto.jpg"
+        except OSError:
+            mesmo = False
+        if not mesmo:
+            raise ValueError("Já existe \"%s\" nesta pasta." % nome)
+    os.rename(p, dst)
+    _itens_seguem(p, dst)
+    _idx_mexer(tirar=[p], por=[dst])
+    return {"no": no_de(dst, dono(dst)[0]), "nome": nome}
+
+
+def nova_pasta(no_pai, nome):
+    pai = _destino(no_pai)
+    nome = _nome_valido(nome)
+    dst = os.path.join(pai, nome)
+    if os.path.lexists(dst):
+        raise ValueError("Já existe \"%s\" nesta pasta." % nome)
+    os.mkdir(dst)
+    _idx_mexer(por=[dst])
+    return {"no": no_de(dst, dono(dst)[0]), "nome": nome}
+
+
+def _mesmo_volume(a, b):
+    try:
+        return os.stat(a).st_dev == os.stat(b).st_dev
+    except OSError:
+        return False
+
+
+def preflight_destino(nos, destino_no, modo="mover"):
+    if modo not in ("mover", "copiar"):
+        raise ValueError("Operação inválida.")
+    if not nos:
+        raise ValueError("Nada selecionado.")
+    origens = [_origem(n) for n in nos]
+    dest = _destino(destino_no)
+    erros, conflitos, nomes = [], [], set()
+    precisa = 0
+    for o in origens:
+        nome = os.path.basename(o)
+        if _dentro(dest, o):
+            erros.append("Não dá para pôr \"%s\" dentro dela mesma." % nome)
+            continue
+        if modo == "mover" and _norm(os.path.dirname(o)) == _norm(dest):
+            erros.append("\"%s\" já está nesta pasta." % nome)
+            continue
+        if os.path.lexists(os.path.join(dest, nome)) or nome.lower() in nomes:
+            conflitos.append(nome)
+        nomes.add(nome.lower())
+        if modo == "copiar" or not _mesmo_volume(o, dest):
+            precisa += tamanho_logico(o)
+    if precisa:
+        try:
+            livre = shutil.disk_usage(dest).free
+            if livre < precisa * 1.02 + 50 * 1024 * 1024:
+                erros.append("Não cabe: precisa de %s e o destino tem %s livres." % (fmt(precisa), fmt(livre)))
+        except OSError:
+            erros.append("Não consegui ver o espaço livre do destino.")
+    return {"ok": not erros, "erros": erros, "conflitos": conflitos, "bytes": precisa, "itens": len(origens), "destino": dest}
+
+
+def _copiar_arvore(src, dst, a):
+    """Copia arquivo ou pasta com conferência de hash em cada arquivo; pastas vazias também."""
+    if os.path.isdir(src):
+        os.makedirs(dst, exist_ok=False)
+        for dp, dns, fns in os.walk(src):
+            dns[:] = [x for x in dns if not os.path.islink(os.path.join(dp, x))]
+            alvo = os.path.join(dst, os.path.relpath(dp, src))
+            os.makedirs(alvo, exist_ok=True)
+            for fn in fns:
+                fp = os.path.join(dp, fn)
+                if os.path.islink(fp) or _nuvem(os.lstat(fp)):
+                    continue
+                _copiar_verificado(fp, os.path.join(alvo, fn), CANCEL)
+                a["bytes_feito"] += os.path.getsize(fp)
+    else:
+        _copiar_verificado(src, dst, CANCEL)
+        a["bytes_feito"] += os.path.getsize(src)
+
+
+def _gerenciar(modo, nos, destino_no, resolucao, depois=None):
+    pf = preflight_destino(nos, destino_no, modo)
+    if not pf["ok"]:
+        raise ValueError(" ".join(pf["erros"]))
+    if pf["conflitos"] and resolucao not in ("manter", "pular"):
+        raise ValueError("CONFLITOS")
+    origens = [_origem(n) for n in nos]
+    itens = [{"path": o, "bytes": _idx_bytes(o), "tipo": "pasta" if os.path.isdir(o) else "arquivo"} for o in origens]
+    _acao_iniciar(modo, itens)
+    threading.Thread(target=_gerenciar_thread, args=(modo, itens, pf["destino"], resolucao, depois), daemon=True).start()
+
+
+def mover(nos, destino_no, resolucao="", depois=None):
+    _gerenciar("mover", nos, destino_no, resolucao, depois)
+
+
+def copiar(nos, destino_no, resolucao="", depois=None):
+    _gerenciar("copiar", nos, destino_no, resolucao, depois)
+
+
+def _gerenciar_thread(modo, itens, dest, resolucao, depois):
+    a = ST["acao"]
+    ok = pulados = 0
+    b_ok = 0
+    tirar, por = [], []
+    try:
+        for it in itens:
+            if CANCEL.is_set():
+                break
+            o = it["path"]
+            a["atual"] = o
+            nome = os.path.basename(o)
+            alvo = os.path.join(dest, nome)
+            if os.path.lexists(alvo):
+                if resolucao == "pular":
+                    pulados += 1
+                    a["feito"] += 1
+                    continue
+                alvo = os.path.join(dest, _unico(dest, nome))
+            try:
+                if modo == "mover" and _mesmo_volume(o, dest):
+                    os.rename(o, alvo)  # mesmo disco: instantâneo, nada é copiado
+                    a["bytes_feito"] += it["bytes"]
+                else:
+                    try:
+                        _copiar_arvore(o, alvo, a)
+                    except BaseException:
+                        if os.path.isdir(alvo):
+                            shutil.rmtree(alvo, ignore_errors=True)  # cópia pela metade não fica para trás
+                        elif os.path.lexists(alvo):
+                            os.remove(alvo)
+                        raise
+                    if modo == "mover":
+                        # outro disco: o original só sai depois de tudo copiado e conferido (vai para a Lixeira)
+                        if IS_WIN:
+                            r = _lixeira_win_lote([o]).get(o)
+                            if r:
+                                raise OSError(r)
+                        else:
+                            _para_lixeira(o)
+                if modo == "mover":
+                    tirar.append(o)
+                    _itens_seguem(o)
+                por.append(alvo)
+                ok += 1
+                b_ok += it["bytes"]
+            except InterruptedError:
+                a["erros"].append("Cancelado em: " + o)
+                break
+            except Exception as e:
+                a["erros"].append("%s: %s (o original foi mantido)" % (o, e))
+            a["feito"] += 1
+        a["resultado"] = {"itens": ok, "pulados": pulados, "falhas": len(a["erros"]), "bytes": b_ok, "destino": dest, "modo": modo}
+    except Exception as e:
+        a["erros"].append("%s: %s" % (type(e).__name__, e))
+        a["resultado"] = {"itens": ok, "pulados": pulados, "falhas": len(a["erros"]), "bytes": b_ok, "destino": dest, "modo": modo}
+    finally:
+        _idx_mexer(tirar=tirar, por=por)
         a["rodando"] = False
         if depois:
             try:

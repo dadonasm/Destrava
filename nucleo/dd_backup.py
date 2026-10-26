@@ -41,8 +41,8 @@ from urllib.parse import parse_qs, urlparse
 if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-VERSION = "3.1"
-BUILD = "2026-10-21.1"  # igual ao BUILD do app.html: se forem diferentes, o pendrive tem arquivos de versões misturadas
+VERSION = "3.3"
+BUILD = "2026-10-26.2"  # igual ao BUILD do app.html: se forem diferentes, o pendrive tem arquivos de versões misturadas
 import disco  # noqa: E402  (conferência lendo do disco, não da memória)
 import mapa as MAPA  # noqa: E402
 import perfil as PERFIL  # noqa: E402
@@ -144,51 +144,11 @@ WA_NOME = re.compile(r"^whatsapp (image|video|audio|ptt|document)|^(img|vid|aud|
 # ordem de cópia: o mais importante primeiro (se o disco de origem estiver morrendo, o essencial já foi)
 PRIORIDADE = ["Documentos", "Email_Contatos", "Contas_Senhas", "Fotos", "Conversas", "Projetos", "Sistemas", "Dados_de_apps", "Navegadores",
               "Videos", "Audios", "Outros", "Ocultos", "Configuracoes", "Programas", "Temporarios", "Extras", "Nuvem"]
-PESSOAL_NOMES = ("foto", "imagem", "picture", "photo", "music", "músic", "music", "video", "vídeo", "download", "whats", "pessoal", "famil",
-                 "celular", "backup", "wallpaper", "papel de parede", "screenshot", "captura")
-DOCS_DESK = {"documents", "documentos", "meus documentos", "desktop", "área de trabalho", "area de trabalho"}
-# Pastas de origem: pastas com nome próprio ou de trabalho vão inteiras para Pastas_origem/<Nome>/ (antes era Pastas_mae/)
+# Modo de cópia, escolhido a cada backup: espelho (tudo como estava), ordenado (tipo e data, com raiz no usuário)
+# ou misto (espelhado, e o técnico escolhe na Seleção o que vai ordenado). O espelho fica em Pastas_origem/<Usuário>/…
 PASTA_ORIGEM, PASTA_ORIGEM_ANTIGA = "Pastas_origem", "Pastas_mae"
-NOMES_PADRAO = {"appdata", "application data", "contacts", "contatos", "favorites", "favoritos", "links", "music", "músicas", "musicas", "minhas músicas",
-                "pictures", "imagens", "minhas imagens", "saved games", "jogos salvos", "searches", "pesquisas", "videos", "vídeos", "meus vídeos",
-                "downloads", "3d objects", "objetos 3d", "onedrive", "icloud drive", "dropbox", "google drive", "creative cloud files", "my games",
-                "whatsapp", "zoom", "custom office templates", "modelos personalizados do office", "onenote notebooks", "blocos de anotações do onenote",
-                "outlook files", "arquivos do outlook", "scanned documents", "documentos digitalizados", "fax", "ansel", "intelgraphicsprofiles",
-                "microsoft", "source", "repos", "drivers", "swsetup", "dell", "hp", "lenovo", "acer", "asus", "samsung", "positivo", "intel", "amd",
-                "nvidia", "esd", "inetpub", "xampp", "apps", "games", "onedrivetemp", "windows.old", "boot", "efi", "temp", "tmp", "public", "default"} | DOCS_DESK
-GENERICAS = {"novo", "nova", "new", "backup", "backups", "copia", "copy", "teste", "test", "testes", "arquivo", "arquivos", "pasta", "pastas", "folder",
-             "diversos", "outros", "misc", "antigo", "antigos", "old", "docs", "documentos", "imagens", "fotos", "foto", "videos", "musicas", "downloads",
-             "sem", "titulo", "untitled", "geral", "coisas", "files", "dados", "data", "scan", "scans", "modelos", "templates", "projetos", "projects",
-             "trabalho", "trabalhos", "pessoal", "meus", "minhas", "my", "temp", "tmp", "programas", "instaladores", "setup", "install", "drivers"}
-CONECTIVOS = {"da", "de", "do", "das", "dos", "e"}
-AUTO_ORIGEM = 65  # nota a partir da qual a pasta de origem já vem marcada
-
-
-def _memoria_arq():
-    return os.path.join(DADOS_DIR[0], "pastas_origem.json")
-
-
-def memoria_origens():
-    """Por nome de pasta (sem acento, minúsculo): quantas vezes o técnico separou (aceita) ou desfez a separação automática (recusada)."""
-    try:
-        with open(_memoria_arq(), encoding="utf-8") as fh:
-            d = json.load(fh)
-        return d if isinstance(d, dict) else {}
-    except (OSError, ValueError):
-        return {}
-
-
-def parece_nome_proprio(nome):
-    """Wefix, Padaria Ana, Marcio Euripedes: sim. Documentos, Nova pasta, Backup antigo, fotos: não."""
-    n = (nome or "").strip()
-    if not n or n.startswith(".") or n.lower() in NOMES_PADRAO:
-        return False
-    palavras = re.findall(r"[^\W_]+", n)
-    if not 1 <= len(palavras) <= 4 or not any(c.isalpha() for c in n):
-        return False
-    if any(strip_accents(p.lower()) in GENERICAS for p in palavras):
-        return False
-    return all(p[0].isupper() or p.isdigit() or p.lower() in CONECTIVOS for p in palavras) and palavras[0][0].isupper()
+LAYOUT_MODOS = ("espelho", "ordenado", "misto")
+LAYOUT_NOME = {"espelho": "Espelho", "ordenado": "Ordenado", "misto": "Misto"}
 ILLEGAL = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 
 
@@ -665,7 +625,7 @@ def roots_for_browse():
 # ----------------------------------------------------------------------------------------------
 class Item(object):
     __slots__ = ("raiz", "ctx", "local0", "rel0", "src", "disp", "size", "mtime", "local", "cat", "act", "motivo", "date", "tags", "inc", "rel",
-                 "status", "err", "cause", "sha", "ver", "nuvem", "inc0")
+                 "status", "err", "cause", "sha", "ver", "nuvem", "inc0", "quem", "pk", "eleg", "lay")
 
     def __init__(self):
         self.raiz, self.ctx, self.local0, self.rel0 = "", "", None, None
@@ -677,6 +637,10 @@ class Item(object):
         self.ver = False
         self.inc = False
         self.nuvem = False
+        self.quem = ""  # usuário/local de origem (antes de o WhatsApp virar "WhatsApp (Ana)")
+        self.pk = ""  # pasta de origem a partir do usuário: "Ana/Documents/motorista/cnh"
+        self.eleg = False  # entra na escolha espelhar/ordenar (arquivos pessoais; apps, ocultos e sistemas guardam o caminho sempre)
+        self.lay = ""  # espelhar | ordenar escolhido no Misto (vazio: vale o modo)
 
 
 def classify_file(name, size, nuvem):
@@ -707,6 +671,23 @@ def classify_file(name, size, nuvem):
 
 def eh_whatsapp(disp, name):
     return bool(WA_RE.search(name) or WA_NOME.search(name) or WA_PASTA.search(os.path.dirname(disp.replace("\\", "/"))))
+
+
+def _dentro_it(it):
+    return it.disp[len(it.raiz):].lstrip("\\/") if it.raiz and it.disp.startswith(it.raiz) else nome_de(it.disp)
+
+
+def pasta_chave(local, dentro):
+    """Pasta de origem a partir do usuário (ou do disco/pasta de origem): o ponto de partida da navegação e do espelho."""
+    partes = [x for x in re.split(r"[\\/]", dentro) if x][:-1]
+    return "/".join([x for x in (local or "").split("/") if x] + partes)
+
+
+def rel_espelho(it):
+    """Destino no espelho: Pastas_origem/<Usuário>/<caminho como estava a partir da pasta do usuário>."""
+    loc = "/".join(safe_seg(x) for x in (it.quem or it.local0 or "").split("/") if x)
+    dentro = "/".join(safe_seg(x) for x in re.split(r"[\\/]", _dentro_it(it)) if x)
+    return "%s/%s/%s" % (PASTA_ORIGEM, loc, dentro)
 
 
 def build_rel(local, cat, date, name, ext):
@@ -904,7 +885,8 @@ def parse_filtro(q):
             "inc": None if inc in (None, "", "todos") else str(inc) in ("1", "True", "true"),
             "dmin": _data_iso(f.get("dmin")), "dmax": _data_iso(f.get("dmax")),
             "smin": int(f["smin"]) if str(f.get("smin") or "").isdigit() else None, "smax": int(f["smax"]) if str(f.get("smax") or "").isdigit() else None,
-            "q": str(f.get("q") or "").lower(), "facets": str(f.get("facets") or "") in ("1", "true")}
+            "q": str(f.get("q") or "").lower(), "facets": str(f.get("facets") or "") in ("1", "true"),
+            "pasta": lst("pasta"), "copia": f.get("copia") if f.get("copia") in ("espelhar", "ordenar") else ""}
 
 
 class App(object):
@@ -935,8 +917,7 @@ class App(object):
         self.extras = []  # pastas que o técnico incluiu (fora do padrão da varredura)
         self.extras_planos = []  # os planos de varredura delas (a varredura final também repassa)
         self.incl = {}
-        self.maes = []
-        self.maes_auto = []
+        self.layout_modo = ""  # escolhido a cada backup, na Seleção
         self.checagens = []
         self.items = []
         self.ign_dirs = []
@@ -1276,6 +1257,7 @@ class App(object):
             it.src = p
             it.disp = disp_root + sep + "(favoritos)" + sep + nm
             it.size, it.mtime, it.local = st.st_size, st.st_mtime, local
+            it.quem = it.pk = local
             it.cat, it.act, it.motivo = "Navegadores", "copiar", "Favoritos do navegador"
             it.date = None
             it.tags = ""
@@ -1304,8 +1286,6 @@ class App(object):
             self.parar_medicao()
             self.items = []
             self.extras, self.extras_planos, self.incl = [], [], {}
-            self.maes = []
-            self.maes_auto = []
             self.ign_dirs = []
             self.ign_reais = []
             self.ign_dirs_total = 0
@@ -1330,6 +1310,7 @@ class App(object):
             partes = [x for x in re.split(r"[\\/]", disp)[1:] if x]
             it.rel = "/".join([safe_seg(x) for x in local.split("/")] + [safe_seg(x) for x in partes])
             it.inc0 = True
+            it.quem, it.pk = local, pasta_chave(local, "/".join(partes))
             return it
         if ctx == "extra":  # pasta que a varredura não lê, incluída pelo técnico: caminho original preservado
             it = Item()
@@ -1338,6 +1319,7 @@ class App(object):
             it.raiz, it.ctx, it.inc0 = raiz, ctx, True
             partes = [x for x in re.split(r"[\\/]", disp)[1:] if x]
             it.rel = "/".join([safe_seg(x) for x in local.split("/")] + [safe_seg(x) for x in partes])
+            it.quem, it.pk = local, pasta_chave(local, "/".join(partes))
             return it
         cat, act, mot, marcado = classify_file(name, st.st_size, nuvem)
         ext = os.path.splitext(name.lower())[1]
@@ -1354,6 +1336,7 @@ class App(object):
         loc = "/".join(safe_seg(x) for x in local.split("/"))
         dentro = disp[len(raiz):].lstrip("\\/") if raiz and disp.startswith(raiz) else name
         dentro_n = dentro.replace("\\", "/")
+        it.quem, it.pk = local, pasta_chave(local, dentro_n)
         segs = lambda t: "/".join(safe_seg(x) for x in t.split("/") if x)
         app = self._app_conhecido(dentro_n, ctx) if ctx in ("winuser", "linuxuser") else None
         if app and act != "ignorar":
@@ -1371,8 +1354,10 @@ class App(object):
             local = it.local = "WhatsApp (%s)" % dono if dono else "WhatsApp"  # o WhatsApp de cada usuário vira um "usuário" à parte
             mot = "WhatsApp (%s)" % cat
             it.rel = build_rel(local, cat, date, name, ext)
+            it.eleg = True
         else:
             it.rel = build_rel(local, cat, date, name, ext)
+            it.eleg = True
         it.cat, it.act, it.motivo = cat, act, mot
         it.tags = tag_path(self.rules, disp) if act != "ignorar" else ""
         it.inc = it.inc0 = marcado
@@ -1746,11 +1731,8 @@ class App(object):
                         self.scan_info["bytes"] += st.st_size
                     items.extend(self.bookmark_items(plan))
             self.items = items
-            try:  # pastas de origem marcadas sozinhas (nota alta ou já separadas em outra máquina); o técnico revisa na Seleção
-                self.maes_auto = [c["chave"] for c in self.sugestoes_maes() if c["auto"]]
-                self._aplicar_maes(self.maes_auto)
-            except Exception:
-                self.maes_auto = []
+            for it in items:  # varrer de novo no mesmo backup mantém o modo escolhido (as escolhas pasta a pasta recomeçam)
+                self._aplicar_copia(it)
             self.phase = "scanned"
             self.log("Escaneamento concluído: %d arquivos, %d pastas ignoradas." % (len(items), self.ign_dirs_total))
             try:
@@ -1765,124 +1747,80 @@ class App(object):
             self.phase = "error"
             self.log("ERRO no escaneamento: " + self.error.splitlines()[-1])
 
-    # ------------------------------------------------------------------ pastas-mãe (ex.: Wefix) separadas do pessoal
-    def _chave_mae(self, it):
-        """Pasta de 1º nível candidata: dentro de Documentos/Área de Trabalho do usuário, ou uma pasta solta na raiz do disco."""
-        if not it.raiz or it.ctx not in ("winuser", "linuxuser", "plain") or it.local0 is None:
-            return None
-        partes = [x for x in re.split(r"[\\/]", it.disp[len(it.raiz):]) if x]
-        if it.ctx == "plain" and it.local0.startswith("Disco_") and "/" in it.local0:  # pasta solta na raiz do disco do Windows
-            return (it.raiz, os.path.basename(it.raiz.rstrip("\\/"))) if len(partes) >= 2 else None
-        if it.ctx == "plain":  # pasta escolhida como origem: as subpastas dela são as candidatas
-            sep = "\\" if "\\" in it.raiz else "/"
-            return (it.raiz.rstrip(sep) + sep + partes[0], partes[0]) if len(partes) >= 2 else None
-        if len(partes) >= 3 and partes[0].lower() in DOCS_DESK:
-            sep = "\\" if "\\" in it.raiz else "/"
-            return (it.raiz.rstrip(sep) + sep + partes[0] + sep + partes[1], partes[1])
-        if len(partes) >= 2 and parece_nome_proprio(partes[0]):  # pasta com nome próprio direto na pasta do usuário (C:\Users\marci\Wefix)
-            sep = "\\" if "\\" in it.raiz else "/"
-            return (it.raiz.rstrip(sep) + sep + partes[0], partes[0])
-        return None
+    # ------------------------------------------------------------------ como copiar (espelho / ordenado / misto)
+    def copia_de(self, it):
+        """espelhar | ordenar, para os arquivos que entram na escolha. Sem modo escolhido ainda, vale o ordenado (o de sempre)."""
+        if it.lay:
+            return it.lay
+        return "espelhar" if self.layout_modo in ("espelho", "misto") else "ordenar"
 
-    def sugestoes_maes(self):
-        """Pastas de origem sugeridas (nome próprio ou de trabalho), com a % de acerto da sugestão e o porquê."""
-        mem = memoria_origens()
-        cands = {}
+    def _aplicar_copia(self, it):
+        if not it.eleg:
+            return
+        it.rel = it.rel0 if self.copia_de(it) == "ordenar" else rel_espelho(it)  # o "local" (usuário) não muda: só onde fica no backup
+
+    def layout_editavel(self):
+        return self.phase == "scanned" and not any(it.status for it in self.items)
+
+    def set_modo(self, modo):
+        if modo not in LAYOUT_MODOS:
+            raise ValueError("Modo inválido.")
+        with self.lock:
+            if not self.layout_editavel():
+                raise Busy("A cópia já começou: o jeito de guardar não muda mais neste backup.")
+            self.layout_modo = modo
+            for it in self.items:
+                it.lay = ""
+                self._aplicar_copia(it)
+        return self.layout_resumo()
+
+    def copia(self, d):
+        """No Misto: espelhar ou ordenar um conjunto (filtro da lista/grade ou linhas). A última ação vale."""
+        qual = d.get("copia")
+        if qual not in ("espelhar", "ordenar"):
+            raise ValueError("Escolha espelhar ou ordenar.")
+        with self.lock:
+            if self.layout_modo != "misto":
+                raise ValueError("Escolha o modo Misto para decidir pasta a pasta.")
+            if not self.layout_editavel():
+                raise Busy("A cópia já começou: o jeito de guardar não muda mais neste backup.")
+            if "idx" in d:
+                alvo = [i for i in (d["idx"] if isinstance(d["idx"], list) else [d["idx"]]) if isinstance(i, int) and 0 <= i < len(self.items)]
+            else:
+                alvo = self.filtrar(parse_filtro(d.get("filter") or {}))[0]
+            n = 0
+            for i in alvo:
+                it = self.items[i]
+                if it.eleg:
+                    it.lay = qual
+                    self._aplicar_copia(it)
+                    n += 1
+        return {"n": n, "resumo": self.layout_resumo()}
+
+    def _layout_registro(self):
+        """O que vai no certificado e no Mapa: o modo e quanto foi espelhado e ordenado (do que foi copiado)."""
+        r = self.layout_resumo()
+        return {"modo": r["modo"] or "ordenado", "nome": r["nome"] or "Ordenado", "espelhados": r["espelhar"]["n"], "ordenados": r["ordenar"]["n"]}
+
+    def layout_resumo(self):
+        """Quanto vai espelhado e quanto ordenado (só o marcado para o backup) e um exemplo real de como fica."""
+        r = {"modo": self.layout_modo, "nome": LAYOUT_NOME.get(self.layout_modo, ""), "editavel": self.layout_editavel(),
+             "espelhar": {"n": 0, "bytes": 0}, "ordenar": {"n": 0, "bytes": 0}, "fixos": {"n": 0, "bytes": 0}, "exemplo": None}
+        melhor = None
         for it in self.items:
-            k = self._chave_mae(it)
-            if not k:
+            if not it.inc:
                 continue
-            c = cands.setdefault(k[0], {"chave": k[0], "nome": k[1], "n": 0, "bytes": 0, "sub": set(), "ext": set(), "tags": {}})
-            c["n"] += 1
-            c["bytes"] += it.size
-            resto = [x for x in re.split(r"[\\/]", it.disp[len(k[0]):]) if x]
-            if len(resto) >= 2:
-                c["sub"].add(resto[0].lower())
-            c["ext"].add(os.path.splitext(it.disp.lower())[1])
-            for t in (it.tags or "").split("|"):
-                if t:
-                    c["tags"][t] = c["tags"].get(t, 0) + 1
-        out = []
-        for c in cands.values():
-            if c["n"] < 3:
-                continue
-            pct, motivos = 35, []
-            ntag = sum(c["tags"].values())
-            if ntag:
-                pct += min(30, int(ntag * 60.0 / c["n"]) + 8)
-                motivos.append("arquivos de trabalho (%s)" % ", ".join(sorted(c["tags"], key=lambda t: -c["tags"][t])[:3]))
-            if len(c["sub"]) >= 2:
-                pct += 15
-                motivos.append("%d subpastas organizadas" % len(c["sub"]))
-            if len(c["ext"]) >= 3:
-                pct += 10
-                motivos.append("%d tipos de arquivo" % len(c["ext"]))
-            if c["n"] >= 20:
-                pct += 8
-            if parece_nome_proprio(c["nome"]):
-                pct += 30
-                motivos.insert(0, "nome próprio")
-            if any(p in c["nome"].lower() for p in PESSOAL_NOMES):
-                pct -= 35
-                motivos.append("o nome parece pessoal")
-            m = mem.get(strip_accents(c["nome"].lower()), {})
-            lembrada, recusada = m.get("aceita", 0) > m.get("recusada", 0), m.get("recusada", 0) > m.get("aceita", 0)
-            if lembrada:
-                pct += 25
-                motivos.insert(0, "você já separou em outra máquina")
-            elif recusada:
-                pct -= 25
-                motivos.insert(0, "você não quis separar antes")
-            pct = max(5, min(97, pct))
-            out.append({"chave": c["chave"], "nome": c["nome"], "n": c["n"], "bytes": c["bytes"], "pct": pct, "motivos": motivos,
-                        "marcada": c["chave"] in self.maes, "auto": lembrada or (pct >= AUTO_ORIGEM and not recusada)})
-        out.sort(key=lambda x: (-x["pct"], -x["bytes"]))
-        return out[:40]
-
-    def set_maes(self, chaves):
-        """Marca as pastas de origem: tudo dentro delas vai para Pastas_origem/<Nome>/, com a estrutura de dentro preservada."""
-        if self.busy():
-            raise Busy("Aguarde o processo atual terminar.")
-        return self._aplicar_maes(chaves)
-
-    def _lembrar_origens(self):
-        """Na hora de copiar: o que ficou separado conta como aceito; o que veio marcado sozinho e foi desmarcado, como recusado."""
-        try:
-            nomes = {c["chave"]: c["nome"] for c in self.sugestoes_maes()}
-            mem = memoria_origens()
-            for chave, conta in [(c, "aceita") for c in self.maes] + [(c, "recusada") for c in getattr(self, "maes_auto", []) if c not in self.maes]:
-                if chave in nomes:
-                    m = mem.setdefault(strip_accents(nomes[chave].lower()), {"nome": nomes[chave], "aceita": 0, "recusada": 0})
-                    m[conta] = m.get(conta, 0) + 1
-            if mem:
-                with open(_memoria_arq(), "w", encoding="utf-8") as fh:
-                    json.dump(mem, fh, ensure_ascii=False, indent=1)
-        except Exception:
-            pass
-
-    def _aplicar_maes(self, chaves):
-        validas = {c["chave"]: c["nome"] for c in self.sugestoes_maes()}
-        for it in self.items:  # tudo volta ao lugar de antes
-            k = self._chave_mae(it)
-            if k:
-                validas.setdefault(k[0], k[1])
-            if it.local0 is not None:
-                it.local, it.rel = it.local0, it.rel0
-        self.maes = [c for c in chaves if c in validas]
-        nomes, usados = {}, set()
-        for c in self.maes:
-            n = safe_seg(validas[c])
-            while n.lower() in usados:
-                n += "_2"
-            usados.add(n.lower())
-            nomes[c] = n
-        for it in self.items:
-            k = self._chave_mae(it)
-            if k and k[0] in nomes:
-                it.local = PASTA_ORIGEM + "/" + nomes[k[0]]
-                dentro = [safe_seg(x) for x in re.split(r"[\\/]", it.disp[len(k[0]):]) if x]
-                it.rel = "%s/%s/%s" % (PASTA_ORIGEM, nomes[k[0]], "/".join(dentro))
-        return {"maes": self.maes, "sugestoes": self.sugestoes_maes()}
+            k = self.copia_de(it) if it.eleg else "fixos"
+            r[k]["n"] += 1
+            r[k]["bytes"] += it.size
+            if it.eleg and it.pk.count("/") >= 2 and (melhor is None or it.pk.count("/") > melhor.pk.count("/") or (it.cat == "Documentos" and melhor.cat != "Documentos")):
+                if melhor is None or it.pk.count("/") <= 5:
+                    melhor = it
+        if melhor is None:
+            melhor = next((it for it in self.items if it.eleg and it.inc), None)
+        if melhor is not None:
+            r["exemplo"] = {"origem": melhor.disp, "espelho": rel_espelho(melhor), "ordenado": melhor.rel0}
+        return r
 
     # ------------------------------------------------------------------ seleção e listas
     def _grupos(self, f):
@@ -1902,6 +1840,9 @@ class App(object):
               lambda it: faixa_tam(it.size) in f["tam"] or ((f["smin"] is not None or f["smax"] is not None) and (f["smin"] is None or it.size >= f["smin"]) and (f["smax"] is None or it.size <= f["smax"])),
               lambda it: (faixa_tam(it.size),)),
              ("act", bool(f["act"]), lambda it: it.act == f["act"], None),
+             ("pasta", bool(f["pasta"]), lambda it: any(it.pk == p or it.pk.startswith(p + "/") for p in f["pasta"]), None),
+             ("copia", bool(f["copia"]), lambda it: it.eleg and self.copia_de(it) == f["copia"],
+              lambda it: (self.copia_de(it) if it.eleg else "fixo",)),
              ("q", bool(f["q"]), lambda it: f["q"] in it.disp.lower() or f["q"] in tipo(it).lower(), None)]
         return G
 
@@ -1969,30 +1910,34 @@ class App(object):
             k = (it.local, it.cat, it.act)
             e = g.get(k)
             if e is None:
-                e = g[k] = [0, 0, 0, 0]
+                e = g[k] = [0, 0, 0, 0, 0, 0]
             e[0] += 1
             e[1] += it.size
             if it.inc:
                 e[2] += 1
                 e[3] += it.size
+            if it.eleg:
+                e[4 if self.copia_de(it) == "espelhar" else 5] += 1
             for dct, key in (((cats, it.cat) if it.act == "copiar" else (None, None)), (acts, it.act)):
                 if dct is None:
                     continue
                 c = dct.get(key)
                 if c is None:
-                    c = dct[key] = [0, 0, 0, 0]
+                    c = dct[key] = [0, 0, 0, 0, 0, 0]
                 c[0] += 1
                 c[1] += it.size
                 if it.inc:
                     c[2] += 1
                     c[3] += it.size
-        glist = [{"local": k[0], "cat": k[1], "act": k[2], "n": v[0], "bytes": v[1], "sel_n": v[2], "sel_bytes": v[3]} for k, v in g.items()]
+                if it.eleg:
+                    c[4 if self.copia_de(it) == "espelhar" else 5] += 1
+        glist = [{"local": k[0], "cat": k[1], "act": k[2], "n": v[0], "bytes": v[1], "sel_n": v[2], "sel_bytes": v[3], "esp": v[4], "ord": v[5]} for k, v in g.items()]
         glist.sort(key=lambda x: (x["local"].lower(), x["cat"], x["act"]))
         exs = lambda k: [n for _, n in ex.get(k, [])]
-        cl = [{"cat": k, "n": v[0], "bytes": v[1], "sel_n": v[2], "sel_bytes": v[3], "ex": exs(("cat", k))} for k, v in cats.items()]
+        cl = [{"cat": k, "n": v[0], "bytes": v[1], "sel_n": v[2], "sel_bytes": v[3], "esp": v[4], "ord": v[5], "ex": exs(("cat", k))} for k, v in cats.items()]
         cl.sort(key=lambda x: -x["bytes"])
-        al = {k: {"n": v[0], "bytes": v[1], "sel_n": v[2], "sel_bytes": v[3], "ex": exs(("act", k))} for k, v in acts.items()}
-        return {"groups": glist, "cats": cl, "acts": al, "ign_dirs": self.ign_dirs[:600], "ign_dirs_total": self.ign_dirs_total}
+        al = {k: {"n": v[0], "bytes": v[1], "sel_n": v[2], "sel_bytes": v[3], "esp": v[4], "ord": v[5], "ex": exs(("act", k))} for k, v in acts.items()}
+        return {"groups": glist, "cats": cl, "acts": al, "ign_dirs": self.ign_dirs[:600], "ign_dirs_total": self.ign_dirs_total, "layout_modo": self.layout_modo}
 
     ORDEM = {"nome": lambda it: nome_de(it.disp).lower(), "tipo": lambda it: (tipo_de(nome_de(it.disp)), nome_de(it.disp).lower()),
              "data": lambda it: it.date or (0, 0, 0), "tamanho": lambda it: it.size, "caminho": lambda it: it.disp.lower(),
@@ -2015,11 +1960,42 @@ class App(object):
             nome = nome_de(it.disp)
             out.append([i, it.disp, it.size, ("%04d-%02d-%02d" % it.date) if it.date else "", it.cat, it.act, 1 if it.inc else 0,
                         it.err or it.motivo, self.final_status(it), it.tags, nome, tipo_de(nome), it.local,
-                        "" if it.nuvem or not DADOS else (DADOS.tipo_previa(it.src) or "")])
+                        "" if it.nuvem or not DADOS else (DADOS.tipo_previa(it.src) or ""),
+                        self.copia_de(it) if it.eleg else "", it.rel])
         r = {"total": len(idx), "rows": out, "bytes": sum(self.items[i].size for i in idx), "sel_n": len(sel), "sel_bytes": sum(it.size for it in sel)}
+        if str(f.get("pastas") or "") in ("1", "true"):
+            r["pastas"] = self.subpastas(idx, (flt["pasta"] or [""])[0])
         if fac is not None:
             r["facets"] = fac
         return r
+
+    def subpastas(self, idx, base=""):
+        """Navegação por pasta: partindo dos usuários (raiz) e descendo. Para cada subpasta de base: arquivos, tamanho,
+        marcados e quantos vão espelhados/ordenados. idx já vem filtrado (inclusive pela própria base)."""
+        pre = base.rstrip("/") + "/" if base else ""
+        sub, soltos = {}, {"n": 0, "bytes": 0}
+        for i in idx:
+            it = self.items[i]
+            pk = it.pk or it.local0 or it.local
+            if base and pk == base:
+                soltos["n"] += 1
+                soltos["bytes"] += it.size
+                continue
+            if pre and not pk.startswith(pre):
+                continue
+            nome = pk[len(pre):].split("/")[0]
+            e = sub.get(nome)
+            if e is None:
+                e = sub[nome] = {"nome": nome, "chave": pre + nome, "n": 0, "bytes": 0, "sel_n": 0, "sel_bytes": 0, "espelhar": 0, "ordenar": 0}
+            e["n"] += 1
+            e["bytes"] += it.size
+            if it.inc:
+                e["sel_n"] += 1
+                e["sel_bytes"] += it.size
+            if it.eleg:
+                e[self.copia_de(it)] += 1
+        return {"base": base, "migalhas": [x for x in base.split("/") if x], "pastas": sorted(sub.values(), key=lambda x: -x["bytes"]),
+                "soltos": soltos}
 
     def previa(self, i):
         """Prévia de um arquivo da origem pelo índice da lista: a tela nunca manda caminho. Só na nuvem não abre (baixaria o arquivo)."""
@@ -2089,8 +2065,6 @@ class App(object):
                 raise ValueError("O destino é FAT32 e há arquivos maiores que 4 GB. Use outro destino ou formate em exFAT/NTFS.")
             self.parar_medicao()
             self.parar_ensaio()
-            if not retry_only:
-                self._lembrar_origens()
             queue = [it for it in self.items if it.inc and (it.status is None or (retry_only and it.status == "falha"))]
             queue.sort(key=lambda it: PRIORIDADE.index(it.cat) if it.cat in PRIORIDADE else len(PRIORIDADE))  # o essencial primeiro
             self.cancel.clear()
@@ -2520,6 +2494,7 @@ class App(object):
             self.reset()
             self.dest_root, self.mapa_dir, self.cert = raiz, mp, cert
             self.checagens = meta.get("checagens") or []
+            self.layout_modo = (meta.get("layout") or {}).get("modo") or self.layout_modo
             self.verified_mode = "completa" if str(meta.get("verificacao", "")).startswith("SHA-256") else "rapida"
             self.same_disk = any(str(c.get("titulo", "")).startswith("Destino no MESMO disco") for c in self.checagens)
             self.phase, self.finished = "done", True
@@ -2569,7 +2544,8 @@ class App(object):
             "pc": cfg["equip"], "data": datetime.date.today().isoformat(), "raiz": self.dest_root, "dstRel": True,
             "verificacao": ("SHA-256 (completa, %s)" % disco.METODO) if self.verified_mode == "completa" else "Tamanho (rápida)",
             "campos": ["origem", "destino_relativo", "categoria", "tamanho_bytes", "data", "situacao", "etiquetas", "usuario", "motivo", "sha256", "mtime_epoch", "causa"],
-            "checagens": self.checagens, "maes": [x for x in sorted({it.local for it in self.items if it.local.startswith(PASTA_ORIGEM + "/")})],
+            "checagens": self.checagens, "maes": sorted({"/".join(it.rel.split("/")[:2]) for it in self.items if it.inc and it.rel.startswith(PASTA_ORIGEM + "/")}),
+            "layout": self._layout_registro(),
             "ign_dirs": self.ign_dirs[:300], "ign_dirs_total": self.ign_dirs_total,
             "versao": VERSION,
         }
@@ -2577,7 +2553,7 @@ class App(object):
         cert = {
             "status": status, "cliente": cfg["cliente"], "tecnico": cfg["tecnico"], "equipamento": cfg["equip"],
             "data": meta["data"], "hora": datetime.datetime.now().strftime("%H:%M"), "metodo": meta["verificacao"],
-            "copiados": c_ok, "bytes": b_ok, "falhas": c_fail, "ficaram": c_left, "pastas_ign": self.ign_dirs_total,
+            "copiados": c_ok, "bytes": b_ok, "falhas": c_fail, "ficaram": c_left, "pastas_ign": self.ign_dirs_total, "layout": meta["layout"],
             "nao_copiados_em_uso": {"n": n_uso, "bytes": b_uso}, "eventos": list(self.eventos)[:30],
             "motivos": left[:12], "sweep": {k: sw.get(k, 0) for k in ("n_novos", "n_alterados", "n_sumiram")},
             "sistema": "%s %s" % (platform.system(), platform.release()), "versao": VERSION,
@@ -2817,6 +2793,13 @@ Arquivos
   etiquetas.txt       regras de etiquetas por palavra-chave usadas neste backup
   programas_instalados.txt   (se a origem era Windows) nomes das pastas em Program Files
 
+Como o backup foi guardado (meta.layout.modo e o certificado dizem qual)
+  Espelho   cada pasta como estava:  Pastas_origem/<Usuário>/<caminho a partir da pasta do usuário>
+  Ordenado  por tipo e data:         <Usuário>/<Categoria>/<Ano>/<Mês>/<arquivo>
+  Misto     espelhado, e o técnico escolheu o que ia ordenado (os dois formatos acima, lado a lado)
+  Dados de programas, ocultos e sistemas guardam sempre o caminho original.
+  No visualizador, "Agrupar por: Tipo e data" mostra tudo por Categoria > Ano > Mês, qualquer que seja o modo.
+
 Campos de cada item de f (nesta ordem; meta.campos repete isto)
   0 origem            caminho ORIGINAL do arquivo na máquina (ex.: C:\\Users\\Maria\\Desktop\\x.docx)
   1 destino_relativo  caminho dentro da pasta do backup (separador /). Vazio se não foi copiado.
@@ -2898,7 +2881,7 @@ def atividades():
     dst = DADOS.ST if DADOS else {}
     ac = dst.get("acao") or {}
     if ac.get("rodando"):
-        out.append({"id": "dados", "titulo": {"limpar": "Limpando arquivos", "offload": "Movendo para outro disco"}.get(ac.get("tipo"), "Organizando arquivos"),
+        out.append({"id": "dados", "titulo": {"limpar": "Limpando arquivos", "offload": "Movendo para outro disco", "mover": "Movendo arquivos", "copiar": "Copiando arquivos"}.get(ac.get("tipo"), "Organizando arquivos"),
                     "detalhe": ac.get("atual", ""), "pct": _pct(ac.get("bytes_feito", 0), ac.get("bytes_total", 0)) if ac.get("bytes_total") else _pct(ac.get("feito", 0), ac.get("total", 0)),
                     "info": "%d de %d" % (ac.get("feito", 0), ac.get("total", 0)), "tela": "dados"})
     elif dst.get("fase") == "varrendo":
@@ -2971,6 +2954,9 @@ def dados_depois(tipo):
             REC["bytes"] += int(res.get("bytes_removidos") or 0)
             if tipo == "limpar":
                 resumo = "Limpeza de dados: %d item(ns), %s %s" % (res["itens"], fmt_bytes(moved), "removidos de vez" if res["modo"] == "definitivo" else "enviados para a Lixeira")
+            elif tipo in ("mover", "copiar"):
+                moved = int(res.get("bytes") or 0)
+                resumo = "%s: %d item(ns), %s para %s" % ("Arquivos movidos" if tipo == "mover" else "Arquivos copiados", res["itens"], fmt_bytes(moved), res.get("destino", ""))
             else:
                 resumo = "Offload: %d item(ns), %s copiados e conferidos para %s" % (res["itens"], fmt_bytes(moved), res.get("destino", ""))
             FICHA.hist_add(mid, "limpeza", resumo, {"bytes": moved, "modo": res["modo"], "falhas": res["falhas"]})
@@ -3225,6 +3211,14 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/dados/resultado":
             g = lambda k: (q.get(k) or [""])[0]
             return DADOS.resultado(g("zona"), g("cat"), g("q"), int(g("offset") or 0), int(g("limit") or 200), g("usuario"))
+        if path == "/api/dados/panorama":
+            self.exigir(None)
+            return DADOS.indice_panorama((q.get("usuario") or [""])[0])
+        if path == "/api/dados/indice":
+            self.exigir(None)
+            g = lambda k: (q.get(k) or [""])[0]
+            return DADOS.indice_consulta(g("bloco"), g("cat"), g("pasta") or None, g("usuario"), g("q"), g("ordem") or "maior",
+                                         int(g("offset") or 0), int(g("limit") or 200), g("visao") or "arquivos")
         if path == "/api/mapa/lista":
             return {"mapas": mapas_conhecidos(), "aberto": MAPA.resumo() if MAPA.M["mapa"] else None}
         if path == "/api/mapa/arvore":
@@ -3234,8 +3228,8 @@ class Handler(BaseHTTPRequestHandler):
             return MAPA.buscar(g("q"), g("situacao"), g("cat"), g("usuario"), int(g("offset") or 0))
         if path == "/api/mapa/conferencia":
             return MAPA.estado_conferencia()
-        if path == "/api/maes":
-            return {"sugestoes": APP.sugestoes_maes(), "maes": APP.maes}
+        if path == "/api/layout":
+            return APP.layout_resumo()
         if path == "/api/mapa/certificado":
             return MAPA.certificado()
         if path == "/api/dados/explorar":
@@ -3342,6 +3336,8 @@ class Handler(BaseHTTPRequestHandler):
             return {"n": APP.select(b)}
         if path == "/api/copy":
             self.exigir("backup")
+            if not APP.layout_modo:
+                raise ValueError("Escolha como guardar este backup (Espelho, Ordenado ou Misto) na Seleção antes de copiar.")
             APP.start_copy()
             return {"ok": True}
         if path == "/api/retry":
@@ -3501,8 +3497,10 @@ class Handler(BaseHTTPRequestHandler):
             if not abrir_no_sistema(cam, revelar):
                 raise ValueError("O sistema não conseguiu abrir.")
             return {"ok": True}
-        if path == "/api/maes":
-            return APP.set_maes([str(x) for x in b.get("chaves", [])])
+        if path == "/api/layout":
+            return APP.set_modo(b.get("modo", ""))
+        if path == "/api/layout/copia":
+            return APP.copia(b)
         if path == "/api/bitlocker":
             self.exigir("backup")
             return destravar_bitlocker(str(b.get("onde", "")), str(b.get("chave", "")))
@@ -3527,6 +3525,22 @@ class Handler(BaseHTTPRequestHandler):
             return {"ok": True}
         if path == "/api/dados/marcar":
             return {"id": DADOS.marcar(b.get("no"))}
+        if path == "/api/dados/marcar_nos":
+            return {"ids": DADOS.marcar_nos(b.get("nos") or [])}
+        if path == "/api/dados/renomear":
+            self.exigir("limpeza")
+            return DADOS.renomear(b.get("no"), b.get("nome", ""))
+        if path == "/api/dados/nova_pasta":
+            self.exigir("limpeza")
+            return DADOS.nova_pasta(b.get("no"), b.get("nome", ""))
+        if path == "/api/dados/preflight_destino":
+            self.exigir("limpeza")
+            return DADOS.preflight_destino(b.get("nos") or [], b.get("destino"), b.get("modo", "mover"))
+        if path in ("/api/dados/mover", "/api/dados/copiar"):
+            self.exigir("limpeza")
+            tipo = path.rsplit("/", 1)[1]
+            getattr(DADOS, tipo)(b.get("nos") or [], b.get("destino"), b.get("resolucao", ""), dados_depois(tipo))
+            return {"ok": True}
         if path == "/api/dados/reset":
             DADOS.reset()
             return {"ok": True}

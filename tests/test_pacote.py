@@ -34,7 +34,7 @@ class Pacote(unittest.TestCase):
         self.assertEqual(zi["Destrava/Iniciar-Linux.sh"].external_attr >> 16, 0o755)
         self.assertEqual(self.pacote.pacote()[1], self.sha)
         self.assertEqual(hashlib.sha256(self.z).hexdigest(), self.sha)
-        self.assertEqual(self.ver, "3.1")
+        self.assertEqual(self.ver, "3.3")
 
     def test_serve_de_atualizacao_do_pendrive(self):
         from nucleo import atualizador

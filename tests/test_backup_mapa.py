@@ -126,6 +126,50 @@ class BackupCompleto(unittest.TestCase):
             time.sleep(0.05)
         self.assertEqual(len(mapa.CONF["diferentes"]), 1)
 
+    def test_aba_mapas_abre_o_visualizador_no_navegador(self):
+        import json
+        import threading
+        import urllib.error
+        import urllib.request
+        from http.server import ThreadingHTTPServer
+        from unittest import mock
+        srv = ThreadingHTTPServer(("127.0.0.1", 0), dd_backup.Handler)
+        porta = srv.server_address[1]
+        hosts = dd_backup.APP.allowed_hosts
+        dd_backup.APP.allowed_hosts = {"127.0.0.1:%d" % porta}
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+
+        def post(caminho):
+            req = urllib.request.Request("http://127.0.0.1:%d%s" % (porta, caminho), data=b"{}", method="POST",
+                                         headers={"X-DD-Token": dd_backup.APP.token, "Content-Type": "application/json"})
+            try:
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    return r.status, json.loads(r.read() or b"{}")
+            except urllib.error.HTTPError as e:
+                return e.code, json.loads(e.read() or b"{}")
+        try:
+            with mock.patch.object(dd_backup, "open_in_browser") as abre:
+                st, r = post("/api/mapa/offline")
+                self.assertNotEqual(st, 200, "sem Mapa aberto não abre nada")
+                self.assertIn("Abra um Mapa", r.get("erro", ""))
+                abre.assert_not_called()
+                self.escanear()
+                self.app.start_copy()
+                self.assertEqual(espera(self.app, ("copied", "error")), "copied", self.app.error)
+                self.app.start_verify("rapida")
+                self.assertEqual(espera(self.app, ("verified", "error")), "verified", self.app.error)
+                self.app.finish()
+                mapa.carregar(os.path.join(self.dest, "Backup_Ana"))
+                st, r = post("/api/mapa/offline")
+                self.assertEqual((st, r.get("ok")), (200, True), r)
+                url = abre.call_args[0][0]
+                self.assertTrue(url.startswith("file:///") and url.endswith("Backup_Ana/Mapa/visualizador.html"), url)
+                self.assertTrue(os.path.isfile(os.path.join(self.dest, "Backup_Ana", "Mapa", "visualizador.html")))
+                self.assertTrue(os.path.isfile(os.path.join(self.dest, "Backup_Ana", "Mapa", "dados.js")))
+        finally:
+            srv.shutdown()
+            dd_backup.APP.allowed_hosts = hosts
+
     def test_mapa_guardado_no_registro_da_maquina(self):
         self.escanear()
         self.app.start_copy()
@@ -353,35 +397,114 @@ class EscolhaTotal(BackupCompleto):
         self.assertEqual(dd_backup.programa_de("C:\\Users\\User\\AppData\\Local\\Comms\\UnistoreDB\\store.vol"), "Windows (Comms)")
         self.assertEqual(dd_backup.App().dir_ignore("WindowsApps", "winuser", False), "Atalhos de aplicativos do Windows (não são arquivos de verdade)")
 
-    def test_pastas_de_origem(self):
+    def test_tres_jeitos_de_guardar(self):
         it = self.escanear()
-        sug = {x["nome"]: x for x in self.app.sugestoes_maes()}
-        self.assertIn("Wefix", sug)
-        self.assertGreater(sug["Wefix"]["pct"], sug["Fotos da praia"]["pct"], "trabalho pontua mais que pasta pessoal")
-        self.assertIn("nome próprio", sug["Wefix"]["motivos"])
-        self.assertEqual((sug["Wefix"]["auto"], sug["Fotos da praia"]["auto"]), (True, False))
-        self.assertEqual(it["contrato_cliente.docx"].rel, "Pastas_origem/Wefix/Clientes/contrato_cliente.docx", "já vem separada da pasta da Ana")
-        self.assertEqual(it["contrato_cliente.docx"].local, "Pastas_origem/Wefix")
-        self.app.set_maes([])
-        self.assertTrue(it["contrato_cliente.docx"].rel.startswith("Ana/Documentos/"), "desmarcar devolve ao lugar")
+        c, app = it["contrato_cliente.docx"], it["dados.dat"]
+        self.assertTrue(c.rel.startswith("Ana/Documentos/"), "sem modo escolhido: o ordenado de sempre")
+        self.app.set_modo("espelho")
+        self.assertEqual(c.rel, "Pastas_origem/Ana/Documents/Wefix/Clientes/contrato_cliente.docx")
+        self.assertEqual(c.local, "Ana", "a grade continua por usuário; só o destino muda")
+        self.assertEqual(app.rel, app.rel0, "dados de programas guardam o caminho sempre")
+        self.assertTrue(it["IMG-20240105-WA0001.jpg"].rel.startswith("Pastas_origem/Ana/Pictures/WhatsApp/"))
+        self.app.set_modo("ordenado")
+        self.assertTrue(c.rel.startswith("Ana/Documentos/") and it["f0.jpg"].rel.startswith("Ana/Fotos/"))
+        with self.assertRaises(ValueError):
+            self.app.copia({"filter": {"cat": "Fotos"}, "copia": "espelhar"})  # só no Misto se escolhe pasta a pasta
 
-    def test_memoria_das_pastas_de_origem(self):
+    def test_misto_escolhe_qualquer_pasta_e_a_ultima_acao_vale(self):
+        it = self.escanear()
+        self.app.set_modo("misto")
+        f0, c = it["f0.jpg"], it["contrato_cliente.docx"]
+        self.assertTrue(f0.rel.startswith("Pastas_origem/Ana/Documents/Fotos da praia/"), "o Misto começa espelhado")
+        r = self.app.copia({"filter": {"pasta": "Ana/Documents/Fotos da praia"}, "copia": "ordenar"})
+        self.assertEqual(r["n"], 3)
+        self.assertTrue(f0.rel.startswith("Ana/Fotos/"))
+        self.assertTrue(c.rel.startswith("Pastas_origem/Ana/Documents/Wefix/"), "o resto continua espelhado")
+        self.app.copia({"filter": {"cat": "Fotos"}, "copia": "ordenar"})  # navegando em Imagens: ordena todas
+        self.assertTrue(it["IMG-20240105-WA0001.jpg"].rel.startswith("WhatsApp (Ana)/Fotos/2024/01 - Janeiro/"))
+        self.app.copia({"filter": {"pasta": "Ana/Documents"}, "copia": "espelhar"})  # a última ação vale
+        self.assertTrue(f0.rel.startswith("Pastas_origem/Ana/Documents/Fotos da praia/"))
+        res = self.app.layout_resumo()
+        self.assertEqual(res["modo"], "misto")
+        self.assertGreater(res["espelhar"]["n"], 0)
+        self.assertGreater(res["ordenar"]["n"], 0)
+        self.assertTrue(res["exemplo"]["espelho"].startswith("Pastas_origem/Ana/"))
+
+    def test_navegar_por_pasta_a_partir_dos_usuarios(self):
         self.escanear()
-        self.app.set_maes([])  # o técnico desfez a separação automática da Wefix
-        self.app._lembrar_origens()
-        self.assertEqual(dd_backup.memoria_origens()["wefix"]["recusada"], 1)
-        outro = dd_backup.App()
-        outro.set_config({"sources": [{"path": self.disco, "kind": "windows", "letter": "C"}], "dest": self.dest, "folder": "B2", "cliente": "Ana"})
-        outro.start_scan()
-        self.assertEqual(espera(outro, ("scanned", "error")), "scanned", outro.error)
-        w = next(x for x in outro.sugestoes_maes() if x["nome"] == "Wefix")
-        self.assertEqual((w["auto"], w["marcada"]), (False, False), "recusada antes: não marca sozinha")
-        self.assertIn("você não quis separar antes", w["motivos"])
-        outro.set_maes([w["chave"]])
-        outro._lembrar_origens()
-        outro._lembrar_origens()
-        w = next(x for x in outro.sugestoes_maes() if x["nome"] == "Wefix")
-        self.assertTrue(w["auto"] and "você já separou em outra máquina" in w["motivos"], "aceita mais vezes: volta a marcar sozinha")
+        raiz = self.app.files({"pastas": "1", "limit": "0"})["pastas"]
+        self.assertIn("Ana", [p["nome"] for p in raiz["pastas"]])
+        ana = self.app.files({"pastas": "1", "pasta": "Ana", "limit": "0"})["pastas"]
+        self.assertEqual(ana["migalhas"], ["Ana"])
+        self.assertTrue({"Documents", "Pictures", "Downloads"} <= {p["nome"] for p in ana["pastas"]})
+        docs = self.app.files({"pastas": "1", "pasta": "Ana/Documents", "limit": "0"})["pastas"]
+        self.assertIn("Ana/Documents/Wefix", [p["chave"] for p in docs["pastas"]])
+        linha = self.app.files({"pasta": "Ana/Documents/Wefix/Clientes", "limit": "5"})["rows"][0]
+        self.assertEqual((linha[14], linha[15][:9]), ("ordenar", "Ana/Docum"), "linha da lista: como copia e onde fica")
+
+    def test_rotas_como_a_tela_chama(self):
+        import json
+        import threading
+        import urllib.error
+        import urllib.parse
+        import urllib.request
+        from http.server import ThreadingHTTPServer
+        from unittest import mock
+        self.escanear()
+        srv = ThreadingHTTPServer(("127.0.0.1", 0), dd_backup.Handler)
+        porta = srv.server_address[1]
+        salvo = dd_backup.APP, dd_backup.APP.allowed_hosts
+        self.app.allowed_hosts, self.app.token = {"127.0.0.1:%d" % porta}, dd_backup.APP.token
+        dd_backup.APP = self.app
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+
+        def chama(caminho, corpo=None):
+            req = urllib.request.Request("http://127.0.0.1:%d%s" % (porta, caminho), data=None if corpo is None else json.dumps(corpo).encode(),
+                                         method="GET" if corpo is None else "POST", headers={"X-DD-Token": self.app.token, "Content-Type": "application/json"})
+            try:
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    return r.status, json.loads(r.read() or b"{}")
+            except urllib.error.HTTPError as e:
+                return e.code, json.loads(e.read() or b"{}")
+        try:
+            with mock.patch.object(dd_backup.Handler, "exigir", lambda self, escopo=None: None):
+                st, r = chama("/api/copy", {})
+                self.assertNotEqual(st, 200)
+                self.assertIn("Escolha como guardar", r.get("erro", ""))
+                self.assertEqual(chama("/api/layout")[1]["modo"], "")
+                st, r = chama("/api/layout", {"modo": "misto"})
+                self.assertEqual((st, r["modo"]), (200, "misto"), r)
+                st, r = chama("/api/layout/copia", {"filter": {"cat": "Fotos"}, "copia": "ordenar"})
+                self.assertEqual(st, 200, r)
+                self.assertGreater(r["n"], 0)
+                st, r = chama("/api/files?" + urllib.parse.urlencode({"pastas": 1, "facets": 1, "pasta": "Ana", "limit": 5}))
+                self.assertEqual(st, 200, r)
+                self.assertIn("Documents", [p["nome"] for p in r["pastas"]["pastas"]])
+                self.assertIn("ordenar", r["facets"]["copia"])
+                g = chama("/api/groups")[1]
+                self.assertEqual(g["layout_modo"], "misto")
+                self.assertTrue(any(c["ord"] for c in g["cats"] if c["cat"] == "Fotos"))
+        finally:
+            srv.shutdown()
+            dd_backup.APP, dd_backup.APP.allowed_hosts = salvo
+
+    def test_misto_copia_confere_e_mapa_aponta_para_o_lugar_certo(self):
+        it = self.escanear()
+        self.app.set_modo("misto")
+        self.app.copia({"filter": {"cat": "Fotos"}, "copia": "ordenar"})
+        self.app.start_copy()
+        self.assertEqual(espera(self.app, ("copied", "error")), "copied", self.app.error)
+        self.assertRaises(dd_backup.Busy, self.app.set_modo, "espelho")  # depois de começar a copiar, não muda mais
+        self.app.start_verify("completa")
+        self.assertEqual(espera(self.app, ("verified", "error")), "verified", self.app.error)
+        cert = self.app.finish()
+        self.assertEqual(cert["layout"]["modo"], "misto")
+        raiz = os.path.join(self.dest, "Backup_Ana")
+        self.assertTrue(os.path.isfile(os.path.join(raiz, "Pastas_origem", "Ana", "Documents", "Wefix", "Clientes", "contrato_cliente.docx")))
+        r = mapa.carregar(raiz)
+        self.assertEqual(r["contagem"]["falha"], 0)
+        linha = mapa.buscar("contrato_cliente")["linhas"][0]
+        self.assertTrue(mapa.caminho(linha["i"]).endswith(os.path.join("Pastas_origem", "Ana", "Documents", "Wefix", "Clientes", "contrato_cliente.docx")))
 
     def test_destino_falsificado_bloqueia_com_solucao(self):
         import unittest.mock as um
