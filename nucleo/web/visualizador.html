@@ -30,6 +30,12 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(320px,410px) 
 .filtros input{grid-column:1/-1}
 .filtros input,.filtros select{background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:7px 10px;min-width:0;width:100%}
 .filtros input:focus,.filtros select:focus{outline:2px solid var(--ac);outline-offset:-1px}
+.nv2t{display:flex;gap:4px;margin-bottom:6px}.nv2t button{flex:1;border:1px solid var(--ln);background:var(--bg);border-radius:8px;padding:6px 8px;font-size:12.5px;cursor:pointer;color:inherit}
+.nv2t button.on{border-color:var(--ac);color:var(--ac);background:#58a6ff1a;font-weight:600}
+.nv2c .tr{display:flex;flex-wrap:wrap;gap:3px;align-items:center;font-size:12.5px;margin-bottom:6px}.nv2c .tr button{border:0;background:none;color:var(--ac);cursor:pointer;padding:0;font:inherit}
+.nv2c .tr b{font-weight:600}.nv2c .tr i{opacity:.6;font-style:normal}
+.nv2c .ch{display:flex;flex-wrap:wrap;gap:5px;max-height:132px;overflow:auto}.nv2c .ch button{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--ln);background:var(--p2);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer;color:inherit}
+.nv2c .ch button:hover{border-color:var(--ac)}.nv2c .ch small{opacity:.65}
 #cnt{padding:5px 12px;color:var(--mu);font-size:12.5px;border-bottom:1px solid var(--ln)}
 .th{display:none;padding:6px 12px;border-bottom:1px solid var(--ln);background:var(--p1);color:var(--mu);font-size:12px;text-transform:uppercase;letter-spacing:.6px;grid-template-columns:var(--cols);gap:10px}
 body.m3 .th{display:grid}
@@ -208,6 +214,10 @@ body.home .modes{visibility:hidden}
         <option value="data">Mais recentes primeiro</option>
         <option value="tam">Maiores primeiro</option>
       </select>
+      <div class="nv2" id="nv2" style="grid-column:1/-1">
+        <div class="nv2t" role="tablist" aria-label="Navegar por"><button role="tab" data-nv="pasta">📁 Pasta original</button><button role="tab" data-nv="tipo">🗂️ Tipo e data</button></div>
+        <div class="nv2c" id="nv2c"></div>
+      </div>
     </div>
     <div id="cnt"></div>
     <div class="th"><div>Arquivo</div><div>Origem (onde estava)</div><div></div><div>Categoria / etiquetas</div><div>Caminho no backup</div></div>
@@ -353,15 +363,31 @@ function hay(i){var e=F[i];
   if(F.length<=120000){if(!HC){HC=new Array(F.length)}
     if(HC[i]===undefined)HC[i]=(e[S_]+'\n'+e[D_]+'\n'+e[C_]+'\n'+e[G_]).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');return HC[i]}
   return (e[S_]+'\n'+e[D_]+'\n'+e[C_]+'\n'+e[G_]).toLowerCase()}
+/* navegação: Pasta original (a partir do usuário, descendo) ou Tipo e data (Categoria › Ano › Mês), qualquer que seja o modo do backup */
+var MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+var NV={modo:'pasta',p:[]},NVC={};
+try{var nv0=localStorage.getItem('bkp_nav');if(nv0==='tipo')NV.modo='tipo'}catch(e){}
+function nvChave(e){
+  if(NV.modo==='tipo'){var d=String(e[T_]||''),y=d.slice(0,4)||'Sem data',m=+d.slice(5,7);return [e[C_]||'Outros',y,m?(m<10?'0':'')+m+' - '+MESES[m-1]:'Sem mês']}
+  var s=segs(e[S_]),u=String(e[U_]||''),k=s.indexOf(u.split(/[\\\/]/).pop());
+  return [u||'(sem usuário)'].concat(k>=0?s.slice(k+1,-1):s.slice(0,-1))}
+function nvDentro(ch){for(var i=0;i<NV.p.length;i++){if(ch[i]!==NV.p[i])return false}return true}
+function nvRender(){
+  document.querySelectorAll('[data-nv]').forEach(function(b){var on=b.dataset.nv===NV.modo;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
+  var tr='<div class="tr"><button data-np="-1">Tudo</button>'+NV.p.map(function(x,i){return '<i>›</i>'+(i===NV.p.length-1?'<b>'+esc(x)+'</b>':'<button data-np="'+i+'">'+esc(x)+'</button>')}).join('')+'</div>';
+  var ks=Object.keys(NVC).sort(function(a,b){return NV.modo==='tipo'&&NV.p.length?col.compare(b,a):NVC[b][1]-NVC[a][1]});
+  $('nv2c').innerHTML=tr+(ks.length?'<div class="ch">'+ks.slice(0,80).map(function(k){return '<button data-nk="'+esc(k)+'">'+(NV.modo==='tipo'&&!NV.p.length?(IC[k]||'📦'):NV.p.length||NV.modo==='tipo'?'📁':'👤')+' '+esc(k)+' <small>'+NVC[k][0].toLocaleString('pt-BR')+' · '+fmtSize(NVC[k][1])+'</small></button>'}).join('')+'</div>':'')}
 function apply(){
   var q=$('q').value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').split(/\s+/).filter(Boolean);
   var fc=$('fc').value,fu=$('fu').value,ft=$('ft').value,fs=$('fs').value,so=$('so').value;
-  view=[];var bytes=0;
+  view=[];var bytes=0;NVC={};
   for(var i=0;i<F.length;i++){var e=F[i];
     if(fc&&e[C_]!==fc)continue;if(fu&&e[U_]!==fu)continue;
     if(ft&&('|'+e[G_]+'|').indexOf('|'+ft+'|')<0)continue;
     if(fs){var s=e[ST_];if(fs==='ok'&&s!=='ok')continue;if(fs==='falha'&&s!=='falha')continue;if(fs==='tras'&&!(s==='ignorado'||s==='revisar'||s==='desmarcado'))continue}
     if(q.length){var h=hay(i),okq=true;for(var t=0;t<q.length;t++){if(h.indexOf(q[t])<0){okq=false;break}}if(!okq)continue}
+    var ch=nvChave(e);if(!nvDentro(ch))continue;
+    if(ch.length>NV.p.length){var nk=ch[NV.p.length],o=NVC[nk]||(NVC[nk]=[0,0]);o[0]++;o[1]+=e[Z_]}
     view.push(i);bytes+=e[Z_]}
   if(so==='nome')view.sort(function(a,b){return col.compare(base(F[a][D_]||F[a][S_]),base(F[b][D_]||F[b][S_]))});
   else if(so==='data')view.sort(function(a,b){return F[a][T_]<F[b][T_]?1:(F[a][T_]>F[b][T_]?-1:0)});
@@ -370,7 +396,7 @@ function apply(){
   $('vp').scrollTop=0;
   if(view.length&&view.indexOf(sel)<0){sel=view[0];renderDet()}
   if(!view.length){sel=-1;renderDet()}
-  renderRows()}
+  nvRender();renderRows()}
 
 function setMode(m){mode=m;try{localStorage.setItem('bkp_mode',String(m))}catch(e){}
   document.body.classList.toggle('m3',m===3);
@@ -453,6 +479,9 @@ function init(){
   document.addEventListener('click',function(ev){
     var b=ev.target.closest('[data-copy]');if(b){copy(b.dataset.copy,b);return}
     var m=ev.target.closest('[data-m]');if(m){setMode(+m.dataset.m);return}
+    var nv=ev.target.closest('[data-nv]');if(nv){NV.modo=nv.dataset.nv;NV.p=[];try{localStorage.setItem('bkp_nav',NV.modo)}catch(e){}apply();return}
+    var nk=ev.target.closest('[data-nk]');if(nk){NV.p.push(nk.dataset.nk);apply();return}
+    var np=ev.target.closest('[data-np]');if(np){NV.p=NV.p.slice(0,+np.dataset.np+1);apply();return}
     var vv=ev.target.closest('[data-v]');if(vv){showView(vv.dataset.v);return}
     var f=ev.target.closest('[data-f]');if(f){$('fs').value=f.dataset.f;showView('exp');apply();return}
     var rg=ev.target.closest('[data-reg]');if(rg){$('entrega').style.display='block';$('e_d').value=new Date().toISOString().slice(0,10);return}
