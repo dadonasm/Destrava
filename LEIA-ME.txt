@@ -107,7 +107,7 @@ NOVIDADES DA VERSÃO 3.0
     e BLOQUEADO (sistema/senhas, nunca vira opção). Remoção vai para a LIXEIRA; o espaço só volta ao esvaziá-la. "Restos de
     programas" sem app instalado aparecem como "provável sem uso" e exigem sua aprovação. Mover para disco externo copia,
     relê e confere SHA-256 antes de tirar o original.
-  ATUALIZAR: clique na versão ("v3.2") no topo. Baixe o Destrava.zip novo; o programa o encontra (Downloads, Área de Trabalho) ou você
+  ATUALIZAR: clique na versão ("v3.3") no topo. Baixe o Destrava.zip novo; o programa o encontra (Downloads, Área de Trabalho) ou você
     escolhe o arquivo. Só os arquivos do programa são trocados; maquinas/, consentimentos.log e runtime/ nunca são tocados.
     A versão anterior fica em _versoes/ (volta com um clique). A primeira instalação da 3.0 é manual (a versão antiga não tem atualizador):
     unzip -oq ~/Downloads/Destrava.zip -d "/Volumes/<seu pendrive>/"

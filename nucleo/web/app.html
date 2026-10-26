@@ -506,7 +506,7 @@ async function api(path,body){
 let toastT=null;
 function toast(m,kind){let t=$(".toast");if(t)t.remove();t=document.createElement("div");t.className="toast "+(kind||"");t.setAttribute("role","status");t.textContent=m;document.body.appendChild(t);clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),kind==="err"?9000:5000)}
 async function safe(fn){try{return await fn()}catch(e){onErr(e)}}
-const BUILD="2026-10-26.1";  // igual ao BUILD do dd_backup.py
+const BUILD="2026-10-26.2";  // igual ao BUILD do dd_backup.py
 const erroTela=(m,p)=>{try{fetch("/api/erro_tela",{method:"POST",headers:{"X-DD-Token":TOKEN},body:JSON.stringify({mensagem:String(m),pilha:String(p||""),tela:(typeof view!=="undefined"?view:"")+(typeof step!=="undefined"&&view==="backup"?":"+step:"")})}).catch(()=>{})}catch(e){}};
 addEventListener("unhandledrejection",e=>{const r=e.reason,m=(r&&r.message)||String(r);if(m==="ORFAOS"||REDE.test(m))return;erroTela(m,r&&r.stack);toast("Erro: "+m,"err")});
 /* contato com o programa: só avisa depois de 3 falhas seguidas; some sozinho quando volta */
