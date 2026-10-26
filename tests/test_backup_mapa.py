@@ -442,6 +442,52 @@ class EscolhaTotal(BackupCompleto):
         linha = self.app.files({"pasta": "Ana/Documents/Wefix/Clientes", "limit": "5"})["rows"][0]
         self.assertEqual((linha[14], linha[15][:9]), ("ordenar", "Ana/Docum"), "linha da lista: como copia e onde fica")
 
+    def test_rotas_como_a_tela_chama(self):
+        import json
+        import threading
+        import urllib.error
+        import urllib.parse
+        import urllib.request
+        from http.server import ThreadingHTTPServer
+        from unittest import mock
+        self.escanear()
+        srv = ThreadingHTTPServer(("127.0.0.1", 0), dd_backup.Handler)
+        porta = srv.server_address[1]
+        salvo = dd_backup.APP, dd_backup.APP.allowed_hosts
+        self.app.allowed_hosts, self.app.token = {"127.0.0.1:%d" % porta}, dd_backup.APP.token
+        dd_backup.APP = self.app
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+
+        def chama(caminho, corpo=None):
+            req = urllib.request.Request("http://127.0.0.1:%d%s" % (porta, caminho), data=None if corpo is None else json.dumps(corpo).encode(),
+                                         method="GET" if corpo is None else "POST", headers={"X-DD-Token": self.app.token, "Content-Type": "application/json"})
+            try:
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    return r.status, json.loads(r.read() or b"{}")
+            except urllib.error.HTTPError as e:
+                return e.code, json.loads(e.read() or b"{}")
+        try:
+            with mock.patch.object(dd_backup.Handler, "exigir", lambda self, escopo=None: None):
+                st, r = chama("/api/copy", {})
+                self.assertNotEqual(st, 200)
+                self.assertIn("Escolha como guardar", r.get("erro", ""))
+                self.assertEqual(chama("/api/layout")[1]["modo"], "")
+                st, r = chama("/api/layout", {"modo": "misto"})
+                self.assertEqual((st, r["modo"]), (200, "misto"), r)
+                st, r = chama("/api/layout/copia", {"filter": {"cat": "Fotos"}, "copia": "ordenar"})
+                self.assertEqual(st, 200, r)
+                self.assertGreater(r["n"], 0)
+                st, r = chama("/api/files?" + urllib.parse.urlencode({"pastas": 1, "facets": 1, "pasta": "Ana", "limit": 5}))
+                self.assertEqual(st, 200, r)
+                self.assertIn("Documents", [p["nome"] for p in r["pastas"]["pastas"]])
+                self.assertIn("ordenar", r["facets"]["copia"])
+                g = chama("/api/groups")[1]
+                self.assertEqual(g["layout_modo"], "misto")
+                self.assertTrue(any(c["ord"] for c in g["cats"] if c["cat"] == "Fotos"))
+        finally:
+            srv.shutdown()
+            dd_backup.APP, dd_backup.APP.allowed_hosts = salvo
+
     def test_misto_copia_confere_e_mapa_aponta_para_o_lugar_certo(self):
         it = self.escanear()
         self.app.set_modo("misto")

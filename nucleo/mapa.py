@@ -243,5 +243,5 @@ def certificado():
     ordem = {"falha": 0, "revisar": 1, "em_uso": 2, "desmarcado": 3, "ignorado": 4}
     meta = M["meta"]
     return dict(resumo(), grupos=sorted(grupos.values(), key=lambda g: (ordem.get(g["situacao"], 9), -g["bytes"])),
-                checagens=meta.get("checagens") or [], maes=meta.get("maes") or [], ign_dirs_total=meta.get("ign_dirs_total", 0),
+                checagens=meta.get("checagens") or [], maes=meta.get("maes") or [], layout=meta.get("layout") or None, ign_dirs_total=meta.get("ign_dirs_total", 0),
                 sweep=(meta.get("cert") or {}).get("sweep") or {})

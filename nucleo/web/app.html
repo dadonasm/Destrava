@@ -323,6 +323,28 @@ button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-
 .sg-det{padding:4px 16px 14px 62px;font-size:13px;color:var(--mut);border-bottom:1px solid var(--line);background:var(--panel2)}.sg-det p{margin:8px 0 0}.sg-det .chip{font-size:12px}.sg-sub{margin-top:8px;font-size:12.5px}.sg-sub td{padding:4px 10px 4px 0;border:0}
 .sg-pe{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 16px;font-size:12.5px}
 @media (max-width:760px){.sg-head{display:none}.sg-row{grid-template-columns:20px 1fr 50px;gap:8px}.sg-row>.sg-rec,.sg-row>.sg-n,.sg-row>.sg-b,.sg-row>.sg-bar,.sg-row>[data-sl]{display:none}.sg-nome small.sg-meta{display:block}.sg-gd{display:none}.sg-grp{flex-wrap:wrap}.sg-grp>.mut{flex:1}.sg-top{overflow-x:auto;flex-wrap:nowrap}.sg-chips{flex-wrap:nowrap}.sg-det{padding-left:16px}}
+/* Backup: como guardar (Espelho, Ordenado, Misto), coluna Cópia e "Como copiar" na lista */
+.lay h2{margin:2px 0 4px}.lay-top{display:flex;gap:14px;align-items:center}.lay-ic{font-size:28px;line-height:1}
+.lay-ops{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:12px}
+.lay-op{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:16px;border-radius:16px;border:1.5px solid var(--line);background:var(--panel2);color:var(--tx);box-shadow:none;transition:border-color .15s,transform .12s}
+.lay-op:hover{border-color:var(--azul);transform:translateY(-1px)}.lay-op:focus-visible{outline:3px solid color-mix(in srgb,var(--azul) 45%,transparent);outline-offset:2px}
+.lay-op.on{border-color:var(--azul);background:color-mix(in srgb,var(--azul) 9%,var(--panel2))}.lay-op b{font-size:16px}.lay-d{font-size:13px;color:var(--mut);line-height:1.4}
+.lay-dg{display:flex;flex-direction:column;gap:3px;width:100%;margin-top:6px;padding-top:8px;border-top:1px dashed var(--line)}.lay-dg small{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;margin-top:4px}
+.lay-cam{display:flex;flex-wrap:wrap;gap:3px;align-items:center;font-size:12px}.lay-cam span{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:1px 6px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+.lay-cam i{color:var(--mut);font-style:normal}.lay-cam b{font-weight:600;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}
+.lay-resr{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.lay-res{background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:5px 12px;font-size:13px}
+.lay-dica{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--azul) 7%,transparent);font-size:13px}
+.seg2{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel2)}.seg2 button{border:0;border-radius:0;background:transparent;padding:5px 10px;font-size:12.5px;box-shadow:none;color:var(--tx)}
+.seg2 button+button{border-left:1px solid var(--line)}.seg2 button.on{background:var(--azul);color:#fff;font-weight:600}.seg2 button:focus-visible{outline:2px solid var(--azul);outline-offset:-2px}
+.sgp.sg-misto .sg-head,.sgp.sg-misto .sg-row{grid-template-columns:20px minmax(0,2.4fr) 110px 62px 82px minmax(0,1fr) 46px 158px 78px}
+.sg-cp{display:flex;flex-direction:column;gap:3px;align-items:flex-start}.sg-cp small{font-size:11px;color:var(--mut)}.sg-cpg{display:inline-flex;gap:4px}.sg-cpg .sm{padding:4px 8px;font-size:12px}
+.lst-cp{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 8px;padding:9px 12px;border-radius:12px;border:1px solid color-mix(in srgb,var(--azul) 35%,var(--line));background:color-mix(in srgb,var(--azul) 7%,var(--panel))}
+.lst-cp small{display:block;font-size:12px;color:var(--mut)}
+.cpp{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);white-space:nowrap;cursor:help}.cpp-ordenar{background:color-mix(in srgb,var(--warn) 14%,transparent)}.cpp-espelhar{background:color-mix(in srgb,var(--azul) 12%,transparent)}
+.fxtr{display:flex;flex-wrap:wrap;gap:3px;align-items:center;font-size:12.5px;margin:2px 0 6px}.fxtr i{color:var(--mut);font-style:normal}
+.fxp{display:flex;gap:6px;align-items:center;width:100%;border:0;background:transparent;padding:5px 4px;border-radius:8px;text-align:left;font-size:13px;box-shadow:none;color:var(--tx)}.fxp:hover{background:var(--panel2)}.fxp small{color:var(--mut);font-size:11.5px;white-space:nowrap}.fxp .fxo2{color:var(--warn)}
+@media (max-width:760px){.sgp.sg-misto .sg-row{grid-template-columns:20px 1fr 50px}.sg-row>.sg-cp{grid-column:2/-1}.sg-cpg{display:none}.lay-top{flex-wrap:wrap}}
+
 /* Gerenciamento de dados: grade de arquivos, trilha, menu ⋯ e escolha de destino */
 .sg-dados{grid-template-columns:20px minmax(0,1fr) 110px 66px 88px auto}
 .dg-u{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dg-d{font-size:12.5px}
@@ -913,7 +935,8 @@ async function certificadoMapa(){
    ${ce.programas_resumo?`<div class="card"><h2>Programas a reinstalar: ${ce.programas_resumo.n||"nenhum"}</h2>${ce.programas_resumo.n?`<p style="margin:0">${ce.programas_resumo.nomes.map(esc).join(" · ")}</p>`:'<p class="mut" style="margin:0">Combinado com o cliente: nenhum programa para reinstalar.</p>'}</div>`:""}
    <div class="card"><h2>O que não foi copiado, por quê e como resolver</h2>${c.grupos.length?c.grupos.map(gr=>`<div class="grp"><div class="gq" style="color:${(SIT[gr.situacao]||["",""])[1]}">${nf(gr.n)}<div class="mut" style="font-weight:400;font-size:12px">${fmt(gr.bytes)}</div></div><div class="grow"><b>${esc((SIT[gr.situacao]||[gr.situacao])[0])}: ${esc(gr.motivo)}</b><div class="sol" style="margin-top:6px;font-size:13px;padding:8px 10px;border-radius:10px;background:var(--panel2);border-left:3px solid var(--azul)"><b>Como resolver:</b> ${esc(gr.resolver)}</div><div class="mut mono" style="font-size:11.5px;margin-top:4px">${gr.exemplos.map(esc).join("<br>")}</div></div></div>`).join(""):'<p class="okbox">Tudo o que existia foi copiado e conferido. Nada se perdeu.</p>'}
     ${(c.sweep.n_novos||c.sweep.n_alterados||c.sweep.n_sumiram)?`<p class="warnbox">Durante o backup: ${c.sweep.n_novos||0} arquivo(s) novo(s), ${c.sweep.n_alterados||0} alterado(s) e ${c.sweep.n_sumiram||0} que sumiram na origem. <b>Como resolver:</b> rode o backup de novo para pegar a versão final.</p>`:""}</div>
-   ${c.maes.length?`<div class="card"><h2>Pastas de origem separadas</h2><p>${c.maes.map(m=>"📁 "+esc(m.replace(/^Pastas_(origem|mae)\//,""))).join(" · ")}</p></div>`:""}
+   ${c.layout?`<div class="card"><h2>Como foi guardado: ${esc(c.layout.nome)}</h2><p style="margin:0">${nf(c.layout.espelhados)} arquivo(s) espelhados, como estavam (em <span class="mono">Pastas_origem/</span>), e ${nf(c.layout.ordenados)} ordenados por tipo e data, a partir do usuário.</p></div>`
+     :c.maes.length?`<div class="card"><h2>Pastas de origem separadas</h2><p>${c.maes.map(m=>"📁 "+esc(m.replace(/^Pastas_(origem|mae)\//,""))).join(" · ")}</p></div>`:""}
    <div class="card"><h2>Checagens de origem e destino</h2>${c.checagens.length?`<div class="chks">${c.checagens.map(x=>`<div class="chk2 ${x.nivel}"><span class="ci">${ICK[x.nivel]||"·"}</span><div class="grow"><b>${esc(x.titulo)}</b><div class="mut">${esc(x.detalhe)}</div>${x.solucao?`<div class="sol"><b>Como resolver:</b> ${esc(x.solucao)}</div>`:""}</div></div>`).join("")}</div>`:'<p class="mut">Este backup foi feito por uma versão sem o registro das checagens.</p>'}
     ${c.ign_dirs_total?`<p class="mut" style="font-size:12.5px;margin-top:10px">${nf(c.ign_dirs_total)} pastas puladas (sistema, caches e lixeira, que se recriam sozinhas).</p>`:""}</div>`;
   $("#cvolta").onclick=()=>drawMapas();
@@ -2122,21 +2145,60 @@ async function tick(){
 /* ---- 3 seleção ---- */
 async function draw3(){
   setWide(true);
-  const [g,t,M,MD]=await Promise.all([api("/api/groups"),api("/api/totals"),api("/api/maes"),api("/api/medicao").catch(()=>({}))]);
+  const [g,t,L,MD]=await Promise.all([api("/api/groups"),api("/api/totals"),api("/api/layout"),api("/api/medicao").catch(()=>({}))]);
   if(view!=="backup"||step!==2)return;
-  const corPct=p=>p>=75?"var(--ok)":p>=45?"var(--warn)":"var(--err)";
+  LAY=Object.assign(L,{abrir:!L.modo});
   $("#main").innerHTML=`<div class="ptitle"><h1>O que vai para o backup</h1><p>Tudo o que existe nesta máquina, organizado. Você escolhe — o que não for marcado fica registrado no Mapa e no certificado.</p></div>
   <div class="kpis" id="selkpi"></div>
   <div class="cols"><div>
+  <div class="card lay" id="layc"></div>
   <div class="card" id="medc"></div>
   <div class="card sgp" id="selp"></div>
-  <div class="card maes"><h2>Pastas de origem</h2><p class="h">Pastas com nome próprio ou de trabalho (ex.: Wefix) vão inteiras para <b>Pastas_origem/</b>, separadas da pasta do usuário. Já marquei as de maior confiança e as que você separou em outras máquinas; revise antes de copiar. A % é a minha confiança.</p>
-   ${M.sugestoes.length?M.sugestoes.map(m=>`<label class="mae" style="color:var(--tx);font-size:inherit;margin:0;cursor:pointer"><input type="checkbox" class="mck" value="${esc(m.chave)}" ${m.marcada?"checked":""} style="margin-top:4px"><span class="pctb" style="background:${corPct(m.pct)}">${m.pct}%</span><span class="grow"><b>${esc(m.nome)}</b>${m.auto?' <span class="badge b-ok">marcada sozinha</span>':""} <span class="mut">· ${nf(m.n)} arquivos · ${fmt(m.bytes)}</span><br><span class="mut mono" style="font-size:11.5px">veio de ${esc(m.chave)}</span>${m.motivos.length?`<br><span class="mut" style="font-size:12.5px">${esc(m.motivos.join(" · "))}</span>`:""}</span></label>`).join("")+'<div class="row" style="margin-top:10px"><button class="pri" id="maeok">Aplicar pastas de origem</button><span class="mut" style="font-size:12.5px">Desmarque o que não deve ficar separado e aplique.</span></div>':'<p class="mut">Nenhuma pasta com nome próprio ou de trabalho encontrada.</p>'}</div>
-  </div>
   <aside class="side card" id="tot" aria-label="Resumo da seleção"></aside></div>`;
-  selKpis(g,t,MD);selGrade(g);
-  const mo=$("#maeok");if(mo)mo.onclick=()=>safe(async()=>{await api("/api/maes",{chaves:$$(".mck:checked").map(x=>x.value)});toast("Pastas de origem aplicadas.","ok");draw3()});
+  layCard();selKpis(g,t,MD);selGrade(g);
   drawTot(t);MED.t=t;medicaoCard(MD);
+}
+/* ---- como guardar este backup: Espelho, Ordenado ou Misto (escolhido a cada backup) ---- */
+let LAY={modo:"",espelhar:{n:0,bytes:0},ordenar:{n:0,bytes:0},fixos:{n:0,bytes:0}};
+const LAY_MODOS=[["espelho","🪞","Espelho","Cada pasta continua onde estava, do jeito que estava."],
+ ["ordenado","🗂️","Ordenado","Tudo por tipo e data (Fotos › 2024 › Maio), a partir do usuário. Perde a pasta de onde veio; o Mapa lembra."],
+ ["misto","🧩","Misto","Fica espelhado, e você escolhe o que vai ordenado: qualquer pasta ou tipo, na lista ou na grade."]];
+const layDoUsuario=p=>String(p||"").replace(/^[A-Za-z]:\\Users\\|^\/(Users|home)\//,"");
+function layCaminho(p,max){
+  const s=String(p||"").split(/[\\/]/).filter(Boolean),nome=s.pop()||"",pre=s.length>max?["…",...s.slice(-max)]:s;
+  return `<span class="lay-cam">${pre.map(x=>`<span>${x==="…"?"…":"📁 "+esc(x)}</span>`).join("<i>›</i>")}${pre.length?"<i>›</i>":""}<b>📄 ${esc(nome)}</b></span>`;
+}
+function layDiag(modo,ex){
+  if(!ex)return "";
+  const fim=modo==="ordenado"?ex.ordenado:ex.espelho;
+  return `<span class="lay-dg"><small>Na máquina</small>${layCaminho(layDoUsuario(ex.origem),3)}<small>No backup</small>${layCaminho(fim,4)}${modo==="misto"?`<small>O que você marcar como ordenado</small>${layCaminho(ex.ordenado,4)}`:""}</span>`;
+}
+function layCard(){
+  const el=$("#layc");if(!el)return;
+  const L=LAY,ed=L.editavel!==false,m=LAY_MODOS.find(x=>x[0]===L.modo);
+  if(L.modo&&!L.abrir){
+    el.innerHTML=`<div class="lay-top"><span class="lay-ic">${m[1]}</span><div class="grow"><div class="eyebrow">COMO GUARDAR ESTE BACKUP</div><h2>${m[2]}</h2><p class="h" style="margin:0">${m[3]}</p></div>
+      ${ed?'<button class="sm" id="laymud">Mudar</button>':'<span class="badge b-mut">a cópia já começou</span>'}</div>
+     <div class="lay-resr"><span class="lay-res"><b>🪞 ${nf(L.espelhar.n)}</b> espelhados · ${fmt(L.espelhar.bytes)}</span><span class="lay-res"><b>🗂️ ${nf(L.ordenar.n)}</b> ordenados · ${fmt(L.ordenar.bytes)}</span>${L.fixos.n?`<span class="lay-res mut" title="Dados de programas, ocultos e sistemas guardam sempre o caminho original">📌 ${nf(L.fixos.n)} com caminho fixo</span>`:""}</div>
+     ${L.modo==="misto"&&ed?`<div class="lay-dica"><span>Para ordenar uma pasta ou um tipo, abra a lista e use <b>Como copiar</b>; ela navega por <b>Pasta</b> a partir dos usuários. Na grade, use a coluna <b>Cópia</b>. O que você não mudar fica espelhado.</span><button class="sm pri" id="laypasta">Escolher por pasta…</button></div>`:""}`;
+    const mu=$("#laymud",el);if(mu)mu.onclick=()=>{LAY.abrir=true;layCard()};
+    const lp=$("#laypasta",el);if(lp)lp.onclick=()=>abrirLista({},"Escolher por pasta");
+    return;
+  }
+  el.innerHTML=`<div class="eyebrow">COMO GUARDAR ESTE BACKUP</div><h2>Como você quer guardar os arquivos?</h2>
+   <p class="h">Escolha a cada backup. Não muda <b>o que</b> vai, só como fica organizado no disco do backup. Dados de programas, ocultos e sistemas guardam o caminho original sempre.</p>
+   <div class="lay-ops" role="radiogroup" aria-label="Como guardar este backup">${LAY_MODOS.map(([k,ic,t,d])=>`<button class="lay-op ${L.modo===k?"on":""}" role="radio" aria-checked="${L.modo===k}" tabindex="${(L.modo||"espelho")===k?0:-1}" data-lm="${k}" ${ed?"":"disabled"}><span class="lay-ic">${ic}</span><b>${t}</b><span class="lay-d">${d}</span>${layDiag(k,L.exemplo)}</button>`).join("")}</div>
+   ${L.modo?`<div class="row" style="justify-content:flex-end;margin-top:10px"><button class="sm gh" id="layfec">Manter ${esc(L.nome)}</button></div>`:'<p class="mut" style="font-size:12.5px;margin:10px 0 0">A cópia só começa depois desta escolha.</p>'}`;
+  const ops=$$("[data-lm]",el);
+  ops.forEach((b,i)=>{b.onclick=()=>safe(async()=>{LAY=Object.assign(await api("/api/layout",{modo:b.dataset.lm}),{abrir:false});toast("Este backup vai como "+LAY.nome+".","ok");draw3()});
+    b.onkeydown=e=>{const d=e.key==="ArrowRight"||e.key==="ArrowDown"?1:e.key==="ArrowLeft"||e.key==="ArrowUp"?-1:0;if(d){e.preventDefault();const n=ops[(i+d+ops.length)%ops.length];n.focus()}}});
+  const fe=$("#layfec",el);if(fe)fe.onclick=()=>{LAY.abrir=false;layCard()};
+}
+async function layAplica(filter,copia){
+  const x=await api("/api/layout/copia",{filter,copia});
+  LAY=Object.assign(x.resumo,{abrir:false});layCard();
+  toast(`${nf(x.n)} arquivo${x.n===1?"":"s"} ${copia==="ordenar"?"vão ordenados por tipo e data":"vão espelhados, como estavam"}.`,"ok");
+  return x;
 }
 /* ---- Seleção em grade (padrão de painel corporativo): abas, filtro por bloco, busca, ordem, grupos recolhíveis, linhas expansíveis ---- */
 const USR_BLOCOS=[["usuario","Usuários da máquina","Pasta de cada pessoa que usa o computador."],["whats","WhatsApp","Fotos, vídeos, áudios e documentos do WhatsApp de cada usuário."],
@@ -2148,34 +2210,35 @@ const selTog=(lista,k)=>{const i=lista.indexOf(k);if(i>=0)lista.splice(i,1);else
 function selLinhasCat(g){
   const rows=g.cats.map(c=>{const inf=CAT_INFO[c.cat]||["decide","","","Você decide"];
     return {key:"c:"+c.cat,bloco:inf[0],ico:CATICO[c.cat]||"📁",nome:CATNAME[c.cat]||c.cat,oque:inf[1],serve:inf[2],rec:inf[3],n:c.n,b:c.bytes,sn:c.sel_n,sb:c.sel_bytes,ex:c.ex||[],
-      sel:{cat:c.cat,act:""},lista:[{cat:c.cat},CATNAME[c.cat]||c.cat],ord:CATORD.indexOf(c.cat)}});
+      sel:{cat:c.cat,act:""},lista:[{cat:c.cat},CATNAME[c.cat]||c.cat],ord:CATORD.indexOf(c.cat),esp:c.esp||0,ordn:c.ord||0}});
   const rv=g.acts.revisar,ig=g.acts.ignorar;
   if(rv&&rv.n)rows.push({key:"a:revisar",bloco:"decide",ico:"❓",nome:"Tipo desconhecido",oque:"Tipos que o programa não reconhece: vão marcados, por segurança.",serve:"Confira a lista: pode ter algo importante com extensão rara.",
-    rec:"Você decide",n:rv.n,b:rv.bytes,sn:rv.sel_n,sb:rv.sel_bytes,ex:rv.ex||[],sel:{act:"revisar"},lista:[{act:"revisar"},"Tipo desconhecido"],ord:90});
+    rec:"Você decide",n:rv.n,b:rv.bytes,sn:rv.sel_n,sb:rv.sel_bytes,ex:rv.ex||[],sel:{act:"revisar"},lista:[{act:"revisar"},"Tipo desconhecido"],ord:90,esp:rv.esp||0,ordn:rv.ord||0});
   if(ig&&ig.n)rows.push({key:"a:ignorar",bloco:"sistema",ico:"🔒",nome:"Do sistema (não vai)",oque:"Arquivos que o Windows usa e recria (desktop.ini, thumbs.db, memória virtual).",serve:"Não precisam de backup; muitos ficam em uso e não dá para copiar.",
-    rec:"Normalmente não",n:ig.n,b:ig.bytes,sn:ig.sel_n,sb:ig.sel_bytes,ex:ig.ex||[],sel:{act:"ignorar"},lista:[{act:"ignorar"},"do sistema (não vai)"],ord:91});
+    rec:"Normalmente não",n:ig.n,b:ig.bytes,sn:ig.sel_n,sb:ig.sel_bytes,ex:ig.ex||[],sel:{act:"ignorar"},lista:[{act:"ignorar"},"do sistema (não vai)"],ord:91,esp:ig.esp||0,ordn:ig.ord||0});
   return rows;
 }
 function selLinhasUsr(g){
   const L={};
-  g.groups.forEach(x=>{const k=/^Pastas_(origem|mae)\//.test(x.local)?x.local:x.local.split("/")[0],o=L[k]=L[k]||{n:0,b:0,sn:0,sb:0,cats:{}};
-    o.n+=x.n;o.b+=x.bytes;o.sn+=x.sel_n;o.sb+=x.sel_bytes;const c=o.cats[x.cat]=o.cats[x.cat]||{n:0,b:0,sn:0,sb:0};c.n+=x.n;c.b+=x.bytes;c.sn+=x.sel_n;c.sb+=x.sel_bytes});
+  g.groups.forEach(x=>{const k=/^Pastas_(origem|mae)\//.test(x.local)?x.local:x.local.split("/")[0],o=L[k]=L[k]||{n:0,b:0,sn:0,sb:0,cats:{},esp:0,ordn:0};
+    o.n+=x.n;o.b+=x.bytes;o.sn+=x.sel_n;o.sb+=x.sel_bytes;o.esp+=x.esp||0;o.ordn+=x.ord||0;const c=o.cats[x.cat]=o.cats[x.cat]||{n:0,b:0,sn:0,sb:0};c.n+=x.n;c.b+=x.bytes;c.sn+=x.sel_n;c.sb+=x.sel_bytes});
   const desc={usuario:"Pasta pessoal deste usuário.",whats:"Mídias e documentos do WhatsApp deste usuário.",origem:"Pasta separada da pasta do usuário.",disco:"Fora das pastas de usuário."};
   return Object.entries(L).map(([k,o])=>{const bl=/^WhatsApp/.test(k)?"whats":/^Pastas_(origem|mae)\//.test(k)?"origem":/^Disco_/.test(k)?"disco":"usuario",nm=locNome(k);
     return {key:"l:"+k,bloco:bl,ico:nm.split(" ")[0],nome:nm.replace(/^\S+\s/,""),oque:desc[bl],serve:"",rec:"",n:o.n,b:o.b,sn:o.sn,sb:o.sb,ex:[],cats:o.cats,
-      sel:{local:k,act:""},lista:[{local:k},nm.replace(/^\S+\s/,"")],ord:0}});
+      sel:{local:k,act:""},lista:[{local:k},nm.replace(/^\S+\s/,"")],ord:0,esp:o.esp,ordn:o.ordn}});
 }
 function selGrade(g){
   if(g)SELG=g;const el=$("#selp");if(!el||!SELG)return;
   const cat=SEL.aba==="cat",rows=cat?selLinhasCat(SELG):selLinhasUsr(SELG),cont={todos:rows.length};
   CAT_BLOCOS.forEach(([b])=>cont[b]=rows.filter(r=>r.bloco===b).length);
+  el.classList.toggle("sg-misto",LAY.modo==="misto"&&LAY.editavel!==false);
   el.innerHTML=`<div class="sg-top"><div class="sg-abas" role="tablist">${[["cat","Por categoria"],["usr","Por usuário e pasta"]].map(([k,t])=>`<button role="tab" aria-selected="${SEL.aba===k}" class="${SEL.aba===k?"on":""}" data-sa="${k}">${t}</button>`).join("")}</div>
     ${cat?`<div class="sg-chips" role="group" aria-label="Filtrar por bloco">${[["todos","Todos"],["pessoal","Pessoal"],["decide","Você decide"],["sistema","Sistema"]].map(([k,t])=>`<button class="sg-chip ${SEL.filtro===k?"on":""}" data-sf="${k}">${t} <span>${cont[k]||0}</span></button>`).join("")}</div>`:""}
     <input type="search" class="sg-q" id="sgq" placeholder="Buscar ${cat?"categoria ou tipo":"usuário ou pasta"}" aria-label="Buscar" value="${esc(SEL.q)}" autocomplete="off">
     <select id="sgo" aria-label="Ordenar" class="sg-o">${[["padrao","Ordem padrão"],["maior","Maior primeiro"],["menor","Menor primeiro"],["nome","Nome (A–Z)"]].map(([k,t])=>`<option value="${k}" ${SEL.ordem===k?"selected":""}>${t}</option>`).join("")}</select>
     <button class="sm gh" id="sgexp">${SEL.fechados.length?"Expandir tudo":"Recolher tudo"}</button></div>
    <div class="sg-acoes"><span class="mut">Padrão: só o pessoal vai marcado. Você pode marcar ou desmarcar qualquer linha.</span><span class="grow"></span><button class="sm" id="mtudo">Marcar tudo o que foi encontrado</button><button class="sm gh" id="mpad">Voltar ao padrão (só o pessoal)</button></div>
-   <div class="sg-head" aria-hidden="true"><span></span><button data-so="nome">${cat?"Categoria":"Usuário ou pasta"}</button><span>${cat?"Recomendação":""}</span><button data-so="maior" class="sg-num">Arquivos</button><button data-so="maior" class="sg-num">Tamanho</button><span>Marcado</span><span>Levar</span><span></span></div>
+   <div class="sg-head" aria-hidden="true"><span></span><button data-so="nome">${cat?"Categoria":"Usuário ou pasta"}</button><span>${cat?"Recomendação":""}</span><button data-so="maior" class="sg-num">Arquivos</button><button data-so="maior" class="sg-num">Tamanho</button><span>Marcado</span><span>Levar</span>${LAY.modo==="misto"&&LAY.editavel!==false?"<span>Cópia</span>":""}<span></span></div>
    <div id="sgbody"></div>
    <div class="sg-pe"><span class="mut">${nf(SELG.ign_dirs_total)} pastas puladas (sistema, caches e lixeira): veja e inclua em "Onde está o resto do disco?".</span><span class="grow"></span><button class="sm gh" id="vdirs">Ver quais</button><button class="sm" id="vtodos">Ver todos os arquivos</button></div>`;
   $$("[data-sa]",el).forEach(b=>b.onclick=()=>{SEL.aba=b.dataset.sa;SEL.q="";selSalva();selGrade()});
@@ -2195,7 +2258,10 @@ function selCorpo(){
   const cat=SEL.aba==="cat",rows=cat?selLinhasCat(SELG):selLinhasUsr(SELG),blocos=cat?CAT_BLOCOS:USR_BLOCOS,q=semAc(SEL.q.trim());
   const vis=r=>(!cat||SEL.filtro==="todos"||r.bloco===SEL.filtro)&&(!q||semAc([r.nome,r.oque,...r.ex].join(" ")).includes(q));
   const ord={padrao:(a,b)=>a.ord-b.ord||b.b-a.b,maior:(a,b)=>b.b-a.b,menor:(a,b)=>a.b-b.b,nome:(a,b)=>a.nome.localeCompare(b.nome,"pt-BR")}[SEL.ordem]||((a,b)=>0);
-  const pct=(s,n)=>n?Math.round(s/n*100):0;
+  const pct=(s,n)=>n?Math.round(s/n*100):0,misto=LAY.modo==="misto"&&LAY.editavel!==false;
+  const copia=r=>{if(!misto)return "";const e=r.esp||0,o=r.ordn||0;if(!e&&!o)return '<span class="sg-cp mut" title="Guarda sempre o caminho original">📌 fixo</span>';
+    const st=o&&!e?"ordenar":e&&!o?"espelhar":"";
+    return `<span class="sg-cp"><span class="seg2" role="radiogroup" aria-label="Como copiar ${esc(r.nome)}">${[["espelhar","Espelhar","Como estava"],["ordenar","Ordenar","Por tipo e data"]].map(([v,t,d])=>`<button role="radio" aria-checked="${st===v}" class="${st===v?"on":""}" data-ck="${esc(r.key)}" data-cv="${v}" title="${d}">${t}</button>`).join("")}</span>${st?"":`<small>${nf(o)} de ${nf(e+o)} ordenados</small>`}</span>`};
   const linha=r=>{const ab=SEL.abertas.includes(r.key),all=r.sn===r.n,p=pct(r.sb,r.b);
     return `<div class="sg-row ${r.sn?"":"off"}"><button class="sg-x" data-sx="${esc(r.key)}" aria-expanded="${ab}" aria-label="Detalhes de ${esc(r.nome)}">${ab?"▾":"▸"}</button>
      <div class="sg-nome"><span class="ic">${r.ico}</span><div style="min-width:0"><b>${esc(r.nome)}</b><small title="${esc(r.oque)}">${esc(r.oque)}</small><small class="sg-meta">${nf(r.n)} arquivos · ${fmt(r.b)} · ${nf(r.sn)} marcados</small></div></div>
@@ -2203,14 +2269,14 @@ function selCorpo(){
      <span class="sg-num sg-n">${nf(r.n)}</span><span class="sg-num sg-b">${fmt(r.b)}</span>
      <span class="sg-bar"><i><b style="width:${p}%"></b></i>${nf(r.sn)} de ${nf(r.n)} · ${p}%</span>
      <label class="tg" aria-label="Levar ${esc(r.nome)}"><input type="checkbox" data-sk="${esc(r.key)}" ${all?"checked":""} data-ind="${r.sn&&!all?1:0}"><s></s></label>
-     <button class="sm gh" data-sl="${esc(r.key)}">Ver lista</button></div>
+     ${copia(r)}<button class="sm gh" data-sl="${esc(r.key)}">Ver lista</button></div>
      ${ab?`<div class="sg-det">${r.serve?`<p><b>Para que serve:</b> ${esc(r.serve)}</p>`:""}${r.ex.length?`<p><b>Exemplos desta máquina:</b> ${r.ex.map(x=>`<span class="chip">${esc(x)}</span>`).join(" ")}</p>`:""}
        ${r.cats?`<table class="sg-sub">${Object.entries(r.cats).sort((a,b)=>b[1].b-a[1].b).map(([c,o])=>`<tr><td>${CATICO[c]||"📁"} ${esc(CATNAME[c]||c)}</td><td class="sg-num">${nf(o.n)} arquivos</td><td class="sg-num">${fmt(o.b)}</td><td class="sg-num">${pct(o.sb,o.b)}% marcado</td></tr>`).join("")}</table>`:""}</div>`:""}`};
   let h="";
   blocos.forEach(([b,tit,txt])=>{const rs=rows.filter(r=>r.bloco===b&&vis(r)).sort(ord);if(!rs.length)return;
     const gk=SEL.aba+":"+b,fe=SEL.fechados.includes(gk),n=rs.reduce((a,r)=>a+r.n,0),sn=rs.reduce((a,r)=>a+r.sn,0),bt=rs.reduce((a,r)=>a+r.b,0),sb=rs.reduce((a,r)=>a+r.sb,0);
     h+=`<div class="sg-grp sg-g-${b}" data-sg="${gk}" role="button" tabindex="0" aria-expanded="${!fe}"><span class="sg-chev">${fe?"▸":"▾"}</span><b>${tit}</b><span class="mut sg-gd">${txt}</span><span class="grow"></span>
-      <span class="mut">${rs.length} ${rs.length>1?"itens":"item"} · ${fmt(sb)} de ${fmt(bt)} marcados</span><label class="tg" aria-label="Levar todo o bloco ${esc(tit)}"><input type="checkbox" data-gt="${b}" ${sn===n?"checked":""} data-ind="${sn&&sn<n?1:0}"><s></s></label></div>
+      <span class="mut">${rs.length} ${rs.length>1?"itens":"item"} · ${fmt(sb)} de ${fmt(bt)} marcados</span>${misto?`<span class="sg-cpg" role="group" aria-label="Como copiar o bloco ${esc(tit)}"><button class="sm gh" data-gc="${b}" data-cv="espelhar">Espelhar bloco</button><button class="sm gh" data-gc="${b}" data-cv="ordenar">Ordenar bloco</button></span>`:""}<label class="tg" aria-label="Levar todo o bloco ${esc(tit)}"><input type="checkbox" data-gt="${b}" ${sn===n?"checked":""} data-ind="${sn&&sn<n?1:0}"><s></s></label></div>
       ${fe?"":rs.map(linha).join("")}`});
   el.innerHTML=h||`<p class="mut" style="padding:16px">Nada com essa busca.</p>`;
   $$("[data-ind]",el).forEach(c=>{if(c.dataset.ind==="1")c.indeterminate=true});
@@ -2220,6 +2286,9 @@ function selCorpo(){
   $$("[data-sl]",el).forEach(b=>b.onclick=()=>{const r=acha(b.dataset.sl);if(r)abrirLista(r.lista[0],r.lista[1])});
   $$("[data-sk]",el).forEach(c=>c.onchange=()=>safe(async()=>{const r=acha(c.dataset.sk);await api("/api/select",{filter:r.sel,on:c.checked});await selAtualiza()}));
   $$("[data-gt]",el).forEach(c=>{c.onclick=e=>e.stopPropagation();c.onchange=()=>safe(async()=>{for(const r of rows.filter(r=>r.bloco===c.dataset.gt))await api("/api/select",{filter:r.sel,on:c.checked});await selAtualiza()})});
+  $$("[data-ck]",el).forEach(b=>b.onclick=()=>safe(async()=>{const r=acha(b.dataset.ck);if(!r)return;await layAplica(r.sel,b.dataset.cv);await selAtualiza()}));
+  $$("[data-gc]",el).forEach(b=>b.onclick=e=>{e.stopPropagation();safe(async()=>{let n=0;for(const r of rows.filter(r=>r.bloco===b.dataset.gc))n+=(await api("/api/layout/copia",{filter:r.sel,copia:b.dataset.cv})).n;
+    LAY=Object.assign(await api("/api/layout"),{abrir:false});layCard();toast(`${nf(n)} arquivos ${b.dataset.cv==="ordenar"?"vão ordenados":"vão espelhados"}.`,"ok");await selAtualiza()})});
 }
 /* depois de marcar/desmarcar: só os números mudam (linha, grupos, cartões do topo e resumo), sem redesenhar a página */
 async function selAtualiza(){
@@ -2271,7 +2340,8 @@ function drawTot(t){
    <div class="kpi" style="margin-top:8px"><div class="mut">Tamanho a copiar</div><div class="big">${fmt(t.sel_bytes)}</div></div>
    <div style="margin-top:12px" class="mut">Ocupa ${pct.toFixed(pct<10?1:0)}% do espaço livre no destino (${fmt(t.free)})</div><div class="bar"><i style="width:${pct}%;${pct>90?"background:var(--err)":""}"></i></div>${w}
    <div class="row" style="margin-top:14px"><button id="back3">← Voltar</button><button class="pri grow" id="go3">Iniciar cópia →</button></div>`;
-  $("#go3").disabled=!t.cabe||t.fat32_problema||t.sel_n===0;
+  $("#go3").disabled=!t.cabe||t.fat32_problema||t.sel_n===0||!LAY.modo;
+  if(!LAY.modo)$("#go3").insertAdjacentHTML("afterend",'<p class="mut" style="font-size:12.5px;margin:8px 0 0;width:100%">Escolha acima como guardar este backup.</p>');
   $("#back3").onclick=()=>go(1);$("#go3").onclick=()=>safe(()=>preVoo(t));
 }
 /* pré-voo: confere as mídias de novo, avisa dos programas abertos e da bateria e ensaia a leitura dos arquivos marcados antes de copiar */
@@ -2286,6 +2356,7 @@ async function preVoo(t){
   const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
   d.innerHTML=`<div class="box" style="max-width:720px"><h2>Pronto para copiar?</h2>
    <div class="okbox">Origem e destino lidos agora: <b>${nf(t.sel_n)} arquivos (${fmt(t.sel_bytes)})</b> cabem no destino (${fmt(t.free)} livres).${ab.estimativa.segundos&&ab.estimativa.segundos<7200?` Tempo previsto: cerca de ${ab.estimativa.segundos<90?"1 minuto":Math.round(ab.estimativa.segundos/60)+" minutos"}.`:""}</div>
+   ${LAY.modo?`<div class="infobox" style="margin:8px 0">Como guardar: <b>${esc(LAY.nome)}</b> · ${nf(LAY.espelhar.n)} espelhados e ${nf(LAY.ordenar.n)} ordenados.</div>`:""}
    <div id="pvav">${[...av.map(c=>({texto:c.titulo,acao:[c.detalhe,c.solucao].filter(Boolean).join(" · ")})),...ab.alertas].map(a=>`<div class="warnbox" style="margin:8px 0">⚠ <b>${esc(a.texto)}</b><div style="font-size:13px">${esc(a.acao||"")}</div></div>`).join("")}</div>
    <div id="pven" class="infobox" style="margin:8px 0">Ensaiando a leitura dos arquivos marcados…</div>
    <div class="row" style="margin-top:16px;justify-content:flex-end"><button id="pvc">Cancelar</button><button id="pvv">Verificar de novo</button><button class="pri" id="pvok">Iniciar cópia</button></div></div>`;
@@ -2311,11 +2382,13 @@ const TIPO_IC={PDF:"📕",Word:"📘",Documento:"📄",Planilha:"📗","Apresent
 const ORD_ROT=[["nome","Nome"],["tipo","Tipo"],["categoria","Categoria"],["situacao","Situação"],["data","Data de criação"],["tamanho","Tamanho"],["caminho","Caminho"]];
 const lstUrl=i=>"/api/files/ver?i="+i+"&t="+encodeURIComponent(TOKEN);
 const lstCurto=d=>{const p=String(d||"").split(/[\\/]/).filter(Boolean).slice(0,-1);return p.length?(p.length>2?"…/":"")+p.slice(-2).join("/")+"/":""};
-const lstLinha=x=>({i:x[0],disp:x[1],size:x[2],data:x[3],cat:x[4],act:x[5],inc:!!x[6],motivo:x[7]||"",status:x[8]||"",nome:x[10]||x[1],tipo:x[11]||"",prev:x[13]||""});
+const lstLinha=x=>({i:x[0],disp:x[1],size:x[2],data:x[3],cat:x[4],act:x[5],inc:!!x[6],motivo:x[7]||"",status:x[8]||"",nome:x[10]||x[1],tipo:x[11]||"",prev:x[13]||"",copia:x[14]||"",destino:x[15]||""});
+const CP_ROT={espelhar:"🪞 Espelhado",ordenar:"🗂️ Ordenado",fixo:"📌 Caminho fixo"};
+const cpPill=o=>LAY.modo?`<span class="cpp cpp-${o.copia||"fixo"}" title="No backup: ${esc(o.destino)}">${CP_ROT[o.copia||"fixo"]}</span>`:"";
 const locNome=k=>/^Disco_[A-Z]$/.test(k)?"💽 Disco "+k.slice(-1)+": (fora das pastas de usuário)":/^Pastas_(origem|mae)\//.test(k)?"📁 "+k.replace(/^Pastas_(origem|mae)\//,""):/^WhatsApp( \(|$)/.test(k)?"💬 WhatsApp"+(k.match(/\((.*)\)/)?" de "+k.match(/\((.*)\)/)[1]:""):"👤 "+k;
 const FX_DATA=[["d30","Últimos 30 dias"],["m6","1 a 6 meses"],["a1","6 meses a 1 ano"],["a3","1 a 3 anos"],["antigo","Mais de 3 anos"],["sem","Sem data"]];
 const FX_TAM=[["p","Até 100 KB"],["m","100 KB a 1 MB"],["g","1 a 10 MB"],["gg","10 a 100 MB"],["xg","Mais de 100 MB"]];
-const FX_GRUPOS=[["cat","Categoria"],["tipo","Tipo de arquivo"],["status","Situação"],["data","Data"],["tam","Tamanho"],["local","Usuário e pasta de origem"],["tag","Etiqueta"]];
+const FX_GRUPOS=[["cat","Categoria"],["tipo","Tipo de arquivo"],["copia","Como copiar"],["status","Situação"],["data","Data"],["tam","Tamanho"],["local","Usuário e pasta de origem"],["tag","Etiqueta"]];
 const fVals=k=>String(LST.f[k]||"").split("|").filter(Boolean);
 function fTroca(k,v){const a=fVals(k),i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);if(a.length)LST.f[k]=a.join("|");else delete LST.f[k];lstCarrega(true)}
 function fRotulo(k,v){
@@ -2325,6 +2398,7 @@ function fRotulo(k,v){
   if(k==="tam")return (FX_TAM.find(x=>x[0]===v)||[v,v])[1];
   if(k==="local")return locNome(v);
   if(k==="tipo")return (TIPO_IC[v]||"📄")+" "+v;
+  if(k==="copia")return CP_ROT[v]||v;
   return v;
 }
 const mbTxt=b=>String(+(b/1048576).toFixed(2)).replace(".",",");
@@ -2333,6 +2407,7 @@ function fChips(){
   const c=[];
   if(LST.f.act)c.push([LST.rot||LST.f.act,()=>{delete LST.f.act;LST.rot=""}]);
   if(LST.f.inc)c.push([LST.f.inc==="1"?"Marcados":"Não marcados",()=>delete LST.f.inc]);
+  if(LST.f.pasta)c.push(["Pasta: "+LST.f.pasta.split("/").join(" › "),()=>delete LST.f.pasta]);
   FX_GRUPOS.forEach(([k,t])=>fVals(k).forEach(v=>c.push([t+": "+fRotulo(k,v),()=>{const a=fVals(k).filter(x=>x!==v);if(a.length)LST.f[k]=a.join("|");else delete LST.f[k]}])));
   if(LST.f.dmin||LST.f.dmax)c.push([`Data: ${LST.f.dmin?dataBR(LST.f.dmin):"…"} até ${LST.f.dmax?dataBR(LST.f.dmax):"…"}`,()=>{delete LST.f.dmin;delete LST.f.dmax}]);
   if(LST.f.smin||LST.f.smax)c.push([`Tamanho: ${LST.f.smin?mbTxt(LST.f.smin)+" MB":"…"} a ${LST.f.smax?mbTxt(LST.f.smax)+" MB":"…"}`,()=>{delete LST.f.smin;delete LST.f.smax}]);
@@ -2344,8 +2419,14 @@ function lstSide(){
   const opt=(k,v,n,lab)=>{const on=fVals(k).includes(v),z=!n&&!on;return `<label class="fxo ${z?"zero":""}"><input type="checkbox" data-fk="${k}" data-fv="${esc(v)}" ${on?"checked":""} ${z?"disabled":""}><span class="grow">${esc(lab)}</span><small>${nf(n||0)}</small></label>`};
   const grupo=(k,titulo,corpo,n)=>`<details class="fxg" data-g="${k}" ${LST.fechado.has(k)?"":"open"}><summary>${titulo}${n?` <span class="fxn">${n}</span>`:""}</summary>${corpo}</details>`;
   const fi=fac.inc||{},n1=fi["1"]||0,n0=fi["0"]||0;
-  let h=grupo("inc","Marcados",[["","Todos",n1+n0],["1","Marcados",n1],["0","Não marcados",n0]].map(([v,t,n])=>`<label class="fxo"><input type="radio" name="fxinc" data-fi="${v}" ${(LST.f.inc||"")===v?"checked":""}><span class="grow">${t}</span><small>${nf(n)}</small></label>`).join(""),LST.f.inc?1:0);
+  const pz=LST.pastas;
+  let h=pz?grupo("pasta","Pasta",`<nav class="fxtr" aria-label="Pasta atual"><button class="lnk" data-pb="">Todas</button>${pz.migalhas.map((m,i)=>`<i>›</i><button class="lnk" data-pb="${esc(pz.migalhas.slice(0,i+1).join("/"))}">${esc(m)}</button>`).join("")}</nav>
+    ${pz.pastas.slice(0,LST.mais.pasta?400:12).map(x=>`<button class="fxp" data-pc="${esc(x.chave)}" title="${esc(x.chave)}"><span>${pz.base?"📁":"👤"}</span><span class="grow">${esc(x.nome)}</span><small>${nf(x.n)} · ${fmt(x.bytes)}</small>${LAY.modo==="misto"&&x.ordenar?`<small class="fxo2" title="${nf(x.ordenar)} vão ordenados">🗂️ ${nf(x.ordenar)}</small>`:""}</button>`).join("")||'<p class="mut" style="font-size:12.5px;margin:4px 0">Sem subpastas aqui.</p>'}
+    ${pz.pastas.length>12?`<button class="sm gh fxm" data-fm="pasta">${LST.mais.pasta?"Ver menos":"Ver todas ("+pz.pastas.length+")"}</button>`:""}
+    ${pz.base&&pz.soltos.n?`<p class="mut" style="font-size:12px;margin:6px 0 0">${nf(pz.soltos.n)} arquivo(s) direto nesta pasta.</p>`:""}`,LST.f.pasta?1:0):"";
+  h+=grupo("inc","Marcados",[["","Todos",n1+n0],["1","Marcados",n1],["0","Não marcados",n0]].map(([v,t,n])=>`<label class="fxo"><input type="radio" name="fxinc" data-fi="${v}" ${(LST.f.inc||"")===v?"checked":""}><span class="grow">${t}</span><small>${nf(n)}</small></label>`).join(""),LST.f.inc?1:0);
   for(const [k,t] of FX_GRUPOS){
+    if(k==="copia"&&LAY.modo!=="misto")continue;
     let vals=k==="data"?FX_DATA.map(([v])=>[v,(fac.data||{})[v]||0]):k==="tam"?FX_TAM.map(([v])=>[v,(fac.tam||{})[v]||0]):Object.entries(fac[k]||{}).sort((a,b)=>b[1]-a[1]||String(a[0]).localeCompare(String(b[0])));
     fVals(k).forEach(v=>{if(!vals.some(x=>x[0]===v))vals.push([v,0])});
     if(!vals.length)continue;
@@ -2361,6 +2442,7 @@ function lstSide(){
   el.innerHTML=h;
   $$("details.fxg",el).forEach(d=>d.ontoggle=()=>{if(d.open)LST.fechado.delete(d.dataset.g);else LST.fechado.add(d.dataset.g)});
   $$("[data-fk]",el).forEach(c=>c.onchange=()=>fTroca(c.dataset.fk,c.dataset.fv));
+  $$("[data-pc],[data-pb]",el).forEach(b=>b.onclick=()=>{const v=b.dataset.pc!=null?b.dataset.pc:b.dataset.pb;if(v)LST.f.pasta=v;else delete LST.f.pasta;LST.mais.pasta=false;lstCarrega(true)});
   $$("[data-fi]",el).forEach(c=>c.onchange=()=>{if(c.dataset.fi)LST.f.inc=c.dataset.fi;else delete LST.f.inc;lstCarrega(true)});
   $$("[data-fm]",el).forEach(b=>b.onclick=()=>{LST.mais[b.dataset.fm]=!LST.mais[b.dataset.fm];lstSide()});
   $$("[data-fq]",el).forEach(i=>i.oninput=()=>{const k=i.dataset.fq,pos=i.selectionStart;LST.busca[k]=i.value;lstSide();const n=$(`[data-fq="${k}"]`,el);if(n){n.focus();n.setSelectionRange(pos,pos)}});
@@ -2369,7 +2451,7 @@ function lstSide(){
     if(a!=null)LST.f.smin=String(a);else delete LST.f.smin;if(b!=null)LST.f.smax=String(b);else delete LST.f.smax;lstCarrega(true)};
 }
 function abrirLista(filtro,rotulo){
-  Object.assign(LST,{f:Object.assign({},filtro||{}),rot:rotulo||"",q:"",ord:"nome",dir:"asc",modo:lsGet("dd_lista_modo","lista")==="bloco"?"bloco":"lista",tot:null,fac:null,mais:{},busca:{},fechado:new Set(["tag"])});
+  Object.assign(LST,{f:Object.assign({},filtro||{}),rot:rotulo||"",q:"",ord:"nome",dir:"asc",modo:lsGet("dd_lista_modo","lista")==="bloco"?"bloco":"lista",tot:null,fac:null,pastas:null,mais:{},busca:{},fechado:new Set(["tag"])});
   const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","lstt");
   d.innerHTML=`<div class="box lstb"><div class="lsth"><h2 class="grow" id="lstt"></h2><button class="sm" id="lstx">Fechar</button></div>
    <div class="lstn" id="lstn"></div>
@@ -2379,6 +2461,7 @@ function abrirLista(filtro,rotulo){
       <span class="lstord"><label for="lstord" style="margin:0">Ordenar por</label><select id="lstord" style="width:auto;margin:0">${ORD_ROT.map(([k,t])=>`<option value="${k}">${t}</option>`).join("")}</select><button class="sm" id="lstdir" aria-label="Inverter a ordem"></button></span>
       <div class="seg" role="group" aria-label="Como mostrar"><button class="sm" data-m="bloco">Bloco</button><button class="sm" data-m="lista">Lista</button></div></div>
      <div class="lstbar"><b id="lstres"></b><span class="lstchips" id="lstchips"></span></div>
+     <div class="lst-cp hide" id="lstcp" role="group" aria-label="Como copiar o que está nesta lista"></div>
      <div class="lstc" id="lstc"></div></div></div></div>`;
   $("#layer").appendChild(d);
   const tecla=ev=>{if(ev.key==="Escape"&&$("#layer").lastElementChild===d)fechar()};
@@ -2393,6 +2476,7 @@ function abrirLista(filtro,rotulo){
   const c=$("#lstc",d);
   c.onscroll=()=>{if(c.scrollTop+c.clientHeight>c.scrollHeight-400)lstCarrega()};
   c.addEventListener("change",e=>{const k=e.target.closest("[data-s]");if(k)safe(()=>lstMarca(k))});
+  $("#lstcp",d).addEventListener("click",e=>{const b=e.target.closest("[data-lc]");if(b)safe(async()=>{await layAplica({...LST.f,q:LST.q},b.dataset.lc);lstCarrega(true)})});
   c.addEventListener("click",e=>{const v=e.target.closest("[data-p]");if(v)verPrevia(lstUrl(v.dataset.p),v.dataset.tp,v.dataset.nm);
     const o=e.target.closest("[data-o]");if(o){const k=o.dataset.o;if(LST.ord===k)LST.dir=LST.dir==="asc"?"desc":"asc";else{LST.ord=k;LST.dir=k==="data"||k==="tamanho"?"desc":"asc"}lstCarrega(true)}});
   lstCarrega(true);$("#lstq",d).focus();
@@ -2408,7 +2492,7 @@ function lstCab(){
   $$("[data-m]").forEach(b=>{b.classList.toggle("on",b.dataset.m===LST.modo);b.setAttribute("aria-pressed",b.dataset.m===LST.modo)});
   const seta=k=>LST.ord===k?(LST.dir==="asc"?" ▲":" ▼"):"";
   $("#lstc").innerHTML=(LST.modo==="lista"
-   ?`<table class="lstt"><thead><tr><th class="ck"><input type="checkbox" id="lsta" aria-label="Marcar todos desta lista"></th>${[["nome","Nome do arquivo"],["tipo","Tipo"],["categoria","Categoria"],["situacao","Situação"],["data","Data de criação"],["tamanho","Tamanho"],["caminho","Caminho"]].map(([k,t])=>`<th><button data-o="${k}" class="${LST.ord===k?"on":""}">${t}${seta(k)}</button></th>`).join("")}</tr></thead><tbody id="lstl"></tbody></table>`
+   ?`<table class="lstt"><thead><tr><th class="ck"><input type="checkbox" id="lsta" aria-label="Marcar todos desta lista"></th>${[["nome","Nome do arquivo"],["tipo","Tipo"],["categoria","Categoria"],["situacao","Situação"],["data","Data de criação"],["tamanho","Tamanho"],["caminho","Caminho"]].map(([k,t])=>`<th><button data-o="${k}" class="${LST.ord===k?"on":""}">${t}${seta(k)}</button></th>`).join("")}${LAY.modo?"<th>No backup</th>":""}</tr></thead><tbody id="lstl"></tbody></table>`
    :`<div class="lbbar"><label class="pfc" style="margin:0"><input type="checkbox" id="lsta"> Marcar todos</label></div><div class="lbg" id="lstl"></div>`)
    +'<div id="lstfim" class="mut" style="text-align:center;padding:14px;font-size:13px"></div>';
   $("#lsta").onchange=e=>safe(()=>lstMarcaTodos(e.target.checked));
@@ -2417,11 +2501,12 @@ async function lstCarrega(reset){
   if(reset){LST.off=0;LST.fim=false;LST.gen++;LST.carregando=false;lstCab()}
   if(LST.carregando||LST.fim)return;
   LST.carregando=true;const gen=LST.gen,primeira=LST.off===0;let r;
-  try{r=await api("/api/files?"+new URLSearchParams({...LST.f,q:LST.q,ord:LST.ord,dir:LST.dir,offset:LST.off,limit:200,...(primeira?{facets:1}:{})}))}
+  try{r=await api("/api/files?"+new URLSearchParams({...LST.f,q:LST.q,ord:LST.ord,dir:LST.dir,offset:LST.off,limit:200,...(primeira?{facets:1,pastas:1}:{})}))}
   catch(e){LST.carregando=false;return onErr(e)}
   if(gen!==LST.gen||!$("#lstl"))return;
   LST.carregando=false;LST.off+=r.rows.length;LST.fim=!r.rows.length||LST.off>=r.total;
-  if(r.facets){LST.fac=r.facets;lstSide()}
+  if(r.pastas)LST.pastas=r.pastas;
+  if(r.facets){LST.fac=r.facets;lstSide();lstCopia(r)}
   $("#lstres").textContent=`${nf(r.total)} resultado${r.total===1?"":"s"}`;
   lstNums(r);
   const os=r.rows.map(lstLinha);
@@ -2431,10 +2516,19 @@ async function lstCarrega(reset){
 }
 function lstTr(o){return `<tr class="${o.inc?"":"desm"}"><td class="ck"><input type="checkbox" data-s="${o.i}" data-a="${esc(o.act)}" ${o.inc?"checked":""} aria-label="Marcar ${esc(o.nome)}"></td>
  <td>${o.prev?`<button class="lnk" data-p="${o.i}" data-tp="${o.prev}" data-nm="${esc(o.nome)}">${esc(o.nome)}</button>`:esc(o.nome)}</td><td>${esc(o.tipo)}</td><td>${esc(CATNAME[o.cat]||o.cat)}</td><td title="${esc(o.motivo)}">${stPill(o.status)}</td>
- <td style="white-space:nowrap">${o.data?dataBR(o.data):"—"}</td><td style="white-space:nowrap">${fmt(o.size)}</td><td class="mut cam" title="${esc(o.disp)}">${esc(lstCurto(o.disp))}</td></tr>`}
+ <td style="white-space:nowrap">${o.data?dataBR(o.data):"—"}</td><td style="white-space:nowrap">${fmt(o.size)}</td><td class="mut cam" title="${esc(o.disp)}">${esc(lstCurto(o.disp))}</td>${LAY.modo?`<td>${cpPill(o)}</td>`:""}</tr>`}
 function lstBloco(o){return `<div class="lbk ${o.inc?"":"desm"}"><label class="lbc"><input type="checkbox" data-s="${o.i}" data-a="${esc(o.act)}" ${o.inc?"checked":""} aria-label="Marcar ${esc(o.nome)}"></label>
  <button class="lbt" ${o.prev?`data-p="${o.i}" data-tp="${o.prev}" data-nm="${esc(o.nome)}" aria-label="Ver ${esc(o.nome)}"`:'tabindex="-1" aria-hidden="true"'}>${o.prev==="imagem"?`<img loading="lazy" src="${lstUrl(o.i)}" alt="">`:`<span>${TIPO_IC[o.tipo]||"📄"}</span>`}</button>
- <b title="${esc(o.disp)}">${esc(o.nome)}</b><small>${esc(o.tipo)} · ${fmt(o.size)}${o.data?" · "+dataBR(o.data):""}</small><span title="${esc(o.motivo)}">${stPill(o.status)}</span></div>`}
+ <b title="${esc(o.disp)}">${esc(o.nome)}</b><small>${esc(o.tipo)} · ${fmt(o.size)}${o.data?" · "+dataBR(o.data):""}</small><span title="${esc(o.motivo)}">${stPill(o.status)}</span>${cpPill(o)}</div>`}
+/* Misto: "Como copiar o que está nesta lista" vale para o filtro inteiro (tipo, pasta, data, busca…), não só para o que está na tela */
+function lstCopia(r){
+  const el=$("#lstcp");if(!el)return;
+  if(LAY.modo!=="misto"||LAY.editavel===false||!r.total){el.classList.add("hide");return}
+  const c=(LST.fac&&LST.fac.copia)||{},e=c.espelhar||0,o=c.ordenar||0,fx=c.fixo||0,st=o&&!e?"ordenar":e&&!o?"espelhar":"";
+  el.classList.remove("hide");
+  el.innerHTML=`<span class="grow"><b>Como copiar o que está nesta lista</b><small>${nf(r.total)} arquivo${r.total===1?"":"s"} · ${fmt(r.bytes)} · ${nf(e)} espelhados · ${nf(o)} ordenados${fx?" · "+nf(fx)+" com caminho fixo":""}</small></span>
+   <span class="seg2" role="radiogroup" aria-label="Como copiar o que está nesta lista">${[["espelhar","🪞 Espelhar","Como estava na máquina"],["ordenar","🗂️ Ordenar","Por tipo e data"]].map(([v,t,d])=>`<button role="radio" aria-checked="${st===v}" class="${st===v?"on":""}" data-lc="${v}" title="${d}">${t}</button>`).join("")}</span>`;
+}
 function lstNums(r){
   LST.tot=r;const p=r.bytes?r.sel_bytes/r.bytes*100:0,cat=LST.f.cat?"Total da categoria":"Tamanho total";
   $("#lstn").innerHTML=`<div><span>Total de arquivos</span><b>${nf(r.total)}</b></div><div><span>${cat}</span><b>${fmt(r.bytes)}</b></div>${arco(p,r.sel_n?"var(--azul)":"var(--trilho)")}
