@@ -891,11 +891,12 @@ function mapasEscolher(lista){
 }
 async function mapaAberto(m){
   const c=m.contagem,ce=m.cert||{},ok=ce.status==="sem_falhas";
-  $("#main").innerHTML=`<div class="card" style="padding:12px 16px"><div class="row" style="gap:8px;flex-wrap:wrap"><b class="grow">${ok?"✅":"⚠️"} ${esc(m.pc||"")} · ${esc(m.data||"")}${ce.cliente?" · "+esc(ce.cliente):""} · <span class="mono">${esc(m.codigo||"")}</span></b><button class="sm pri" id="mpcert">Certificado</button><button class="sm" id="mpconf">Conferir integridade</button><button class="sm" id="mptroca">Trocar de Mapa</button></div>
+  $("#main").innerHTML=`<div class="card" style="padding:12px 16px"><div class="row" style="gap:8px;flex-wrap:wrap"><b class="grow">${ok?"✅":"⚠️"} ${esc(m.pc||"")} · ${esc(m.data||"")}${ce.cliente?" · "+esc(ce.cliente):""} · <span class="mono">${esc(m.codigo||"")}</span></b><button class="sm pri" id="mpcert">Certificado</button><button class="sm" id="mpconf">Conferir integridade</button><button class="sm" id="mpnav" title="Abre o visualizador do Mapa numa aba do navegador, sem o Destrava!">Abrir no navegador</button><button class="sm" id="mptroca">Trocar de Mapa</button></div>
    ${m.raiz_existe?"":'<p class="mut" style="margin:6px 0 0;color:var(--err)">A pasta do backup não foi encontrada: conecte o disco para abrir os arquivos.</p>'}<div id="mpcf"></div></div>
    <iframe src="/mapa/visualizador.html" title="Mapa do backup" style="width:100%;height:calc(100vh - 150px);min-height:520px;border:0;border-radius:14px;background:var(--panel)"></iframe>`;
   $("#mptroca").onclick=()=>safe(async()=>{const r=await api("/api/mapa/lista");mapasEscolher(r.mapas)});
   $("#mpcert").onclick=()=>safe(certificadoMapa);
+  $("#mpnav").onclick=()=>safe(async()=>{await api("/api/mapa/offline",{});toast("Aberto no navegador. Para levar a outro computador, copie a pasta Mapa inteira.","ok")});
   $("#mpconf").onclick=()=>safe(async()=>{await api("/api/mapa/conferir",{});conferindo()});
   conferindo(true);
   let vistos=[];try{vistos=JSON.parse(lsGet("dd_cert_vistos","[]"))||[]}catch(e){}

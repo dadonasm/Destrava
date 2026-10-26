@@ -126,6 +126,50 @@ class BackupCompleto(unittest.TestCase):
             time.sleep(0.05)
         self.assertEqual(len(mapa.CONF["diferentes"]), 1)
 
+    def test_aba_mapas_abre_o_visualizador_no_navegador(self):
+        import json
+        import threading
+        import urllib.error
+        import urllib.request
+        from http.server import ThreadingHTTPServer
+        from unittest import mock
+        srv = ThreadingHTTPServer(("127.0.0.1", 0), dd_backup.Handler)
+        porta = srv.server_address[1]
+        hosts = dd_backup.APP.allowed_hosts
+        dd_backup.APP.allowed_hosts = {"127.0.0.1:%d" % porta}
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+
+        def post(caminho):
+            req = urllib.request.Request("http://127.0.0.1:%d%s" % (porta, caminho), data=b"{}", method="POST",
+                                         headers={"X-DD-Token": dd_backup.APP.token, "Content-Type": "application/json"})
+            try:
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    return r.status, json.loads(r.read() or b"{}")
+            except urllib.error.HTTPError as e:
+                return e.code, json.loads(e.read() or b"{}")
+        try:
+            with mock.patch.object(dd_backup, "open_in_browser") as abre:
+                st, r = post("/api/mapa/offline")
+                self.assertNotEqual(st, 200, "sem Mapa aberto não abre nada")
+                self.assertIn("Abra um Mapa", r.get("erro", ""))
+                abre.assert_not_called()
+                self.escanear()
+                self.app.start_copy()
+                self.assertEqual(espera(self.app, ("copied", "error")), "copied", self.app.error)
+                self.app.start_verify("rapida")
+                self.assertEqual(espera(self.app, ("verified", "error")), "verified", self.app.error)
+                self.app.finish()
+                mapa.carregar(os.path.join(self.dest, "Backup_Ana"))
+                st, r = post("/api/mapa/offline")
+                self.assertEqual((st, r.get("ok")), (200, True), r)
+                url = abre.call_args[0][0]
+                self.assertTrue(url.startswith("file:///") and url.endswith("Backup_Ana/Mapa/visualizador.html"), url)
+                self.assertTrue(os.path.isfile(os.path.join(self.dest, "Backup_Ana", "Mapa", "visualizador.html")))
+                self.assertTrue(os.path.isfile(os.path.join(self.dest, "Backup_Ana", "Mapa", "dados.js")))
+        finally:
+            srv.shutdown()
+            dd_backup.APP.allowed_hosts = hosts
+
     def test_mapa_guardado_no_registro_da_maquina(self):
         self.escanear()
         self.app.start_copy()

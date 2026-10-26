@@ -127,3 +127,13 @@ varredura como sugestão.
   que mexia nas barras `.actbar` (inclusive "O que manter") foi retirada.
 - **Não conferido no navegador**: a extensão do Chrome não estava conectada; a tela foi checada só pela
   sintaxe (`jsc`) e pelos prints do Marlos.
+
+## Mapa no navegador (pergunta do Marlos, 26/10)
+- O HTML já existe: todo backup grava `Mapa/visualizador.html` na pasta do backup, junto de `dados.js`, `logo.js`,
+  `Relatorio.csv` e `certificado.json`. Abre offline com duplo clique (Chrome, Edge ou Firefox). Para levar a outro
+  computador, copie a pasta `Mapa` inteira: o HTML lê o `dados.js` ao lado.
+- Depois de formatar: o código da máquina vem do UUID/serial da placa, então a aba **Mapas** acha o backup no
+  histórico. Sem o disco ligado, abre pela cópia guardada no pendrive (`maquinas/<código>/mapas/<código do backup>/Mapa`);
+  "Abrir outro Mapa" aceita qualquer pasta de backup. Abrir os arquivos de verdade pede o disco do backup.
+- A aba Mapas ganhou **"Abrir no navegador"** (rota `/api/mapa/offline`, que já existia sem botão); antes só a
+  conclusão do backup tinha "Visualizador offline".
