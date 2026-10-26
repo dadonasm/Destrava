@@ -2898,7 +2898,7 @@ def atividades():
     dst = DADOS.ST if DADOS else {}
     ac = dst.get("acao") or {}
     if ac.get("rodando"):
-        out.append({"id": "dados", "titulo": {"limpar": "Limpando arquivos", "offload": "Movendo para outro disco"}.get(ac.get("tipo"), "Organizando arquivos"),
+        out.append({"id": "dados", "titulo": {"limpar": "Limpando arquivos", "offload": "Movendo para outro disco", "mover": "Movendo arquivos", "copiar": "Copiando arquivos"}.get(ac.get("tipo"), "Organizando arquivos"),
                     "detalhe": ac.get("atual", ""), "pct": _pct(ac.get("bytes_feito", 0), ac.get("bytes_total", 0)) if ac.get("bytes_total") else _pct(ac.get("feito", 0), ac.get("total", 0)),
                     "info": "%d de %d" % (ac.get("feito", 0), ac.get("total", 0)), "tela": "dados"})
     elif dst.get("fase") == "varrendo":
@@ -2971,6 +2971,9 @@ def dados_depois(tipo):
             REC["bytes"] += int(res.get("bytes_removidos") or 0)
             if tipo == "limpar":
                 resumo = "Limpeza de dados: %d item(ns), %s %s" % (res["itens"], fmt_bytes(moved), "removidos de vez" if res["modo"] == "definitivo" else "enviados para a Lixeira")
+            elif tipo in ("mover", "copiar"):
+                moved = int(res.get("bytes") or 0)
+                resumo = "%s: %d item(ns), %s para %s" % ("Arquivos movidos" if tipo == "mover" else "Arquivos copiados", res["itens"], fmt_bytes(moved), res.get("destino", ""))
             else:
                 resumo = "Offload: %d item(ns), %s copiados e conferidos para %s" % (res["itens"], fmt_bytes(moved), res.get("destino", ""))
             FICHA.hist_add(mid, "limpeza", resumo, {"bytes": moved, "modo": res["modo"], "falhas": res["falhas"]})
@@ -3225,6 +3228,14 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/dados/resultado":
             g = lambda k: (q.get(k) or [""])[0]
             return DADOS.resultado(g("zona"), g("cat"), g("q"), int(g("offset") or 0), int(g("limit") or 200), g("usuario"))
+        if path == "/api/dados/panorama":
+            self.exigir(None)
+            return DADOS.indice_panorama((q.get("usuario") or [""])[0])
+        if path == "/api/dados/indice":
+            self.exigir(None)
+            g = lambda k: (q.get(k) or [""])[0]
+            return DADOS.indice_consulta(g("bloco"), g("cat"), g("pasta") or None, g("usuario"), g("q"), g("ordem") or "maior",
+                                         int(g("offset") or 0), int(g("limit") or 200), g("visao") or "arquivos")
         if path == "/api/mapa/lista":
             return {"mapas": mapas_conhecidos(), "aberto": MAPA.resumo() if MAPA.M["mapa"] else None}
         if path == "/api/mapa/arvore":
@@ -3527,6 +3538,22 @@ class Handler(BaseHTTPRequestHandler):
             return {"ok": True}
         if path == "/api/dados/marcar":
             return {"id": DADOS.marcar(b.get("no"))}
+        if path == "/api/dados/marcar_nos":
+            return {"ids": DADOS.marcar_nos(b.get("nos") or [])}
+        if path == "/api/dados/renomear":
+            self.exigir("limpeza")
+            return DADOS.renomear(b.get("no"), b.get("nome", ""))
+        if path == "/api/dados/nova_pasta":
+            self.exigir("limpeza")
+            return DADOS.nova_pasta(b.get("no"), b.get("nome", ""))
+        if path == "/api/dados/preflight_destino":
+            self.exigir("limpeza")
+            return DADOS.preflight_destino(b.get("nos") or [], b.get("destino"), b.get("modo", "mover"))
+        if path in ("/api/dados/mover", "/api/dados/copiar"):
+            self.exigir("limpeza")
+            tipo = path.rsplit("/", 1)[1]
+            getattr(DADOS, tipo)(b.get("nos") or [], b.get("destino"), b.get("resolucao", ""), dados_depois(tipo))
+            return {"ok": True}
         if path == "/api/dados/reset":
             DADOS.reset()
             return {"ok": True}
