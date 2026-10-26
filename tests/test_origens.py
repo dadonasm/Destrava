@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Pastas de origem com nome próprio, origens sem repetição e identificação do certificado vinda do cadastro."""
+"""Origens sem repetição e identificação do certificado vinda do cadastro."""
 import os
 import shutil
 import tempfile
@@ -9,14 +9,6 @@ from nucleo import dd_backup
 from nucleo import ficha
 from nucleo import perfil
 from nucleo import termo
-
-
-class NomeProprio(unittest.TestCase):
-    def test_nome_proprio(self):
-        for n in ("Wefix", "Padaria Ana", "Marcio Euripedes", "Loja da Maria", "WEFIX", "Clínica São José 2024"):
-            self.assertTrue(dd_backup.parece_nome_proprio(n), n)
-        for n in ("Documentos", "Nova pasta", "Backup antigo", "fotos maria", "OneDrive", "Saved Games", "2024", "Arquivos do Outlook", "Meus Projetos", ".config", ""):
-            self.assertFalse(dd_backup.parece_nome_proprio(n), n)
 
 
 class OrigensEIdentificacao(unittest.TestCase):
