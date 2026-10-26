@@ -240,6 +240,8 @@ body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{d
 @media print{#vidro,#vidrob{display:none}}
 #ilha.reduzida #ilhab{padding:0 10px;gap:0}.anelc{position:relative;width:38px;height:38px;flex:none;display:inline-block}.anelc .anel{width:38px;height:38px;display:block}
 .anelc .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+.anelc .num.pct{font-size:11px;letter-spacing:-.2px}.anelc .num.pct small{font-size:7.5px;margin-left:1px;font-weight:700}
+.anelc .cnt{position:absolute;right:-6px;bottom:-6px;width:15px;height:15px;border-radius:50%;background:#3b3f4a;color:#f4f4f6;font:800 10px/15px system-ui;text-align:center;font-style:normal}
 #ilhad{padding:2px 18px 16px;display:flex;flex-direction:column;gap:14px}
 .ilt{display:flex;flex-direction:column;gap:6px}.ilt .l1{display:flex;gap:8px;align-items:center;min-width:0}.ilt .ico svg{width:18px;height:18px;display:block}
 .ilt .det{font:11.5px ui-monospace,Menlo,Consolas,monospace;color:#a4a9b6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -321,6 +323,41 @@ button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-
 .sg-det{padding:4px 16px 14px 62px;font-size:13px;color:var(--mut);border-bottom:1px solid var(--line);background:var(--panel2)}.sg-det p{margin:8px 0 0}.sg-det .chip{font-size:12px}.sg-sub{margin-top:8px;font-size:12.5px}.sg-sub td{padding:4px 10px 4px 0;border:0}
 .sg-pe{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 16px;font-size:12.5px}
 @media (max-width:760px){.sg-head{display:none}.sg-row{grid-template-columns:20px 1fr 50px;gap:8px}.sg-row>.sg-rec,.sg-row>.sg-n,.sg-row>.sg-b,.sg-row>.sg-bar,.sg-row>[data-sl]{display:none}.sg-nome small.sg-meta{display:block}.sg-gd{display:none}.sg-grp{flex-wrap:wrap}.sg-grp>.mut{flex:1}.sg-top{overflow-x:auto;flex-wrap:nowrap}.sg-chips{flex-wrap:nowrap}.sg-det{padding-left:16px}}
+/* Gerenciamento de dados: grade de arquivos, trilha, menu ⋯ e escolha de destino */
+.sg-dados{grid-template-columns:20px minmax(0,1fr) 110px 66px 88px auto}
+.dg-u{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dg-d{font-size:12.5px}
+.dg-ac{display:flex;gap:4px;justify-content:flex-end;white-space:nowrap}.dg-ac .sm{padding:4px 9px;font-size:12.5px}
+.dg-lock{font-size:13px;text-align:center;cursor:help}
+.dg-ent{cursor:pointer}.dg-ent:hover,.dg-ent:focus{color:var(--azul);text-decoration:underline;outline:none}
+.dg-tri{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 16px 0}
+.dg-trilha{display:flex;gap:4px;align-items:center;flex-wrap:wrap;font-size:13.5px;min-width:0}.dg-trilha .sm{padding:4px 8px}.dg-trilha b{padding:4px 2px}
+.dg-chips{padding:0 16px 12px}
+.sg-nome small.dg-mot{white-space:normal;color:var(--warn)}.dg-lk{border:0;background:transparent;padding:0 0 0 4px;color:var(--azul);font:inherit;font-weight:600;text-decoration:underline;box-shadow:none;cursor:pointer}
+.dg-leg{padding:8px 16px;font-size:12.5px;color:var(--mut);border-bottom:1px solid var(--line)}
+.dg-bar{position:sticky;top:96px;z-index:6;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 16px;background:var(--panel);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.dg-bar .dg-cont{white-space:nowrap;font-size:14px}.dg-bar .sm{padding:6px 12px}.dg-bar.perigo{background:color-mix(in srgb,var(--err) 7%,var(--panel))}
+.dg-def{display:flex;gap:6px;align-items:center;margin:0 2px;color:var(--tx);font-size:13px;white-space:nowrap;cursor:pointer}
+.dg-idade{font-size:12.5px;margin:-6px 0 12px}
+.dg-velha{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0 0 14px}
+.dg-pan{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.dg-pc{margin:0;padding:16px}.dg-pc h3{margin:0}.dg-pc>p.mut{font-size:12.5px;margin:2px 0 8px}
+.dg-pi{display:flex;gap:10px;align-items:center;padding:8px 6px;border-top:1px solid var(--line);cursor:pointer;border-radius:8px;min-width:0}.dg-pi:hover,.dg-pi:focus{background:var(--panel2);outline:none}
+.dg-pi .ic{font-size:18px;flex:none}.dg-pi .t{flex:1;min-width:0}.dg-pi .t b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dg-pi .t small{display:block;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dg-pi .sm{padding:3px 8px}
+.sg-row.dg-realce{background:color-mix(in srgb,var(--azul) 12%,transparent);box-shadow:inset 3px 0 0 var(--azul)}
+.dg-bl{display:inline-flex;align-items:center;gap:7px}.dg-bl i{width:11px;height:11px;border-radius:3px;background:var(--c);flex:none}
+.dg-bl:hover{border-color:var(--c)}.sg-chip.dg-bl.on{background:var(--c);border-color:var(--c);color:#0b0f1a}.sg-chip.dg-bl.on i{background:#0b0f1a;opacity:.55}.sg-chip.dg-bl.on span{opacity:.75}
+.sg-chip.dg-bl.on[data-dgb="apps"]{color:#fff}.sg-chip.dg-bl.on[data-dgb="apps"] i{background:#fff}.dg-abas{margin:0 0 14px;display:inline-flex}
+.dg-ren{margin:0!important;padding:4px 8px!important;font-weight:600;font-size:14px!important}
+.cock i[data-bl]{cursor:pointer}.cock i[data-bl]:hover,.cock i[data-bl]:focus{filter:brightness(1.12);outline:none}.cock i.apaga{opacity:.28}
+.lgb{display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;background:transparent;padding:3px 9px;border-radius:99px;font-size:12.5px;box-shadow:none;color:var(--tx)}
+.lgb:hover{border-color:var(--line);background:var(--panel2)}.lgb.on{border-color:var(--azul);background:color-mix(in srgb,var(--azul) 10%,transparent)}.lgb i,.lgs i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.lgs{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;color:var(--mut)}
+.dmenu{position:absolute;z-index:60;min-width:200px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.25);padding:6px;display:flex;flex-direction:column}
+.dmenu button{border:0;background:transparent;text-align:left;padding:8px 10px;border-radius:8px;box-shadow:none;font-size:13.5px}.dmenu button:hover,.dmenu button:focus{background:var(--panel2);outline:none}.dmenu hr{border:0;border-top:1px solid var(--line);margin:4px 0;width:100%}
+.dd-ls{display:flex;flex-direction:column;max-height:46vh;overflow:auto;border:1px solid var(--line);border-radius:12px;margin-top:8px}
+.dd-it{display:flex;gap:8px;justify-content:space-between;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;text-align:left;padding:10px 12px;box-shadow:none}.dd-it:hover{background:var(--panel2)}.dd-it:last-child{border-bottom:0}
+.dd-op{display:flex;gap:8px;align-items:center;color:var(--tx);font-size:13px;margin:6px 0 0}
+@media (max-width:760px){.sg-dados{grid-template-columns:20px minmax(0,1fr) auto}.sg-dados>.dg-u,.sg-dados>.dg-d,.sg-dados>.sg-num{display:none}.dg-ac [data-abr]{display:none}}
 .pcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}.pcols .card{margin-bottom:0}@media (max-width:900px){.pcols{grid-template-columns:1fr}}
 button.pli{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 6px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
 button.pli:hover{background:var(--panel2)}.pli .grow{min-width:0}.pli .cod{display:block}.pli small{display:block;color:var(--mut);font-size:11.5px;text-align:right;margin-top:3px}
@@ -533,15 +570,15 @@ function dialog(o){
     const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
     d.innerHTML=`<div class="box" style="max-width:${o.largura||560}px">${o.titulo?`<h2>${esc(o.titulo)}</h2>`:""}<div>${o.html||""}</div>
     ${o.check?`<label style="display:flex;gap:9px;align-items:flex-start;font-size:13.5px;color:var(--tx);margin:14px 0 0;cursor:pointer"><input type="checkbox" id="dchk" style="margin-top:3px"><span>${esc(o.check)}</span></label>`:""}
-    ${o.texto?`<label for="dtxt">${esc(o.texto)}</label><input type="text" id="dtxt" autocomplete="off">`:""}
+    ${o.texto?`<label for="dtxt">${esc(o.texto)}</label><input type="text" id="dtxt" autocomplete="off" value="${esc(o.valor||"")}">`:""}
     <div class="row" style="margin-top:18px;justify-content:flex-end">${o.semCancelar?"":`<button id="dcn">${esc(o.cancelar||"Cancelar")}</button>`}<button id="dok" class="${o.perigo?"dng":"pri"}">${esc(o.ok||"Confirmar")}</button></div></div>`;
     $("#layer").appendChild(d);
     const ok=$("#dok",d),chk=$("#dchk",d),tx=$("#dtxt",d);
-    const need=()=>{ok.disabled=!((!chk||chk.checked)&&(!tx||tx.value.trim().toUpperCase()===(o.exige||"").toUpperCase()))};
+    const need=()=>{ok.disabled=!((!chk||chk.checked)&&(!tx||(o.livre?!!tx.value.trim():tx.value.trim().toUpperCase()===(o.exige||"").toUpperCase())))};
     if(chk)chk.onchange=need;if(tx)tx.oninput=need;need();
     const close=v=>{d.remove();document.removeEventListener("keydown",kd);res(v)};
     const kd=e=>{if(e.key==="Escape"&&!o.semCancelar)close(null)};document.addEventListener("keydown",kd);
-    ok.onclick=()=>close({texto:tx?tx.value:""});const cn=$("#dcn",d);if(cn)cn.onclick=()=>close(null);
+    ok.onclick=()=>close({texto:tx?tx.value:""});if(tx&&o.livre)tx.onkeydown=ev=>{if(ev.key==="Enter"&&!ok.disabled)ok.click()};const cn=$("#dcn",d);if(cn)cn.onclick=()=>close(null);
     (tx||ok).focus();
   });
 }
@@ -553,7 +590,7 @@ async function loadCtx(){try{CTX.t=await api("/api/termo")}catch(e){CTX.t=null}r
 const ownT=()=>CTX.t&&CTX.t.status&&CTX.t.status.dono==="terceiros";
 function renderChrome(){
   const t=CTX.t,st=t&&t.status;
-  const items=[["home","Home","home"],["backup","Backup","backup"],["mapas","Mapas","mapa"],["dados","Dados","dados"],["maq","Máquinas","maq"],["os","OS","os"]];
+  const items=[["home","Home","home"],["backup","Backup","backup"],["mapas","Mapas","mapa"],["dados","Gerenciamento de dados","dados"],["maq","Máquinas","maq"],["os","OS","os"]];
   $("#gaveta").innerHTML=items.map(i=>`<button class="gv ${(ABA_DE[view]||view)===i[0]?"on":""}" data-view="${i[0]}" title="${i[1]}"><span class="ic">${ic(i[2])}</span><span class="lb">${i[1]}</span></button>`).join("")+
    `<span class="sp"></span><div class="gvfoot"><b>${esc(t?t.nome:info.host||"")}</b><button class="mid" id="midc" title="Copiar o código da máquina">${esc(t?t.mid:"")}</button></div><button class="gv" id="gvtoggle" title="Recolher"><span class="ic">☰</span><span class="lb">Recolher</span></button>`;
   $$("#gaveta [data-view]").forEach(b=>b.onclick=()=>nav(b.dataset.view));
@@ -762,7 +799,7 @@ let hp=null;
 function nav(v,arg){
   view=v;HOMEP=false;markNav();renderChrome();clearInterval(hp);
   $("#steps").classList.toggle("hide",v!=="backup");
-  if(v==="home")drawHome();else if(v==="perfil")drawPerfil();else if(v==="maq")drawMaq(arg);else if(v==="manter")drawManter(arg,false);else if(v==="dados")drawDados();else if(v==="mapas")drawMapas();else if(v==="os")drawOS();else{setWide(false);renderSteps();draw()}
+  if(v==="home")drawHome();else if(v==="perfil")drawPerfil();else if(v==="maq")drawMaq(arg);else if(v==="manter")drawManter(arg,false);else if(v==="dados"){DG.aba="geral";drawDados()}else if(v==="mapas")drawMapas();else if(v==="os")drawOS();else{setWide(false);renderSteps();draw()}
 }
 let HOMEP=false;  // HOMEP: ficha desta máquina aberta a partir da Home
 async function drawHome(){
@@ -1377,11 +1414,11 @@ function ilhaDesenha(){
   el.classList.toggle("hide",!a&&!av);el.classList.toggle("reduzida",mini);e2.classList.add("hide");
   el.classList.toggle("ok",!!av&&av.tipo==="ok");el.classList.toggle("erro",!!av&&av.tipo==="erro");
   if(av)b.innerHTML=`<span class="sinal">${av.tipo==="ok"?"✓":"✕"}</span><span class="txt"><b>${esc(av.texto)}</b></span>`;  // o aviso de fim passa na frente por 6 s
-  else if(mini)b.innerHTML=`<span class="anelc">${ilhaAnel(a.pct)}<b class="num">${n}</b></span>`;
+  else if(mini)b.innerHTML=`<span class="anelc">${ilhaAnel(a.pct)}${a.pct!=null?`<b class="num pct">${a.pct}<small>%</small></b>${n>1?`<i class="cnt">${n}</i>`:""}`:`<b class="num">${n}</b>`}</span>`;
   else if(a)b.innerHTML=`${ilhaAnel(a.pct)}<span class="txt"><b>${esc(ilhaTitulo(a))}</b>${a.pct!=null?" "+a.pct+"%":""}</span>${n>1?`<span class="eta">+${n-1}</span>`:a.eta||a.info?`<span class="eta">${esc(a.eta?ilhaEta(a.eta):a.info)}</span>`:""}`;
   b.setAttribute("aria-expanded",ILHA.aberta);b.disabled=!a;
   b.setAttribute("aria-label",a?(n>1?n+" processos rodando: ":"")+ILHA.ativas.map(x=>ilhaTitulo(x)+(x.pct!=null?" "+x.pct+"%":"")).join("; ")+". Mostrar detalhes":av?av.texto:"");
-  b.title=mini?ILHA.ativas.map(ilhaTitulo).join(" · "):"";
+  b.title=mini?ILHA.ativas.map(x=>ilhaTitulo(x)+(x.pct!=null?" "+x.pct+"%":"")).join(" · "):"";
   el.classList.toggle("aberta",ILHA.aberta);d.classList.toggle("hide",!ILHA.aberta);
   if(!ILHA.aberta)return;
   d.innerHTML=ILHA.ativas.map(x=>`<div class="ilt"><div class="l1"><span class="ico">${ic(ILHA_IC[x.id]||"hist")}</span><b class="grow">${esc(ilhaTitulo(x))}</b><span class="eta">${x.pct!=null?x.pct+"%":""}</span></div>
@@ -1455,17 +1492,36 @@ async function drawDados(){
 async function dadosIntro(e){
   const p=await api("/api/permissoes");
   $("#main").innerHTML=`<div class="card"><div class="row" style="gap:16px;align-items:flex-start"><div style="width:54px;height:54px;border-radius:16px;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--acc);flex:none"><span style="width:28px;height:28px;display:block">${ic("dados")}</span></div>
-   <div class="grow"><h2 style="font-size:22px">Dados: o que está pesando nesta máquina</h2><p class="h" style="margin:4px 0 0">Faz uma varredura geral e separa o que dá para limpar sem risco do que está parado e ocupando espaço. Durante a varredura o programa <b>só lê</b>. Nada é removido até você revisar e confirmar.</p></div></div>
-   <div class="zn" style="margin-top:16px"><div class="zc z-v"><b>Limpeza imediata</b><span>Caches, instaladores já usados e resíduos que se recriam. Zero risco.</span></div>
-    <div class="zc z-a"><b>Arquivos parados</b><span>Projetos, gravações, downloads e arquivos grandes sem uso. Você decide, com backup antes se quiser.</span></div>
-    <div class="zc z-r"><b>Bloqueado</b><span>Sistema, senhas, chaves e perfis ativos. Nunca viram opção de remoção.</span></div></div>
+   <div class="grow"><h2 style="font-size:22px">Gerenciamento de dados</h2><p class="h" style="margin:4px 0 0">A primeira varredura monta o cockpit do disco, separa o que dá para limpar sem risco e guarda a lista de arquivos para você navegar, mover, copiar e limpar. Ela <b>só lê</b>; nada sai do lugar sem a sua confirmação.</p></div></div>
    ${p.mac&&!p.acesso_total?`<div class="warnbox" style="margin-top:14px"><b>Acesso Total ao Disco desligado.</b> A varredura vai enxergar menos no Mac. <button class="sm" id="dperm" style="margin-left:6px">Liberar agora</button></div>`:""}
-   <div class="row" style="margin-top:16px"><div><label for="did">Considerar parado após</label><select id="did"><option value="60">60 dias</option><option value="90" selected>90 dias</option><option value="180">180 dias</option></select></div>
-    <div><label for="dmb">Arquivos grandes a partir de</label><select id="dmb"><option value="50">50 MB</option><option value="100" selected>100 MB</option><option value="500">500 MB</option></select></div></div>
-   <div class="row" style="margin-top:16px"><button class="pri" id="dgo" style="font-size:15px;padding:11px 24px">Varrer esta máquina</button><button id="dexp0">Explorar pastas</button></div></div>`;
+   <div class="row" style="margin-top:18px"><button class="pri" id="dgo" style="font-size:15px;padding:11px 24px">Fazer a primeira varredura</button><button id="dexp0">Explorar pastas</button></div></div>`;
   const dp=$("#dperm");if(dp)dp.onclick=()=>nav("perfil");
-  $("#dgo").onclick=()=>safe(async()=>{DS.init=false;DS.sel=new Set();await api("/api/dados/varrer",{idle_dias:+$("#did").value,min_mb:+$("#dmb").value});drawDados()});
-  $("#dexp0").onclick=()=>safe(()=>dadosExplorar(0));
+  $("#dgo").onclick=()=>safe(()=>dgAtualizar(true));
+  $("#dexp0").onclick=()=>{if(e.indice&&e.indice.existe){DG.aba="ger";DG.visao="pastas";DG.pasta=0;dgSalva();dadosResultado(e)}else safe(()=>dadosExplorar(0))};
+}
+/* varrer (primeira vez ou Atualizar): opções lembradas; o índice antigo vale até a varredura nova terminar */
+async function dgAtualizar(primeira){
+  let v={idle:90,mb:100};try{Object.assign(v,JSON.parse(lsGet("dd_varrer","{}"))||{})}catch(x){}
+  let esquecer=false;const tem=!primeira&&DS.e&&DS.e.indice&&DS.e.indice.existe;
+  const op=(id,vals,sel,suf)=>`<select id="${id}">${vals.map(x=>`<option value="${x}" ${x==sel?"selected":""}>${x} ${suf}</option>`).join("")}</select>`;
+  const pr=dialog({titulo:primeira?"Primeira varredura":"Atualizar a varredura",ok:"Varrer agora",
+    html:`<p class="mut" style="margin:0 0 6px">Lê as pastas dos usuários, só leitura. Pode levar alguns minutos em discos grandes.${tem?" Enquanto varre, o resultado atual continua guardado até a nova terminar.":""}</p>
+     <div class="row"><div><label for="uid">Considerar parado após</label>${op("uid",[60,90,180],v.idle,"dias")}</div><div><label for="umb">Arquivos grandes a partir de</label>${op("umb",[50,100,500],v.mb,"MB")}</div></div>
+     ${tem?'<p style="margin:16px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="sm gh" id="uesq">Esquecer esta varredura</button><span class="mut" style="font-size:12px">apaga o cockpit, as sugestões e a lista de arquivos guardados neste computador</span></p>':""}`});
+  const m=$("#layer .modal:last-child");
+  if(m){$("#uid",m).onchange=ev=>v.idle=+ev.target.value;$("#umb",m).onchange=ev=>v.mb=+ev.target.value;const u=$("#uesq",m);if(u)u.onclick=()=>{esquecer=true;$("#dcn",m).click()}}
+  const r=await pr;
+  if(esquecer){
+    const x=await dialog({titulo:"Esquecer esta varredura?",html:"<p>Apaga o cockpit, as sugestões e a lista de arquivos guardados neste computador. Os seus arquivos não são tocados.</p>",ok:"Esquecer",perigo:true});
+    if(!x)return;await api("/api/dados/reset",{});DS.init=false;DS.sel=new Set();DG.sel.clear();DG.pasta=0;return drawDados();
+  }
+  if(!r)return;
+  lsSet("dd_varrer",JSON.stringify({idle:v.idle,mb:v.mb}));DS.init=false;DS.sel=new Set();DG.sel.clear();DG.pasta=0;
+  await api("/api/dados/varrer",{idle_dias:v.idle,min_mb:v.mb});drawDados();
+}
+function dgIdade(q){
+  const s=Date.now()/1000-q;if(s<90)return "agora há pouco";if(s<3600)return "há "+Math.round(s/60)+" min";if(s<86400)return "há "+Math.round(s/3600)+" h";
+  const d=Math.floor(s/86400);return "há "+d+(d===1?" dia":" dias");
 }
 function dadosVarrendo(){
   $("#main").innerHTML=`<div class="card"><h2>Varrendo a máquina…</h2><p class="h">Só leitura. Pode levar alguns minutos em discos grandes.</p><div class="bar"><i id="dpb"></i></div>
@@ -1477,54 +1533,302 @@ function dadosVarrendo(){
     $("#dpb").style.width=e.pct+"%";$("#df").textContent=nf(e.arquivos);$("#dd").textContent=nf(e.pastas);$("#dz").textContent=fmt(e.bytes);$("#db").textContent=nf(e.bloqueados);$("#dc").textContent=e.atual;
     if(e.fase!=="varrendo"){clearInterval(DT);if(e.fase==="erro")toast("A varredura falhou: "+e.erro,"err");drawDados()}},700);
 }
+/* ---------- Gerenciamento de dados: o cockpit no topo é o filtro; abaixo, Sugestão de varredura e Gerenciamento completo ---------- */
+const DG=Object.assign({aba:"geral",bloco:"",cat:"",visao:"arquivos",ordem:"maior",usr:"",fechados:[]},(()=>{try{return JSON.parse(lsGet("dd_dados","{}"))||{}}catch(e){return {}}})(),
+  {pasta:0,q:"",sel:new Map(),rows:[],pastas:[],r:null});
+const dgSalva=()=>lsSet("dd_dados",JSON.stringify({aba:DG.aba,bloco:DG.bloco,cat:DG.cat,visao:DG.visao,ordem:DG.ordem,usr:DG.usr,fechados:DG.fechados}));
+const DG_BL={midias:"Mídias",documentos:"Documentos",apps:"Dados de apps e outros",limpavel:"Limpável"};
+const DG_COR={midias:"#5aa9ff",documentos:"#a78bfa",apps:"#6b7280",limpavel:"#3fb27f"};  // as cores do cockpit: barra, legenda e chips
+const dgCat=c=>c==="Outros"?"Outros arquivos":c;
+let DGX={},DGG={};const DGM={el:null};
 async function dadosResultado(e){
+  DS.e=e;
   const ck=e.cockpit||{total:0,livre:0,usado:0,midias:0,documentos:0,limpavel:0,sistema:0,parado:0};
   const R=await api("/api/dados/resultado?limit=1");
   const nz=z=>R.cats.filter(c=>c.zona===z),sz=z=>nz(z).reduce((a,c)=>a+c.bytes,0),nn=z=>nz(z).reduce((a,c)=>a+c.n,0);
   const T=ck.total||1,pc=x=>Math.max(0,x/T*100);
-  const seg=[["Mídias",ck.midias,"#5aa9ff"],["Documentos",ck.documentos,"#a78bfa"],["Dados de apps e outros",ck.apps||0,"#6b7280"],["Sistema e fora da sua pasta",ck.sistema,"#3b4252"],["Limpável",ck.limpavel,"#3fb27f"],["Livre",ck.livre,"var(--line)"]];
+  const seg=[["Mídias",ck.midias,DG_COR.midias,"midias"],["Documentos",ck.documentos,DG_COR.documentos,"documentos"],["Dados de apps e outros",ck.apps||0,DG_COR.apps,"apps"],["Sistema e fora da sua pasta",ck.sistema,"#3b4252",""],["Limpável",ck.limpavel,DG_COR.limpavel,"limpavel"],["Livre",ck.livre,"var(--line)",""]];
   if(!DS.init){DS.init=true;DS.tab=nn("verde")?"verde":"ambar";const v=await api("/api/dados/resultado?zona=verde&limit=1000");v.rows.forEach(r=>{if(r.pre)DS.sel.add(r.id)})}
   DS.usrAtual=e.usuario_atual||"";
   const pu=Object.entries(ck.por_usuario||{}).sort((a,b)=>b[1]-a[1]);
-  $("#main").innerHTML=(!e.cockpit?`<div class="card"><div class="row"><h2 class="grow" style="margin:0">Itens escolhidos ao explorar</h2><button class="sm" id="dexp">Explorar pastas</button><button class="sm" id="dre">Varrer esta máquina</button></div><p class="h" style="margin-top:6px">Ainda sem varredura: aparecem só os arquivos e pastas que você marcou. A varredura mostra o resto (caches, parados, bloqueados).</p></div>`:`<div class="card"><div class="row"><h2 class="grow" style="margin:0">Cockpit do disco</h2><button class="sm" id="dexp">Explorar pastas</button><button class="sm" id="dre">${ic("refresh")}<span style="margin-left:6px">Varrer de novo</span></button></div>
-   <p class="h" style="margin-top:2px">${fmt(ck.usado)} usados de ${fmt(ck.total)} · <b>${fmt(ck.livre)} livres</b> (${Math.round(pc(ck.livre))}%)</p>
-   <div class="cock" role="img" aria-label="Uso do disco">${seg.map(s=>`<i style="width:${pc(s[1])}%;background:${s[2]}" title="${s[0]}: ${fmt(s[1])}"></i>`).join("")}</div>
-   <div class="lgd">${seg.map(s=>`<span><i style="background:${s[2]}"></i>${s[0]} <b>${fmt(s[1])}</b></span>`).join("")}</div>
+  const ger=DG.aba==="ger",on=s=>ger&&DG.bloco===s[3],ix=e.indice||{};
+  $("#main").innerHTML=(!e.cockpit?`<div class="card"><div class="row"><h2 class="grow" style="margin:0">Itens escolhidos ao explorar</h2><button class="sm" id="dexp">Explorar pastas</button><button class="sm" id="dre">Varrer esta máquina</button></div><p class="h" style="margin-top:6px">Ainda sem varredura: aparecem só os arquivos e pastas que você marcou. A varredura mostra o resto (caches, parados, bloqueados).</p></div>`:`<div class="card"><div class="row"><h2 class="grow" style="margin:0">Gerenciamento de dados</h2><button class="sm" id="dexp">Explorar pastas</button><button class="sm pri" id="dre">${ic("refresh")}<span style="margin-left:6px">Atualizar</span></button></div>
+   <p class="h" style="margin-top:2px">Cockpit do disco: ${fmt(ck.usado)} usados de ${fmt(ck.total)} · <b>${fmt(ck.livre)} livres</b> (${Math.round(pc(ck.livre))}%)</p>
+   ${ix.quando?`<p class="mut dg-idade">Última varredura: <b>${dgIdade(ix.quando)}</b> (${new Date(ix.quando*1000).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}) · ${nf(ix.n)} arquivos${ix.mexidas?` · você mexeu em ${nf(ix.mexidas)} ${ix.mexidas===1?"item":"itens"} desde então`:""}</p>`:""}
+   <div class="cock" role="group" aria-label="Uso do disco por categoria">${seg.map(s=>`<i ${s[3]?`data-bl="${s[3]}" role="button" tabindex="0" aria-pressed="${on(s)}" aria-label="${s[0]}: ${fmt(s[1])}. Ver os arquivos"`:""} class="${ger&&DG.bloco&&!on(s)?"apaga":""}" style="width:${pc(s[1])}%;background:${s[2]}" title="${s[0]}: ${fmt(s[1])}${s[3]?" · clique para ver os arquivos":" · fora das pastas dos usuários: só como número"}"></i>`).join("")}</div>
+   <div class="lgd">${seg.map(s=>s[3]?`<button class="lgb ${on(s)?"on":""}" data-bl="${s[3]}" aria-pressed="${on(s)}"><i style="background:${s[2]}"></i>${s[0]} <b>${fmt(s[1])}</b></button>`:`<span class="lgs" title="Fora das pastas dos usuários: só como número"><i style="background:${s[2]}"></i>${s[0]} <b>${fmt(s[1])}</b></span>`).join("")}</div>
+   <p class="mut" style="font-size:12.5px;margin:8px 0 0">Clique numa categoria para ver os arquivos dela no Gerenciamento completo.</p>
    ${pu.length>1?`<p class="mut" style="font-size:12.5px;margin:8px 0 0">Por usuário: ${pu.map(x=>`${esc(x[0])} <b>${fmt(x[1])}</b>`).join(" · ")}</p>`:""}
    ${(e.sem_acesso||[]).length?`<div class="infobox">Sem permissão para ler a pasta de: <b>${e.sem_acesso.map(esc).join(", ")}</b>. Rode como administrador (no Mac e no Linux, com sudo) para incluir esses usuários.</div>`:""}
-   <p class="mut" style="font-size:12px;margin:10px 0 0">Medido pelo espaço <b>real</b> que cada arquivo ocupa no disco, só na sua pasta pessoal. O restante aparece como “Sistema e fora da sua pasta”. O macOS ainda soma snapshots e itens removíveis, então o Ajustes pode mostrar um pouco mais ou menos.</p>
+   <p class="mut" style="font-size:12px;margin:10px 0 0">Medido pelo espaço <b>real</b> que cada arquivo ocupa no disco, só nas pastas dos usuários. O restante aparece como “Sistema e fora da sua pasta”. O macOS ainda soma snapshots e itens removíveis, então o Ajustes pode mostrar um pouco mais ou menos.</p>
    ${ck.nuvem_n?`<div class="infobox">${nf(ck.nuvem_n)} arquivo(s) estão só na nuvem (iCloud/OneDrive) e <b>não ocupam espaço aqui</b>: foram ignorados, e o programa nunca baixa nem mexe neles.</div>`:""}${ck.aviso?`<div class="warnbox">${esc(ck.aviso)}</div>`:""}${e.fase==="cancelado"?'<div class="warnbox">A varredura foi cancelada: o resultado é parcial.</div>':""}${e.bloqueados?`<div class="infobox">${nf(e.bloqueados)} pasta(s) não puderam ser lidas por falta de permissão.</div>`:""}</div>`)+`
-  <div class="zn" style="margin-bottom:16px">
-   <div class="zc z-v"><b style="font-size:20px">${fmt(sz("verde"))}</b><b>Limpeza imediata</b><span>${nf(nn("verde"))} item(ns) que se recriam. Zero risco.</span><button class="sm pri" style="margin-top:8px" data-t="verde">Revisar e limpar</button></div>
-   <div class="zc z-a"><b style="font-size:20px">${fmt(sz("ambar"))}</b><b>Arquivos parados</b><span>${nf(nn("ambar"))} item(ns) sem uso. Backup antes, se quiser.</span><button class="sm" style="margin-top:8px" data-t="ambar">Revisar</button></div>
-   <div class="zc z-r"><b style="font-size:20px">${fmt(sz("vermelha"))}</b><b>Bloqueado</b><span>${nf(nn("vermelha"))} item(ns) protegidos. Só informativo.</span><button class="sm gh" style="margin-top:8px" data-t="vermelha">Ver</button></div></div>
-  <div class="card"><div class="tabs" role="tablist">${["verde","ambar","vermelha"].map(z=>`<button class="tb ${DS.tab===z?"on":""}" role="tab" data-t="${z}">${ZN[z][0]} (${nn(z)})</button>`).join("")}</div>
-   <p class="h" style="margin-top:0">${ZN[DS.tab][1]}</p><div class="row" style="gap:8px;margin-bottom:8px"><input type="text" id="dq" placeholder="Filtrar pelo caminho…" value="${esc(DS.q)}" class="grow" style="margin:0">${(R.usuarios||[]).length>1?`<select id="dusr" aria-label="Filtrar por usuário" style="width:auto;margin:0"><option value="">Todos os usuários</option>${R.usuarios.map(u=>`<option value="${esc(u)}" ${DS.usr===u?"selected":""}>${esc(u)}</option>`).join("")}</select>`:""}</div><div id="dlist"></div></div>
-  <div class="actbar ${DS.tab==="vermelha"?"hide":""}" id="dbar"><div class="grow"><b id="dsel">0 selecionados</b><div class="mut" style="font-size:12px" id="dnote"></div></div>
-   <label style="display:flex;gap:6px;align-items:center;margin:0;color:var(--tx);font-size:13px"><input type="checkbox" id="ddef"> Apagar de vez <span class="mut">(sem Lixeira)</span></label>
-   <button class="pri" id="dclean">Limpar selecionados</button><button id="doff">Mover para disco externo…</button></div>`;
+  <div class="sg-abas dg-abas" role="tablist">${[["geral","Visão geral"],["sug","Sugestão de varredura"],["ger","Gerenciamento completo"]].map(([k,t])=>`<button role="tab" aria-selected="${DG.aba===k}" class="${DG.aba===k?"on":""}" data-dga="${k}">${t}</button>`).join("")}</div>
+  <div id="dcorpo"></div>`;
+  const ir=bl=>{const igual=ger&&DG.bloco===bl;DG.aba="ger";DG.bloco=igual?"":bl;DG.cat="";DG.pasta=0;DG.q="";dgSalva();dadosResultado(e)};
+  $$("[data-bl]").forEach(b=>{b.onclick=()=>ir(b.dataset.bl);b.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();ir(b.dataset.bl)}}});
+  $$("[data-dga]").forEach(b=>b.onclick=()=>{DG.aba=b.dataset.dga;dgSalva();dadosResultado(e)});
+  $("#dre").onclick=()=>safe(()=>dgAtualizar(!e.cockpit));
+  $("#dexp").onclick=()=>{if(e.indice&&e.indice.existe){DG.aba="ger";DG.visao="pastas";DG.pasta=0;DG.q="";dgSalva();dadosResultado(e)}else safe(()=>dadosExplorar(0))};
+  if(ger)return safe(()=>dgGerenciar());
+  if(DG.aba==="sug")return dgSugestao(e,R,sz,nn);
+  dgGeral(e,sz,nn);
+}
+/* ---- aba Visão geral (abre ao entrar): avisos, sugestões em números e onde está o peso ---- */
+function dgGeral(e,sz,nn){
+  const ix=e.indice||{},dias=ix.quando?(Date.now()/1000-ix.quando)/86400:0;
+  const velha=ix.quando&&dias>7?`Varredura de ${Math.floor(dias)} dias atrás: os números podem ter mudado.`:ix.mexidas>=10?`Você mexeu em ${nf(ix.mexidas)} itens desde a varredura: atualize para os números certos.`:"";
+  const card=(z,cls,tit,txt,bt)=>`<div class="zc ${cls}"><b style="font-size:20px">${fmt(sz(z))}</b><b>${tit}</b><span>${nf(nn(z))} ${txt}</span><button class="sm ${z==="verde"?"pri":z==="vermelha"?"gh":""}" style="margin-top:8px" data-zt="${z}">${bt}</button></div>`;
+  $("#dcorpo").innerHTML=`${velha?`<div class="warnbox dg-velha"><span>${velha}</span><button class="sm pri" id="dgatu">Atualizar</button></div>`:""}
+   <div class="zn" style="margin-bottom:16px">${card("verde","z-v","Limpeza imediata","item(ns) que se recriam. Zero risco.","Revisar e limpar")}${card("ambar","z-a","Arquivos parados","item(ns) sem uso. Backup antes, se quiser.","Revisar")}${card("vermelha","z-r","Bloqueado","item(ns) protegidos. Só informativo.","Ver")}</div>
+   <div class="dg-pan" id="dgpan"><div class="card"><p class="mut" style="margin:0">Procurando onde está o peso…</p></div></div>`;
+  const a=$("#dgatu");if(a)a.onclick=()=>safe(()=>dgAtualizar());
+  $$("[data-zt]").forEach(b=>b.onclick=()=>{DG.aba="sug";DS.tab=b.dataset.zt;dgSalva();dadosResultado(e)});
+  safe(async()=>{
+    const r=await api("/api/dados/panorama");const el=$("#dgpan");if(!el||view!=="dados"||DG.aba!=="geral")return;
+    if(!r.estado.existe){el.innerHTML=`<div class="card"><h3>Onde está o peso</h3><p class="mut">Falta a lista de arquivos desta máquina (varredura antiga ou apagada).</p><button class="pri" id="dgpv">Atualizar</button></div>`;$("#dgpv").onclick=()=>safe(()=>dgAtualizar());return}
+    const casa=/^(\/Users\/[^/]+|\/home\/[^/]+|\/root|[A-Za-z]:\\Users\\[^\\]+)/,dir=x=>x.path.slice(0,Math.max(0,x.path.length-x.nome.length-1)).replace(casa,"~")||"~";
+    const it=(x,pasta,sub)=>`<div class="dg-pi" role="button" tabindex="0" data-pi="${pasta?x.no:x.pasta_no}" data-re="${pasta?0:x.no}" title="${esc(x.path)}"><span class="ic">${pasta?"📁":DG_ICO[x.previa]||"📄"}</span>
+      <div class="t"><b>${esc(x.nome)}${x.motivo?' <span title="'+esc(x.motivo)+'">🔒</span>':""}</b><small>${esc(x.motivo?"🔒 "+x.motivo:sub)}</small></div><b class="sg-num">${fmt(x.bytes)}</b>${!pasta&&x.previa?`<button class="sm gh" data-ver="${x.no}" data-tp="${esc(x.previa)}" data-nm="${esc(x.nome)}" aria-label="Ver ${esc(x.nome)}">👁</button>`:""}</div>`;
+    const bloco=(tit,dica,rs,f)=>`<div class="card dg-pc"><h3>${tit}</h3><p class="mut">${dica}</p>${rs.length?rs.map(f).join(""):'<p class="mut" style="margin:0">Sem itens grandes.</p>'}</div>`;
+    el.innerHTML=bloco("Maiores pastas","Onde o espaço se concentra.",r.pastas,x=>it(x,true,"~/"+x.sub))+bloco("Maiores arquivos","Os que mais pesam sozinhos.",r.arquivos,x=>it(x,false,dir(x)))
+      +bloco("Parados há mais tempo","Arquivos de 50 MB ou mais, sem uso.",r.parados,x=>it(x,false,(x.dias!=null?nf(x.dias)+" d parado · ":"")+dir(x)));
+    ligarAcoesArq(el);
+    $$("[data-pi]",el).forEach(d=>{const f=ev=>{if(ev.target.closest("button"))return;DG.aba="ger";DG.visao="pastas";DG.pasta=+d.dataset.pi;DG.realce=+d.dataset.re;DG.q="";DG.cat="";DG.bloco="";dgSalva();dadosResultado(DS.e)};
+      d.onclick=f;d.onkeydown=ev=>{if(ev.key==="Enter"){ev.preventDefault();f(ev)}}});
+  });
+}
+/* ---- aba Sugestão de varredura: o que a varredura separou (limpar sem risco, parado, bloqueado) ---- */
+function dgSugestao(e,R,sz,nn){
+  $("#dcorpo").innerHTML=`<div class="card" style="padding:0"><div class="sg-top"><div class="sg-abas" role="tablist">${["verde","ambar","vermelha"].map(z=>`<button role="tab" aria-selected="${DS.tab===z}" class="${DS.tab===z?"on":""}" data-t="${z}">${ZN[z][0]} <span class="mut">${nn(z)}</span></button>`).join("")}</div>
+    <input type="search" class="sg-q" id="dq" placeholder="Buscar pelo caminho" aria-label="Buscar pelo caminho" value="${esc(DS.q)}" autocomplete="off">
+    ${(R.usuarios||[]).length>1?`<select id="dusr" class="sg-o" aria-label="Filtrar por usuário"><option value="">Todos os usuários</option>${R.usuarios.map(u=>`<option value="${esc(u)}" ${DS.usr===u?"selected":""}>${esc(u)}</option>`).join("")}</select>`:""}</div>
+   <div class="sg-acoes"><span class="mut">${ZN[DS.tab][1]}</span></div>
+   ${DS.tab==="vermelha"?"":dgBarraHtml({id:"dbar",cont:"dsel",def:"ddef",del:"dclean",botoes:'<button class="sm" id="doff" title="Copia, confere (SHA-256) e só então tira do computador">Disco externo…</button>'})}
+   <div id="dlist"></div></div>`;
   $$("[data-t]").forEach(b=>b.onclick=()=>{DS.tab=b.dataset.t;dadosResultado(e)});
-  $("#dre").onclick=()=>safe(async()=>{await api("/api/dados/reset",{});DS.init=false;drawDados()});
-  $("#dexp").onclick=()=>safe(()=>dadosExplorar(0));
   const du=$("#dusr");if(du)du.onchange=()=>{DS.usr=du.value;dadosLista()};
   let tq;$("#dq").oninput=()=>{clearTimeout(tq);tq=setTimeout(()=>{DS.q=$("#dq").value;dadosLista()},250)};
-  $("#dclean").onclick=()=>dadosConfirmar("limpar");$("#doff").onclick=()=>dadosConfirmar("offload");
-  $("#ddef").onchange=dadosSel;
+  if($("#dclean")){$("#dclean").onclick=()=>dadosConfirmar("limpar");$("#doff").onclick=()=>dadosConfirmar("offload");$("#ddef").onchange=dadosSel}
   dadosLista();
 }
 let DROWS=[];
 async function dadosLista(){
   const r=await api("/api/dados/resultado?zona="+DS.tab+"&q="+encodeURIComponent(DS.q)+"&usuario="+encodeURIComponent(DS.usr)+"&limit=800");DROWS=r.rows;
-  const varios=(r.usuarios||[]).length>1;
+  const el=$("#dlist");if(!el)return;
+  const varios=(r.usuarios||[]).length>1,bloq=DS.tab==="vermelha",cor={verde:"pessoal",ambar:"decide",vermelha:"sistema"}[DS.tab];
   const g={};r.rows.forEach(x=>{(g[x.cat]=g[x.cat]||[]).push(x)});
-  const bloq=DS.tab==="vermelha";
-  $("#dlist").innerHTML=Object.keys(g).map(c=>{const it=g[c],tot=it.reduce((a,x)=>a+x.bytes,0);const all=it.every(x=>DS.sel.has(x.id));
-    return `<div class="cat" style="margin-top:12px"><div class="n"><b>${esc(c)}</b><span>${it.length} item(ns) · ${fmt(tot)}</span></div>${bloq?"":`<label class="tg" aria-label="Marcar todos de ${esc(c)}"><input type="checkbox" data-cat="${esc(c)}" ${all?"checked":""}><s></s></label>`}</div>`+
-     it.map(x=>`<div class="drow">${bloq?'<span class="badge b-bad" style="margin-top:2px">🔒</span>':`<input type="checkbox" class="dsk" data-id="${x.id}" ${DS.sel.has(x.id)?"checked":""} aria-label="Marcar ${esc(x.titulo)}" style="margin-top:4px">`}<div class="t"><b>${esc(x.titulo)}${x.orfao?' <span class="badge b-warn">provável sem uso · precisa da sua aprovação</span>':""}${varios&&x.usuario?` <span class="badge b-mut">${esc(x.usuario)}</span>`:""}</b><span>${esc(x.motivo)}</span><span class="mono">${esc(x.path)}</span>${acoesArq(x)}</div><div class="sz">${fmt(x.bytes)}${x.dias!=null&&DS.tab==="ambar"?`<div class="mut" style="font-size:11px;font-weight:400;text-align:right">${x.dias} d parado</div>`:""}</div></div>`).join("")}).join("")||'<p class="mut">Nada nesta faixa.</p>';
-  $$(".dsk").forEach(c=>c.onchange=()=>{const id=+c.dataset.id;c.checked?DS.sel.add(id):DS.sel.delete(id);dadosSel();dadosLista.keep=1});
-  ligarAcoesArq($("#dlist"));
-  $$("[data-cat]").forEach(c=>c.onchange=()=>{(g[c.dataset.cat]||[]).forEach(x=>c.checked?DS.sel.add(x.id):DS.sel.delete(x.id));dadosLista()});
-  dadosSel();
+  DGX={};DGG={};
+  el.innerHTML=Object.keys(g).length?dgCabeca(!bloq,false)+Object.keys(g).map(c=>{const it=g[c],tot=it.reduce((a,x)=>a+x.bytes,0),fk="s:"+DS.tab+":"+c,fe=DG.fechados.includes(fk);
+    DGG[fk]=bloq?[]:it.map(x=>x.id);
+    return dgGrupo(fk,c,`${it.length} item(ns) · ${fmt(tot)}`,cor,fe,!bloq)+(fe?"":it.map(x=>{const o={k:x.id,no:x.no,nome:x.titulo,sub:x.motivo,path:x.path,usuario:varios?x.usuario:"",dias:x.dias,bytes:x.bytes,tipo:x.tipo,previa:x.previa,pode_abrir:x.pode_abrir,
+      trava:bloq,motivo:bloq?x.motivo:"",selo:x.orfao?'<span class="badge b-warn">provável sem uso · precisa da sua aprovação</span>':"",marc:DS.sel.has(x.id)};DGX[x.no]=o;return dgLinha(o,"dsk")}).join(""))}).join("")
+    :'<p class="mut" style="padding:16px">Nada nesta faixa.</p>';
+  $$(".dsk",el).forEach(c=>c.onchange=()=>{const id=+c.dataset.k;c.checked?DS.sel.add(id):DS.sel.delete(id);c.closest(".sg-row").classList.toggle("off",!c.checked);dgGruposSync(DS.sel);dadosSel()});
+  $$("[data-gk]",el).forEach(c=>{c.onclick=ev=>ev.stopPropagation();c.onchange=()=>{(DGG[c.dataset.gk]||[]).forEach(id=>c.checked?DS.sel.add(id):DS.sel.delete(id));dadosLista()}});
+  dgLigarLinhas(el,()=>dadosLista());
+  dgGruposSync(DS.sel);dadosSel();
+}
+/* ---- peças da grade, iguais nas duas abas ---- */
+function dgCabeca(caixa,ordena){
+  const b=(k,t,c)=>ordena?`<button data-so="${k}" class="${c||""}">${t}${DG.ordem===k?" ▾":""}</button>`:`<span class="${c||""}">${t}</span>`;
+  return `<div class="sg-head sg-dados" aria-hidden="true"><span>${caixa&&ordena?'<input type="checkbox" id="dgall" title="Marcar tudo o que está na lista" tabindex="-1">':""}</span>${b("nome","Nome")}<span>Usuário</span>${b("parado","Parado","sg-num")}${b("maior","Tamanho","sg-num")}<span></span></div>`;
+}
+function dgGrupo(k,tit,info,cor,fe,caixa){
+  return `<div class="sg-grp sg-g-${cor}" data-dgg="${esc(k)}" role="button" tabindex="0" aria-expanded="${!fe}"><span class="sg-chev">${fe?"▸":"▾"}</span><b>${esc(tit)}</b><span class="sp1"></span><span class="mut">${info}</span>${caixa?`<label class="tg" aria-label="Marcar todos de ${esc(tit)}"><input type="checkbox" data-gk="${esc(k)}"><s></s></label>`:""}</div>`;
+}
+const DG_ICO={imagem:"🖼️",video:"🎬",audio:"🎵",pdf:"📕",texto:"📝"};
+function dgLinha(x,cls){
+  return `<div class="sg-row sg-dados ${x.marc?"":"off"}" data-row="${x.no}">
+   ${x.trava?`<span class="dg-lock" title="${esc(x.motivo||"Bloqueado: só para ver")}" aria-label="Bloqueado">🔒</span>`:`<input type="checkbox" class="${cls}" data-k="${x.k}" ${x.marc?"checked":""} aria-label="Marcar ${esc(x.nome)}">`}
+   <div class="sg-nome"><span class="ic">${x.tipo==="pasta"?"📁":DG_ICO[x.previa]||"📄"}</span><div style="min-width:0"><b class="${x.entrar?"dg-ent":""}" ${x.entrar?`data-entra="${x.no}" role="button" tabindex="0"`:""} title="${esc(x.nome)}">${esc(x.nome)}</b>${x.selo?" "+x.selo:""}${x.trava?`<small class="dg-mot" title="${esc(x.path)}">🔒 ${esc(x.motivo||"Bloqueado: só para ver")}${x.ajuda?` <button class="dg-lk" data-ajuda="${x.ajuda}" title="Abre a pasta do OneDrive no Finder: clique com o botão direito no arquivo e escolha Liberar espaço">Abrir pasta do OneDrive</button>`:""}</small>`:`<small title="${esc(x.path)}">${esc(x.sub||x.path)}</small>`}<small class="sg-meta">${[x.usuario,x.dias!=null?nf(x.dias)+" d parado":"",x.bytes==null?"":fmt(x.bytes)].filter(Boolean).map(esc).join(" · ")}</small></div></div>
+   <span class="dg-u mut" title="${esc(x.usuario||"")}">${esc(x.usuario||"")}</span>
+   <span class="sg-num dg-d mut">${x.dias!=null?nf(x.dias)+" d":""}</span>
+   <span class="sg-num"><b>${x.bytes==null?"…":fmt(x.bytes)}</b></span>
+   <span class="dg-ac">${x.previa?`<button class="sm gh" data-ver="${x.no}" data-tp="${esc(x.previa)}" data-nm="${esc(x.nome)}" aria-label="Ver ${esc(x.nome)}" title="Ver">👁</button>`:""}${x.pode_abrir&&x.tipo!=="pasta"?`<button class="sm gh" data-abr="${x.no}" title="Abrir no programa padrão">Abrir</button>`:""}<button class="sm gh" data-menu="${x.no}" aria-label="Mais ações: ${esc(x.nome)}" aria-haspopup="menu">⋯</button></span></div>`;
+}
+function dgGruposSync(sel){
+  const has=k=>sel instanceof Map?sel.has(k):sel.has(k);
+  $$("[data-gk]").forEach(c=>{const ks=DGG[c.dataset.gk]||[],n=ks.filter(has).length;c.checked=!!ks.length&&n===ks.length;c.indeterminate=n>0&&n<ks.length});
+  const all=$("#dgall");if(all){const ks=[].concat(...Object.values(DGG)),n=ks.filter(has).length;all.checked=!!ks.length&&n===ks.length;all.indeterminate=n>0&&n<ks.length}
+}
+function dgLigarLinhas(el,redesenha){
+  ligarAcoesArq(el);
+  $$("[data-dgg]",el).forEach(d=>{const t=ev=>{if(ev.target.closest(".tg"))return;selTog(DG.fechados,d.dataset.dgg);dgSalva();redesenha()};d.onclick=t;d.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();t(ev)}}});
+  $$("[data-menu]",el).forEach(b=>b.onclick=ev=>{ev.stopPropagation();const x=DGX[b.dataset.menu];if(x)dgMenu(b,x)});
+  $$("[data-ajuda]",el).forEach(b=>b.onclick=ev=>{ev.stopPropagation();dgAjuda(+b.dataset.ajuda)});
+  $$("[data-entra]",el).forEach(b=>{const f=()=>dgEntrar(+b.dataset.entra);b.onclick=f;b.onkeydown=ev=>{if(ev.key==="Enter"){ev.preventDefault();f()}}});
+}
+/* trancados do OneDrive: o espaço se libera pelo próprio OneDrive, na pasta dele */
+function dgAjuda(no){safe(async()=>{
+  try{await api("/api/dados/abrir",{no,modo:"abrir"})}catch(err){await api("/api/dados/abrir",{no,modo:"pasta"})}
+  toast("Abrindo a pasta do OneDrive. Lá, clique com o botão direito no arquivo e escolha “Liberar espaço”: ele continua na nuvem e sai do disco.","ok");
+})}
+/* menu ⋯ de cada linha */
+function dgMenuFecha(){if(DGM.el){DGM.el.remove();DGM.el=null}}
+document.addEventListener("click",ev=>{if(DGM.el&&!ev.target.closest(".dmenu"))dgMenuFecha()});
+document.addEventListener("keydown",ev=>{if(ev.key==="Escape")dgMenuFecha()});
+window.addEventListener("scroll",()=>dgMenuFecha(),{passive:true});
+function dgMenu(btn,x){
+  dgMenuFecha();
+  const op=[x.previa?["👁 Ver",()=>verArquivo(x.no,x.previa,x.nome)]:0,x.pode_abrir&&x.tipo!=="pasta"?["Abrir no programa",()=>abrirNo(x.no,"abrir")]:0,["Mostrar na pasta",()=>abrirNo(x.no,"pasta")],
+    x.tipo==="pasta"?["Entrar",()=>x.gerir?dgEntrar(x.no):safe(()=>dadosExplorar(x.no))]:0,x.ajuda?["Abrir pasta do OneDrive",()=>dgAjuda(x.ajuda)]:0,
+    ...(x.gerir&&!x.trava?["-",["Renomear",()=>dgRenomear(x)],["Mover para…",()=>dgDestino("mover",[x])],["Copiar para…",()=>dgDestino("copiar",[x])]]:[])].filter(Boolean);
+  const m=document.createElement("div");m.className="dmenu";m.setAttribute("role","menu");
+  m.innerHTML=op.map((o,i)=>o==="-"?"<hr>":`<button role="menuitem" data-i="${i}">${esc(o[0])}</button>`).join("");
+  document.body.appendChild(m);const r=btn.getBoundingClientRect();
+  m.style.top=(window.scrollY+r.bottom+4)+"px";m.style.left=Math.max(8,window.scrollX+r.right-m.offsetWidth)+"px";
+  $$("button",m).forEach(b=>b.onclick=ev=>{ev.stopPropagation();dgMenuFecha();op[+b.dataset.i][1]()});
+  m.onkeydown=ev=>{const bs=$$("button",m),i=bs.indexOf(document.activeElement);if(ev.key==="ArrowDown"){ev.preventDefault();(bs[i+1]||bs[0]).focus()}if(ev.key==="ArrowUp"){ev.preventDefault();(bs[i-1]||bs[bs.length-1]).focus()}};
+  DGM.el=m;const f=$("button",m);if(f)f.focus();
+}
+/* ---- aba Gerenciamento completo: todos os arquivos das pastas dos usuários, pelo índice da varredura ---- */
+function dgEntrar(no){DG.visao="pastas";DG.pasta=no;DG.q="";DG.cat="";dgSalva();safe(()=>dgGerenciar())}
+async function dgGerenciar(mais){
+  const el=$("#dcorpo");if(!el)return;
+  const qs=new URLSearchParams({bloco:DG.bloco,cat:DG.cat,pasta:DG.pasta||"",usuario:DG.usr,q:DG.q,ordem:DG.ordem,visao:DG.visao,offset:mais?DG.rows.length:0,limit:200});
+  let r;
+  try{r=await api("/api/dados/indice?"+qs)}catch(err){if(DG.pasta&&!mais){DG.pasta=0;return dgGerenciar()}throw err}
+  if(view!=="dados"||DG.aba!=="ger"||!$("#dcorpo"))return;
+  if(mais){DG.rows=DG.rows.concat(r.rows);dgCorpo();return}
+  DG.r=r;DG.rows=r.rows;DG.pastas=r.pastas;
+  if(!r.estado.existe){
+    el.innerHTML=`<div class="card"><h2>${r.estado.construindo?"Montando o índice…":"Falta o índice de arquivos"}</h2><p class="h">O Gerenciamento completo usa uma lista de todos os arquivos das pastas dos usuários, feita durante a varredura (só leitura). ${r.estado.construindo?"Espere a varredura terminar.":"Esta máquina foi varrida antes desta versão, ou o resultado foi apagado."}</p>
+      ${r.estado.construindo?"":`<button class="pri" id="dgvar">Varrer e montar o índice agora</button>`}</div>`;
+    const b=$("#dgvar");if(b)b.onclick=()=>safe(()=>dgAtualizar());
+    return;
+  }
+  const foco=document.activeElement&&document.activeElement.id;
+  const tr=[{t:"Disco",f:()=>{DG.bloco="";DG.cat="";DG.pasta=0;DG.q=""}}];
+  if(DG.bloco)tr.push({t:DG_BL[DG.bloco],f:()=>{DG.cat="";DG.pasta=0}});
+  if(DG.cat)tr.push({t:dgCat(DG.cat),f:()=>{DG.pasta=0}});
+  r.migalhas.forEach(m=>tr.push({t:m.nome,f:()=>{DG.pasta=m.no}}));
+  const bl=r.blocos||{},tot=Object.values(bl).reduce((a,x)=>({n:a.n+x.n,b:a.b+x.bytes}),{n:0,b:0}),varios=(r.usuarios||[]).length>1;
+  const filtro=DG.bloco||DG.cat||DG.pasta||DG.q||DG.usr;
+  el.innerHTML=`<div class="card" style="padding:0">
+   <div class="dg-tri"><nav class="dg-trilha" aria-label="Onde você está">${tr.map((x,i)=>i===tr.length-1?`<b aria-current="location">${esc(x.t)}</b>`:`<button class="sm gh" data-tr="${i}">${esc(x.t)}</button>`).join('<span class="mut">›</span>')}${filtro?`<button class="sm gh" data-tr="0" aria-label="Limpar filtros" title="Limpar filtros">✕</button>`:""}</nav><span class="sp1"></span>
+    <span class="mut" style="font-size:13px">${DG.visao==="pastas"&&!DG.q&&!DG.cat?`${nf(r.pastas.length)} pasta(s) · ${nf(r.total)} arquivo(s) aqui`:`${nf(r.total)} ${r.total===1?"item":"itens"} · ${fmt(r.bytes)}`}</span></div>
+   <div class="sg-top"><div class="sg-abas" role="tablist" aria-label="Ver por">${[["arquivos","Arquivos"],["pastas","Pastas"]].map(([k,t])=>`<button role="tab" aria-selected="${DG.visao===k}" class="${DG.visao===k?"on":""}" data-dgv="${k}">${t}</button>`).join("")}</div>
+    <input type="search" class="sg-q" id="dgq" placeholder="Buscar pelo nome ou caminho" aria-label="Buscar pelo nome ou caminho" value="${esc(DG.q)}" autocomplete="off">
+    <select id="dgo" class="sg-o" aria-label="Ordenar">${[["maior","Maior primeiro"],["menor","Menor primeiro"],["parado","Mais tempo parado"],["nome","Nome (A–Z)"]].map(([k,t])=>`<option value="${k}" ${DG.ordem===k?"selected":""}>${t}</option>`).join("")}</select>
+    ${varios?`<select id="dgu" class="sg-o" aria-label="Filtrar por usuário"><option value="">Todos os usuários</option>${r.usuarios.map(u=>`<option value="${esc(u)}" ${DG.usr===u?"selected":""}>${esc(u)}</option>`).join("")}</select>`:""}
+    ${DG.visao==="pastas"&&DG.pasta?`<button class="sm" id="dgnp">＋ Nova pasta</button>`:""}</div>
+   <div class="sg-chips dg-chips" role="group" aria-label="Filtrar por categoria do cockpit"><button class="sg-chip ${DG.bloco?"":"on"}" data-dgb="">Tudo <span>${fmt(tot.b)}</span></button>${Object.keys(DG_BL).map(k=>`<button class="sg-chip dg-bl ${DG.bloco===k?"on":""}" data-dgb="${k}" style="--c:${DG_COR[k]}" ${bl[k]?"":"disabled"}><i aria-hidden="true"></i>${DG_BL[k]} <span>${fmt((bl[k]||{}).bytes||0)}</span></button>`).join("")}</div>
+   ${DG.bloco&&r.cats.length>1||DG.cat?`<div class="sg-chips dg-chips" role="group" aria-label="Filtrar por tipo"><button class="sg-chip ${DG.cat?"":"on"}" data-dgc="">Todos os tipos</button>${r.cats.map(c=>`<button class="sg-chip ${DG.cat===c.cat?"on":""}" data-dgc="${esc(c.cat)}">${esc(dgCat(c.cat))} <span>${nf(c.n)}</span></button>`).join("")}</div>`:""}
+   ${r.estado.parcial?'<div class="warnbox" style="margin:0 16px 12px">A última varredura foi cancelada: a lista está incompleta. Varra de novo para ver tudo.</div>':""}
+   ${dgBarraHtml({id:"dgbar",cont:"dgsel",def:"dgdef",del:"dgdel",botoes:'<button class="sm gh" id="dgclr">Desmarcar</button><button class="sm" id="dgmov">Mover para…</button><button class="sm" id="dgcop">Copiar para…</button><button class="sm" id="dgext" title="Copia, confere (SHA-256) e só então tira do computador">Disco externo…</button>'})}
+   ${dgCabeca(true,true)}
+   <div id="dgbody"></div><div id="dgmais" class="sg-pe"></div></div>`;
+  const recarrega=()=>{dgSalva();safe(()=>dgGerenciar())};
+  $$("[data-tr]",el).forEach(b=>b.onclick=()=>{tr[+b.dataset.tr].f();recarrega()});
+  $$("[data-dgv]",el).forEach(b=>b.onclick=()=>{DG.visao=b.dataset.dgv;recarrega()});
+  $$("[data-dgb]",el).forEach(b=>b.onclick=()=>{DG.bloco=b.dataset.dgb;DG.cat="";dgSalva();dadosResultado(DS.e||{})});
+  $$("[data-dgc]",el).forEach(b=>b.onclick=()=>{DG.cat=b.dataset.dgc;recarrega()});
+  $$("[data-so]",el).forEach(b=>b.onclick=()=>{DG.ordem=b.dataset.so===DG.ordem&&b.dataset.so==="maior"?"menor":b.dataset.so;recarrega()});
+  let tq;$("#dgq",el).oninput=ev=>{clearTimeout(tq);tq=setTimeout(()=>{DG.q=ev.target.value;recarrega()},300)};
+  $("#dgo",el).onchange=ev=>{DG.ordem=ev.target.value;recarrega()};
+  const u=$("#dgu",el);if(u)u.onchange=()=>{DG.usr=u.value;recarrega()};
+  const np=$("#dgnp",el);if(np)np.onclick=()=>safe(async()=>{const x=await dialog({titulo:"Nova pasta",html:'<p class="mut" style="margin:0">Criada dentro da pasta em que você está.</p>',texto:"Nome da pasta",livre:true,ok:"Criar"});if(!x)return;await api("/api/dados/nova_pasta",{no:DG.pasta,nome:x.texto.trim()});toast("Pasta criada.","ok");dgGerenciar()});
+  const lista=()=>[...DG.sel.values()];
+  $("#dgclr").onclick=()=>{DG.sel.clear();dgCorpo()};
+  $("#dgmov").onclick=()=>dgDestino("mover",lista());$("#dgcop").onclick=()=>dgDestino("copiar",lista());
+  const marcados=async()=>(await api("/api/dados/marcar_nos",{nos:lista().map(x=>x.no)})).ids;
+  const itens=()=>lista().map(x=>({titulo:x.nome,bytes:x.bytes||0,usuario:x.usuario}));
+  $("#dgext").onclick=()=>safe(async()=>dadosConfirmar("offload",{ids:await marcados(),itens:itens(),def:$("#dgdef").checked,depois:()=>DG.sel.clear()}));
+  $("#dgdel").onclick=()=>safe(async()=>dadosConfirmar("limpar",{ids:await marcados(),itens:itens(),def:$("#dgdef").checked,depois:()=>DG.sel.clear()}));
+  $("#dgdef").onchange=dgBarra;
+  const all=$("#dgall");if(all)all.onchange=()=>{Object.values(DGG).forEach(ks=>ks.forEach(k=>all.checked?DG.sel.set(k,DGX[k]):DG.sel.delete(k)));dgCorpo()};
+  if(foco==="dgq"){const q=$("#dgq");q.focus();q.setSelectionRange(q.value.length,q.value.length)}
+  dgCorpo();
+}
+function dgCorpo(){
+  const el=$("#dgbody");if(!el||!DG.r)return;
+  const varios=(DG.r.usuarios||[]).length>1,casa=/^(\/Users\/[^/]+|\/home\/[^/]+|\/root|[A-Za-z]:\\Users\\[^\\]+)/;
+  const arq=x=>({k:x.no,no:x.no,nome:x.nome,sub:x.path.slice(0,Math.max(0,x.path.length-x.nome.length-1)).replace(casa,"~")||"~",path:x.path,usuario:varios?x.usuario:"",dias:x.dias,bytes:x.bytes,tipo:x.tipo,
+    previa:x.previa,pode_abrir:x.pode_abrir,trava:!x.pode_marcar,motivo:x.motivo,ajuda:x.ajuda_no,gerir:true,entrar:false,marc:DG.sel.has(x.no)});
+  DGX={};DGG={};
+  const grupos=[];
+  if(DG.visao==="pastas"&&!DG.q&&!DG.cat){
+    const ps=DG.pastas.map(p=>({k:p.no,no:p.no,nome:p.nome,sub:p.raiz?"Pasta do usuário":`${nf(p.arquivos)} arquivo(s)`,path:p.path,usuario:varios&&!p.raiz?p.usuario:"",dias:p.dias,bytes:p.bytes,tipo:"pasta",
+      pode_abrir:true,trava:!!p.motivo,motivo:p.motivo,gerir:!p.raiz,entrar:true,marc:DG.sel.has(p.no)}));
+    if(ps.length)grupos.push(["p:pastas","Pastas",ps]);
+    if(DG.rows.length)grupos.push(["p:arquivos","Arquivos nesta pasta",DG.rows.map(arq)]);
+  }else{
+    const g={},ordem=[];DG.rows.forEach(x=>{if(!g[x.cat]){g[x.cat]=[];ordem.push(x.cat)}g[x.cat].push(arq(x))});
+    ordem.forEach(c=>grupos.push(["c:"+c,dgCat(c),g[c]]));
+  }
+  const leg=grupos.some(g=>g[2].some(x=>x.trava))?'<div class="dg-leg">🔒 = só para ver. O motivo aparece embaixo do nome.</div>':"";
+  el.innerHTML=leg+grupos.map(([k,t,rs])=>{const fe=DG.fechados.includes(k),b=rs.reduce((a,x)=>a+(x.bytes||0),0);
+    rs.forEach(x=>DGX[x.no]=x);DGG[k]=rs.filter(x=>!x.trava&&x.gerir!==false).map(x=>x.no);
+    return dgGrupo(k,t,`${nf(rs.length)} ${rs.length===1?"item":"itens"} · ${fmt(b)}`,"usuario",fe,DGG[k].length>0)+(fe?"":rs.map(x=>dgLinha(x,"dgk")).join(""))}).join("")
+    ||`<div style="padding:16px"><p class="mut" style="margin:0 0 10px">${DG.q?"Nada com essa busca.":DG.pasta?"Nada indexado aqui.":"Nada neste filtro."}</p>${DG.pasta&&!DG.q?'<button class="sm" id="dgvivo">Ver esta pasta ao vivo (explorador)</button>':""}</div>`;
+  const vivo=$("#dgvivo");if(vivo)vivo.onclick=()=>safe(()=>dadosExplorar(DG.pasta));
+  $$(".dgk",el).forEach(c=>c.onchange=()=>{const k=+c.dataset.k,x=DGX[k];c.checked?DG.sel.set(k,x):DG.sel.delete(k);c.closest(".sg-row").classList.toggle("off",!c.checked);dgGruposSync(DG.sel);dgBarra()});
+  $$("[data-gk]",el).forEach(c=>{c.onclick=ev=>ev.stopPropagation();c.onchange=()=>{(DGG[c.dataset.gk]||[]).forEach(k=>c.checked?DG.sel.set(k,DGX[k]):DG.sel.delete(k));dgCorpo()}});
+  dgLigarLinhas(el,dgCorpo);
+  const falta=DG.r.total-DG.rows.length,mais=$("#dgmais");
+  if(mais){mais.innerHTML=falta>0?`<span class="mut">Mostrando ${nf(DG.rows.length)} de ${nf(DG.r.total)}.</span><button class="sm" id="dgmore">Carregar mais ${nf(Math.min(200,falta))}</button>`:"";const m=$("#dgmore");if(m)m.onclick=()=>safe(()=>dgGerenciar(true))}
+  dgGruposSync(DG.sel);dgBarra();
+  if(DG.realce){const r=$(`#dgbody [data-row="${DG.realce}"]`);DG.realce=0;if(r){r.classList.add("dg-realce");r.scrollIntoView({block:"center"})}}
+}
+/* faixa de ações no cabeçalho da lista (as duas abas): contador curto e os botões; as explicações ficam no title */
+function dgBarraHtml(o){
+  return `<div class="dg-bar" id="${o.id}" role="toolbar" aria-label="Ações com o que está marcado"><b class="dg-cont" id="${o.cont}" aria-live="polite"></b><span class="sp1"></span>${o.botoes}
+   <label class="dg-def" title="Sem Lixeira: não dá para desfazer"><input type="checkbox" id="${o.def}"> Apagar de vez</label><button class="sm pri" id="${o.del}"></button></div>`;
+}
+function dgBarraEstado(bar,n,bytes,def,rotulo,dis){
+  const cont=$(".dg-cont",bar),del=$("button.pri,button.dng",bar)||$("#"+bar.id+" button:last-child");
+  cont.textContent=n?`${nf(n)} ${n===1?"selecionado":"selecionados"} · ${fmt(bytes)}`:"Nada selecionado";
+  cont.title=n?"":"Marque arquivos ou pastas na lista. A seleção continua ao trocar de filtro ou de pasta.";
+  dis.forEach(s=>{const b=$(s);if(b)b.disabled=!n});
+  bar.classList.toggle("perigo",def);
+  del.className="sm "+(def?"dng":"pri");del.textContent=def?"Apagar de vez · sem volta":rotulo;
+  del.title=def?"Apaga sem passar pela Lixeira: não dá para desfazer.":"Vai para a Lixeira: dá para restaurar, e o espaço volta ao esvaziar.";
+}
+function dgBarra(){
+  const bar=$("#dgbar");if(!bar)return;
+  const v=[...DG.sel.values()];
+  dgBarraEstado(bar,v.length,v.reduce((a,x)=>a+(x.bytes||0),0),$("#dgdef").checked,"Enviar para a Lixeira",["#dgclr","#dgmov","#dgcop","#dgext","#dgdel"]);
+}
+/* renomear na própria linha: Enter confirma, Esc cancela */
+function dgRenomear(x){
+  const row=$(`#dgbody [data-row="${x.no}"]`);if(!row)return;const b=$(".sg-nome b",row);
+  const inp=document.createElement("input");inp.type="text";inp.className="dg-ren";inp.value=x.nome;inp.setAttribute("aria-label","Novo nome de "+x.nome);
+  b.replaceWith(inp);inp.focus();const pt=x.tipo==="pasta"?-1:x.nome.lastIndexOf(".");inp.setSelectionRange(0,pt>0?pt:x.nome.length);
+  let feito=false;const sai=()=>{if(!feito){feito=true;dgCorpo()}};
+  inp.onkeydown=ev=>{ev.stopPropagation();if(ev.key==="Escape"){ev.preventDefault();sai()}else if(ev.key==="Enter"){ev.preventDefault();const v=inp.value.trim();if(!v||v===x.nome)return sai();feito=true;
+    safe(async()=>{try{await api("/api/dados/renomear",{no:x.no,nome:v});DG.sel.delete(x.no);toast("Renomeado para “"+v+"”.","ok");await dgGerenciar()}catch(err){feito=false;inp.focus();throw err}})}};
+  inp.onblur=()=>setTimeout(()=>{if(document.activeElement!==inp)sai()},150);
+}
+/* escolher a pasta de destino (mover ou copiar): só pastas dos usuários, pelo índice; nunca sobrescreve */
+async function dgDestino(modo,lista){
+  if(!lista.length)return;
+  const nos=lista.map(x=>x.no),tot=lista.reduce((a,x)=>a+(x.bytes||0),0);
+  const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
+  d.innerHTML=`<div class="box" style="max-width:640px"><h2>${modo==="mover"?"Mover para…":"Copiar para…"}</h2>
+    <p class="mut" style="margin:0 0 8px">${nf(lista.length)} item(ns) · ${fmt(tot)}${lista.length===1?": "+esc(lista[0].nome):""}. ${modo==="mover"?"No mesmo disco, mover é instantâneo.":"Cada arquivo é copiado e conferido (SHA-256); o original fica."}</p>
+    <nav class="dg-trilha" id="ddtr" aria-label="Pasta de destino"></nav><div id="ddls" class="dd-ls"></div><div id="ddpf" style="margin-top:10px;font-size:13px"></div>
+    <div class="row" style="margin-top:14px"><button class="sm" id="ddnp" disabled>＋ Nova pasta</button><span class="sp1"></span><button id="ddcn">Cancelar</button><button class="pri" id="ddok" disabled>${modo==="mover"?"Mover para cá":"Copiar para cá"}</button></div></div>`;
+  $("#layer").appendChild(d);
+  let atual=0;
+  const kd=ev=>{if(ev.key==="Escape"&&!$(".modal .box #dtxt"))fechar()};const fechar=()=>{d.remove();document.removeEventListener("keydown",kd)};document.addEventListener("keydown",kd);
+  const abre=async no=>{
+    const r=await api("/api/dados/indice?visao=pastas&ordem=nome&limit=1&pasta="+(no||""));atual=no||0;
+    const tr=[{nome:"Usuários",no:0},...r.migalhas];
+    $("#ddtr",d).innerHTML=tr.map((m,i)=>i===tr.length-1?`<b>${esc(m.nome)}</b>`:`<button class="sm gh" data-dn="${m.no}">${esc(m.nome)}</button>`).join('<span class="mut">›</span>');
+    $("#ddls",d).innerHTML=r.pastas.map(p=>`<button class="dd-it" data-dn="${p.no}" ${p.motivo&&!/^pasta (do usuário|principal)/.test(p.motivo)?`disabled title="${esc(p.motivo)}"`:""}><span>📁 ${esc(p.nome)}</span><span class="mut">${fmt(p.bytes)}</span></button>`).join("")||'<p class="mut" style="padding:10px 12px;margin:0">Sem subpastas.</p>';
+    $$("[data-dn]",d).forEach(b=>b.onclick=()=>safe(()=>abre(+b.dataset.dn)));
+    $("#ddnp",d).disabled=!atual;$("#ddok",d).disabled=true;$("#ddpf",d).innerHTML=atual?'<span class="mut">Conferindo o destino…</span>':'<span class="mut">Entre na pasta de destino.</span>';
+    if(!atual)return;
+    try{const pf=await api("/api/dados/preflight_destino",{nos,destino:atual,modo});if(atual!==(no||0))return;
+      $("#ddpf",d).innerHTML=pf.ok?`<span style="color:var(--ok)">✓ Pode ${modo==="mover"?"mover":"copiar"} para cá${pf.bytes?" · "+fmt(pf.bytes)+" a copiar":""}</span>${pf.conflitos.length?`<div class="warnbox" style="margin-top:8px"><b>${nf(pf.conflitos.length)} já existe(m) aqui com o mesmo nome:</b> ${pf.conflitos.slice(0,5).map(esc).join(", ")}${pf.conflitos.length>5?"…":""}
+        <label class="dd-op"><input type="radio" name="ddres" value="manter" checked> Manter os dois (o que chega ganha um número no nome)</label><label class="dd-op"><input type="radio" name="ddres" value="pular"> Pular os que já existem</label></div>`:""}`
+        :`<span style="color:var(--err)">${pf.erros.map(esc).join("<br>")}</span>`;
+      $("#ddok",d).disabled=!pf.ok}catch(err){$("#ddpf",d).innerHTML=`<span style="color:var(--err)">${esc(err.message)}</span>`}
+  };
+  $("#ddcn",d).onclick=fechar;d.onclick=ev=>{if(ev.target===d)fechar()};
+  $("#ddnp",d).onclick=()=>safe(async()=>{const x=await dialog({titulo:"Nova pasta",texto:"Nome da pasta",livre:true,ok:"Criar"});if(!x)return;const n=await api("/api/dados/nova_pasta",{no:atual,nome:x.texto.trim()});await abre(n.no)});
+  $("#ddok",d).onclick=()=>safe(async()=>{const res=(d.querySelector("input[name=ddres]:checked")||{}).value||"";await api("/api/dados/"+modo,{nos,destino:atual,resolucao:res});fechar();lista.forEach(x=>DG.sel.delete(x.no));DS.acao=modo;drawDados()});
+  safe(()=>abre(DG.visao==="pastas"&&DG.pasta?DG.pasta:0));
 }
 /* ver / abrir / mostrar na pasta / entrar: valem nas três zonas (a vermelha é só para ver) */
 function acoesArq(x){
@@ -1578,20 +1882,18 @@ async function dadosExplorar(no,soLista){
   ligar();
 }
 function dadosSel(){
-  const ids=DROWS.length?[...DS.sel]:[...DS.sel];const bytes=DROWS.filter(x=>DS.sel.has(x.id)).reduce((a,x)=>a+x.bytes,0);
-  const el=$("#dsel");if(!el)return;
-  el.textContent=`${DS.sel.size} selecionado(s) · ${fmt(bytes)}`;
-  const def=$("#ddef").checked;
-  $("#dnote").textContent=def?"Vão ser apagados de vez, sem volta.":"Vão para a Lixeira: dá para restaurar, e o espaço volta ao esvaziar.";
-  $("#dclean").disabled=!DS.sel.size;$("#doff").disabled=!DS.sel.size;
-  $("#dclean").className=def?"dng":"pri";
+  const bar=$("#dbar");if(!bar)return;
+  const bytes=DROWS.filter(x=>DS.sel.has(x.id)).reduce((a,x)=>a+x.bytes,0);
+  dgBarraEstado(bar,DS.sel.size,bytes,$("#ddef").checked,"Limpar selecionados",["#dclean","#doff"]);
 }
-async function dadosConfirmar(tipo){
-  const sel=DROWS.filter(x=>DS.sel.has(x.id));
-  const ids=[...DS.sel];if(!ids.length)return;
-  const all=await api("/api/dados/resultado?limit=2000");const mapa={};all.rows.forEach(x=>mapa[x.id]=x);
-  const itens=ids.map(i=>mapa[i]).filter(Boolean),bytes=itens.reduce((a,x)=>a+x.bytes,0),orf=itens.some(x=>x.orfao);
-  const def=$("#ddef").checked;
+async function dadosConfirmar(tipo,o){
+  let ids,itens,def;
+  if(o){ids=o.ids;itens=o.itens;def=!!o.def}  // Gerenciamento completo: a tela já sabe o que marcou
+  else{ids=[...DS.sel];if(!ids.length)return;
+    const all=await api("/api/dados/resultado?limit=2000");const mapa={};all.rows.forEach(x=>mapa[x.id]=x);
+    itens=ids.map(i=>mapa[i]).filter(Boolean);def=$("#ddef").checked}
+  if(!ids.length)return;
+  const bytes=itens.reduce((a,x)=>a+x.bytes,0),orf=itens.some(x=>x.orfao);
   const lista=itens.slice().sort((a,b)=>b.bytes-a.bytes).slice(0,8).map(x=>`<li>${esc(x.titulo)} <span class="mut">· ${fmt(x.bytes)}</span></li>`).join("");
   const outros=/windows/i.test(info.os||"")&&!def&&tipo==="limpar"&&itens.some(x=>x.usuario&&x.usuario!==DS.usrAtual);
   const base=`${outros?'<div class="infobox" style="font-size:13px">Arquivos de outros usuários vão para a Lixeira de quem está rodando o programa (o administrador): restaure por lá, se precisar.</div>':""}<p><b>${itens.length} item(ns)</b>, ${fmt(bytes)}.</p><ul style="margin:6px 0;padding-left:18px;font-size:13px">${lista}${itens.length>8?`<li class="mut">e mais ${itens.length-8}…</li>`:""}</ul>`;
@@ -1600,7 +1902,7 @@ async function dadosConfirmar(tipo){
     const r=await dialog({titulo:def?"Apagar de vez?":"Enviar para a Lixeira?",html:base+(def?'<div class="errbox">Sem Lixeira: não dá para desfazer.</div>':'<div class="infobox">Os arquivos vão para a Lixeira. O espaço só volta quando você esvaziar a Lixeira. Dá para restaurar de lá.</div>'),
       check:chk,texto:def?"Digite APAGAR para confirmar":null,exige:def?"APAGAR":null,ok:def?"Apagar de vez":"Enviar para a Lixeira",perigo:def});
     if(!r)return;
-    safe(async()=>{await api("/api/dados/limpar",{ids,confirmo:true,definitivo:def,confirma_orfaos:orf});DS.acao="limpar";drawDados()});
+    safe(async()=>{await api("/api/dados/limpar",{ids,confirmo:true,definitivo:def,confirma_orfaos:orf});if(o&&o.depois)o.depois();DS.acao="limpar";drawDados()});
   }else{
     const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
     d.innerHTML=`<div class="box" style="max-width:640px"><h2>Mover para disco externo</h2>${base}
@@ -1615,7 +1917,7 @@ async function dadosConfirmar(tipo){
     $("#odst",d).oninput=()=>{clearTimeout(upd.t);upd.t=setTimeout(upd,350)};const oo=$("#oorf",d);if(oo)oo.onchange=upd;
     $("#opk",d).onclick=()=>pickFolder($("#odst",d),$("#obr",d),upd);
     $("#oc",d).onclick=()=>d.remove();
-    $("#ok2",d).onclick=()=>safe(async()=>{await api("/api/dados/offload",{ids,dest:$("#odst",d).value.trim(),confirmo:true,definitivo:def,confirma_orfaos:orf});d.remove();DS.acao="offload";drawDados()});
+    $("#ok2",d).onclick=()=>safe(async()=>{await api("/api/dados/offload",{ids,dest:$("#odst",d).value.trim(),confirmo:true,definitivo:def,confirma_orfaos:orf});d.remove();if(o&&o.depois)o.depois();DS.acao="offload";drawDados()});
   }
 }
 function dadosAcao(){
@@ -1629,7 +1931,13 @@ function dadosAcao(){
 }
 function dadosFim(a){
   const r=a.resultado||{itens:0,falhas:a.erros.length};const lixo=r.modo==="lixeira",mov=(r.bytes_lixeira||0)+(r.bytes_removidos||0)+(r.bytes_movidos||0);
-  $("#at").textContent=a.tipo==="offload"?"Offload concluído":"Limpeza concluída";$("#ah").textContent="";$("#apb").style.width="100%";
+  $("#at").textContent=({offload:"Offload concluído",mover:"Arquivos movidos",copiar:"Cópia concluída"})[a.tipo]||"Limpeza concluída";$("#ah").textContent="";$("#apb").style.width="100%";
+  if(a.tipo==="mover"||a.tipo==="copiar"){
+    $("#ar").innerHTML=`<div class="${r.falhas?"warnbox":"okbox"}"><b>${r.itens} item(ns) · ${fmt(r.bytes)}</b> ${a.tipo==="mover"?"movidos":"copiados e conferidos"} para <span class="mono">${esc(r.destino||"")}</span>.${r.pulados?` ${r.pulados} pulado(s) porque já existiam lá.`:""}</div>
+     ${a.erros.length?`<div class="errbox"><b>${a.erros.length} problema(s)</b> (os originais foram mantidos):<ul style="margin:6px 0 0;padding-left:18px;font-size:13px">${a.erros.slice(0,10).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}
+     <div class="row" style="margin-top:12px"><button class="pri" id="anv">Voltar ao Gerenciamento</button></div>`;
+    $("#anv").onclick=()=>drawDados();return;
+  }
   $("#ar").innerHTML=`<div class="${r.falhas?"warnbox":"okbox"}"><b>${r.itens} item(ns) · ${fmt(mov)}</b> ${a.tipo==="offload"?`copiados, conferidos e removidos do computador. Destino: <span class="mono">${esc(r.destino||"")}</span>`:lixo?"enviados para a Lixeira.":"apagados de vez."}${lixo?'<div style="margin-top:6px">O espaço só volta quando a Lixeira for esvaziada.</div>':'<div style="margin-top:6px">Espaço já devolvido ao disco.</div>'}</div>
    ${a.erros.length?`<div class="errbox"><b>${a.erros.length} problema(s)</b> (os originais foram mantidos):<ul style="margin:6px 0 0;padding-left:18px;font-size:13px">${a.erros.slice(0,10).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}
    <div class="row" style="margin-top:12px">${lixo&&r.itens?'<button class="pri" id="aem">Esvaziar a Lixeira (devolver o espaço)</button>':""}<button id="anv">Ver o que sobrou</button><button id="aha">Analisar a máquina de novo</button></div>`;
@@ -1683,7 +1991,7 @@ async function pickFolder(input,box,onUse,start){
   if(r.path){
     $('[data-a=up]',box).onclick=()=>pickFolder(input,box,onUse,r.parent);
     $('[data-a=use]',box).onclick=()=>{input.value=r.path;box.innerHTML="";input.dispatchEvent(new Event("input"));if(onUse)onUse()};
-    $('[data-a=mk]',box).onclick=()=>safe(async()=>{const x=await dialog({titulo:"Nova pasta",texto:"Nome da pasta",exige:"",ok:"Criar"});if(!x||!x.texto.trim())return;await api("/api/mkdir",{path:r.path,name:x.texto.trim()});pickFolder(input,box,onUse,r.path)});
+    $('[data-a=mk]',box).onclick=()=>safe(async()=>{const x=await dialog({titulo:"Nova pasta",texto:"Nome da pasta",livre:true,ok:"Criar"});if(!x||!x.texto.trim())return;await api("/api/mkdir",{path:r.path,name:x.texto.trim()});pickFolder(input,box,onUse,r.path)});
   }
 }
 
