@@ -65,7 +65,7 @@ class Contrato(SimpleTestCase):
         r = self.c.get("/api/maquinas", HTTP_AUTHORIZATION="Bearer dtv_errada")
         self.assertEqual((r.status_code, self.j(r)), (401, {"erro": "Chave de técnico inválida."}))
         r = self.c.get("/api/quem", **self.A)
-        self.assertEqual(self.j(r), {"tecnico": "Técnico Teste", "versao": "3.1"})
+        self.assertEqual(self.j(r), {"tecnico": "Técnico Teste", "versao": "3.2"})
 
     def test_bloqueio_por_ip(self):
         h = {"HTTP_X_FORWARDED_FOR": "203.0.113.9"}
@@ -120,7 +120,7 @@ class Contrato(SimpleTestCase):
         html = r.content.decode()
         self.assertIn("irm http://localhost/iniciar.ps1 | iex", html)
         self.assertIn("curl -fsSL http://localhost/iniciar.sh | sh", html)
-        self.assertIn("3.1", html)
+        self.assertIn("3.2", html)
         self.assertNotIn("DD-CLIE-NTE1", html)
         self.assertNotIn("Técnico Teste", html)
 
