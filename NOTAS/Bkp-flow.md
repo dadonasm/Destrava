@@ -176,6 +176,12 @@ Pedidos do Marlos depois de ver a v3.6, todos no mesmo padrão para Gerenciament
 - Checagens: só as checagens (o escaneamento saiu daqui) + resumo e "Iniciar cópia" (pré-voo de sempre). Exigem destino; `start_copy` também.
 - Harness `bk.py`: a jornada inteira em ordem, sem erro de JS.
 
+## Configurações › Termos (D5)
+- O termo saiu da faixa de etapas; continua exigido antes de usar a ferramenta (o portão `openGate` abre ao iniciar sem aceite).
+- `cfgTermos` em Configurações: termo aceito (versão, selo), quem aceitou e quando, máquina, dono (particular/terceiros), OS aberta,
+  integridade do registro (`log_verificar`), as cláusulas para ler, "Abrir o termo para imprimir ou salvar em PDF" (`/api/doc/abrir`).
+  Sem aceite: aviso e "Ler e aceitar o termo". Sem rota nova (`/api/termo`).
+
 ## Não feito ainda
 - Editar o histórico/registro da máquina (só o certificado e o Mapa).
 - Telas abertas fora de ordem não mostram aviso próprio de "sem dados"; algumas podem ficar vazias.

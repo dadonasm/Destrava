@@ -365,7 +365,7 @@ button.dg-lock{border:0;background:transparent;box-shadow:none;padding:2px 4px;b
 .dg-bar .dg-cont{white-space:nowrap;font-size:14px}.dg-bar .sm{padding:6px 12px}.dg-bar.perigo{background:color-mix(in srgb,var(--err) 7%,var(--panel))}
 .dg-def{display:flex;gap:6px;align-items:center;margin:0 2px;color:var(--tx);font-size:13px;white-space:nowrap;cursor:pointer}
 .dg-idade{font-size:12.5px;margin:-6px 0 12px}
-.dg-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 16px}@media(max-width:1100px){.dg-4{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.dg-4{grid-template-columns:1fr}}.dg-4 .card{margin:0;padding:16px;display:flex;flex-direction:column;gap:6px}.dg-4 h3{margin:0;font-size:13px;color:var(--mut);font-weight:600}.dg-4 .gr{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}.dg-4 .mut{font-size:12.5px;line-height:1.4}.dg-4 .bar{height:8px}.dg-4 .bar i{background:var(--ok)}.dg-4 .bar.baixo i{background:var(--warn)}.dg-4 .bar.crit i{background:var(--err)}.dg-4 .bar.pes i{background:var(--azul)}.dg-4 a{color:var(--azul);font-weight:600}.dg-ra{display:flex;flex-direction:column;gap:6px}.dg-ra button{text-align:left}.dg-velha{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0 0 14px}
+.dg-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 16px}@media(max-width:1100px){.dg-4{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.dg-4{grid-template-columns:1fr}}.dg-4 .card{margin:0;padding:16px;display:flex;flex-direction:column;gap:6px}.dg-4 h3{margin:0;font-size:13px;color:var(--mut);font-weight:600}.dg-4 .gr{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}.dg-4 .mut{font-size:12.5px;line-height:1.4}.dg-4 .bar{height:8px}.dg-4 .bar i{background:var(--ok)}.dg-4 .bar.baixo i{background:var(--warn)}.dg-4 .bar.crit i{background:var(--err)}.dg-4 .bar.pes i{background:var(--azul)}.dg-4 a{color:var(--azul);font-weight:600}.dg-ra{display:flex;flex-direction:column;gap:6px}.dg-ra button{text-align:left}.cft{width:100%;border-collapse:collapse;font-size:13.5px}.cft th{text-align:left;color:var(--mut);font-weight:600;padding:7px 12px 7px 0;width:170px;vertical-align:top}.cft td{padding:7px 0}.cft tr+tr>*{border-top:1px solid var(--line)}@media(max-width:600px){.cft th{width:110px}}.dg-velha{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0 0 14px}
 .dg-pan{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.dg-pc{margin:0;padding:16px}.dg-pc h3{margin:0}.dg-pc>p.mut{font-size:12.5px;margin:2px 0 8px}
 .dg-pi{display:flex;gap:10px;align-items:center;padding:8px 6px;border-top:1px solid var(--line);cursor:pointer;border-radius:8px;min-width:0}.dg-pi:hover,.dg-pi:focus{background:var(--panel2);outline:none}
 .dg-pi .ic{font-size:18px;flex:none}.dg-pi .t{flex:1;min-width:0}.dg-pi .t b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -820,6 +820,28 @@ let PERFIL=null;
 const PROT={nome:"Nome",empresa:"Empresa",email:"E-mail",telefone:"Telefone / WhatsApp",instagram:"Instagram",site:"Site",facebook:"Facebook",linkedin:"LinkedIn",outro:"Outra rede"};
 function blocoTecnico(tp){const k=Object.keys(PROT).filter(c=>tp&&tp[c]);if(!k.length)return"";
   return `<div class="eyebrow">TÉCNICO RESPONSÁVEL</div><div class="pft">${k.map(c=>`<div><span class="mut">${esc(PROT[c])}</span><b>${esc(tp[c])}</b></div>`).join("")}</div>`}
+/* Configurações › Termos: o termo aceito nesta máquina (fora da faixa de etapas), a OS aberta e a integridade do registro */
+async function cfgTermos(){
+  const el=$("#cftermoc");if(!el)return;
+  let r;try{r=await api("/api/termo")}catch(e){el.innerHTML=`<div class="errbox">Não deu para ler o termo: ${esc(e.message)}</div>`;return}
+  if(!$("#cftermoc"))return;
+  const s=r.status||{},g=s.registro||{},o=r.os,lg=r.log||{};
+  const linha=(t,v)=>`<tr><th>${t}</th><td>${v}</td></tr>`;
+  el.className="";
+  el.innerHTML=`${s.aceito?`<div class="okbox" style="margin:0 0 10px">✓ <b>Termo de responsabilidade aceito</b> nesta máquina · versão ${esc(r.versao)} · selo <span class="mono">${esc(r.selo)}</span></div>`
+     :`<div class="warnbox" style="margin:0 0 10px"><b>${g.quando?"O termo mudou desde o último aceite":"Termo ainda não aceito nesta máquina"}.</b> O Gerenciamento de dados e o Backup só funcionam depois do aceite.</div>`}
+   <table class="cft"><tbody>
+    ${g.quando?linha("Aceito por",`${esc(g.responsavel||"—")} <span class="mut">em ${esc(g.quando)}${g.termo_versao&&g.termo_versao!==r.versao?" · versão "+esc(g.termo_versao):""}</span>`):""}
+    ${linha("Máquina",(r.nome&&r.nome!==r.mid?esc(r.nome)+" ":"")+`<span class="mut mono">${esc(r.mid||"")}</span>`)}
+    ${s.dono?linha("Dono",s.dono==="particular"?"Particular (do próprio técnico)":"Terceiros: "+esc(s.terceiro_nome||"—")+(s.autorizado_por?` · autorizado por ${esc(s.autorizado_por)}`:"")):""}
+    ${linha("Ordem de serviço",o?`<b>${esc(o.os||"")}</b> · ${esc(o.cliente||"")} <span class="mut">aberta em ${esc(o.quando||"")}</span>`:'<span class="mut">Nenhuma aberta</span>')}
+    ${linha("Registro de aceites",lg.ok?`✓ Íntegro <span class="mut">(${nf(lg.linhas||0)} linha(s) conferidas)</span>`:`<span style="color:var(--err)">⚠ Alterado na linha ${esc(String(lg.linha||"?"))}: ${esc(lg.motivo||"")}</span>`)}
+   </tbody></table>
+   <details style="margin-top:10px"><summary style="cursor:pointer">Ler o termo (${(r.clausulas||[]).length} cláusulas)</summary><ol style="padding-left:18px;font-size:13.5px">${(r.clausulas||[]).map(([t,x])=>`<li><b>${esc(t)}</b><div class="mut">${esc(x)}</div></li>`).join("")}</ol><p class="mut" style="font-size:12px">${esc(r.rodape||"")}</p></details>
+   <div class="row" style="margin-top:12px">${s.aceito?`<button class="sm" id="cftdoc">Abrir o termo para imprimir ou salvar em PDF</button>`:`<button class="sm pri" id="cftac">Ler e aceitar o termo</button>`}</div>`;
+  const d=$("#cftdoc");if(d)d.onclick=()=>safe(()=>api("/api/doc/abrir",{tipo:"termo"}));
+  const a=$("#cftac");if(a)a.onclick=()=>safe(async()=>{await openGate();cfgTermos()});
+}
 async function drawPerfil(){
   setWide(false);
   const r=await api("/api/perfil");if(view!=="perfil")return;
@@ -827,6 +849,7 @@ async function drawPerfil(){
   const IM={nome:'autocomplete="name"',empresa:'autocomplete="organization"',email:'inputmode="email" autocomplete="email"',telefone:'inputmode="tel" autocomplete="tel"',site:'inputmode="url"'};
   $("#main").innerHTML=`<div class="ptitle"><h1>Configurações</h1><p>Permissões do sistema e quem atende. Fica só neste computador, não vai para o git nem para a internet.</p></div>
    <div class="card"><h2>Permissões do sistema</h2><div id="cfperm" class="mut">Verificando…</div></div>
+   <div class="card" id="cftermo"><h2>Termos</h2><div id="cftermoc" class="mut">Lendo o termo…</div></div>
    <div class="card"><h2>Modo Superusuário</h2><p class="mut" style="margin-top:0">Para o técnico: abre qualquer etapa do backup com um clique, pula as travas do fluxo e permite corrigir o certificado. Cada ação fica no registro.</p>
     <label style="display:flex;gap:8px;align-items:center;margin:0;color:var(--tx)"><input type="checkbox" id="cfsu" ${SU?"checked":""}> Ligar o modo Superusuário</label>
     <div class="row" style="margin-top:10px"><button class="sm" id="cfsup" ${SU?"":"disabled"}>Abrir o painel</button></div></div>
@@ -845,7 +868,7 @@ async function drawPerfil(){
     if(cb.checked&&!await dialog({titulo:"Ligar o modo Superusuário?",html:"<p>Com ele ligado dá para abrir etapas fora de ordem, copiar sem as checagens, concluir sem verificar e formatar mesmo com o bloqueio. <b>Isso pode levar à perda de dados.</b> Use só quando souber o que está fazendo.</p>",check:"Entendo os riscos",ok:"Ligar",perigo:true})){cb.checked=false;return}
     await suLigar(cb.checked);$("#cfsup").disabled=!SU;toast(SU?"Modo Superusuário ligado.":"Modo Superusuário desligado.","ok")});
   $("#cfsup").onclick=()=>safe(suPainel);
-  cfgPerm();cfgDiag();
+  cfgPerm();cfgDiag();cfgTermos();
 }
 /* diagnóstico: autoteste, alertas, erros recentes e relatório para enviar (vai também para a pasta Erros do pendrive) */
 const RECURSOS=["drawHome","drawDados","drawMaq","drawMapas","drawPerfil","drawOS","draw1","draw2","draw3","draw4","draw5","draw6","drawManter","abrirLista","selGrade","selCockpit","selBarra","showRes5","perfilAbas","ilhaPoll"];
