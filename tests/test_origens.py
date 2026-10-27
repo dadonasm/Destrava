@@ -48,6 +48,23 @@ class OrigensEIdentificacao(unittest.TestCase):
         perfil.salvar({"nome": "Marlos D&D", "no_certificado": ["nome"]})
         self.assertEqual(app.identificacao()["tecnico"], "Marlos D&D", "o perfil do técnico vale mais que o nome do termo")
 
+    def test_mac_usuarios_em_users(self):
+        mac = os.path.join(self.tmp, "Macintosh HD")
+        for p in ("System", "Library", "etc", "usr", "home", os.path.join("Users", "Shared"), os.path.join("Users", ".localized"),
+                  os.path.join("Users", "ana", "Documents"), os.path.join("Users", "ana", "Library", "Caches")):
+            os.makedirs(os.path.join(mac, p), exist_ok=True)
+        for rel in (("Users", "ana", "Documents", "nota.txt"), ("Users", "ana", "Library", "Caches", "lixo.bin")):
+            with open(os.path.join(mac, *rel), "w") as fh:
+                fh.write("x")
+        self.assertEqual(dd_backup.detect_kind(mac), ("mac", ["ana"]), "volume do macOS não é Linux, mesmo com etc/usr/home")
+        app = dd_backup.App()
+        planos = app.plan_roots({"kind": "mac", "path": mac, "letter": ""})
+        self.assertEqual([(p[1], p[2], p[4]) for p in planos], [("ana", "/Users/ana", "macuser")])
+        achados = [x[1] for x in app.walk_plan(planos[0])]
+        self.assertEqual(achados, ["/Users/ana/Documents/nota.txt"], "Library do usuário fica de fora")
+        self.assertIn(("/Users/ana/Library", "Dados do macOS e dos apps (não são arquivos pessoais)"), app.ign_dirs)
+        self.assertEqual(dd_backup.detect_kind(self.disco)[0], "windows")
+
 
 if __name__ == "__main__":
     unittest.main()

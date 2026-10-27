@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """A página única não pode perder funções nem globais usados pela navegação (um corte errado já apagou a aba Dados)."""
+import json
 import os
 import re
+import shutil
+import subprocess
 import tempfile
 import unittest
 
@@ -26,7 +29,7 @@ class PaginaInteira(unittest.TestCase):
         self.assertEqual(sorted(chamadas - self.definidos), [], "tela chamada pelo menu sem função definida")
 
     def test_globais_das_telas_existem(self):
-        self.assertEqual(sorted({"DS", "DT", "ZN", "LST", "MP", "STNOME", "CATORD", "CATNAME", "IC"} - self.definidos), [])
+        self.assertEqual(sorted({"DS", "DT", "DG_FK", "SUG_NOME", "LST", "MP", "STNOME", "CATORD", "CATNAME", "IC", "GAV"} - self.definidos), [])
 
     def test_toda_categoria_se_explica(self):
         ordem = re.search(r'^const CATORD=\[(.*?)\];', self.js, re.M).group(1)
@@ -43,6 +46,28 @@ class PaginaInteira(unittest.TestCase):
     def test_funcoes_chamadas_existem(self):
         chamadas = set(re.findall(r"\b((?:draw|lst|dados|mq|ilha)[A-Z][A-Za-z0-9_]*|retomarBackup|encerrarIncompleto|locNome|selGrade|selCorpo|selAtualiza|selKpis|medicaoCard|perfilAbas|showRes5|preVoo|cfgDiag|autotestePagina|fixTexto[A-Za-z0-9_]*)\(", self.js))
         self.assertEqual(sorted(chamadas - self.definidos), [], "função chamada que não existe na página")
+
+    def test_tokens_e_regras_num_lugar_so(self):
+        """Tema e peças base definidos uma vez: uma segunda definição sobrescrevia a primeira sem ninguém ver."""
+        with open(APP, encoding="utf-8") as fh:
+            css = re.search(r"<style>(.*?)</style>", fh.read(), re.S).group(1)
+        for sel in (":root{", ":root[data-theme=light]{", ".card{", "button{", ".content{", "header{", ".shell{"):
+            self.assertEqual(len(re.findall(r"^" + re.escape(sel), css, re.M)), 1, "definido mais de uma vez: " + sel)
+        self.assertNotRegex(css, r"\.fx(g|o|q|m|r|tr|p|n)\b", "facetas da lista usam fc-, o fx- é do fluxo da etapa 1")
+        self.assertRegex(css, r"(?m)^\.cock\{[^}]*height:14px", "a barra do cockpit é uma só, de 14px, nas duas telas")
+        self.assertNotIn(".ckp .cock{", css, "nada de barra com altura própria numa tela só")
+
+    @unittest.skipUnless(shutil.which("osascript"), "sem o motor JavaScript do macOS (osascript)")
+    def test_sintaxe_do_javascript(self):
+        """Sem node no ambiente: o JavaScriptCore do macOS compila o script da página (só sintaxe, não roda)."""
+        with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as fh:
+            fh.write(self.js)
+        try:
+            prog = 'ObjC.import("Foundation");var s=$.NSString.stringWithContentsOfFileEncodingError(%s,4,null).js;try{new Function(s);"OK"}catch(e){"ERRO: "+e}' % json.dumps(fh.name)
+            r = subprocess.run(["osascript", "-l", "JavaScript", "-e", prog], capture_output=True, text=True, timeout=60)
+            self.assertEqual(r.stdout.strip(), "OK", r.stdout + r.stderr)
+        finally:
+            os.unlink(fh.name)
 
 
 class Juncao(unittest.TestCase):

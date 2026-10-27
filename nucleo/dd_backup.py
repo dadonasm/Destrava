@@ -41,8 +41,9 @@ from urllib.parse import parse_qs, urlparse
 if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-VERSION = "3.3"
-BUILD = "2026-10-26.2"  # igual ao BUILD do app.html: se forem diferentes, o pendrive tem arquivos de versões misturadas
+VERSION = "3.7"
+BUILD = "2026-10-27.1"  # igual ao BUILD do app.html: se forem diferentes, o pendrive tem arquivos de versões misturadas
+import classe as CLS  # noqa: E402  (tipos de arquivo: a mesma tabela do Gerenciamento)
 import disco  # noqa: E402  (conferência lendo do disco, não da memória)
 import mapa as MAPA  # noqa: E402
 import perfil as PERFIL  # noqa: E402
@@ -75,40 +76,21 @@ MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "A
 # ----------------------------------------------------------------------------------------------
 # Regras de classificação
 # ----------------------------------------------------------------------------------------------
-CATS = {
-    "Fotos": ".jpg .jpeg .png .heic .heif .gif .bmp .tif .tiff .webp .raw .cr2 .nef .arw .dng",
-    "Videos": ".mp4 .mov .avi .mkv .wmv .3gp .mpg .mpeg .m4v .flv",
-    "Audios": ".mp3 .wav .m4a .aac .flac .ogg .opus .wma .amr",
-    "Documentos": ".pdf .doc .docx .docm .dotx .xls .xlsx .xlsm .xlsb .ppt .pptx .pps .ppsx .txt .odt .ods .odp .csv .rtf .one",
-    "Projetos": ".psd .ai .cdr .indd .dwg .dxf .skp .xcf .svg .prproj .aep",
-    "Email_Contatos": ".pst .eml .msg .mbox .vcf",
-    "Contas_Senhas": ".kdbx .kdb .pfx .p12",
-}
-EXT2CAT = {}
-for _c, _e in CATS.items():
-    for _x in _e.split():
-        EXT2CAT[_x] = _c
-ARCH = set(".zip .rar .7z .tar .gz .tgz .bz2".split())
-# coluna "Tipo" da lista do backup (e a busca por tipo): o que a pessoa reconhece, não a extensão
-TIPO_EXT = {}
-for _t, _e in (("PDF", ".pdf"), ("Word", ".doc .docx .docm .dotx"), ("Documento", ".odt .rtf"), ("Planilha", ".xls .xlsx .xlsm .xlsb .ods .csv"),
-               ("Apresentação", ".ppt .pptx .pps .ppsx .odp"), ("Texto", ".txt .md"), ("OneNote", ".one"), ("E-mail", ".pst .eml .msg .mbox"),
-               ("Contato", ".vcf"), ("Compactado", " ".join(sorted(ARCH)))):
-    for _x in _e.split():
-        TIPO_EXT[_x] = _t
-TIPO_CAT = {"Fotos": "Imagem", "Videos": "Vídeo", "Audios": "Áudio"}
+# a tabela de tipos é a mesma do Gerenciamento de dados (classe.py); aqui só as categorias pessoais do backup
+CATS_PESSOAIS = ("Fotos", "Videos", "Audios", "Documentos", "Projetos", "Email_Contatos", "Contas_Senhas")
+EXT2CAT = {x: CLS.CLASSES[CLS.POR_EXT[x]]["backup"] for x in CLS.POR_EXT if CLS.CLASSES[CLS.POR_EXT[x]]["backup"] in CATS_PESSOAIS}
+ARCH = set(CLS.COMPACTADOS)
+TIPO_EXT = CLS.TIPO_EXT  # coluna "Tipo" da lista (a mesma tabela do Gerenciamento)
 
 
 def nome_de(disp):
     return re.split(r"[\\/]", disp)[-1]
 
 
-def tipo_de(nome):
-    ext = os.path.splitext(nome.lower())[1]
-    return TIPO_EXT.get(ext) or TIPO_CAT.get(EXT2CAT.get(ext, "")) or (ext[1:].upper() if ext else "Arquivo")
+tipo_de = CLS.tipo_de
 IGN_EXT = set(".exe .dll .sys .tmp .temp .log .ini .lnk .url .msi .msp .cab .cat .mui .drv .ocx .cpl .scr .bin .obj .pyc .class "
               ".etl .dmp .cache .ost .crdownload .part .ddpart .so .lock .swp .desktop".split())
-IGN_NAME_RE = re.compile(r"^(ntuser.*|desktop\.ini|thumbs\.db|iconcache\.db|pagefile\.sys|hiberfil\.sys|swapfile\.sys|\.ds_store|\.directory)$", re.I)
+IGN_NAME_RE = CLS.SISTEMA_NOME
 WA_RE = re.compile(r"(^msgstore.*\.db(\.crypt\d+)?$)|(\.crypt\d+$)", re.I)
 
 IGN_ANY = {"__pycache__", "$recycle.bin", "system volume information", ".trash", "lost+found"}
@@ -133,12 +115,10 @@ SIS_PULAR = {"microsoft", "windows", "common files", "google", "mozilla", "mozil
              "msbuild", "dotnet", "uninstall information", "installshield installation information", "realtek", "java", "docker", "packages", "ssh",
              "usoshared", "usoprivate", "softwaredistribution", "regid.1991-06.com.microsoft"}
 # o que antes era "ignorado" agora é listado em categorias próprias, desmarcadas: o técnico decide
-PROG_EXT = {".exe", ".msi", ".msp", ".appimage", ".deb", ".rpm", ".dmg", ".pkg", ".apk", ".jar", ".bat", ".cmd", ".ps1", ".vbs"}
-CONF_EXT = {".ini", ".log", ".lnk", ".url", ".desktop", ".cfg", ".conf", ".reg"}
+PROG_EXT = CLS.exts("backup", "Programas")
+CONF_EXT = CLS.exts("backup", "Configuracoes")
 # pastas que se recriam sozinhas: listadas como puladas, nunca copiadas
-CACHE_DIRS = {"cache", "cache2", "code cache", "gpucache", "grshadercache", "shadercache", "temp", "tmp", "inetcache", "crashdumps",
-              "d3dscache", "webcache", "service worker", "cachestorage", "startupcache", "minidumps", "node_modules", ".cache", ".thumbnails",
-              ".npm", ".nvm", ".cargo", ".rustup", ".gradle", ".m2", ".steam", "snap", ".snap"}
+CACHE_DIRS = set(CLS.CACHE_DIRS)
 WA_PASTA = re.compile(r"(^|[\\/])whatsapp( (images|video|audio|documents|animated gifs|voice notes|stickers|profile photos))?([\\/]|$)", re.I)
 WA_NOME = re.compile(r"^whatsapp (image|video|audio|ptt|document)|^(img|vid|aud|ptt|doc|stk)-\d{8}-wa\d{3,5}", re.I)
 # ordem de cópia: o mais importante primeiro (se o disco de origem estiver morrendo, o essencial já foi)
@@ -520,6 +500,17 @@ def disk_usage(path):
         return 0, 0
 
 
+IGN_MAC_USERS = {"shared", "guest", "deleted users"}
+
+
+def mac_usuarios(ud):
+    try:
+        return sorted(n for n in os.listdir(ud) if not n.startswith(".") and n.lower() not in IGN_MAC_USERS
+                      and os.path.isdir(os.path.join(ud, n)) and not e_link(os.path.join(ud, n)))
+    except OSError:
+        return []
+
+
 def detect_kind(p):
     try:
         names = {n.lower(): n for n in os.listdir(p)}
@@ -535,6 +526,8 @@ def detect_kind(p):
         except OSError:
             pass
         return "windows", users
+    if "users" in names and ("system" in names or "library" in names):  # volume do macOS: os usuários ficam em /Users (antes do teste de Linux, que também tem etc e usr)
+        return "mac", mac_usuarios(os.path.join(p, names["users"]))
     if "home" in names and "etc" in names and "usr" in names:
         try:
             hp = os.path.join(p, names["home"])
@@ -597,7 +590,7 @@ def list_sources(para_origem=True):
     if not (para_origem and any(_dentro(home, s["path"]) for s in out)):
         add(home, "Pasta pessoal (%s)" % os.path.basename(home))
     if para_origem:
-        out = [s for s in out if not (_dentro(HERE, s["path"]) and os.path.ismount(s["path"])) or s["kind"] in ("windows", "linux")]  # o pendrive do programa
+        out = [s for s in out if not (_dentro(HERE, s["path"]) and os.path.ismount(s["path"])) or s["kind"] in ("windows", "linux", "mac")]  # o pendrive do programa
     # Windows: sugere letras
     letters = iter("CDEFGHIJ")
     for s in out:
@@ -841,6 +834,21 @@ CAUSA_NOME_SRV = {"permissao": "sem permissão de leitura", "em_uso": "em uso po
 GRUPO_FORA = (("Sistema operacional", "Windows e programas"), ("Sistema Linux", "Sistema e programas"), ("Cache", "Caches e temporários"),
               ("Lixeira", "Lixeira e sistema"))
 LINUX_RAIZ_FORA = {"usr", "var", "opt", "snap", "lib", "lib32", "lib64", "libx32", "bin", "sbin", "boot", "etc", "srv"}
+_FX_OS = {"windows", "usr", "lib", "lib32", "lib64", "libx32", "bin", "sbin", "boot", "etc", "system"}
+_FX_APPS = {"windowsapps", "opt", "snap", "applications"}
+
+
+def faixa_fora(disp, motivo):
+    """Faixa do cockpit de uma pasta que a varredura do backup pulou (medida em segundo plano)."""
+    n = re.split(r"[\\/]", disp.rstrip("\\/"))[-1].lower()
+    ml = (motivo or "").lower()
+    if "cache" in ml or "lixeira" in ml or "temporár" in ml:
+        return "caches"
+    if n in _FX_OS:
+        return "os"
+    if n.startswith("program files") or n in _FX_APPS:
+        return "apps"
+    return "dados"
 
 
 # ---------------------------- filtros da lista (estilo e-commerce: facetas com contagem) ----------------------------
@@ -880,7 +888,7 @@ def parse_filtro(q):
     f = {k: (v[0] if isinstance(v, list) else v) for k, v in (q or {}).items()}
     lst = lambda k: [x for x in str(f.get(k) if f.get(k) is not None else "").split("|") if x != ""]
     inc = f.get("inc")
-    return {"cat": set(lst("cat")), "tipo": set(lst("tipo")), "status": set(lst("status")), "local": lst("local"), "tag": set(lst("tag")),
+    return {"cat": set(lst("cat")), "grupo": set(lst("grupo")), "tipo": set(lst("tipo")), "status": set(lst("status")), "local": lst("local"), "tag": set(lst("tag")),
             "data": set(lst("data")), "tam": set(lst("tam")), "act": f.get("act") or "",
             "inc": None if inc in (None, "", "todos") else str(inc) in ("1", "True", "true"),
             "dmin": _data_iso(f.get("dmin")), "dmax": _data_iso(f.get("dmax")),
@@ -1120,6 +1128,10 @@ class App(object):
             for pf in ("program files", "program files (x86)", "programdata"):
                 if names.get(pf):
                     plans.append((os.path.join(root, names[pf]), "Disco_%s/Sistemas" % letter, "%s:\\%s" % (letter, names[pf]), "\\", "sistemas"))
+        elif kind == "mac":
+            ud = os.path.join(root, "Users")
+            for u in mac_usuarios(ud):
+                plans.append((os.path.join(ud, u), u, "/Users/" + u, "/", "macuser"))
         elif kind == "linux":
             hp = os.path.join(root, "home")
             for u in sorted(safe_listdir(hp)):
@@ -1132,7 +1144,9 @@ class App(object):
         else:
             base = os.path.basename(root.rstrip("/\\")) or root
             home = os.path.abspath(os.path.expanduser("~"))
-            if os.path.abspath(root) == home or os.path.dirname(os.path.abspath(root)) == "/home":
+            if sys.platform == "darwin" and (os.path.abspath(root) == home or os.path.dirname(os.path.abspath(root)) == "/Users"):
+                plans.append((root, base, root, os.sep, "macuser"))
+            elif os.path.abspath(root) == home or os.path.dirname(os.path.abspath(root)) == "/home":
                 plans.append((root, base, root, os.sep, "linuxuser"))
             else:
                 plans.append((root, ("Disco_" if os.path.ismount(root) else "Pasta_") + base, root, os.sep, "plain"))
@@ -1153,6 +1167,8 @@ class App(object):
             return "Cache/temporário (recriado sozinho)"
         if low == "windowsapps":
             return "Atalhos de aplicativos do Windows (não são arquivos de verdade)"
+        if ctx == "macuser" and parent_is_root and low == "library":
+            return "Dados do macOS e dos apps (não são arquivos pessoais)"
         return None
 
     def walk_plan(self, plan):
@@ -1232,6 +1248,10 @@ class App(object):
             chrome = [("Chrome", ".config/google-chrome"), ("Chromium", ".config/chromium"), ("Edge", ".config/microsoft-edge"),
                       ("Brave", ".config/BraveSoftware/Brave-Browser"), ("ChromeSnap", "snap/chromium/common/chromium")]
             ff = ".mozilla/firefox"
+        elif ctx == "macuser":
+            chrome = [("Chrome", "Library/Application Support/Google/Chrome"), ("Edge", "Library/Application Support/Microsoft Edge"),
+                      ("Brave", "Library/Application Support/BraveSoftware/Brave-Browser")]
+            ff = "Library/Application Support/Firefox/Profiles"
         else:
             return found
         for nome, rel in chrome:
@@ -1338,7 +1358,7 @@ class App(object):
         dentro_n = dentro.replace("\\", "/")
         it.quem, it.pk = local, pasta_chave(local, dentro_n)
         segs = lambda t: "/".join(safe_seg(x) for x in t.split("/") if x)
-        app = self._app_conhecido(dentro_n, ctx) if ctx in ("winuser", "linuxuser") else None
+        app = self._app_conhecido(dentro_n, ctx) if ctx in ("winuser", "linuxuser", "macuser") else None
         if app and act != "ignorar":
             cat, act, mot, marcado = "Dados_de_apps", "copiar", "Dados do %s (e-mail, contatos, notas)" % app[0].replace("_", " "), True
             it.rel = "%s/Dados_de_apps/%s/%s" % (loc, app[0], segs(app[1]))
@@ -1350,7 +1370,7 @@ class App(object):
             cat, mot, marcado = "Ocultos", "Arquivo oculto (%s)" % cat, False
             it.rel = "%s/Ocultos/%s" % (loc, segs(dentro_n))
         elif cat != "Nuvem" and eh_whatsapp(disp, name):
-            dono = local.split("/")[-1] if ctx in ("winuser", "linuxuser") and local else ""
+            dono = local.split("/")[-1] if ctx in ("winuser", "linuxuser", "macuser") and local else ""
             local = it.local = "WhatsApp (%s)" % dono if dono else "WhatsApp"  # o WhatsApp de cada usuário vira um "usuário" à parte
             mot = "WhatsApp (%s)" % cat
             it.rel = build_rel(local, cat, date, name, ext)
@@ -1675,7 +1695,7 @@ class App(object):
                 unicos.append(a)
         discos, vistos = [], set()
         for src in (self.cfg or {}).get("sources", []):
-            if src["kind"] in ("windows", "linux") or os.path.ismount(src["path"]):
+            if src["kind"] in ("windows", "linux", "mac") or os.path.ismount(src["path"]):
                 total, livre = disk_usage(src["path"])
                 if total and (total, livre) not in vistos:
                     vistos.add((total, livre))
@@ -1686,16 +1706,55 @@ class App(object):
         self.medicao = {"rodando": True, "pct": 0, "total": sum(d[0] for d in discos), "usado": sum(d[1] for d in discos), "achado": achado,
                         "marcado": sum(it.size for it in self.items if it.inc), "fora": [], "grupos": {"Arquivos do sistema": sis_lidos} if sis_lidos else {}, "resto": 0, "parcial": False,
                         "desconto": dentro_sis}
-        threading.Thread(target=self._medir_thread, args=(unicos, self.med_parar), daemon=True).start()
+        self.medicao["regioes"] = {}
+        self.medicao["so"] = ""
+        raizes = []
+        for src in (self.cfg or {}).get("sources", []):
+            if src["kind"] == "mac":
+                raizes.append((src["path"], "mac"))
+            elif src["kind"] in ("windows", "linux"):
+                self.medicao["so"] = DADOS.so_nome(src["kind"]) if DADOS else ""
+            elif DADOS and _dentro(os.path.expanduser("~"), src["path"]) or DADOS and _dentro(src["path"], os.path.expanduser("~")):
+                raizes.append((DADOS.raiz_local(), DADOS.so_local()))  # pasta pessoal deste computador: o disco é o daqui
+        if raizes and DADOS:
+            self.medicao["so"] = DADOS.so_nome(raizes[0][1])
+        threading.Thread(target=self._medir_thread, args=(unicos, self.med_parar, raizes[:1]), daemon=True).start()
+
+    def faixas_disco(self):
+        """Faixas do cockpit (as mesmas do Gerenciamento): o que a varredura achou, por categoria, mais o que foi medido fora
+        dela (pastas puladas e, no Mac, Applications/System). O que ninguém mediu vira Dados do Sistema quando a medição termina."""
+        m = self.medicao or {}
+        fx = {k: 0 for k, _, _ in CLS.FAIXAS}
+        for it in self.items:
+            f = "dados" if it.act == "ignorar" else CLS.BACKUP_FAIXA.get(it.cat, "outros")
+            if f:
+                fx[f] += it.size
+        for x in m.get("fora") or []:
+            fx[faixa_fora(x["caminho"], x["motivo"])] += x["bytes"]
+        for k, v in (m.get("regioes") or {}).items():
+            fx[k] += v
+        fx["apps"] = max(0, fx["apps"] - (m.get("desconto") or 0))  # bancos de sistemas já contados como itens (Sistemas), e estão dentro de Program Files
+        usado = m.get("usado") or 0
+        soma = sum(fx.values())
+        resto = max(0, usado - soma)
+        if not m.get("rodando"):
+            fx["dados"] += resto
+            resto = 0
+        return {"faixas": fx, "resto": resto, "medindo": bool(m.get("rodando")), "so": m.get("so") or ""}
 
     def parar_medicao(self):
         ev = getattr(self, "med_parar", None)
         if ev:
             ev.set()
 
-    def _medir_thread(self, alvos, parar):
+    def _medir_thread(self, alvos, parar, raizes=()):
         m = self.medicao
         ate = time.time() + 240
+        for raiz, so in raizes:  # Applications, System… (Mac): não estão em pasta pulada nenhuma
+            if not parar.is_set() and DADOS:
+                fora, parcial = DADOS.medir_fora(raiz, so, parar, ate)
+                m["regioes"] = fora
+                m["parcial"] = m["parcial"] or parcial
         for i, (real, disp, motivo) in enumerate(alvos):
             if parar.is_set():
                 break
@@ -1802,6 +1861,14 @@ class App(object):
         r = self.layout_resumo()
         return {"modo": r["modo"] or "ordenado", "nome": r["nome"] or "Ordenado", "espelhados": r["espelhar"]["n"], "ordenados": r["ordenar"]["n"]}
 
+    def destino(self, i):
+        """Onde um arquivo fica no backup em cada jeito de guardar (a prévia da faixa de baixo da Seleção)."""
+        if not 0 <= i < len(self.items):
+            raise ValueError("Arquivo não encontrado na lista: escaneie de novo.")
+        it = self.items[i]
+        return {"origem": it.disp, "espelho": rel_espelho(it) if it.eleg else it.rel, "ordenado": it.rel0 if it.eleg else it.rel,
+                "atual": it.rel, "copia": self.copia_de(it) if it.eleg else "fixo"}
+
     def layout_resumo(self):
         """Quanto vai espelhado e quanto ordenado (só o marcado para o backup) e um exemplo real de como fica."""
         r = {"modo": self.layout_modo, "nome": LAYOUT_NOME.get(self.layout_modo, ""), "editavel": self.layout_editavel(),
@@ -1827,7 +1894,9 @@ class App(object):
         """[(nome, ativo, teste(it), valores(it) ou None)]. "valores" alimenta as facetas (contagem por opção)."""
         hoje = datetime.date.today()
         tipo = lambda it: tipo_de(nome_de(it.disp))
+        grupo = lambda it: CLS.grupo_backup(it.cat, it.act)
         G = [("cat", bool(f["cat"]), lambda it: it.cat in f["cat"], lambda it: (it.cat,)),
+             ("grupo", bool(f["grupo"]), lambda it: grupo(it) in f["grupo"], lambda it: (grupo(it),)),
              ("tipo", bool(f["tipo"]), lambda it: tipo(it) in f["tipo"], lambda it: (tipo(it),)),
              ("status", bool(f["status"]), lambda it: self.final_status(it) in f["status"], lambda it: (self.final_status(it),)),
              ("inc", f["inc"] is not None, lambda it: bool(it.inc) == f["inc"], lambda it: ("1" if it.inc else "0",)),
@@ -1961,7 +2030,7 @@ class App(object):
             out.append([i, it.disp, it.size, ("%04d-%02d-%02d" % it.date) if it.date else "", it.cat, it.act, 1 if it.inc else 0,
                         it.err or it.motivo, self.final_status(it), it.tags, nome, tipo_de(nome), it.local,
                         "" if it.nuvem or not DADOS else (DADOS.tipo_previa(it.src) or ""),
-                        self.copia_de(it) if it.eleg else "", it.rel])
+                        self.copia_de(it) if it.eleg else "", it.rel, CLS.grupo_backup(it.cat, it.act), int(it.mtime or 0)])
         r = {"total": len(idx), "rows": out, "bytes": sum(self.items[i].size for i in idx), "sel_n": len(sel), "sel_bytes": sum(it.size for it in sel)}
         if str(f.get("pastas") or "") in ("1", "true"):
             r["pastas"] = self.subpastas(idx, (flt["pasta"] or [""])[0])
@@ -2435,8 +2504,10 @@ class App(object):
         with self.lock:
             if self.busy():
                 raise Busy("Aguarde o processo atual terminar.")
-            if self.phase not in ("verified", "done"):
+            if self.phase not in ("verified", "done") and not (SU["ligado"] and self.phase == "copied"):
                 raise ValueError("Rode a verificação antes de concluir.")
+            if self.phase == "copied":
+                self.log("SUPERUSUÁRIO: verificação pulada; o certificado sai como não verificado.")
             self.phase = "finishing"
         try:
             self._write_mapa()
@@ -2542,7 +2613,7 @@ class App(object):
         status = "sem_falhas" if ressalvas == 0 else "ressalvas"
         meta = {
             "pc": cfg["equip"], "data": datetime.date.today().isoformat(), "raiz": self.dest_root, "dstRel": True,
-            "verificacao": ("SHA-256 (completa, %s)" % disco.METODO) if self.verified_mode == "completa" else "Tamanho (rápida)",
+            "verificacao": ("SHA-256 (completa, %s)" % disco.METODO) if self.verified_mode == "completa" else "Tamanho (rápida)" if self.verified_mode else "Não verificado (pulado no modo Superusuário)",
             "campos": ["origem", "destino_relativo", "categoria", "tamanho_bytes", "data", "situacao", "etiquetas", "usuario", "motivo", "sha256", "mtime_epoch", "causa"],
             "checagens": self.checagens, "maes": sorted({"/".join(it.rel.split("/")[:2]) for it in self.items if it.inc and it.rel.startswith(PASTA_ORIGEM + "/")}),
             "layout": self._layout_registro(),
@@ -2632,15 +2703,22 @@ class App(object):
             return False, "Falta a etapa “O que manter”: escolha os programas a reinstalar (ou confirme que não vai manter nenhum)."
         return True, ""
 
-    def firmware_reboot(self):
+    def firmware_reboot(self, forcar=False):
         ok, why = self.firmware_gate()
         if not ok:
-            raise ValueError(why)
+            if not (forcar and SU["ligado"]):
+                raise ValueError(why)
+            self.log("SUPERUSUÁRIO: formatação liberada apesar do bloqueio: %s" % why)
+            try:
+                if FICHA:
+                    FICHA.hist_add(FICHA.machine_id_cache(), "superusuario", "Bloqueio de formatar ignorado no modo Superusuário: %s" % why)
+            except Exception:
+                pass
         if sys.platform == "darwin":
             raise ValueError("No Mac este botão não é suportado: reinicie segurando Command+R (Recuperação) ou Option (escolher disco).")
         try:
             if FICHA:
-                FICHA.hist_add(FICHA.machine_id_cache(), "formatacao", "Reinício para BIOS/UEFI solicitado para formatar (backup verificado, código %s)" % self.cert.get("codigo", ""))
+                FICHA.hist_add(FICHA.machine_id_cache(), "formatacao", "Reinício para BIOS/UEFI solicitado para formatar (%s, código %s)" % ("backup verificado" if ok else "liberado pelo Superusuário", (self.cert or {}).get("codigo", "")))
         except Exception:
             pass
         if os.environ.get("DD_TEST"):
@@ -2943,6 +3021,126 @@ def ficha_aplicar(ids):
 # Servidor HTTP local
 # ----------------------------------------------------------------------------------------------
 APP = App()
+# Modo Superusuário (ligado na engrenagem): abre qualquer etapa e pula travas do fluxo. Tudo o que ele faz vai para o registro.
+SU = {"ligado": False}
+SU_CAMPOS_CERT = (("cliente", "Cliente"), ("tecnico", "Técnico"), ("equipamento", "Equipamento"), ("data", "Data"), ("hora", "Hora"), ("status", "Situação"))
+
+
+def exigir_su():
+    if not SU["ligado"]:
+        raise ValueError("Ligue o modo Superusuário em Configurações para fazer isto.")
+
+
+def modelo_rapido():
+    """Modelo comercial sem ficha (máquina ainda não analisada): Mac pelo hw.model, Linux pelo DMI. No Windows fica vazio
+    (pedir ao WMI demora): a ficha preenche depois."""
+    try:
+        if sys.platform == "darwin":
+            m = subprocess.run(["sysctl", "-n", "hw.model"], capture_output=True, text=True, timeout=3).stdout.strip()
+            return FICHA.MODELOS_MAC.get(m, m) if FICHA else m
+        if not IS_WIN:
+            ler = lambda n: open("/sys/class/dmi/id/" + n, encoding="utf-8", errors="replace").read().strip()
+            return (ler("sys_vendor") + " " + ler("product_name")).strip()
+    except Exception:
+        pass
+    return ""
+
+
+def identidade(para="dados", app=None):
+    """Quem é esta máquina para o cabeçalho do cockpit: nome, modelo, dono (particular ou cliente) e as contas do sistema."""
+    host = socket.gethostname()
+    if sys.platform == "darwin":  # o nome que a pessoa deu ao Mac ("MacBook Air de Ana"), não o de rede ("…local")
+        try:
+            host = subprocess.run(["scutil", "--get", "ComputerName"], capture_output=True, text=True, timeout=3).stdout.strip() or host
+        except Exception:
+            pass
+    out = {"host": host, "nome": host, "modelo": "", "dono": "", "dono_nome": "", "tecnico": "", "contas": []}
+    try:
+        mid = FICHA.machine_id_cache()
+        meta = FICHA.meta_ler(mid)
+        fichas = FICHA.listar_fichas(mid)
+        ult = FICHA.ler_ficha(mid, fichas[-1]) if fichas else None
+        out["modelo"] = (FICHA.modelo_comercial(ult) if ult else "") or modelo_rapido()
+        if out["modelo"] == host:
+            out["modelo"] = modelo_rapido()
+        out["nome"] = meta.get("nome") or host
+        st = TERMO.status(mid) if TERMO else {}
+        out.update(dono=st.get("dono", ""), dono_nome=st.get("terceiro_nome", ""), tecnico=(PERFIL.ler().get("nome") or st.get("tecnico") or "").strip())
+    except Exception:
+        out["modelo"] = out["modelo"] or modelo_rapido()
+    eu = os.path.basename(FICHA.user_home() if FICHA else os.path.expanduser("~"))
+    nomes = []
+    if para == "backup":
+        for src in ((app or APP).cfg or {}).get("sources", []):
+            nomes += detect_kind(src["path"])[1] if src["kind"] in ("windows", "linux", "mac") else [os.path.basename(src["path"].rstrip("/\\"))]
+    elif DADOS:
+        nomes = [u for u, _ in DADOS.homes()]
+    vistos = set()
+    for n in nomes:
+        if n and n not in vistos:
+            vistos.add(n)
+            out["contas"].append({"nome": n, "em_uso": n == eu})
+    return out
+
+
+def su_estado():
+    a = APP
+    return {"ligado": SU["ligado"], "admin": eh_admin(), "so": "mac" if sys.platform == "darwin" else "windows" if IS_WIN else "linux",
+            "phase": a.phase, "layout_modo": a.layout_modo, "layout_editavel": a.layout_editavel(), "verified_mode": a.verified_mode,
+            "mapa_dir": a.mapa_dir if os.path.isfile(os.path.join(a.mapa_dir or "", "certificado.json")) else ""}
+
+
+def su_certificado_ler():
+    exigir_su()
+    cj = os.path.join(APP.mapa_dir or "", "certificado.json")
+    if not os.path.isfile(cj):
+        raise ValueError("Ainda não há certificado gerado neste backup.")
+    with open(cj, encoding="utf-8") as fh:
+        c = json.load(fh)["cert"]
+    return {"campos": [{"id": k, "nome": n, "valor": c.get(k, "")} for k, n in SU_CAMPOS_CERT], "editado": c.get("editado") or [], "codigo": c.get("codigo", "")}
+
+
+def su_certificado_salvar(b):
+    """Corrige campos do certificado já emitido. Guarda cópia .bak dos originais e deixa a edição marcada no próprio
+    certificado (o código original não muda), para o cliente e o --verificar enxergarem que houve correção manual."""
+    exigir_su()
+    mp = APP.mapa_dir or ""
+    cj, dj = os.path.join(mp, "certificado.json"), os.path.join(mp, "dados.js")
+    if not (os.path.isfile(cj) and os.path.isfile(dj)):
+        raise ValueError("Ainda não há certificado gerado neste backup.")
+    with open(cj, encoding="utf-8") as fh:
+        cjson = json.load(fh)
+    with open(dj, encoding="utf-8") as fh:
+        dados = json.loads(fh.read().strip()[len("window.BKP="):].rstrip(";"))
+    cert, mudou = cjson["cert"], {}
+    for k, _ in SU_CAMPOS_CERT:
+        if k not in b:
+            continue
+        v = str(b[k]).strip()[:200]
+        if k == "status" and v not in ("sem_falhas", "ressalvas"):
+            raise ValueError("Situação inválida.")
+        if v != str(cert.get(k, "")):
+            mudou[k] = {"antes": cert.get(k, ""), "depois": v}
+            cert[k] = v
+    if not mudou:
+        return {"ok": True, "mudou": 0}
+    for p in (cj, dj):
+        bak = p + ".bak"
+        if not os.path.exists(bak):  # guarda só o original emitido
+            shutil.copyfile(p, bak)
+    cert.setdefault("editado", []).append({"quando": now_iso(), "por": "superusuário", "campos": mudou})
+    dados.setdefault("meta", {})["cert"] = cert
+    body = "window.BKP=" + json.dumps(dados, ensure_ascii=False, separators=(",", ":")) + ";"
+    with open(dj, "w", encoding="utf-8") as fh:
+        fh.write(body)
+    cert["base_hash"] = hashlib.sha256(body.encode("utf-8")).hexdigest()
+    cjson.update({"cert": cert, "dados_js_sha256": cert["base_hash"]})
+    with open(cj, "w", encoding="utf-8") as fh:
+        json.dump(cjson, fh, ensure_ascii=False, indent=1)
+    if APP.cert and APP.cert.get("codigo") == cert.get("codigo"):
+        APP.cert = cert
+    APP.log("SUPERUSUÁRIO: certificado %s editado (%s)." % (cert.get("codigo", ""), ", ".join(mudou)))
+    return {"ok": True, "mudou": len(mudou)}
 
 
 def dados_depois(tipo):
@@ -3217,8 +3415,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/dados/indice":
             self.exigir(None)
             g = lambda k: (q.get(k) or [""])[0]
-            return DADOS.indice_consulta(g("bloco"), g("cat"), g("pasta") or None, g("usuario"), g("q"), g("ordem") or "maior",
-                                         int(g("offset") or 0), int(g("limit") or 200), g("visao") or "arquivos")
+            return DADOS.indice_consulta(faixa=g("faixa") or g("bloco"), cat=g("cat"), pasta=g("pasta") or None, usuario=g("usuario"), q=g("q"), ordem=g("ordem") or "maior",
+                                         offset=int(g("offset") or 0), limit=int(g("limit") if g("limit") != "" else 200), visao=g("visao") or "arquivos",
+                                         grupo=g("grupo"), sug=g("sug"), tipo=g("tipo"), tam=g("tam"), uso=g("uso"), facetas=g("facetas") in ("1", "true"))
         if path == "/api/mapa/lista":
             return {"mapas": mapas_conhecidos(), "aberto": MAPA.resumo() if MAPA.M["mapa"] else None}
         if path == "/api/mapa/arvore":
@@ -3230,6 +3429,16 @@ class Handler(BaseHTTPRequestHandler):
             return MAPA.estado_conferencia()
         if path == "/api/layout":
             return APP.layout_resumo()
+        if path == "/api/identidade":
+            return identidade((q.get("para") or ["dados"])[0])
+        if path == "/api/classes":
+            return CLS.para_tela()
+        if path == "/api/destino":
+            return APP.destino(int((q.get("i") or ["-1"])[0]))
+        if path == "/api/su":
+            return su_estado()
+        if path == "/api/su/certificado":
+            return su_certificado_ler()
         if path == "/api/mapa/certificado":
             return MAPA.certificado()
         if path == "/api/dados/explorar":
@@ -3279,7 +3488,7 @@ class Handler(BaseHTTPRequestHandler):
             g = lambda k, d="": (q.get(k) or [d])[0]
             return APP.falhas_agrupadas(g("grupo"), int(g("off", "0") or 0), min(200, int(g("limit", "50") or 50)))
         if path == "/api/medicao":
-            return dict(APP.medicao or {}, incluidas=list(APP.extras), incl=dict(APP.incl))
+            return dict(APP.medicao or {}, incluidas=list(APP.extras), incl=dict(APP.incl), **(APP.faixas_disco() if APP.medicao else {}))
         if path == "/api/totals":
             return APP.totals()
         if path == "/api/ficha/estado":
@@ -3334,10 +3543,19 @@ class Handler(BaseHTTPRequestHandler):
             return {"ok": True}
         if path == "/api/select":
             return {"n": APP.select(b)}
+        if path == "/api/su":
+            SU["ligado"] = bool(b.get("ligado"))
+            APP.log("Modo Superusuário %s." % ("ligado" if SU["ligado"] else "desligado"))
+            return su_estado()
+        if path == "/api/su/certificado":
+            return su_certificado_salvar(b)
         if path == "/api/copy":
             self.exigir("backup")
             if not APP.layout_modo:
-                raise ValueError("Escolha como guardar este backup (Espelho, Ordenado ou Misto) na Seleção antes de copiar.")
+                if not SU["ligado"]:
+                    raise ValueError("Escolha como guardar este backup (Espelho, Ordenado ou Misto) na Seleção antes de copiar.")
+                APP.set_modo("espelho")
+                APP.log("SUPERUSUÁRIO: cópia iniciada sem escolher o jeito de guardar; usado Espelho.")
             APP.start_copy()
             return {"ok": True}
         if path == "/api/retry":
@@ -3375,7 +3593,7 @@ class Handler(BaseHTTPRequestHandler):
             self.exigir("formatar")
             if TERMO and TERMO.status(FICHA.machine_id_cache()).get("dono") == "terceiros" and (b.get("digitou") or "").strip().upper() != "FORMATAR":
                 raise ValueError("Máquina de terceiros: digite FORMATAR para confirmar.")
-            return APP.firmware_reboot()
+            return APP.firmware_reboot(bool(b.get("forcar")))
         if path == "/api/ficha/coletar":
             self.exigir("ficha")
             ficha_coletar("antes" if b.get("fase") != "depois" else "depois")
@@ -3875,6 +4093,8 @@ def cli_verificar(pasta):
     if h == c.get("dados_js_sha256"):
         print("OK  - dados.js é idêntico ao do momento do certificado.")
         print("Certificado %s | %s | %s" % (c.get("codigo"), c["cert"].get("equipamento"), c["cert"].get("data")))
+        for e in c["cert"].get("editado") or []:
+            print("AVISO - editado manualmente (%s) em %s: %s" % (e.get("por", ""), e.get("quando", ""), ", ".join(e.get("campos") or {})))
         return 0
     print("ALERTA - o dados.js foi ALTERADO depois de o certificado ser emitido.")
     return 1

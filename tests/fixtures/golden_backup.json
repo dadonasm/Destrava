@@ -1,0 +1,2002 @@
+{
+ "backup": {
+  "cert": {
+   "bytes": 144715,
+   "cliente": "Ana",
+   "copiados": 16,
+   "falhas": 0,
+   "ficaram": 4,
+   "layout": {
+    "espelhados": 6,
+    "modo": "misto",
+    "nome": "Misto",
+    "ordenados": 6
+   },
+   "motivos": [
+    {
+     "bytes": 112,
+     "motivo": "Desmarcado por você na seleção",
+     "n": 4,
+     "situacao": "desmarcado"
+    }
+   ],
+   "nao_copiados_em_uso": {
+    "bytes": 0,
+    "n": 0
+   },
+   "pastas_ign": 12,
+   "status": "sem_falhas",
+   "sweep": {
+    "n_alterados": 0,
+    "n_novos": 0,
+    "n_sumiram": 0
+   }
+  },
+  "files_docs_p2": {
+   "bytes": 53,
+   "rows": [
+    [
+     4,
+     "C:/Users/Ana/Documents/contrato.pdf",
+     13,
+     "2026-01-15",
+     "Documentos",
+     "copiar",
+     1,
+     "Arquivo pessoal (Documentos)",
+     "pendente",
+     "Contratos",
+     "contrato.pdf",
+     "PDF",
+     "Ana",
+     "pdf",
+     "ordenar",
+     "Ana/Documentos/2026/01 - Janeiro/contrato.pdf",
+     "Pessoal",
+     1768478400
+    ],
+    [
+     9,
+     "C:/Users/Ana/Documents/Wefix/Clientes/contrato_cliente.docx",
+     10,
+     "2026-01-15",
+     "Documentos",
+     "copiar",
+     1,
+     "Arquivo pessoal (Documentos)",
+     "pendente",
+     "Contratos|Clientes",
+     "contrato_cliente.docx",
+     "Word",
+     "Ana",
+     "",
+     "ordenar",
+     "Ana/Documentos/2026/01 - Janeiro/contrato_cliente.docx",
+     "Pessoal",
+     1768478400
+    ]
+   ],
+   "sel_bytes": 53,
+   "sel_n": 5
+  },
+  "files_facetas": {
+   "bytes": 144827,
+   "facets": {
+    "cat": {
+     "Configuracoes": 1,
+     "Dados_de_apps": 3,
+     "Documentos": 5,
+     "Fotos": 6,
+     "Ocultos": 1,
+     "Outros": 1,
+     "Programas": 1,
+     "Sistemas": 2
+    },
+    "copia": {
+     "fixo": 6,
+     "ordenar": 14
+    },
+    "grupo": {
+     "Dados de programas": 7,
+     "Instaladores": 1,
+     "Pessoal": 12
+    },
+    "inc": {
+     "0": 4,
+     "1": 16
+    },
+    "local": {
+     "Ana": 16,
+     "Disco_C": 2,
+     "WhatsApp (Ana)": 2
+    },
+    "status": {
+     "desmarcado": 4,
+     "pendente": 16
+    },
+    "tag": {
+     "Clientes": 2,
+     "Contratos": 2,
+     "Financeiro": 1,
+     "Fiscal": 1,
+     "Propostas": 1,
+     "WhatsApp": 2
+    },
+    "tam": {
+     "p": 20
+    },
+    "tipo": {
+     "Arquivo": 1,
+     "DAT": 1,
+     "DBF": 1,
+     "E-mail": 1,
+     "EXE": 1,
+     "FDB": 1,
+     "INI": 1,
+     "Imagem": 6,
+     "PDF": 3,
+     "Planilha": 1,
+     "Texto": 1,
+     "Word": 1,
+     "XYZ": 1
+    }
+   },
+   "rows": [],
+   "sel_bytes": 144715,
+   "sel_n": 16
+  },
+  "files_nome": {
+   "bytes": 144827,
+   "rows": [
+    [
+     14,
+     "C:/Users/Ana/AppData/Local/Microsoft/Outlook/Ana.pst",
+     300,
+     "2026-01-15",
+     "Dados_de_apps",
+     "copiar",
+     1,
+     "Dados do Outlook (e-mail, contatos, notas)",
+     "pendente",
+     "",
+     "Ana.pst",
+     "E-mail",
+     "Ana",
+     "",
+     "",
+     "Ana/Dados_de_apps/Outlook/Ana.pst",
+     "Dados de programas",
+     1768478400
+    ],
+    [
+     15,
+     "C:/Users/Ana/.segredo/anotacao.txt",
+     6,
+     "2026-01-15",
+     "Ocultos",
+     "copiar",
+     0,
+     "Arquivo oculto (Documentos)",
+     "desmarcado",
+     "",
+     "anotacao.txt",
+     "Texto",
+     "Ana",
+     "texto",
+     "",
+     "Ana/Ocultos/.segredo/anotacao.txt",
+     "Dados de programas",
+     1768478400
+    ],
+    [
+     8,
+     "C:/Users/Ana/Documents/Wefix/Clientes/boleto.pdf",
+     10,
+     "2026-01-15",
+     "Documentos",
+     "copiar",
+     1,
+     "Arquivo pessoal (Documentos)",
+     "pendente",
+     "Clientes|Financeiro",
+     "boleto.pdf",
+     "PDF",
+     "Ana",
+     "pdf",
+     "ordenar",
+     "Ana/Documentos/2026/01 - Janeiro/boleto.pdf",
+     "Pessoal",
+     1768478400
+    ],
+    [
+     3,
+     "C:/Users/Ana/Documents/config.ini",
+     3,
+     "2026-01-15",
+     "Configuracoes",
+     "copiar",
+     0,
+     "Configuração, atalho ou registro de programa",
+     "desmarcado",
+     "",
+     "config.ini",
+     "INI",
+     "Ana",
+     "texto",
+     "ordenar",
+     "Ana/Configuracoes/2026/01 - Janeiro/config.ini",
+     "Dados de programas",
+     1768478400
+    ],
+    [
+     4,
+     "C:/Users/Ana/Documents/contrato.pdf",
+     13,
+     "2026-01-15",
+     "Documentos",
+     "copiar",
+     1,
+     "Arquivo pessoal (Documentos)",
+     "pendente",
+     "Contratos",
+     "contrato.pdf",
+     "PDF",
+     "Ana",
+     "pdf",
+     "ordenar",
+     "Ana/Documentos/2026/01 - Janeiro/contrato.pdf",
+     "Pessoal",
+     1768478400
+    ],
+    [
+     9,
+     "C:/Users/Ana/Documents/Wefix/Clientes/contrato_cliente.docx",
+     10,
+     "2026-01-15",
+     "Documentos",
+     "copiar",
+     1,
+     "Arquivo pessoal (Documentos)",
+     "pendente",
+     "Contratos|Clientes",
+     "contrato_cliente.docx",
+     "Word",
+     "Ana",
+     "",
+     "ordenar",
+     "Ana/Documentos/2026/01 - Janeiro/contrato_cliente.docx",
+     "Pessoal",
+     1768478400
+    ],
+    [
+     13,
+     "C:/Users/Ana/AppData/Local/AppQualquer/dados.dat",
+     3,
+     "2026-01-15",
+     "Dados_de_apps",
+     "copiar",
+     0,
+     "Dados de programas (AppData): só se o cliente precisar",
+     "desmarcado",
+     "",
+     "dados.dat",
+     "DAT",
+     "Ana",
+     "",
+     "",
+     "Ana/Dados_de_apps/AppData/Local/AppQualquer/dados.dat",
+     "Dados de programas",
+     1768478400
+    ],
+    [
+     19,
+     "C:/ProgramData/Contab/empresa.dbf",
+     70000,
+     "",
+     "Sistemas",
+     "copiar",
+     1,
+     "Banco de dados de sistema · feche o sistema antes do backup",
+     "pendente",
+     "",
+     "empresa.dbf",
+     "DBF",
+     "Disco_C/Sistemas",
+     "",
+     "",
+     "Disco_C/Sistemas/ProgramData/Contab/empresa.dbf",
+     "Dados de programas",
+     1768478400
+    ],
+    [
+     6,
+     "C:/Users/Ana/Documents/Fotos da praia/f0.jpg",
+     103,
+     "2026-01-15",
+     "Fotos",
+     "copiar",
+     1,
+     "Arquivo pessoal (Fotos)",
+     "pendente",
+     "",
+     "f0.jpg",
+     "Imagem",
+     "Ana",
+     "imagem",
+     "ordenar",
+     "Ana/Fotos/2026/01 - Janeiro/f0.jpg",
+     "Pessoal",
+     1768478400
+    ],
+    [
+     5,
+     "C:/Users/Ana/Documents/Fotos da praia/f1.jpg",
+     103,
+     "2026-01-15",
+     "Fotos",
+     "copiar",
+     1,
+     "Arquivo pessoal (Fotos)",
+     "pendente",
+     "",
+     "f1.jpg",
+     "Imagem",
+     "Ana",
+     "imagem",
+     "ordenar",
+     "Ana/Fotos/2026/01 - Janeiro/f1.jpg",
+     "Pessoal",
+     1768478400
+    ],
+    [
+     7,
+     "C:/Users/Ana/Documents/Fotos da praia/f2.jpg",
+     103,
+     "2026-01-15",
+     "Fotos",
+     "copiar",
+     1,
+     "Arquivo pessoal (Fotos)",
+     "pendente",
+     "",
+     "f2.jpg",
+     "Imagem",
+     "Ana",
+     "imagem",
+     "ordenar",
+     "Ana/Fotos/2026/01 - Janeiro/f2.jpg",
+     "Pessoal",
+     1768478400
+    ],
+    [
+     16,
+     "C:/Users/Ana/Pictures/foto.jpg",
+     3003,
+     "2026-01-15",
+     "Fotos",
+     "copiar",
+     1,
+     "Arquivo pessoal (Fotos)",
+     "pendente",
+     "",
+     "foto.jpg",
+     "Imagem",
+     "Ana",
+     "imagem",
+     "ordenar",
+     "Ana/Fotos/2026/01 - Janeiro/foto.jpg",
+     "Pessoal",
+     1768478400
+    ],
+    [
+     17,
+     "C:/Users/Ana/Pictures/WhatsApp/IMG-20240105-WA0001.jpg",
+     503,
+     "2024-01-05",
+     "Fotos",
+     "copiar",
+     1,
+     "WhatsApp (Fotos)",
+     "pendente",
+     "WhatsApp",
+     "IMG-20240105-WA0001.jpg",
+     "Imagem",
+     "WhatsApp (Ana)",
+     "imagem",
+     "ordenar",
+     "WhatsApp (Ana)/Fotos/2024/01 - Janeiro/IMG-20240105-WA0001.jpg",
+     "Pessoal",
+     1768478400
+    ],
+    [
+     12,
+     "C:/Users/Ana/AppData/Roaming/Thunderbird/Profiles/x.default/Mail/Inbox",
+     13,
+     "2026-01-15",
+     "Dados_de_apps",
+     "copiar",
+     1,
+     "Dados do Thunderbird (e-mail, contatos, notas)",
+     "pendente",
+     "",
+     "Inbox",
+     "Arquivo",
+     "Ana",
+     "",
+     "",
+     "Ana/Dados_de_apps/Thunderbird/x.default/Mail/Inbox",
+     "Dados de programas",
+     1768478400
+    ],
+    [
+     0,
+     "C:/Users/Ana/Downloads/instalador.exe",
+     100,
+     "2026-01-15",
+     "Programas",
+     "copiar",
+     0,
+     "Programa ou instalador: marque se o cliente quiser guardar",
+     "desmarcado",
+     "",
+     "instalador.exe",
+     "EXE",
+     "Ana",
+     "",
+     "ordenar",
+     "Ana/Programas/2026/01 - Janeiro/instalador.exe",
+     "Instaladores",
+     1768478400
+    ],
+    [
+     18,
+     "C:/Program Files (x86)/LojaX/dados/LOJA.FDB",
+     70000,
+     "",
+     "Sistemas",
+     "copiar",
+     1,
+     "Banco de dados de sistema · feche o sistema antes do backup",
+     "pendente",
+     "",
+     "LOJA.FDB",
+     "FDB",
+     "Disco_C/Sistemas",
+     "",
+     "",
+     "Disco_C/Sistemas/Program Files (x86)/LojaX/dados/LOJA.FDB",
+     "Dados de programas",
+     1768478400
+    ],
+    [
+     11,
+     "C:/Users/Ana/Documents/Wefix/Fiscal/nota_fiscal_jan.pdf",
+     10,
+     "2026-01-15",
+     "Documentos",
+     "copiar",
+     1,
+     "Arquivo pessoal (Documentos)",
+     "pendente",
+     "Fiscal",
+     "nota_fiscal_jan.pdf",
+     "PDF",
+     "Ana",
+     "pdf",
+     "ordenar",
+     "Ana/Documentos/2026/01 - Janeiro/nota_fiscal_jan.pdf",
+     "Pessoal",
+     1768478400
+    ],
+    [
+     10,
+     "C:/Users/Ana/Documents/Wefix/Fiscal/orcamento_loja.xlsx",
+     10,
+     "2026-01-15",
+     "Documentos",
+     "copiar",
+     1,
+     "Arquivo pessoal (Documentos)",
+     "pendente",
+     "Propostas",
+     "orcamento_loja.xlsx",
+     "Planilha",
+     "Ana",
+     "",
+     "ordenar",
+     "Ana/Documentos/2026/01 - Janeiro/orcamento_loja.xlsx",
+     "Pessoal",
+     1768478400
+    ],
+    [
+     2,
+     "C:/Users/Ana/Documents/planilha.xyz",
+     31,
+     "2026-01-15",
+     "Outros",
+     "revisar",
+     1,
+     "Tipo não reconhecido: copiado por segurança, confira",
+     "pendente",
+     "",
+     "planilha.xyz",
+     "XYZ",
+     "Ana",
+     "",
+     "ordenar",
+     "Ana/Outros/XYZ/2026/01 - Janeiro/planilha.xyz",
+     "Pessoal",
+     1768478400
+    ],
+    [
+     1,
+     "C:/Users/Ana/Downloads/WhatsApp Image 2024-02-03 at 10.11.12.jpeg",
+     503,
+     "2026-01-15",
+     "Fotos",
+     "copiar",
+     1,
+     "WhatsApp (Fotos)",
+     "pendente",
+     "WhatsApp",
+     "WhatsApp Image 2024-02-03 at 10.11.12.jpeg",
+     "Imagem",
+     "WhatsApp (Ana)",
+     "imagem",
+     "ordenar",
+     "WhatsApp (Ana)/Fotos/2026/01 - Janeiro/WhatsApp Image 2024-02-03 at 10.11.12.jpeg",
+     "Pessoal",
+     1768478400
+    ]
+   ],
+   "sel_bytes": 144715,
+   "sel_n": 16
+  },
+  "groups": {
+   "acts": {
+    "copiar": {
+     "bytes": 144796,
+     "esp": 0,
+     "ex": [
+      "LOJA.FDB",
+      "empresa.dbf",
+      "foto.jpg"
+     ],
+     "n": 19,
+     "ord": 13,
+     "sel_bytes": 144684,
+     "sel_n": 15
+    },
+    "revisar": {
+     "bytes": 31,
+     "esp": 0,
+     "ex": [
+      "planilha.xyz"
+     ],
+     "n": 1,
+     "ord": 1,
+     "sel_bytes": 31,
+     "sel_n": 1
+    }
+   },
+   "cats": [
+    {
+     "bytes": 140000,
+     "cat": "Sistemas",
+     "esp": 0,
+     "ex": [
+      "LOJA.FDB",
+      "empresa.dbf"
+     ],
+     "n": 2,
+     "ord": 0,
+     "sel_bytes": 140000,
+     "sel_n": 2
+    },
+    {
+     "bytes": 4318,
+     "cat": "Fotos",
+     "esp": 0,
+     "ex": [
+      "foto.jpg",
+      "WhatsApp Image 2024-02-03 at 10.11.12.jpeg",
+      "IMG-20240105-WA0001.jpg"
+     ],
+     "n": 6,
+     "ord": 6,
+     "sel_bytes": 4318,
+     "sel_n": 6
+    },
+    {
+     "bytes": 316,
+     "cat": "Dados_de_apps",
+     "esp": 0,
+     "ex": [
+      "Ana.pst",
+      "Inbox",
+      "dados.dat"
+     ],
+     "n": 3,
+     "ord": 0,
+     "sel_bytes": 313,
+     "sel_n": 2
+    },
+    {
+     "bytes": 100,
+     "cat": "Programas",
+     "esp": 0,
+     "ex": [
+      "instalador.exe"
+     ],
+     "n": 1,
+     "ord": 1,
+     "sel_bytes": 0,
+     "sel_n": 0
+    },
+    {
+     "bytes": 53,
+     "cat": "Documentos",
+     "esp": 0,
+     "ex": [
+      "contrato.pdf",
+      "boleto.pdf",
+      "contrato_cliente.docx"
+     ],
+     "n": 5,
+     "ord": 5,
+     "sel_bytes": 53,
+     "sel_n": 5
+    },
+    {
+     "bytes": 6,
+     "cat": "Ocultos",
+     "esp": 0,
+     "ex": [
+      "anotacao.txt"
+     ],
+     "n": 1,
+     "ord": 0,
+     "sel_bytes": 0,
+     "sel_n": 0
+    },
+    {
+     "bytes": 3,
+     "cat": "Configuracoes",
+     "esp": 0,
+     "ex": [
+      "config.ini"
+     ],
+     "n": 1,
+     "ord": 1,
+     "sel_bytes": 0,
+     "sel_n": 0
+    }
+   ],
+   "groups": [
+    {
+     "act": "copiar",
+     "bytes": 3,
+     "cat": "Configuracoes",
+     "esp": 0,
+     "local": "Ana",
+     "n": 1,
+     "ord": 1,
+     "sel_bytes": 0,
+     "sel_n": 0
+    },
+    {
+     "act": "copiar",
+     "bytes": 316,
+     "cat": "Dados_de_apps",
+     "esp": 0,
+     "local": "Ana",
+     "n": 3,
+     "ord": 0,
+     "sel_bytes": 313,
+     "sel_n": 2
+    },
+    {
+     "act": "copiar",
+     "bytes": 53,
+     "cat": "Documentos",
+     "esp": 0,
+     "local": "Ana",
+     "n": 5,
+     "ord": 5,
+     "sel_bytes": 53,
+     "sel_n": 5
+    },
+    {
+     "act": "copiar",
+     "bytes": 3312,
+     "cat": "Fotos",
+     "esp": 0,
+     "local": "Ana",
+     "n": 4,
+     "ord": 4,
+     "sel_bytes": 3312,
+     "sel_n": 4
+    },
+    {
+     "act": "copiar",
+     "bytes": 6,
+     "cat": "Ocultos",
+     "esp": 0,
+     "local": "Ana",
+     "n": 1,
+     "ord": 0,
+     "sel_bytes": 0,
+     "sel_n": 0
+    },
+    {
+     "act": "revisar",
+     "bytes": 31,
+     "cat": "Outros",
+     "esp": 0,
+     "local": "Ana",
+     "n": 1,
+     "ord": 1,
+     "sel_bytes": 31,
+     "sel_n": 1
+    },
+    {
+     "act": "copiar",
+     "bytes": 100,
+     "cat": "Programas",
+     "esp": 0,
+     "local": "Ana",
+     "n": 1,
+     "ord": 1,
+     "sel_bytes": 0,
+     "sel_n": 0
+    },
+    {
+     "act": "copiar",
+     "bytes": 140000,
+     "cat": "Sistemas",
+     "esp": 0,
+     "local": "Disco_C/Sistemas",
+     "n": 2,
+     "ord": 0,
+     "sel_bytes": 140000,
+     "sel_n": 2
+    },
+    {
+     "act": "copiar",
+     "bytes": 1006,
+     "cat": "Fotos",
+     "esp": 0,
+     "local": "WhatsApp (Ana)",
+     "n": 2,
+     "ord": 2,
+     "sel_bytes": 1006,
+     "sel_n": 2
+    }
+   ],
+   "ign_dirs": [
+    [
+     "C:/Program Files",
+     "Sistema operacional / programas instalados"
+    ],
+    [
+     "C:/Program Files (x86)",
+     "Sistema operacional / programas instalados"
+    ],
+    [
+     "C:/ProgramData",
+     "Sistema operacional / programas instalados"
+    ],
+    [
+     "C:/Windows",
+     "Sistema operacional / programas instalados"
+    ],
+    [
+     "C:/Users/Ana/AppData/Roaming/Thunderbird/Profiles/x.default/cache2",
+     "Cache/temporário (recriado sozinho)"
+    ],
+    [
+     "C:/Users/Ana/AppData/Local/Temp",
+     "Cache/temporário (recriado sozinho)"
+    ]
+   ],
+   "ign_dirs_total": 6,
+   "layout_modo": ""
+  },
+  "layout_espelho": {
+   "editavel": true,
+   "espelhar": {
+    "bytes": 4402,
+    "n": 12
+   },
+   "exemplo": {
+    "espelho": "Pastas_origem/Ana/Documents/Wefix/Clientes/boleto.pdf",
+    "ordenado": "Ana/Documentos/2026/01 - Janeiro/boleto.pdf",
+    "origem": "C:/Users/Ana/Documents/Wefix/Clientes/boleto.pdf"
+   },
+   "fixos": {
+    "bytes": 140313,
+    "n": 4
+   },
+   "modo": "espelho",
+   "nome": "Espelho",
+   "ordenar": {
+    "bytes": 0,
+    "n": 0
+   }
+  },
+  "layout_misto": {
+   "editavel": true,
+   "espelhar": {
+    "bytes": 4402,
+    "n": 12
+   },
+   "exemplo": {
+    "espelho": "Pastas_origem/Ana/Documents/Wefix/Clientes/boleto.pdf",
+    "ordenado": "Ana/Documentos/2026/01 - Janeiro/boleto.pdf",
+    "origem": "C:/Users/Ana/Documents/Wefix/Clientes/boleto.pdf"
+   },
+   "fixos": {
+    "bytes": 140313,
+    "n": 4
+   },
+   "modo": "misto",
+   "nome": "Misto",
+   "ordenar": {
+    "bytes": 0,
+    "n": 0
+   }
+  },
+  "layout_misto_fotos_ordenadas": {
+   "editavel": true,
+   "espelhar": {
+    "bytes": 84,
+    "n": 6
+   },
+   "exemplo": {
+    "espelho": "Pastas_origem/Ana/Documents/Wefix/Clientes/boleto.pdf",
+    "ordenado": "Ana/Documentos/2026/01 - Janeiro/boleto.pdf",
+    "origem": "C:/Users/Ana/Documents/Wefix/Clientes/boleto.pdf"
+   },
+   "fixos": {
+    "bytes": 140313,
+    "n": 4
+   },
+   "modo": "misto",
+   "nome": "Misto",
+   "ordenar": {
+    "bytes": 4318,
+    "n": 6
+   }
+  },
+  "layout_ordenado": {
+   "editavel": true,
+   "espelhar": {
+    "bytes": 0,
+    "n": 0
+   },
+   "exemplo": {
+    "espelho": "Pastas_origem/Ana/Documents/Wefix/Clientes/boleto.pdf",
+    "ordenado": "Ana/Documentos/2026/01 - Janeiro/boleto.pdf",
+    "origem": "C:/Users/Ana/Documents/Wefix/Clientes/boleto.pdf"
+   },
+   "fixos": {
+    "bytes": 140313,
+    "n": 4
+   },
+   "modo": "ordenado",
+   "nome": "Ordenado",
+   "ordenar": {
+    "bytes": 4402,
+    "n": 12
+   }
+  },
+  "layout_sem_modo": {
+   "editavel": true,
+   "espelhar": {
+    "bytes": 0,
+    "n": 0
+   },
+   "exemplo": {
+    "espelho": "Pastas_origem/Ana/Documents/Wefix/Clientes/boleto.pdf",
+    "ordenado": "Ana/Documentos/2026/01 - Janeiro/boleto.pdf",
+    "origem": "C:/Users/Ana/Documents/Wefix/Clientes/boleto.pdf"
+   },
+   "fixos": {
+    "bytes": 140313,
+    "n": 4
+   },
+   "modo": "",
+   "nome": "",
+   "ordenar": {
+    "bytes": 4402,
+    "n": 12
+   }
+  },
+  "mapa_f": [
+   [
+    "C:/Program Files (x86)/LojaX/dados/LOJA.FDB",
+    "Disco_C/Sistemas/Program Files (x86)/LojaX/dados/LOJA.FDB",
+    "Sistemas",
+    70000,
+    "",
+    "ok",
+    "",
+    "Disco_C/Sistemas",
+    "",
+    "596e7b183ded54d75a18600b5b1b81b7eaa2272a0cfa498eb812a02919d44d85",
+    1768478400,
+    ""
+   ],
+   [
+    "C:/ProgramData/Contab/empresa.dbf",
+    "Disco_C/Sistemas/ProgramData/Contab/empresa.dbf",
+    "Sistemas",
+    70000,
+    "",
+    "ok",
+    "",
+    "Disco_C/Sistemas",
+    "",
+    "14767c167ff3c3ae2c9413a591b48c2ed72b2fc844b8a6dbaf706e2819692279",
+    1768478400,
+    ""
+   ],
+   [
+    "C:/Users/Ana/.segredo/anotacao.txt",
+    "",
+    "Ocultos",
+    6,
+    "2026-01-15",
+    "desmarcado",
+    "",
+    "Ana",
+    "Desmarcado por você na seleção",
+    "",
+    1768478400,
+    "nao_escolhido"
+   ],
+   [
+    "C:/Users/Ana/AppData/Local/AppQualquer/dados.dat",
+    "",
+    "Dados_de_apps",
+    3,
+    "2026-01-15",
+    "desmarcado",
+    "",
+    "Ana",
+    "Desmarcado por você na seleção",
+    "",
+    1768478400,
+    "nao_escolhido"
+   ],
+   [
+    "C:/Users/Ana/AppData/Local/Microsoft/Outlook/Ana.pst",
+    "Ana/Dados_de_apps/Outlook/Ana.pst",
+    "Dados_de_apps",
+    300,
+    "2026-01-15",
+    "ok",
+    "",
+    "Ana",
+    "",
+    "105af92f37a86a6ad8e0adaafbe4172cb1ed6d231d5bf898575b50549e128cb4",
+    1768478400,
+    ""
+   ],
+   [
+    "C:/Users/Ana/AppData/Roaming/Thunderbird/Profiles/x.default/Mail/Inbox",
+    "Ana/Dados_de_apps/Thunderbird/x.default/Mail/Inbox",
+    "Dados_de_apps",
+    13,
+    "2026-01-15",
+    "ok",
+    "",
+    "Ana",
+    "",
+    "cc3c9edc42338a15b04a7f38683c5433343897f6d6c058201998357515b4ee55",
+    1768478400,
+    ""
+   ],
+   [
+    "C:/Users/Ana/Documents/Fotos da praia/f0.jpg",
+    "Ana/Fotos/2026/01 - Janeiro/f0.jpg",
+    "Fotos",
+    103,
+    "2026-01-15",
+    "ok",
+    "",
+    "Ana",
+    "",
+    "e0061fefdd647e23466f126f7c18e7d455ddc76812c4fc4c2036452f92f3a4ed",
+    1768478400,
+    ""
+   ],
+   [
+    "C:/Users/Ana/Documents/Fotos da praia/f1.jpg",
+    "Ana/Fotos/2026/01 - Janeiro/f1.jpg",
+    "Fotos",
+    103,
+    "2026-01-15",
+    "ok",
+    "",
+    "Ana",
+    "",
+    "e0061fefdd647e23466f126f7c18e7d455ddc76812c4fc4c2036452f92f3a4ed",
+    1768478400,
+    ""
+   ],
+   [
+    "C:/Users/Ana/Documents/Fotos da praia/f2.jpg",
+    "Ana/Fotos/2026/01 - Janeiro/f2.jpg",
+    "Fotos",
+    103,
+    "2026-01-15",
+    "ok",
+    "",
+    "Ana",
+    "",
+    "e0061fefdd647e23466f126f7c18e7d455ddc76812c4fc4c2036452f92f3a4ed",
+    1768478400,
+    ""
+   ],
+   [
+    "C:/Users/Ana/Documents/Wefix/Clientes/boleto.pdf",
+    "Pastas_origem/Ana/Documents/Wefix/Clientes/boleto.pdf",
+    "Documentos",
+    10,
+    "2026-01-15",
+    "ok",
+    "Clientes|Financeiro",
+    "Ana",
+    "",
+    "875be271f5253bcc5dc7a20f91d3a71c091c51e092ca29c9c244bd6f322a80ba",
+    1768478400,
+    ""
+   ],
+   [
+    "C:/Users/Ana/Documents/Wefix/Clientes/contrato_cliente.docx",
+    "Pastas_origem/Ana/Documents/Wefix/Clientes/contrato_cliente.docx",
+    "Documentos",
+    10,
+    "2026-01-15",
+    "ok",
+    "Contratos|Clientes",
+    "Ana",
+    "",
+    "8208065b6f51ce72da98d48d841ccaac6ea9c6bea59d281a9a6c847f6547a107",
+    1768478400,
+    ""
+   ],
+   [
+    "C:/Users/Ana/Documents/Wefix/Fiscal/nota_fiscal_jan.pdf",
+    "Pastas_origem/Ana/Documents/Wefix/Fiscal/nota_fiscal_jan.pdf",
+    "Documentos",
+    10,
+    "2026-01-15",
+    "ok",
+    "Fiscal",
+    "Ana",
+    "",
+    "a39574b3a06ff253f902e7943e3283e401e8acac0e32c4e8dd922ac3d36b8d8e",
+    1768478400,
+    ""
+   ],
+   [
+    "C:/Users/Ana/Documents/Wefix/Fiscal/orcamento_loja.xlsx",
+    "Pastas_origem/Ana/Documents/Wefix/Fiscal/orcamento_loja.xlsx",
+    "Documentos",
+    10,
+    "2026-01-15",
+    "ok",
+    "Propostas",
+    "Ana",
+    "",
+    "ff2398cabbd50470cd76495e7c899df37b17a5a312298a6bc79efb2ab627124f",
+    1768478400,
+    ""
+   ],
+   [
+    "C:/Users/Ana/Documents/config.ini",
+    "",
+    "Configuracoes",
+    3,
+    "2026-01-15",
+    "desmarcado",
+    "",
+    "Ana",
+    "Desmarcado por você na seleção",
+    "",
+    1768478400,
+    "nao_escolhido"
+   ],
+   [
+    "C:/Users/Ana/Documents/contrato.pdf",
+    "Pastas_origem/Ana/Documents/contrato.pdf",
+    "Documentos",
+    13,
+    "2026-01-15",
+    "ok",
+    "Contratos",
+    "Ana",
+    "",
+    "25edb9fa55c9804987a1746f75b2da95bfe0bb246288711f2f6f43727b65172e",
+    1768478400,
+    ""
+   ],
+   [
+    "C:/Users/Ana/Documents/planilha.xyz",
+    "Pastas_origem/Ana/Documents/planilha.xyz",
+    "Outros",
+    31,
+    "2026-01-15",
+    "ok",
+    "",
+    "Ana",
+    "",
+    "a9b88be1d5a4da14a5bcb3fa2ffa30633c16f9ce662db25ffb5e78ce21413d2b",
+    1768478400,
+    ""
+   ],
+   [
+    "C:/Users/Ana/Downloads/WhatsApp Image 2024-02-03 at 10.11.12.jpeg",
+    "WhatsApp (Ana)/Fotos/2026/01 - Janeiro/WhatsApp Image 2024-02-03 at 10.11.12.jpeg",
+    "Fotos",
+    503,
+    "2026-01-15",
+    "ok",
+    "WhatsApp",
+    "WhatsApp (Ana)",
+    "",
+    "b9cfc6989fb74380c5e60a39070635539681ee144cf193e49b4ae973f8115b1e",
+    1768478400,
+    ""
+   ],
+   [
+    "C:/Users/Ana/Downloads/instalador.exe",
+    "",
+    "Programas",
+    100,
+    "2026-01-15",
+    "desmarcado",
+    "",
+    "Ana",
+    "Desmarcado por você na seleção",
+    "",
+    1768478400,
+    "nao_escolhido"
+   ],
+   [
+    "C:/Users/Ana/Pictures/WhatsApp/IMG-20240105-WA0001.jpg",
+    "WhatsApp (Ana)/Fotos/2024/01 - Janeiro/IMG-20240105-WA0001.jpg",
+    "Fotos",
+    503,
+    "2024-01-05",
+    "ok",
+    "WhatsApp",
+    "WhatsApp (Ana)",
+    "",
+    "4729f2d920c6244257e3d2c18922b13ab974ab303a2c478d3c9bb8ebca9f330c",
+    1768478400,
+    ""
+   ],
+   [
+    "C:/Users/Ana/Pictures/foto.jpg",
+    "Ana/Fotos/2026/01 - Janeiro/foto.jpg",
+    "Fotos",
+    3003,
+    "2026-01-15",
+    "ok",
+    "",
+    "Ana",
+    "",
+    "48ace4750ba75e15bc5ea6fee0686e6f20cb60b3a87da238e5ab32b3678434e0",
+    1768478400,
+    ""
+   ]
+  ],
+  "mapa_meta": {
+   "campos": [
+    "origem",
+    "destino_relativo",
+    "categoria",
+    "tamanho_bytes",
+    "data",
+    "situacao",
+    "etiquetas",
+    "usuario",
+    "motivo",
+    "sha256",
+    "mtime_epoch",
+    "causa"
+   ],
+   "checagens": [],
+   "dstRel": true,
+   "ign_dirs": [
+    [
+     "C:/Program Files",
+     "Sistema operacional / programas instalados"
+    ],
+    [
+     "C:/Program Files (x86)",
+     "Sistema operacional / programas instalados"
+    ],
+    [
+     "C:/ProgramData",
+     "Sistema operacional / programas instalados"
+    ],
+    [
+     "C:/Windows",
+     "Sistema operacional / programas instalados"
+    ],
+    [
+     "C:/Users/Ana/AppData/Roaming/Thunderbird/Profiles/x.default/cache2",
+     "Cache/temporário (recriado sozinho)"
+    ],
+    [
+     "C:/Users/Ana/AppData/Local/Temp",
+     "Cache/temporário (recriado sozinho)"
+    ],
+    [
+     "C:/Program Files",
+     "Sistema operacional / programas instalados"
+    ],
+    [
+     "C:/Program Files (x86)",
+     "Sistema operacional / programas instalados"
+    ],
+    [
+     "C:/ProgramData",
+     "Sistema operacional / programas instalados"
+    ],
+    [
+     "C:/Windows",
+     "Sistema operacional / programas instalados"
+    ],
+    [
+     "C:/Users/Ana/AppData/Roaming/Thunderbird/Profiles/x.default/cache2",
+     "Cache/temporário (recriado sozinho)"
+    ],
+    [
+     "C:/Users/Ana/AppData/Local/Temp",
+     "Cache/temporário (recriado sozinho)"
+    ]
+   ],
+   "ign_dirs_total": 12,
+   "layout": {
+    "espelhados": 6,
+    "modo": "misto",
+    "nome": "Misto",
+    "ordenados": 6
+   },
+   "maes": [
+    "Pastas_origem/Ana"
+   ]
+  },
+  "rels_espelho": [
+   "Ana/Dados_de_apps/AppData/Local/AppQualquer/dados.dat",
+   "Ana/Dados_de_apps/Outlook/Ana.pst",
+   "Ana/Dados_de_apps/Thunderbird/x.default/Mail/Inbox",
+   "Ana/Ocultos/.segredo/anotacao.txt",
+   "Disco_C/Sistemas/Program Files (x86)/LojaX/dados/LOJA.FDB",
+   "Disco_C/Sistemas/ProgramData/Contab/empresa.dbf",
+   "Pastas_origem/Ana/Documents/Fotos da praia/f0.jpg",
+   "Pastas_origem/Ana/Documents/Fotos da praia/f1.jpg",
+   "Pastas_origem/Ana/Documents/Fotos da praia/f2.jpg",
+   "Pastas_origem/Ana/Documents/Wefix/Clientes/boleto.pdf",
+   "Pastas_origem/Ana/Documents/Wefix/Clientes/contrato_cliente.docx",
+   "Pastas_origem/Ana/Documents/Wefix/Fiscal/nota_fiscal_jan.pdf",
+   "Pastas_origem/Ana/Documents/Wefix/Fiscal/orcamento_loja.xlsx",
+   "Pastas_origem/Ana/Documents/config.ini",
+   "Pastas_origem/Ana/Documents/contrato.pdf",
+   "Pastas_origem/Ana/Documents/planilha.xyz",
+   "Pastas_origem/Ana/Downloads/WhatsApp Image 2024-02-03 at 10.11.12.jpeg",
+   "Pastas_origem/Ana/Downloads/instalador.exe",
+   "Pastas_origem/Ana/Pictures/WhatsApp/IMG-20240105-WA0001.jpg",
+   "Pastas_origem/Ana/Pictures/foto.jpg"
+  ],
+  "rels_misto": [
+   "Ana/Dados_de_apps/AppData/Local/AppQualquer/dados.dat",
+   "Ana/Dados_de_apps/Outlook/Ana.pst",
+   "Ana/Dados_de_apps/Thunderbird/x.default/Mail/Inbox",
+   "Ana/Ocultos/.segredo/anotacao.txt",
+   "Disco_C/Sistemas/Program Files (x86)/LojaX/dados/LOJA.FDB",
+   "Disco_C/Sistemas/ProgramData/Contab/empresa.dbf",
+   "Pastas_origem/Ana/Documents/Fotos da praia/f0.jpg",
+   "Pastas_origem/Ana/Documents/Fotos da praia/f1.jpg",
+   "Pastas_origem/Ana/Documents/Fotos da praia/f2.jpg",
+   "Pastas_origem/Ana/Documents/Wefix/Clientes/boleto.pdf",
+   "Pastas_origem/Ana/Documents/Wefix/Clientes/contrato_cliente.docx",
+   "Pastas_origem/Ana/Documents/Wefix/Fiscal/nota_fiscal_jan.pdf",
+   "Pastas_origem/Ana/Documents/Wefix/Fiscal/orcamento_loja.xlsx",
+   "Pastas_origem/Ana/Documents/config.ini",
+   "Pastas_origem/Ana/Documents/contrato.pdf",
+   "Pastas_origem/Ana/Documents/planilha.xyz",
+   "Pastas_origem/Ana/Downloads/WhatsApp Image 2024-02-03 at 10.11.12.jpeg",
+   "Pastas_origem/Ana/Downloads/instalador.exe",
+   "Pastas_origem/Ana/Pictures/WhatsApp/IMG-20240105-WA0001.jpg",
+   "Pastas_origem/Ana/Pictures/foto.jpg"
+  ],
+  "rels_misto_fotos_ordenadas": [
+   "Ana/Dados_de_apps/AppData/Local/AppQualquer/dados.dat",
+   "Ana/Dados_de_apps/Outlook/Ana.pst",
+   "Ana/Dados_de_apps/Thunderbird/x.default/Mail/Inbox",
+   "Ana/Fotos/2026/01 - Janeiro/f0.jpg",
+   "Ana/Fotos/2026/01 - Janeiro/f1.jpg",
+   "Ana/Fotos/2026/01 - Janeiro/f2.jpg",
+   "Ana/Fotos/2026/01 - Janeiro/foto.jpg",
+   "Ana/Ocultos/.segredo/anotacao.txt",
+   "Disco_C/Sistemas/Program Files (x86)/LojaX/dados/LOJA.FDB",
+   "Disco_C/Sistemas/ProgramData/Contab/empresa.dbf",
+   "Pastas_origem/Ana/Documents/Wefix/Clientes/boleto.pdf",
+   "Pastas_origem/Ana/Documents/Wefix/Clientes/contrato_cliente.docx",
+   "Pastas_origem/Ana/Documents/Wefix/Fiscal/nota_fiscal_jan.pdf",
+   "Pastas_origem/Ana/Documents/Wefix/Fiscal/orcamento_loja.xlsx",
+   "Pastas_origem/Ana/Documents/config.ini",
+   "Pastas_origem/Ana/Documents/contrato.pdf",
+   "Pastas_origem/Ana/Documents/planilha.xyz",
+   "Pastas_origem/Ana/Downloads/instalador.exe",
+   "WhatsApp (Ana)/Fotos/2024/01 - Janeiro/IMG-20240105-WA0001.jpg",
+   "WhatsApp (Ana)/Fotos/2026/01 - Janeiro/WhatsApp Image 2024-02-03 at 10.11.12.jpeg"
+  ],
+  "rels_ordenado": [
+   "Ana/Configuracoes/2026/01 - Janeiro/config.ini",
+   "Ana/Dados_de_apps/AppData/Local/AppQualquer/dados.dat",
+   "Ana/Dados_de_apps/Outlook/Ana.pst",
+   "Ana/Dados_de_apps/Thunderbird/x.default/Mail/Inbox",
+   "Ana/Documentos/2026/01 - Janeiro/boleto.pdf",
+   "Ana/Documentos/2026/01 - Janeiro/contrato.pdf",
+   "Ana/Documentos/2026/01 - Janeiro/contrato_cliente.docx",
+   "Ana/Documentos/2026/01 - Janeiro/nota_fiscal_jan.pdf",
+   "Ana/Documentos/2026/01 - Janeiro/orcamento_loja.xlsx",
+   "Ana/Fotos/2026/01 - Janeiro/f0.jpg",
+   "Ana/Fotos/2026/01 - Janeiro/f1.jpg",
+   "Ana/Fotos/2026/01 - Janeiro/f2.jpg",
+   "Ana/Fotos/2026/01 - Janeiro/foto.jpg",
+   "Ana/Ocultos/.segredo/anotacao.txt",
+   "Ana/Outros/XYZ/2026/01 - Janeiro/planilha.xyz",
+   "Ana/Programas/2026/01 - Janeiro/instalador.exe",
+   "Disco_C/Sistemas/Program Files (x86)/LojaX/dados/LOJA.FDB",
+   "Disco_C/Sistemas/ProgramData/Contab/empresa.dbf",
+   "WhatsApp (Ana)/Fotos/2024/01 - Janeiro/IMG-20240105-WA0001.jpg",
+   "WhatsApp (Ana)/Fotos/2026/01 - Janeiro/WhatsApp Image 2024-02-03 at 10.11.12.jpeg"
+  ],
+  "totals": {
+   "biggest": 70000,
+   "cabe": true,
+   "fat32_problema": false,
+   "fs": null,
+   "sel_bytes": 144715,
+   "sel_n": 16,
+   "solucao": ""
+  },
+  "totals_padrao": {
+   "biggest": 70000,
+   "cabe": true,
+   "fat32_problema": false,
+   "fs": null,
+   "sel_bytes": 144715,
+   "sel_n": 16,
+   "solucao": ""
+  },
+  "totals_sem_documentos": {
+   "biggest": 70000,
+   "cabe": true,
+   "fat32_problema": false,
+   "fs": null,
+   "sel_bytes": 144662,
+   "sel_n": 11,
+   "solucao": ""
+  }
+ },
+ "dados": {
+  "busca_pdf": {
+   "bytes": 10008,
+   "cats": [
+    {
+     "bytes": 10008,
+     "cat": "Documentos e projetos",
+     "n": 2
+    }
+   ],
+   "estado": {
+    "construindo": false,
+    "existe": true,
+    "idle_dias": 90,
+    "min_mb": 100,
+    "n": 7,
+    "parcial": false
+   },
+   "facetas": {},
+   "facetas_bytes": {},
+   "faixas": {
+    "documentos": {
+     "bytes": 10008,
+     "n": 2
+    }
+   },
+   "migalhas": [],
+   "pastas": [],
+   "rows": [
+    {
+     "arquivos": 1,
+     "bytes": 3004,
+     "cat": "Documentos e projetos",
+     "criado": 1768478400.0,
+     "faixa": "documentos",
+     "grupo": "Pessoal",
+     "motivo": "",
+     "nome": "50%_desconto.pdf",
+     "path": "<TMP>/Documents/50%_desconto.pdf",
+     "pode_abrir": true,
+     "pode_marcar": true,
+     "previa": "pdf",
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "PDF",
+     "usuario": "teste",
+     "zona": ""
+    },
+    {
+     "arquivos": 1,
+     "bytes": 7004,
+     "cat": "Documentos e projetos",
+     "criado": 1768478400.0,
+     "faixa": "documentos",
+     "grupo": "Pessoal",
+     "motivo": "",
+     "nome": "contrato.pdf",
+     "path": "<TMP>/Documents/contrato.pdf",
+     "pode_abrir": true,
+     "pode_marcar": true,
+     "previa": "pdf",
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "PDF",
+     "usuario": "teste",
+     "zona": ""
+    }
+   ],
+   "usuarios": [
+    "teste"
+   ]
+  },
+  "fase": "pronto",
+  "midias": {
+   "bytes": 69000,
+   "cats": [
+    {
+     "bytes": 60000,
+     "cat": "Vídeos",
+     "n": 2
+    },
+    {
+     "bytes": 9000,
+     "cat": "Fotos",
+     "n": 1
+    }
+   ],
+   "estado": {
+    "construindo": false,
+    "existe": true,
+    "idle_dias": 90,
+    "min_mb": 100,
+    "n": 7,
+    "parcial": false
+   },
+   "facetas": {
+    "cat": {
+     "Fotos": 1,
+     "Vídeos": 2
+    },
+    "faixa": {
+     "documentos": 3,
+     "fotos": 1,
+     "outros": 1,
+     "videos": 2
+    },
+    "grupo": {
+     "Pessoal": 3
+    },
+    "sug": {},
+    "tam": {
+     "p": 3
+    },
+    "tipo": {
+     "Imagem": 1,
+     "Vídeo": 2
+    },
+    "usuario": {
+     "teste": 3
+    }
+   },
+   "facetas_bytes": {
+    "cat": {
+     "Fotos": 9000,
+     "Vídeos": 60000
+    },
+    "faixa": {
+     "documentos": 15008,
+     "fotos": 9000,
+     "outros": 8000,
+     "videos": 60000
+    },
+    "grupo": {
+     "Pessoal": 69000
+    },
+    "sug": {},
+    "tam": {
+     "p": 69000
+    },
+    "tipo": {
+     "Imagem": 9000,
+     "Vídeo": 60000
+    },
+    "usuario": {
+     "teste": 69000
+    }
+   },
+   "faixas": {
+    "documentos": {
+     "bytes": 15008,
+     "n": 3
+    },
+    "fotos": {
+     "bytes": 9000,
+     "n": 1
+    },
+    "outros": {
+     "bytes": 8000,
+     "n": 1
+    },
+    "videos": {
+     "bytes": 60000,
+     "n": 2
+    }
+   },
+   "migalhas": [],
+   "pastas": [],
+   "rows": [
+    {
+     "arquivos": 1,
+     "bytes": 9000,
+     "cat": "Fotos",
+     "criado": 1768478400.0,
+     "faixa": "fotos",
+     "grupo": "Pessoal",
+     "motivo": "",
+     "nome": "foto.jpg",
+     "path": "<TMP>/Pictures/foto.jpg",
+     "pode_abrir": true,
+     "pode_marcar": true,
+     "previa": "imagem",
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "Imagem",
+     "usuario": "teste",
+     "zona": ""
+    },
+    {
+     "arquivos": 1,
+     "bytes": 40000,
+     "cat": "Vídeos",
+     "criado": 1768478400.0,
+     "faixa": "videos",
+     "grupo": "Pessoal",
+     "motivo": "",
+     "nome": "férias.mp4",
+     "path": "<TMP>/Movies/férias.mp4",
+     "pode_abrir": true,
+     "pode_marcar": true,
+     "previa": "video",
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "Vídeo",
+     "usuario": "teste",
+     "zona": ""
+    },
+    {
+     "arquivos": 1,
+     "bytes": 20000,
+     "cat": "Vídeos",
+     "criado": 1768478400.0,
+     "faixa": "videos",
+     "grupo": "Pessoal",
+     "motivo": "",
+     "nome": "praia.mov",
+     "path": "<TMP>/Movies/Viagem/praia.mov",
+     "pode_abrir": true,
+     "pode_marcar": true,
+     "previa": "video",
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "Vídeo",
+     "usuario": "teste",
+     "zona": ""
+    }
+   ],
+   "usuarios": [
+    "teste"
+   ]
+  },
+  "panorama": {
+   "arquivos": [
+    {
+     "arquivos": 1,
+     "bytes": 40000,
+     "cat": "Vídeos",
+     "criado": 1768478400.0,
+     "faixa": "videos",
+     "grupo": "Pessoal",
+     "motivo": "",
+     "nome": "férias.mp4",
+     "path": "<TMP>/Movies/férias.mp4",
+     "pode_abrir": true,
+     "pode_marcar": true,
+     "previa": "video",
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "Vídeo",
+     "usuario": "teste",
+     "zona": ""
+    },
+    {
+     "arquivos": 1,
+     "bytes": 20000,
+     "cat": "Vídeos",
+     "criado": 1768478400.0,
+     "faixa": "videos",
+     "grupo": "Pessoal",
+     "motivo": "",
+     "nome": "praia.mov",
+     "path": "<TMP>/Movies/Viagem/praia.mov",
+     "pode_abrir": true,
+     "pode_marcar": true,
+     "previa": "video",
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "Vídeo",
+     "usuario": "teste",
+     "zona": ""
+    },
+    {
+     "arquivos": 1,
+     "bytes": 9000,
+     "cat": "Fotos",
+     "criado": 1768478400.0,
+     "faixa": "fotos",
+     "grupo": "Pessoal",
+     "motivo": "",
+     "nome": "foto.jpg",
+     "path": "<TMP>/Pictures/foto.jpg",
+     "pode_abrir": true,
+     "pode_marcar": true,
+     "previa": "imagem",
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "Imagem",
+     "usuario": "teste",
+     "zona": ""
+    },
+    {
+     "arquivos": 1,
+     "bytes": 8000,
+     "cat": "Instaladores e imagens de disco",
+     "criado": 1768478400.0,
+     "faixa": "outros",
+     "grupo": "Instaladores",
+     "motivo": "",
+     "nome": "setup.exe",
+     "path": "<TMP>/Downloads/setup.exe",
+     "pode_abrir": false,
+     "pode_marcar": true,
+     "previa": null,
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "EXE",
+     "usuario": "teste",
+     "zona": ""
+    },
+    {
+     "arquivos": 1,
+     "bytes": 7004,
+     "cat": "Documentos e projetos",
+     "criado": 1768478400.0,
+     "faixa": "documentos",
+     "grupo": "Pessoal",
+     "motivo": "",
+     "nome": "contrato.pdf",
+     "path": "<TMP>/Documents/contrato.pdf",
+     "pode_abrir": true,
+     "pode_marcar": true,
+     "previa": "pdf",
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "PDF",
+     "usuario": "teste",
+     "zona": ""
+    }
+   ],
+   "estado": {
+    "construindo": false,
+    "existe": true,
+    "idle_dias": 90,
+    "min_mb": 100,
+    "n": 7,
+    "parcial": false
+   },
+   "parados": [],
+   "pastas": [
+    {
+     "arquivos": 2,
+     "bytes": 60000,
+     "motivo": "pasta principal do usuário (não removemos a pasta inteira)",
+     "nome": "Movies",
+     "path": "<TMP>/Movies",
+     "sub": "Movies",
+     "usuario": "teste"
+    },
+    {
+     "arquivos": 2,
+     "bytes": 10008,
+     "motivo": "pasta principal do usuário (não removemos a pasta inteira)",
+     "nome": "Documents",
+     "path": "<TMP>/Documents",
+     "sub": "Documents",
+     "usuario": "teste"
+    },
+    {
+     "arquivos": 1,
+     "bytes": 9000,
+     "motivo": "pasta principal do usuário (não removemos a pasta inteira)",
+     "nome": "Pictures",
+     "path": "<TMP>/Pictures",
+     "sub": "Pictures",
+     "usuario": "teste"
+    },
+    {
+     "arquivos": 1,
+     "bytes": 8000,
+     "motivo": "pasta principal do usuário (não removemos a pasta inteira)",
+     "nome": "Downloads",
+     "path": "<TMP>/Downloads",
+     "sub": "Downloads",
+     "usuario": "teste"
+    },
+    {
+     "arquivos": 1,
+     "bytes": 5000,
+     "motivo": "",
+     "nome": "Projetos",
+     "path": "<TMP>/Projetos",
+     "sub": "Projetos",
+     "usuario": "teste"
+    }
+   ]
+  },
+  "pastas": {
+   "bytes": 0,
+   "cats": [],
+   "estado": {
+    "construindo": false,
+    "existe": true,
+    "idle_dias": 90,
+    "min_mb": 100,
+    "n": 7,
+    "parcial": false
+   },
+   "facetas": {},
+   "facetas_bytes": {},
+   "faixas": {},
+   "migalhas": [],
+   "pastas": [
+    {
+     "arquivos": 7,
+     "bytes": 92008,
+     "motivo": "pasta do usuário (não removemos a pasta inteira)",
+     "nome": "teste",
+     "path": "<TMP>",
+     "pode_renomear": false,
+     "tipo": "pasta",
+     "usuario": "teste"
+    }
+   ],
+   "rows": [],
+   "usuarios": [
+    "teste"
+   ]
+  },
+  "tudo": {
+   "bytes": 92008,
+   "cats": [
+    {
+     "bytes": 60000,
+     "cat": "Vídeos",
+     "n": 2
+    },
+    {
+     "bytes": 15008,
+     "cat": "Documentos e projetos",
+     "n": 3
+    },
+    {
+     "bytes": 9000,
+     "cat": "Fotos",
+     "n": 1
+    },
+    {
+     "bytes": 8000,
+     "cat": "Instaladores e imagens de disco",
+     "n": 1
+    }
+   ],
+   "estado": {
+    "construindo": false,
+    "existe": true,
+    "idle_dias": 90,
+    "min_mb": 100,
+    "n": 7,
+    "parcial": false
+   },
+   "facetas": {},
+   "facetas_bytes": {},
+   "faixas": {
+    "documentos": {
+     "bytes": 15008,
+     "n": 3
+    },
+    "fotos": {
+     "bytes": 9000,
+     "n": 1
+    },
+    "outros": {
+     "bytes": 8000,
+     "n": 1
+    },
+    "videos": {
+     "bytes": 60000,
+     "n": 2
+    }
+   },
+   "migalhas": [],
+   "pastas": [],
+   "rows": [
+    {
+     "arquivos": 1,
+     "bytes": 3004,
+     "cat": "Documentos e projetos",
+     "criado": 1768478400.0,
+     "faixa": "documentos",
+     "grupo": "Pessoal",
+     "motivo": "",
+     "nome": "50%_desconto.pdf",
+     "path": "<TMP>/Documents/50%_desconto.pdf",
+     "pode_abrir": true,
+     "pode_marcar": true,
+     "previa": "pdf",
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "PDF",
+     "usuario": "teste",
+     "zona": ""
+    },
+    {
+     "arquivos": 1,
+     "bytes": 7004,
+     "cat": "Documentos e projetos",
+     "criado": 1768478400.0,
+     "faixa": "documentos",
+     "grupo": "Pessoal",
+     "motivo": "",
+     "nome": "contrato.pdf",
+     "path": "<TMP>/Documents/contrato.pdf",
+     "pode_abrir": true,
+     "pode_marcar": true,
+     "previa": "pdf",
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "PDF",
+     "usuario": "teste",
+     "zona": ""
+    },
+    {
+     "arquivos": 1,
+     "bytes": 9000,
+     "cat": "Fotos",
+     "criado": 1768478400.0,
+     "faixa": "fotos",
+     "grupo": "Pessoal",
+     "motivo": "",
+     "nome": "foto.jpg",
+     "path": "<TMP>/Pictures/foto.jpg",
+     "pode_abrir": true,
+     "pode_marcar": true,
+     "previa": "imagem",
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "Imagem",
+     "usuario": "teste",
+     "zona": ""
+    },
+    {
+     "arquivos": 1,
+     "bytes": 40000,
+     "cat": "Vídeos",
+     "criado": 1768478400.0,
+     "faixa": "videos",
+     "grupo": "Pessoal",
+     "motivo": "",
+     "nome": "férias.mp4",
+     "path": "<TMP>/Movies/férias.mp4",
+     "pode_abrir": true,
+     "pode_marcar": true,
+     "previa": "video",
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "Vídeo",
+     "usuario": "teste",
+     "zona": ""
+    },
+    {
+     "arquivos": 1,
+     "bytes": 5000,
+     "cat": "Documentos e projetos",
+     "criado": 1768478400.0,
+     "faixa": "documentos",
+     "grupo": "Pessoal",
+     "motivo": "",
+     "nome": "notas.txt",
+     "path": "<TMP>/Projetos/notas.txt",
+     "pode_abrir": true,
+     "pode_marcar": true,
+     "previa": "texto",
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "Texto",
+     "usuario": "teste",
+     "zona": ""
+    },
+    {
+     "arquivos": 1,
+     "bytes": 20000,
+     "cat": "Vídeos",
+     "criado": 1768478400.0,
+     "faixa": "videos",
+     "grupo": "Pessoal",
+     "motivo": "",
+     "nome": "praia.mov",
+     "path": "<TMP>/Movies/Viagem/praia.mov",
+     "pode_abrir": true,
+     "pode_marcar": true,
+     "previa": "video",
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "Vídeo",
+     "usuario": "teste",
+     "zona": ""
+    },
+    {
+     "arquivos": 1,
+     "bytes": 8000,
+     "cat": "Instaladores e imagens de disco",
+     "criado": 1768478400.0,
+     "faixa": "outros",
+     "grupo": "Instaladores",
+     "motivo": "",
+     "nome": "setup.exe",
+     "path": "<TMP>/Downloads/setup.exe",
+     "pode_abrir": false,
+     "pode_marcar": true,
+     "previa": null,
+     "sug": "",
+     "tipo": "arquivo",
+     "tipo_rot": "EXE",
+     "usuario": "teste",
+     "zona": ""
+    }
+   ],
+   "usuarios": [
+    "teste"
+   ]
+  }
+ }
+}

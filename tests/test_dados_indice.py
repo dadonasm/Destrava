@@ -68,20 +68,35 @@ class Indice(ComIndice):
         self.assertFalse(e["parcial"])
         self.assertGreaterEqual(e["n"], 6)
 
-    def test_blocos_batem_com_o_cockpit(self):
+    def test_faixas_batem_com_o_cockpit(self):
         r = self.consulta()
         ck = dados.RES["cockpit"]
         if ck["aviso"]:
             self.skipTest("cockpit ajustado proporcionalmente neste disco")
-        self.assertEqual(r["blocos"]["midias"]["bytes"], ck["midias"])
-        self.assertEqual(r["blocos"]["documentos"]["bytes"], ck["documentos"])
+        for fx in ("fotos", "videos", "documentos"):
+            self.assertEqual(r["faixas"][fx]["bytes"], ck["faixas_usuario"][fx], fx)
+        self.assertFalse(ck["medindo"], "nos testes o disco de verdade não é medido: o resto vai direto para Dados do Sistema")
+        self.assertEqual(sum(ck["faixas"].values()), ck["usado"], "as faixas somam o espaço usado")
 
-    def test_filtrar_por_bloco_e_categoria(self):
-        r = self.consulta(bloco="midias")
+    def test_filtrar_por_faixa_e_categoria(self):
+        r = self.consulta(faixa="fotos|videos")
         self.assertEqual(self.nomes(r), ["foto.jpg", "férias.mp4", "praia.mov"])
         self.assertEqual({c["cat"] for c in r["cats"]}, {"Vídeos", "Fotos"})
-        r = self.consulta(bloco="midias", cat="Vídeos", ordem="maior")
+        r = self.consulta(faixa="fotos|videos", cat="Vídeos", ordem="maior")
         self.assertEqual([x["nome"] for x in r["rows"]], ["férias.mp4", "praia.mov"])
+
+    def test_colunas_da_lista(self):
+        x = [x for x in self.consulta(q="contrato")["rows"]][0]
+        self.assertEqual((x["faixa"], x["grupo"], x["sug"], x["tipo_rot"]), ("documentos", "Pessoal", "", "PDF"))
+        self.assertGreater(x["criado"], 0)
+
+    def test_filtros_contam_com_os_outros_aplicados(self):
+        r = self.consulta(faixa="videos", facetas=True)
+        self.assertEqual(r["total"], 2)
+        self.assertEqual(r["facetas"]["faixa"].get("fotos"), 1, "a contagem da própria faixa ignora o filtro de faixa")
+        self.assertEqual(set(r["facetas"]["tipo"]), {"Vídeo"}, "os outros filtros já contam só os vídeos")
+        self.assertEqual(self.consulta(tam="p|m", limit=0)["total"], self.consulta(limit=0)["total"], "tudo aqui é pequeno")
+        self.assertEqual(self.consulta(uso="d30", limit=0)["total"], self.consulta(limit=0)["total"], "tudo foi mexido agora")
 
     def test_busca_sem_acento_e_com_porcentagem(self):
         self.assertEqual(self.nomes(self.consulta(q="ferias")), ["férias.mp4"])
@@ -217,7 +232,7 @@ class UltimaVarredura(ComIndice):
         self.reinicia()
         e = dados.estado()
         self.assertEqual(e["fase"], "pronto")
-        self.assertEqual(e["cockpit"]["midias"], ck["midias"])
+        self.assertEqual(e["cockpit"]["faixas"], ck["faixas"])
         self.assertEqual(sorted(dados.ITENS), ids)
         self.assertGreater(e["indice"]["quando"], 0)
         self.assertEqual(e["indice"]["idle_dias"], 90)
@@ -284,6 +299,63 @@ class Trancados(ComIndice):
         c.commit()
         c.close()
         self.assertIn("OneDrive", self.consulta(q="video.mov")["rows"][0]["motivo"])
+
+
+class GrupoESugestao(ComIndice):
+    """Grupo e Sugestão de varredura gravados no índice: o filtro da gaveta no lugar da aba Sugestão."""
+
+    def setUp(self):
+        ComIndice.setUp(self)
+        j = self.j
+        escreve(j(".Trash", "velho.zip"), b"z" * 3000)
+        escreve(j(".cache", "app", "c.bin"), b"c" * 2000)
+        escreve(j("Downloads", "setup.dmg"), b"d" * 9000)
+        dados._varrer(90, 100)
+
+    def linha(self, nome):
+        r = self.consulta(q=nome)["rows"]
+        self.assertTrue(r, nome)
+        return r[0]
+
+    def test_cada_arquivo_tem_grupo_e_sugestao(self):
+        self.assertEqual((self.linha(".Trash")["faixa"], self.linha(".Trash")["grupo"], self.linha(".Trash")["sug"]), ("caches", "Bloqueado", "nao_recomendado"))
+        c = self.linha("c.bin")
+        self.assertEqual((c["faixa"], c["grupo"]), ("caches", "Cache temporário"))
+        self.assertEqual(self.linha("setup.dmg")["grupo"], "Instaladores")
+        r = self.consulta(sug="nao_recomendado", facetas=True)
+        self.assertIn(".Trash", self.nomes(r))
+        self.assertIn("nao_recomendado", r["facetas"]["sug"])
+
+    def test_indice_antigo_pede_varredura_nova(self):
+        import sqlite3
+        c = sqlite3.connect(dados._idx_arquivo())
+        c.execute("PRAGMA user_version=1")
+        c.commit()
+        c.close()
+        e = dados.indice_estado()
+        self.assertEqual((e["existe"], e["antigo"]), (False, True))
+
+
+class MedirFora(unittest.TestCase):
+    def test_apps_os_e_dados_de_um_disco(self):
+        raiz = tempfile.mkdtemp(prefix="destrava_disco_")
+        try:
+            escreve(os.path.join(raiz, "Applications", "X.app", "Contents", "x"), b"a" * 50000)
+            escreve(os.path.join(raiz, "System", "Library", "s"), b"s" * 30000)
+            escreve(os.path.join(raiz, "Library", "Caches", "l"), b"l" * 20000)
+            escreve(os.path.join(raiz, "Users", "ana", "foto.jpg"), b"f" * 90000)
+            import threading
+            out, parcial = dados.medir_fora(raiz, "mac", threading.Event(), time.time() + 30)
+            self.assertFalse(parcial)
+            self.assertGreaterEqual(out["apps"], 50000)
+            self.assertGreaterEqual(out["os"], 30000)
+            self.assertGreaterEqual(out["dados"], 20000)
+            self.assertLess(out["apps"] + out["os"] + out["dados"], 200000, "a pasta dos usuários não entra")
+            ck = {"usado": 1000000, "faixas_usuario": {"fotos": 90000}}
+            dados._aplicar_fora(ck, out)
+            self.assertEqual(sum(ck["faixas"].values()), 1000000, "o que ninguém mediu vira Dados do Sistema")
+        finally:
+            shutil.rmtree(raiz, ignore_errors=True)
 
 
 if __name__ == "__main__":

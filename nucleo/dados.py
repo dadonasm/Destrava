@@ -23,6 +23,10 @@ import time
 import unicodedata
 import urllib.parse
 
+if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import classe as CLS  # noqa: E402  (a mesma tabela de tipos do backup)
+
 IS_WIN = os.name == "nt"
 IS_MAC = sys.platform == "darwin"
 HOME = os.path.expanduser("~")
@@ -279,15 +283,10 @@ def _pastas_capcut(h):
 # ----------------------------------------------------------------------------------------------
 # classificação por tipo
 # ----------------------------------------------------------------------------------------------
-EXT = {
-    "Vídeos": {".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v", ".mts", ".wmv", ".mpg", ".mpeg", ".prproj_proxy"},
-    "Fotos": {".jpg", ".jpeg", ".png", ".heic", ".raw", ".cr2", ".nef", ".arw", ".dng", ".tif", ".tiff", ".gif", ".bmp", ".webp"},
-    "Áudios": {".mp3", ".wav", ".flac", ".aac", ".m4a", ".ogg", ".aiff"},
-    "Instaladores e imagens de disco": {".dmg", ".pkg", ".exe", ".msi", ".iso", ".img", ".deb", ".rpm", ".appimage"},
-    "Compactados": {".zip", ".rar", ".7z", ".tar", ".gz", ".tgz", ".bz2", ".xz"},
-    "Máquinas virtuais": {".vmdk", ".vdi", ".qcow2", ".vhd", ".vhdx", ".vmwarevm", ".ova"},
-    "Documentos e projetos": {".pdf", ".psd", ".ai", ".indd", ".prproj", ".aep", ".blend", ".docx", ".xlsx", ".pptx", ".sketch", ".fig", ".drp", ".fcp"},
-}
+EXT = {}  # rótulo do Gerenciamento -> extensões (classe.py); o que não está aqui é "Outros"
+for _c in CLS.CLASSES.values():
+    if _c["dados"] != "Outros":
+        EXT.setdefault(_c["dados"], set()).update(_c["ext"].split())
 INSTAL = {".dmg", ".pkg", ".exe", ".msi"}
 CAT_MIDIA = ("Vídeos", "Fotos", "Áudios")
 
@@ -298,6 +297,26 @@ def categoria(nome):
         if e in exts:
             return cat
     return "Outros"
+
+
+def _ctx_dir(d, h):
+    """Contexto de uma pasta dentro da pasta do usuário h: "cache", "dados" (de programa), "apps" ou "" (classe.contexto)."""
+    try:
+        rel = os.path.relpath(os.path.abspath(d), os.path.abspath(h))
+    except ValueError:
+        return ""
+    if rel == "." or rel.startswith(".."):
+        return ""
+    return CLS.contexto([x for x in re.split(r"[\\/]", rel) if x not in ("", ".")])
+
+
+def _criado(st):
+    """Data de criação: no Mac e no Windows o sistema guarda; no Linux cai para a última modificação."""
+    return getattr(st, "st_birthtime", 0) or (st.st_ctime if IS_WIN else st.st_mtime)
+
+
+_BIBLIO_FAIXA = {".photoslibrary": "fotos", ".lrlibrary": "fotos", ".fcpbundle": "videos", ".imovielibrary": "videos", ".tvlibrary": "videos",
+                 ".musiclibrary": "audios", ".app": "apps"}
 
 
 def _gravacao_tela(nome):
@@ -395,9 +414,10 @@ def _orfaos(agora, idle_dias, pular, h):
             b_, n_, ult = tamanho_dir(p, CANCEL)
             ST["arquivos"] += n_
             ST["bytes"] += b_
-            _ib_arq(p, _USR[0], "pasta", "Dados de programas", "apps", b_, n_, ult)
             dias = int((agora - ult) / 86400) if ult else 9999
-            if b_ >= 50 * 1024 * 1024 and dias >= idle_dias:
+            resto = b_ >= 50 * 1024 * 1024 and dias >= idle_dias
+            _ib_arq(p, _USR[0], "pasta", "Dados de programas", "dados", b_, n_, ult, grupo="Dados de programas", sug="ressalva" if resto else "")
+            if resto:
                 _add({"path": p, "tipo": "pasta", "zona": "ambar", "cat": "Restos de programas (provável sem uso)", "titulo": nome,
                       "motivo": "Não encontrei \"%s\" instalado e os dados estão parados há %d dias. Provavelmente o programa não é mais usado, mas só você sabe: confirme." % (nome, dias),
                       "bytes": b_, "arquivos": n_, "ultimo_uso": ult, "pre": False, "orfao": True})
@@ -547,9 +567,9 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
                 if b >= 20 * 1024 * 1024:
                     _add({"path": q, "tipo": "pasta", "zona": "verde", "cat": "Limpeza imediata", "titulo": "%s › %s" % (tit, s), "motivo": mot, "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": True})
                     verde_bytes += b
-                    _ib_arq(q, usr, "pasta", "Limpeza imediata", "limpavel", b, n, ult)
+                    _ib_arq(q, usr, "pasta", "Caches e temporários", "caches", b, n, ult, grupo="Cache temporário", sug="limpavel")
                 else:
-                    _ib_arq(q, usr, "pasta", "Caches e temporários", "apps", b, n, ult)
+                    _ib_arq(q, usr, "pasta", "Caches e temporários", "caches", b, n, ult, grupo="Cache temporário", sug="limpavel")
         else:
             b, n, ult = tamanho_dir(p, CANCEL)
             ST["arquivos"] += n
@@ -557,9 +577,9 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
             if b >= 5 * 1024 * 1024:
                 _add({"path": p, "tipo": "pasta", "zona": "verde", "cat": "Limpeza imediata", "titulo": tit, "motivo": mot, "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": True})
                 verde_bytes += b
-                _ib_arq(p, usr, "pasta", "Limpeza imediata", "limpavel", b, n, ult)
+                _ib_arq(p, usr, "pasta", "Caches e temporários", "caches", b, n, ult, grupo="Cache temporário", sug="limpavel")
             elif n:
-                _ib_arq(p, usr, "pasta", "Caches e temporários", "apps", b, n, ult)
+                _ib_arq(p, usr, "pasta", "Caches e temporários", "caches", b, n, ult, grupo="Cache temporário", sug="limpavel")
         ST["pct"] = 3 + int(12.0 * (i + 1) / max(1, len(alvos)))
 
     # 1b) backups de iPhone/iPad (Mac): grandes e muitas vezes esquecidos; mover para HD externo é o caminho
@@ -584,7 +604,7 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
             b, n, ult = tamanho_dir(q, CANCEL)
             ST["bytes"] += b
             ST["arquivos"] += n
-            _ib_arq(q, usr, "pasta", "Backups de iPhone/iPad", "apps", b, n, ult)
+            _ib_arq(q, usr, "pasta", "Backups de iPhone/iPad", "outros", b, n, ult, grupo="Pessoal", sug="ressalva")
             data = info.get("Last Backup Date")
             _add({"path": q, "tipo": "pasta", "zona": "ambar", "cat": "Backups de iPhone/iPad", "titulo": "Backup de %s" % (info.get("Device Name") or d[:12]),
                   "motivo": "Último backup em %s. Pode ser o único backup do aparelho: prefira mover para um HD externo." % (data.strftime("%d/%m/%Y") if hasattr(data, "strftime") else "?"),
@@ -599,9 +619,10 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
         b, n, ult = tamanho_dir(q, CANCEL)
         ST["bytes"] += b
         ST["arquivos"] += n
-        _ib_arq(q, usr, "pasta", "Projetos do CapCut", "apps", b, n, ult)
         dias = int((agora - ult) / 86400) if ult else 9999
-        if dias >= 30 and b >= 20 * 1024 * 1024:
+        parado = dias >= 30 and b >= 20 * 1024 * 1024
+        _ib_arq(q, usr, "pasta", "Projetos do CapCut", "videos", b, n, ult, grupo="Pessoal", sug="ressalva" if parado else "")
+        if parado:
             _add({"path": q, "tipo": "pasta", "zona": "ambar", "cat": "Projetos do CapCut", "titulo": "Projeto CapCut: %s" % os.path.basename(q), "motivo": "Sem edição há %d dias." % dias,
                   "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": False})
     ST["pct"] = 16
@@ -627,6 +648,7 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
         ST["pastas"] += 1
         _ib_pasta(d, usr)
         em_dl = os.path.basename(d).lower() in nomes_dl and _norm(os.path.dirname(d)) == _norm(h)
+        ctx = _ctx_dir(d, h)  # cache, dados de programa ou apps: decide a faixa e o grupo dos arquivos desta pasta
         with it:
             for e in it:
                 if CANCEL.is_set():
@@ -638,10 +660,15 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
                     if e.is_dir(follow_symlinks=False):
                         ln = nome.lower()
                         if ln in (".git", "node_modules", ".trash", ".trashes", "$recycle.bin") or ln.endswith(_VERM_BIBLIO) or zona_vermelha(e.path) and ln in _VERM_SEG:
+                            if ln in (".trash", ".trashes", "$recycle.bin"):  # a Lixeira ocupa espaço: entra no cockpit como cache (esvazia-se pelo botão próprio)
+                                b, n, ult = tamanho_dir(e.path, CANCEL)
+                                ST["bytes"] += b
+                                _ib_arq(e.path, usr, "pasta", "Lixeira", "caches", b, n, ult, "Lixeira: esvazie pelo botão Esvaziar a Lixeira", grupo="Bloqueado", sug="nao_recomendado")
                             if ln.endswith(_VERM_BIBLIO):
                                 b, n, ult = tamanho_dir(e.path, CANCEL)
                                 ST["bytes"] += b
-                                _ib_arq(e.path, usr, "pasta", "Bibliotecas e apps", "apps", b, n, ult, zona_vermelha(e.path) or "biblioteca de aplicativo")
+                                fx = next((v for k, v in _BIBLIO_FAIXA.items() if ln.endswith(k)), "dados")
+                                _ib_arq(e.path, usr, "pasta", "Bibliotecas e apps", fx, b, n, ult, zona_vermelha(e.path) or "biblioteca de aplicativo", grupo="Bloqueado", sug="nao_recomendado")
                                 if b >= min_b:
                                     _add({"path": e.path, "tipo": "pasta", "zona": "vermelha", "cat": "Bibliotecas e apps", "titulo": nome, "motivo": zona_vermelha(e.path) or "biblioteca de aplicativo", "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": False})
                             continue
@@ -679,18 +706,22 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
                 if ext in INSTAL and tam >= 5 * 1024 * 1024 and dias >= 14 and (em_dl or os.path.basename(d).lower() in ("desktop", "área de trabalho")) and not verm:
                     _add({"path": e.path, "tipo": "arquivo", "zona": "verde", "cat": "Limpeza imediata", "titulo": "Instalador: %s" % nome, "motivo": "Instalador já usado (parado há %d dias)." % dias, "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": True})
                     verde_bytes += tam
-                    _ib_arq(e.path, usr, "arquivo", cat, "limpavel", tam, 1, ult)
+                    _ib_arq(e.path, usr, "arquivo", cat, "outros", tam, 1, ult, grupo="Instaladores", sug="limpavel", criado=_criado(st))
                     continue
                 cat_bytes[cat] = cat_bytes.get(cat, 0) + tam
-                _ib_arq(e.path, usr, "arquivo", cat, bloco_de(cat), tam, 1, ult, verm or "")
+                amb = None
                 if verm:
-                    continue
-                if _gravacao_tela(nome) and dias >= 30 and tam >= 20 * 1024 * 1024:
-                    _add({"path": e.path, "tipo": "arquivo", "zona": "ambar", "cat": "Gravações de tela", "titulo": nome, "motivo": "Gravação de tela parada há %d dias." % dias, "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": False})
+                    pass
+                elif _gravacao_tela(nome) and dias >= 30 and tam >= 20 * 1024 * 1024:
+                    amb = {"path": e.path, "tipo": "arquivo", "zona": "ambar", "cat": "Gravações de tela", "titulo": nome, "motivo": "Gravação de tela parada há %d dias." % dias, "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": False}
                 elif em_dl and dias >= 90 and tam >= 5 * 1024 * 1024:
-                    _add({"path": e.path, "tipo": "arquivo", "zona": "ambar", "cat": "Downloads antigos", "titulo": nome, "motivo": "Baixado e parado há %d dias." % dias, "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": False})
+                    amb = {"path": e.path, "tipo": "arquivo", "zona": "ambar", "cat": "Downloads antigos", "titulo": nome, "motivo": "Baixado e parado há %d dias." % dias, "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": False}
                 elif tam >= min_b and dias >= idle_dias:
-                    _add({"path": e.path, "tipo": "arquivo", "zona": "ambar", "cat": cat if cat != "Outros" else "Outros arquivos grandes", "titulo": nome, "motivo": "%s parado há %d dias." % (fmt(tam), dias), "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": False})
+                    amb = {"path": e.path, "tipo": "arquivo", "zona": "ambar", "cat": cat if cat != "Outros" else "Outros arquivos grandes", "titulo": nome, "motivo": "%s parado há %d dias." % (fmt(tam), dias), "bytes": tam, "arquivos": 1, "logico": st.st_size, "ultimo_uso": ult, "pre": False}
+                _ib_arq(e.path, usr, "arquivo", cat, CLS.faixa_arquivo(nome, ctx), tam, 1, ult, verm or "", grupo=CLS.grupo_arquivo(nome, ctx, bool(verm)),
+                        sug="nao_recomendado" if verm else "ressalva" if amb else "", criado=_criado(st))
+                if amb:
+                    _add(amb)
         visitados += 1
         if visitados % 40 == 0:
             ST["pct"] = min(95, 18 + int(77.0 * (1 - 1.0 / (1 + visitados / 3000.0))))
@@ -705,6 +736,9 @@ def _varrer(idle_dias, min_mb):
         _HL.clear()
         ST["nuvem_n"] = 0
         ST["nuvem_bytes"] = 0
+        _FB.clear()
+        _SB.clear()
+        FORA["cancel"].set()  # uma medição de Apps/OS de antes não vale para esta varredura
         redefinir_usuarios()
         usuarios = homes()
         ST["usuarios"] = [u for u, _ in usuarios]
@@ -725,28 +759,28 @@ def _varrer(idle_dias, min_mb):
             verde_bytes += _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes)
             por_usuario[usr] = ST["bytes"] - antes
         h = usuarios[0][1] if usuarios else home()
-        # 4) cockpit
+        # 4) cockpit: as faixas do disco. O que está nas pastas dos usuários já foi somado (_FB); Apps instalados, OS e o resto
+        #    vêm da medição fora delas, em segundo plano, quando a varredura termina (_medir_fora_inicia)
         try:
             u = shutil.disk_usage(h)
             total, livre = u.total, u.free
         except OSError:
             total = livre = 0
         usado = max(0, total - livre)
-        midia = sum(cat_bytes.get(c, 0) for c in CAT_MIDIA)
-        docs = sum(v for k, v in cat_bytes.items() if k not in CAT_MIDIA and k != "Outros")
-        limpavel = verde_bytes
-        medido = ST["bytes"]  # tudo que foi lido na pasta pessoal, em tamanho real de disco
-        apps = max(0, medido - midia - docs - limpavel)  # Library, dados de apps, caches menores, etc.
+        fx = {k: _FB.get(k, 0) for k in FX}
+        medido = sum(fx.values())
         aviso = ""
         if medido > usado and usado > 0:
             # nunca mostrar mais do que o disco tem: reduz proporcionalmente e avisa
             f = usado / float(medido)
-            midia, docs, apps, limpavel = int(midia * f), int(docs * f), int(apps * f), int(limpavel * f)
+            fx = {k: int(v * f) for k, v in fx.items()}
             aviso = "A soma dos arquivos lidos passou do espaço usado (clones e compressão do sistema de arquivos). Os valores foram ajustados proporcionalmente: trate como estimativa."
-        sistema = max(0, usado - midia - docs - apps - limpavel)
         ambar = sum(i["bytes"] for i in ITENS.values() if i["zona"] == "ambar")
-        RES["cockpit"] = {"por_usuario": por_usuario, "total": total, "livre": livre, "usado": usado, "midias": midia, "documentos": docs, "apps": apps, "limpavel": limpavel, "parado": ambar,
-                          "sistema": sistema, "medido": medido, "aviso": aviso, "nuvem_n": ST["nuvem_n"], "nuvem_bytes": ST["nuvem_bytes"], "por_tipo": cat_bytes, "base": int(base_unidade())}
+        ck = {"por_usuario": por_usuario, "total": total, "livre": livre, "usado": usado, "faixas_usuario": fx, "so": so_nome(), "medido": medido, "aviso": aviso,
+              "limpavel": (_SB.get("limpavel") or [0, 0])[1], "parado": ambar, "sugestao": {k: {"n": v[0], "bytes": v[1]} for k, v in _SB.items()},
+              "nuvem_n": ST["nuvem_n"], "nuvem_bytes": ST["nuvem_bytes"], "por_tipo": cat_bytes, "base": int(base_unidade())}
+        _aplicar_fora(ck, None)
+        RES["cockpit"] = ck
         if _IB[0]:
             ST["atual"] = "Gravando o índice de arquivos"
             try:
@@ -758,12 +792,139 @@ def _varrer(idle_dias, min_mb):
         ST["pct"] = 100
         ST["fase"] = "cancelado" if CANCEL.is_set() else "pronto"
         ST["atual"] = ""
+        if not CANCEL.is_set():
+            _medir_fora_inicia()
     except Exception as e:
         if _IB[0]:
             _IB[0].descartar()
             _IB[0] = None
         ST["erro"] = "%s: %s" % (type(e).__name__, e)
         ST["fase"] = "erro"
+
+
+# ----------------------------------------------------------------------------------------------
+# fora das pastas dos usuários: Apps instalados, OS e dados do sistema (o cockpit igual ao do Ajustes do Mac)
+# ----------------------------------------------------------------------------------------------
+REGIOES_FORA = {  # sistema -> [(faixa, pastas a partir da raiz do disco)]; o que não for medido vira "Dados do Sistema" (resto do espaço usado)
+    "mac": (("apps", ("Applications",)), ("os", ("System", "usr", "bin", "sbin")), ("dados", ("Library", "private", "opt"))),
+    "windows": (("os", ("Windows",)), ("apps", ("Program Files", "Program Files (x86)")), ("dados", ("ProgramData",)), ("caches", ("$Recycle.Bin",))),
+    "linux": (("os", ("usr", "lib", "lib32", "lib64", "libx32", "bin", "sbin", "boot", "etc")), ("apps", ("opt", "snap")), ("dados", ("var", "srv", "root"))),
+}
+SO_NOME = {"mac": "macOS", "windows": "Windows", "linux": "Linux"}
+FORA = {"rodando": False, "cancel": threading.Event()}
+
+
+def so_local():
+    return "windows" if IS_WIN else "mac" if IS_MAC else "linux"
+
+
+def so_nome(so=None):
+    return SO_NOME.get(so or so_local(), "Sistema")
+
+
+def raiz_local():
+    if IS_WIN:
+        return (os.path.splitdrive(home())[0] or "C:") + "\\"
+    return "/"
+
+
+def _medir_arvore(p, parar, ate):
+    """Espaço real ocupado por uma pasta, sem sair do volume dela (no Mac, /System/Volumes/Data é o disco de dados: não entra)."""
+    try:
+        dev = os.lstat(p).st_dev
+    except OSError:
+        return 0, True
+    total, pilha, vistos = 0, [p], set()
+    while pilha:
+        if parar.is_set() or time.time() > ate:
+            return total, False
+        d = pilha.pop()
+        try:
+            it = os.scandir(d)
+        except OSError:
+            continue
+        with it:
+            for e in it:
+                try:
+                    if e.is_symlink():
+                        continue
+                    st = e.stat(follow_symlinks=False)
+                    if st.st_dev != dev:
+                        continue
+                    if e.is_dir(follow_symlinks=False):
+                        pilha.append(e.path)
+                        continue
+                    if st.st_nlink > 1:
+                        k = (st.st_dev, st.st_ino)
+                        if k in vistos:
+                            continue
+                        vistos.add(k)
+                    total += _aloc(st)
+                except OSError:
+                    continue
+    return total, True
+
+
+def medir_fora(raiz, so, parar, ate):
+    """{apps, os, dados, caches} medidos nas pastas de sistema de um disco (o local ou o de outro computador montado)."""
+    out, parcial = {"apps": 0, "os": 0, "dados": 0, "caches": 0}, False
+    for fx, alvos in REGIOES_FORA.get(so, ()):
+        for a in alvos:
+            p = os.path.join(raiz, a)
+            if os.path.isdir(p) and not os.path.islink(p):
+                b, ok = _medir_arvore(p, parar, ate)
+                out[fx] += b
+                parcial = parcial or not ok
+    return out, parcial
+
+
+def _aplicar_fora(ck, fora, parcial=False):
+    """Junta ao cockpit o que foi medido fora das pastas dos usuários. Sem medição ainda (fora=None): o resto fica "medindo"."""
+    fx = dict(ck["faixas_usuario"])
+    fx.setdefault("os", 0)
+    if fora is None:
+        ck.update(faixas=fx, medindo=True, fora_parcial=False, resto=max(0, ck["usado"] - sum(fx.values())))
+        return
+    for k, v in fora.items():
+        fx[k] = fx.get(k, 0) + v
+    soma = sum(fx.values())
+    if ck["usado"] and soma > ck["usado"]:
+        f = ck["usado"] / float(soma)
+        fx = {k: int(v * f) for k, v in fx.items()}
+    fx["dados"] = fx.get("dados", 0) + max(0, ck["usado"] - sum(fx.values()))  # o que ninguém mediu é do sistema (como no Ajustes do Mac)
+    ck.update(faixas=fx, medindo=False, fora_parcial=bool(parcial), resto=0)
+
+
+def _medir_fora_inicia():
+    """Mede Apps/OS em segundo plano e grava no índice. Com pasta de usuário de mentira (testes) não mede o disco de verdade."""
+    FORA["cancel"].set()
+    ck = RES["cockpit"]
+    if not ck:
+        return
+    if H.get("indice_dir") and not H.get("medir_fora"):
+        _aplicar_fora(ck, {}, True)
+        return
+    ev = threading.Event()
+    FORA["cancel"] = ev
+
+    def corre():
+        FORA["rodando"] = True
+        try:
+            fora, parcial = medir_fora(raiz_local(), so_local(), ev, time.time() + 150)
+            if ev.is_set() or RES["cockpit"] is not ck:
+                return
+            _aplicar_fora(ck, fora, parcial)
+            c = _idx_con()
+            if c:
+                try:
+                    with IDX_LOCK:
+                        c.execute("INSERT OR REPLACE INTO meta(k,v) VALUES ('cockpit',?)", (json.dumps(ck, ensure_ascii=False),))
+                        c.commit()
+                finally:
+                    c.close()
+        finally:
+            FORA["rodando"] = False
+    threading.Thread(target=corre, daemon=True).start()
 
 
 _ST_SALVO = ("arquivos", "pastas", "bytes", "bloqueados", "usuarios", "usuario_atual", "sem_acesso", "nuvem_n", "nuvem_bytes", "acesso_total")
@@ -799,6 +960,8 @@ def restaurar():
         RES["cockpit"] = ck
         ST.update({k: v for k, v in st.items() if k in _ST_SALVO})
         ST.update({"fase": "cancelado" if m.get("parcial") else "pronto", "pct": 100, "atual": ""})
+    if ck.get("medindo"):  # o programa fechou antes de medir Apps e OS: mede agora
+        _medir_fora_inicia()
     return True
 
 
@@ -809,6 +972,7 @@ def estado():
         d["acao"] = dict(ST["acao"])
         d["acao"]["erros"] = list(ST["acao"]["erros"][-30:])
     d["cockpit"] = RES["cockpit"]
+    d["medindo_fora"] = FORA["rodando"]
     d["n_itens"] = len(ITENS)
     d["indice"] = indice_estado()
     return d
@@ -1055,24 +1219,26 @@ def marcar_nos(nos):
 # índice de arquivos (Gerenciamento de dados): cada arquivo das pastas dos usuários, gravado na varredura num SQLite local
 # (na pasta temporária DESTE computador, nunca no pendrive: são os caminhos dos arquivos do cliente)
 # ----------------------------------------------------------------------------------------------
-BLOCOS = ("midias", "documentos", "apps", "limpavel")
+FX = CLS.FAIXAS_USUARIO  # faixas do cockpit somadas por pasta no índice
+IDX_VERSAO = 2  # índice de antes (blocos) é descartado: a tela pede uma varredura nova
+_FB, _SB = {}, {}  # da varredura em curso: bytes por faixa (cockpit) e [n, bytes] por sugestão
 _IB = [None]  # construtor do índice durante a varredura
 IDX_LOCK = threading.Lock()
 _ORDEM_SQL = {"maior": "bytes DESC", "menor": "bytes ASC", "parado": "uso ASC", "nome": "nome COLLATE NOCASE ASC"}
 _SCHEMA = """
-CREATE TABLE IF NOT EXISTS arq(id INTEGER PRIMARY KEY, usuario TEXT, pasta TEXT, dir TEXT, nome TEXT, busca TEXT, tipo TEXT, cat TEXT, bloco TEXT,
-  bytes INTEGER, narq INTEGER, uso REAL, zona TEXT);
-CREATE TABLE IF NOT EXISTS pasta(chave TEXT PRIMARY KEY, path TEXT, pai TEXT, usuario TEXT, n INTEGER, bytes INTEGER, uso REAL,
-  b_midias INTEGER DEFAULT 0, b_documentos INTEGER DEFAULT 0, b_apps INTEGER DEFAULT 0, b_limpavel INTEGER DEFAULT 0,
-  n_midias INTEGER DEFAULT 0, n_documentos INTEGER DEFAULT 0, n_apps INTEGER DEFAULT 0, n_limpavel INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS arq(id INTEGER PRIMARY KEY, usuario TEXT, pasta TEXT, dir TEXT, nome TEXT, busca TEXT, tipo TEXT, cat TEXT, faixa TEXT,
+  grupo TEXT, sug TEXT, trot TEXT, bytes INTEGER, narq INTEGER, uso REAL, criado REAL, zona TEXT);
+CREATE TABLE IF NOT EXISTS pasta(chave TEXT PRIMARY KEY, path TEXT, pai TEXT, usuario TEXT, n INTEGER, bytes INTEGER, uso REAL, %s);
 CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
-"""
+""" % ", ".join("b_%s INTEGER DEFAULT 0, n_%s INTEGER DEFAULT 0" % (x, x) for x in FX)
+# sug: limpavel | ressalva | nao_recomendado | "" (a Sugestão de varredura, filtro da gaveta); trot: o tipo que a pessoa reconhece (PDF, Planilha…)
 # pasta = chave de comparação da pasta do arquivo (no Windows em minúsculas com "/"; no Mac e no Linux o próprio caminho);
 # dir = a pasta como está no disco, só quando difere da chave (Windows). O caminho é dir|pasta + nome: não se guarda duas vezes.
 _INDICES = """
 CREATE INDEX IF NOT EXISTS arq_b ON arq(bytes);
-CREATE INDEX IF NOT EXISTS arq_bb ON arq(bloco, bytes);
-CREATE INDEX IF NOT EXISTS arq_bcb ON arq(bloco, cat, bytes);
+CREATE INDEX IF NOT EXISTS arq_fb ON arq(faixa, bytes);
+CREATE INDEX IF NOT EXISTS arq_fcb ON arq(faixa, cat, bytes);
+CREATE INDEX IF NOT EXISTS arq_sug ON arq(sug, bytes);
 CREATE INDEX IF NOT EXISTS arq_pasta ON arq(pasta);
 CREATE INDEX IF NOT EXISTS pasta_pai ON pasta(pai);
 """
@@ -1088,11 +1254,12 @@ def _sem_acento(s):
     return "".join(c for c in unicodedata.normalize("NFD", (s or "").lower()) if unicodedata.category(c) != "Mn")
 
 
-def bloco_de(cat):
-    """Bloco do cockpit de um arquivo, pela categoria (a mesma conta do cockpit em _varrer)."""
-    if cat in CAT_MIDIA:
-        return "midias"
-    return "apps" if cat == "Outros" else "documentos"
+def faixa_de(cat):
+    """Faixa do cockpit pela categoria do Gerenciamento (quando não há o nome do arquivo à mão)."""
+    for c in CLS.CLASSES.values():
+        if c["dados"] == cat:
+            return c["faixa"]
+    return "outros"
 
 
 def _kk(p):
@@ -1135,7 +1302,7 @@ def _busca_pastas(c, termos):
 
 
 class _Pastas:
-    """Soma o tamanho de cada pasta e de todas acima dela (por bloco do cockpit), em memória, para gravar de uma vez."""
+    """Soma o tamanho de cada pasta e de todas acima dela (por faixa do cockpit), em memória, para gravar de uma vez."""
 
     def __init__(self, para, homes_ch):
         self.d = {}
@@ -1164,19 +1331,20 @@ class _Pastas:
 
     def gravar(self, db):
         db.executemany("INSERT OR REPLACE INTO pasta(chave,path,pai,usuario,n,bytes,uso,%s,%s) VALUES (?,?,?,?,?,?,?,%s)" % (
-            ",".join("b_" + x for x in BLOCOS), ",".join("n_" + x for x in BLOCOS), ",".join("?" * (2 * len(BLOCOS)))),
-            [(k, e["path"], e["pai"], e["usuario"], e["n"], e["bytes"], e["uso"]) + tuple(e["b"].get(x, 0) for x in BLOCOS) + tuple(e["nb"].get(x, 0) for x in BLOCOS)
+            ",".join("b_" + x for x in FX), ",".join("n_" + x for x in FX), ",".join("?" * (2 * len(FX)))),
+            [(k, e["path"], e["pai"], e["usuario"], e["n"], e["bytes"], e["uso"]) + tuple(e["b"].get(x, 0) for x in FX) + tuple(e["nb"].get(x, 0) for x in FX)
              for k, e in self.d.items()])
 
 
-def _linha_arq(path, usr, tipo, cat, bloco, b, n, uso, zona):
+def _linha_arq(path, usr, tipo, cat, faixa, b, n, uso, zona, grupo="", sug="", criado=0):
     p = os.path.abspath(path)
     d, nome = os.path.dirname(p), os.path.basename(p)
     k = _kk(d)
-    return (usr, k, d if d != k else None, nome, _sem_acento(nome), tipo, cat, bloco, int(b or 0), int(n or 0), uso or 0, zona or "")
+    return (usr, k, d if d != k else None, nome, _sem_acento(nome), tipo, cat, faixa, grupo or "Pessoal", sug or "", CLS.tipo_de(nome) if tipo == "arquivo" else "Pasta",
+            int(b or 0), int(n or 0), uso or 0, criado or 0, zona or "")
 
 
-_INS_ARQ = "INSERT INTO arq(usuario,pasta,dir,nome,busca,tipo,cat,bloco,bytes,narq,uso,zona) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+_INS_ARQ = "INSERT INTO arq(usuario,pasta,dir,nome,busca,tipo,cat,faixa,grupo,sug,trot,bytes,narq,uso,criado,zona) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 
 
 class _Construtor:
@@ -1193,6 +1361,7 @@ class _Construtor:
         self.db.execute("PRAGMA journal_mode=OFF")
         self.db.execute("PRAGMA synchronous=OFF")
         self.db.executescript(_SCHEMA)
+        self.db.execute("PRAGMA user_version=%d" % IDX_VERSAO)
         self.lote = []
         self.n = 0
         self.pastas = _Pastas(set(), _homes_chaves())
@@ -1200,9 +1369,9 @@ class _Construtor:
     def pasta_vista(self, d, usr):
         self.pastas.soma(d, usr, 0, 0, 0, None)
 
-    def arq(self, path, usr, tipo, cat, bloco, b, n, uso, zona=""):
-        self.lote.append(_linha_arq(path, usr, tipo, cat, bloco, b, n, uso, zona))
-        self.pastas.soma(os.path.dirname(os.path.abspath(path)), usr, int(b or 0), int(n or 0), uso, bloco)
+    def arq(self, path, usr, tipo, cat, faixa, b, n, uso, zona="", grupo="", sug="", criado=0):
+        self.lote.append(_linha_arq(path, usr, tipo, cat, faixa, b, n, uso, zona, grupo, sug, criado))
+        self.pastas.soma(os.path.dirname(os.path.abspath(path)), usr, int(b or 0), int(n or 0), uso, faixa)
         self.n += 1
         if len(self.lote) >= 5000:
             self.db.executemany(_INS_ARQ, self.lote)
@@ -1235,9 +1404,15 @@ class _Construtor:
             pass
 
 
-def _ib_arq(*a, **k):
+def _ib_arq(path, usr, tipo, cat, faixa, b, n, uso, zona="", grupo="", sug="", criado=0):
+    """Um arquivo (ou pasta medida inteira) da varredura: soma no cockpit e na Sugestão e vai para o índice."""
+    _FB[faixa] = _FB.get(faixa, 0) + int(b or 0)
+    if sug:
+        x = _SB.setdefault(sug, [0, 0])
+        x[0] += int(n or 0)
+        x[1] += int(b or 0)
     if _IB[0]:
-        _IB[0].arq(*a, **k)
+        _IB[0].arq(path, usr, tipo, cat, faixa, b, n, uso, zona, grupo, sug, criado)
 
 
 def _ib_pasta(d, usr):
@@ -1250,6 +1425,13 @@ def _idx_con():
     if not os.path.isfile(f):
         return None
     c = sqlite3.connect(f, timeout=10, check_same_thread=False)
+    try:
+        if c.execute("PRAGMA user_version").fetchone()[0] != IDX_VERSAO:
+            c.close()
+            return None  # índice de uma versão anterior: a tela pede para varrer de novo
+    except sqlite3.DatabaseError:
+        c.close()
+        return None
     c.row_factory = sqlite3.Row
     c.create_function("semac", 1, _sem_acento)
     c.create_function("pylower", 1, lambda x: (x or "").lower())
@@ -1265,15 +1447,15 @@ def _idx_apagar():
 
 
 def _idx_subir(c, dirpath, delta):
-    """Ajusta o total das pastas acima (de dirpath até a pasta do usuário). delta: {bloco: (bytes, n)} (negativo para tirar)."""
+    """Ajusta o total das pastas acima (de dirpath até a pasta do usuário). delta: {faixa: (bytes, n)} (negativo para tirar)."""
     if not delta:
         return
     hs = _homes_chaves()
     usr, _ = dono(dirpath)
     tb, tn = sum(v[0] for v in delta.values()), sum(v[1] for v in delta.values())
-    sets = ",".join("b_%s=b_%s+?,n_%s=n_%s+?" % (x, x, x, x) for x in BLOCOS)
+    sets = ",".join("b_%s=b_%s+?,n_%s=n_%s+?" % (x, x, x, x) for x in FX)
     vals = []
-    for x in BLOCOS:
+    for x in FX:
         vals += [delta.get(x, (0, 0))[0], delta.get(x, (0, 0))[1]]
     p = os.path.abspath(dirpath)
     while True:
@@ -1290,7 +1472,7 @@ def _idx_tirar(c, path):
     """Tira um caminho (arquivo ou pasta inteira) do índice e desconta das pastas acima."""
     fa, wa = _onde(_kk(path))
     fp, wp = _faixa("chave", _kk(path))
-    delta = {r[0]: (-int(r[1] or 0), -int(r[2] or 0)) for r in c.execute("SELECT bloco,SUM(bytes),SUM(narq) FROM arq WHERE %s GROUP BY bloco" % fa, wa)}
+    delta = {r[0]: (-int(r[1] or 0), -int(r[2] or 0)) for r in c.execute("SELECT faixa,SUM(bytes),SUM(narq) FROM arq WHERE %s GROUP BY faixa" % fa, wa)}
     c.execute("DELETE FROM arq WHERE " + fa, wa)
     c.execute("DELETE FROM pasta WHERE " + fp, wp)
     _idx_subir(c, os.path.dirname(os.path.abspath(path)), delta)
@@ -1299,17 +1481,20 @@ def _idx_tirar(c, path):
 def _idx_por(c, path):
     """Põe no índice o que existe agora em path (depois de renomear, mover, copiar ou criar)."""
     p = os.path.abspath(path)
-    usr, _ = dono(p)
+    usr, h = dono(p)
     usr = usr or ""
     linhas = []
     pastas = _Pastas({_kk(p)}, _homes_chaves())
     def um(fp, st):
         tam = _aloc(st)
         ult = max(st.st_mtime, st.st_atime)
-        cat = categoria(os.path.basename(fp))
-        bl = bloco_de(cat)
-        linhas.append(_linha_arq(fp, usr, "arquivo", cat, bl, tam, 1, ult, zona_vermelha(fp) or ""))
-        return tam, ult, bl
+        nome = os.path.basename(fp)
+        ctx = _ctx_dir(os.path.dirname(fp), h) if h else ""
+        verm = zona_vermelha(fp) or ""
+        fx = CLS.faixa_arquivo(nome, ctx)
+        linhas.append(_linha_arq(fp, usr, "arquivo", categoria(nome), fx, tam, 1, ult, verm, CLS.grupo_arquivo(nome, ctx, bool(verm)),
+                                 "nao_recomendado" if verm else "", _criado(st)))
+        return tam, ult, fx
     if os.path.isdir(p) and not os.path.islink(p):
         stack = [p]
         while stack:
@@ -1336,7 +1521,7 @@ def _idx_por(c, path):
         c.executemany(_INS_ARQ, linhas)
         pastas.gravar(c)
         raiz = pastas.d.get(_kk(p))
-        delta = {x: (raiz["b"].get(x, 0), raiz["nb"].get(x, 0)) for x in BLOCOS} if raiz else {}
+        delta = {x: (raiz["b"].get(x, 0), raiz["nb"].get(x, 0)) for x in FX} if raiz else {}
     elif os.path.isfile(p) and not os.path.islink(p):
         st = os.lstat(p)
         if _nuvem(st):
@@ -1385,7 +1570,7 @@ def _idx_bytes(path):
 def indice_estado():
     c = _idx_con()
     if not c:
-        return {"existe": False, "construindo": bool(_IB[0])}
+        return {"existe": False, "construindo": bool(_IB[0]), "antigo": os.path.isfile(_idx_arquivo())}
     try:
         m = {r[0]: r[1] for r in c.execute("SELECT k,v FROM meta WHERE k IN ('quando','parcial','n','mexidas','params')")}
         try:
@@ -1429,7 +1614,8 @@ def onedrive_pasta(home_dir=None):
 def _linha_saida(r, agora):
     p = _caminho(r)
     trava = (zona_vermelha(p) or r["zona"]) if r["zona"] else ""  # motivo de agora: índices antigos também ganham os textos novos
-    out = {"id": r["id"], "no": no_de(p, r["usuario"]), "nome": r["nome"], "path": p, "tipo": r["tipo"], "cat": r["cat"], "bloco": r["bloco"], "bytes": r["bytes"],
+    out = {"id": r["id"], "no": no_de(p, r["usuario"]), "nome": r["nome"], "path": p, "tipo": r["tipo"], "cat": r["cat"], "faixa": r["faixa"], "grupo": r["grupo"],
+           "sug": r["sug"], "tipo_rot": r["trot"], "criado": r["criado"] or None, "bytes": r["bytes"],
            "arquivos": r["narq"], "dias": int((agora - r["uso"]) / 86400) if r["uso"] else None, "usuario": r["usuario"], "zona": "vermelha" if trava else "",
            "motivo": trava, "previa": tipo_previa(p) if r["tipo"] == "arquivo" and not trava else None, "pode_abrir": pode_abrir(p), "pode_marcar": not trava,
            "ajuda_no": None}
@@ -1439,20 +1625,36 @@ def _linha_saida(r, agora):
     return out
 
 
-def indice_consulta(bloco="", cat="", pasta=None, usuario="", q="", ordem="maior", offset=0, limit=200, visao="arquivos"):
-    """Tudo que a tela do Gerenciamento precisa para o filtro atual: totais por bloco e por categoria, a página de arquivos,
-    as subpastas (visão por pasta) e a trilha. pasta: nó (id), nunca caminho."""
+# filtros da gaveta (os mesmos do "Ver lista" do backup): tamanho e "parado há" em faixas fixas
+_SQL_TAM = "CASE WHEN bytes<=102400 THEN 'p' WHEN bytes<=1048576 THEN 'm' WHEN bytes<=10485760 THEN 'g' WHEN bytes<=104857600 THEN 'gg' ELSE 'xg' END"
+
+
+def _sql_uso(agora):
+    d = lambda n: agora - n * 86400
+    return ("CASE WHEN uso IS NULL OR uso<=0 THEN 'sem' WHEN uso>=%f THEN 'd30' WHEN uso>=%f THEN 'm6' WHEN uso>=%f THEN 'a1' WHEN uso>=%f THEN 'a3' ELSE 'antigo' END"
+            % (d(30), d(182), d(365), d(1095)))
+
+
+FACETAS_IDX = ("faixa", "grupo", "sug", "tipo", "cat", "tam", "uso", "usuario")
+
+
+def indice_consulta(faixa="", cat="", pasta=None, usuario="", q="", ordem="maior", offset=0, limit=200, visao="arquivos",
+                    grupo="", sug="", tipo="", tam="", uso="", facetas=False, bloco=""):
+    """Tudo que a tela do Gerenciamento precisa para o filtro atual: a página de arquivos, os totais, as contagens de cada
+    filtro da gaveta (cada uma com os OUTROS filtros aplicados), as subpastas (visão por pasta) e a trilha. Filtros com várias
+    opções vêm separados por "|" (OU dentro do filtro, E entre filtros). pasta: nó (id), nunca caminho."""
     est = indice_estado()
     if not est["existe"]:
-        return {"estado": est, "rows": [], "total": 0, "bytes": 0, "blocos": {}, "cats": [], "pastas": [], "migalhas": []}
+        return {"estado": est, "rows": [], "total": 0, "bytes": 0, "faixas": {}, "cats": [], "pastas": [], "migalhas": [], "facetas": {}, "facetas_bytes": {}}
     agora = time.time()
     pp = caminho_no(pasta) if pasta else None
     if pp and not os.path.isdir(pp):
         raise ValueError("Escolha uma pasta.")
+    multi = lambda v: [x for x in str(v or "").split("|") if x]
+    F = {"faixa": multi(faixa or bloco), "grupo": multi(grupo), "sug": multi(sug), "tipo": multi(tipo), "cat": multi(cat), "tam": multi(tam),
+         "uso": multi(uso), "usuario": multi(usuario)}
+    expr = {"faixa": "faixa", "grupo": "grupo", "sug": "sug", "tipo": "trot", "cat": "cat", "tam": _SQL_TAM, "uso": _sql_uso(agora), "usuario": "usuario"}
     base, args = [], []
-    if usuario:
-        base.append("usuario=?")
-        args.append(usuario)
     if pp:
         ch = _kk(pp)
         if visao == "pastas":
@@ -1468,56 +1670,56 @@ def indice_consulta(bloco="", cat="", pasta=None, usuario="", q="", ordem="maior
         args.append(t)
     if visao == "pastas" and not pp:
         base.append("0")  # na raiz (usuários) só há pastas
+
+    def onde(sem=None):
+        w, a = list(base), list(args)
+        for k, vals in F.items():
+            if k != sem and vals:
+                w.append("%s IN (%s)" % (expr[k], ",".join("?" * len(vals))))
+                a += vals
+        return (" WHERE " + " AND ".join(w)) if w else "", a
+
     c = _idx_con()
     try:
         _busca_pastas(c, termos)
-        if not q.strip() and not (pp and usuario):
-            # sem busca: os totais já estão somados por pasta (a pasta atual, ou a pasta de cada usuário)
-            if pp:
-                tp = [c.execute("SELECT * FROM pasta WHERE chave=?", (_kk(pp),)).fetchone()]
-            else:
-                tp = [c.execute("SELECT * FROM pasta WHERE chave=?", (_kk(h),)).fetchone() for u, h in homes() if not usuario or u == usuario]
-            tp = [r for r in tp if r]
-            blocos = {x: {"n": sum(r["n_" + x] for r in tp), "bytes": sum(r["b_" + x] for r in tp)} for x in BLOCOS}
-            blocos = {x: v for x, v in blocos.items() if v["n"] or v["bytes"]}
-        else:
-            w = (" WHERE " + " AND ".join(base)) if base else ""
-            blocos = {r[0]: {"n": int(r[1] or 0), "bytes": int(r[2] or 0)} for r in c.execute("SELECT bloco,SUM(narq),SUM(bytes) FROM arq%s GROUP BY bloco" % w, args)}
-        wb, ab = list(base), list(args)
-        if bloco:
-            wb.append("bloco=?")
-            ab.append(bloco)
-        wsql = (" WHERE " + " AND ".join(wb)) if wb else ""
-        cats = [{"cat": r[0], "n": int(r[1] or 0), "bytes": int(r[2] or 0)} for r in c.execute("SELECT cat,SUM(narq),SUM(bytes) FROM arq%s GROUP BY cat ORDER BY SUM(bytes) DESC" % wsql, ab)]
-        if cat:
-            wb.append("cat=?")
-            ab.append(cat)
-        wsql = (" WHERE " + " AND ".join(wb)) if wb else ""
+        fac, facb = {}, {}
+        for k in (FACETAS_IDX if facetas else ("faixa", "cat")):
+            w, a = onde(k)
+            fac[k], facb[k] = {}, {}
+            for r in c.execute("SELECT %s, SUM(narq), SUM(bytes) FROM arq%s GROUP BY 1" % (expr[k], w), a):
+                if r[0] is None or (k == "sug" and not r[0]):
+                    continue
+                fac[k][r[0]] = int(r[1] or 0)
+                facb[k][r[0]] = int(r[2] or 0)
+        wsql, ab = onde()
         tot = c.execute("SELECT COUNT(*),SUM(bytes) FROM arq%s" % wsql, ab).fetchone()
         rows = [_linha_saida(r, agora) for r in c.execute("SELECT * FROM arq%s ORDER BY %s, id LIMIT ? OFFSET ?" % (wsql, _ORDEM_SQL.get(ordem, _ORDEM_SQL["maior"])),
-                                                           ab + [max(1, min(int(limit), 1000)), max(0, int(offset))])]
+                                                           ab + [max(1, min(int(limit), 1000)), max(0, int(offset))])] if int(limit) > 0 else []
         pastas = []
-        if visao == "pastas" and not q.strip() and not cat:
+        so_faixa = not any(F[k] for k in F if k not in ("faixa", "usuario"))
+        if visao == "pastas" and not q.strip() and so_faixa:
             if pp:
                 sub = c.execute("SELECT * FROM pasta WHERE pai=?", (_kk(pp),)).fetchall()
             else:
-                hs = [(u, h) for u, h in homes() if not usuario or u == usuario]
+                hs = [(u, h) for u, h in homes() if not F["usuario"] or u in F["usuario"]]
                 sub = [r for r in (c.execute("SELECT * FROM pasta WHERE chave=?", (_kk(h),)).fetchone() for _, h in hs) if r]
             for r in sub:
-                b = r["b_" + bloco] if bloco else r["bytes"]
-                n = r["n_" + bloco] if bloco else r["n"]
-                if bloco and not n:
+                b = sum(r["b_" + x] for x in F["faixa"]) if F["faixa"] else r["bytes"]
+                n = sum(r["n_" + x] for x in F["faixa"]) if F["faixa"] else r["n"]
+                if F["faixa"] and not n:
                     continue
                 trava = zona_vermelha(r["path"]) or ""
                 pastas.append({"no": no_de(r["path"], r["usuario"]), "nome": os.path.basename(r["path"]) if pp else r["usuario"], "path": r["path"], "tipo": "pasta",
                                "bytes": b, "arquivos": n, "dias": int((agora - r["uso"]) / 86400) if r["uso"] else None, "usuario": r["usuario"],
                                "motivo": trava, "pode_renomear": not trava, "raiz": not pp})
             pastas.sort(key=lambda x: (-(x["bytes"] or 0), x["nome"].lower()) if ordem != "nome" else x["nome"].lower())
-        return {"estado": est, "rows": rows, "total": int(tot[0] or 0), "bytes": int(tot[1] or 0), "blocos": blocos, "cats": cats, "pastas": pastas,
+        return {"estado": est, "rows": rows, "total": int(tot[0] or 0), "bytes": int(tot[1] or 0),
+                "faixas": {k: {"n": v, "bytes": facb["faixa"][k]} for k, v in fac["faixa"].items()},
+                "cats": sorted(({"cat": k, "n": v, "bytes": facb["cat"][k]} for k, v in fac["cat"].items()), key=lambda x: -x["bytes"]),
+                "facetas": fac if facetas else {}, "facetas_bytes": facb if facetas else {}, "pastas": pastas,
                 "migalhas": _migalhas_pasta(pp) if pp else [], "pasta_no": int(pasta) if pp else 0, "usuarios": [u for u, _ in homes()]}
     finally:
         c.close()
-
 
 
 def indice_panorama(usuario="", n=5):

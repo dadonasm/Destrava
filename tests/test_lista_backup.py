@@ -135,5 +135,18 @@ class Lista(unittest.TestCase):
             self.app.previa(str(i))
 
 
+    def test_destino_de_um_arquivo_nos_jeitos_de_guardar(self):
+        """A prévia da faixa de baixo: onde o arquivo fica no Espelho e no Ordenado, e qual vale agora."""
+        i = self.app.items.index(self.itens["b_relatorio.docx"])
+        d = self.app.destino(i)
+        self.assertEqual(d["espelho"], "Pastas_origem/Ana/Documents/b_relatorio.docx")
+        self.assertTrue(d["ordenado"].startswith("Ana/Documentos/") and d["ordenado"].endswith("/b_relatorio.docx"), d["ordenado"])
+        self.assertEqual((d["atual"], d["copia"]), (d["ordenado"], "ordenar"), "sem modo escolhido vale o ordenado")
+        self.app.set_modo("misto")
+        self.assertEqual((self.app.destino(i)["atual"], self.app.destino(i)["copia"]), (d["espelho"], "espelhar"), "no Misto começa espelhado")
+        with self.assertRaises(ValueError):
+            self.app.destino(len(self.app.items))
+
+
 if __name__ == "__main__":
     unittest.main()

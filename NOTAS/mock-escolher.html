@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Escolher · mock</title>
+<!-- Mock estático da tela única de Gerenciamento + Backup (fase 1 do plano). Dados de mentira, nada é lido nem copiado. -->
+<style>
+:root{
+ --bg:#0e0f12;--panel:#16171c;--panel2:#1d1f26;--line:#2a2c35;--tx:#ececf1;--mut:#9a9cab;
+ --acc:#e0b34a;--acc-tx:#1b1400;--azul:#3b7cf4;--ok:#3fb27f;--warn:#e5a23a;--err:#e5534b;--sis:#7d8294;--livre:#2c2f39;
+ --sh:0 1px 0 rgba(255,255,255,.03) inset,0 8px 24px rgba(0,0,0,.25);
+ --r-sm:8px;--r-md:12px;--r-lg:22px;--r-pill:999px}
+:root[data-theme=light]{
+ --bg:#f4f6fb;--panel:#fff;--panel2:#eef2f9;--line:rgba(30,50,90,.11);--tx:#1a1d26;--mut:#646b7d;
+ --acc:#3b7cf4;--acc-tx:#fff;--sis:#a3a9b8;--livre:#e3e8f2;--sh:0 1px 2px rgba(30,50,90,.05),0 12px 32px rgba(30,60,120,.08)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+:root[data-theme=light] body{background:radial-gradient(1200px 600px at 85% -10%,#dfe9fb 0%,transparent 60%),radial-gradient(900px 500px at -10% 10%,#fbf3e6 0%,transparent 55%),#f4f6fb;background-attachment:fixed}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);border-radius:var(--r-pill);padding:7px 14px}
+button:hover{border-color:var(--acc)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.mut{color:var(--mut)}
+
+/* topo: marca, finalidade e tema */
+.topo{display:flex;align-items:center;gap:14px;padding:14px 24px;max-width:1440px;margin:0 auto}
+.marca{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px}
+.marca svg{width:30px;height:30px}
+.esp{flex:1}
+.seg{display:inline-flex;padding:3px;border-radius:var(--r-pill);background:var(--panel2);border:1px solid var(--line)}
+.seg button{border:0;background:transparent;padding:7px 16px;border-radius:var(--r-pill);color:var(--mut)}
+.seg button[aria-pressed=true]{background:var(--panel);color:var(--tx);font-weight:650;box-shadow:var(--sh)}
+.fin{font-size:14.5px}
+.fin button[aria-pressed=true]{background:var(--acc);color:var(--acc-tx);box-shadow:none}
+
+/* passos (só no backup) */
+.passos{display:flex;gap:6px;max-width:1440px;margin:0 auto;padding:0 24px 10px;font-size:13px;color:var(--mut)}
+.passos span{display:flex;align-items:center;gap:7px;padding:4px 12px 4px 4px;border-radius:var(--r-pill)}
+.passos i{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:700;border:1.5px solid var(--line)}
+.passos .on{color:var(--tx);font-weight:650;background:var(--panel)}.passos .on i{background:var(--acc);border-color:var(--acc);color:var(--acc-tx)}
+
+main{max-width:1440px;margin:0 auto;padding:0 24px 120px}
+
+/* cockpit: o disco inteiro numa barra, cada faixa é um filtro */
+.cock{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh);padding:18px 20px 16px;margin-bottom:16px}
+.cock-t{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.cock-t h1{margin:0;font-size:24px;letter-spacing:-.3px}
+.cock-t p{margin:0;font-size:13.5px}
+.disco{display:flex;height:14px;border-radius:var(--r-pill);overflow:hidden;margin:14px 0 10px;background:var(--livre)}
+.disco i{display:block;height:100%}
+.leg{display:flex;flex-wrap:wrap;gap:6px 8px}
+.leg button{display:inline-flex;align-items:center;gap:8px;background:transparent;border-color:transparent;padding:4px 10px;font-size:13px}
+.leg button[aria-pressed=true]{border-color:var(--line);background:var(--panel2)}
+.leg b{font-weight:650}.leg s{width:10px;height:10px;border-radius:3px;text-decoration:none;display:inline-block}
+
+/* corpo: facetas à esquerda, grade ou lista ao centro */
+.corpo{display:grid;grid-template-columns:250px minmax(0,1fr);gap:16px;align-items:start}
+.fac{position:sticky;top:12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:8px 16px;max-height:calc(100vh - 24px);overflow:auto}
+.fac details{border-bottom:1px solid var(--line);padding:10px 0}.fac details:last-child{border:0}
+.fac summary{cursor:pointer;font-weight:650;font-size:14px;display:flex;justify-content:space-between}
+.fac label{display:flex;align-items:center;gap:9px;padding:4px 2px;font-size:13.5px;cursor:pointer}
+.fac label .num{margin-left:auto;color:var(--mut);font-size:12.5px}
+.fac .tri{font-size:13px;margin:6px 0 2px;display:flex;flex-wrap:wrap;gap:4px;color:var(--mut)}.fac .tri b{color:var(--tx);font-weight:600}
+
+.painel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh);overflow:hidden}
+.ptop{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 16px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{background:transparent;font-size:13.5px;padding:6px 13px}
+.chips button[aria-pressed=true]{background:var(--azul);border-color:var(--azul);color:#fff}
+.chips span{opacity:.65;margin-left:4px}
+.busca{flex:1;min-width:180px;padding:9px 14px;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--panel2)}
+
+/* grade por categoria */
+.cab,.lin{display:grid;grid-template-columns:28px minmax(0,2.4fr) 112px 72px 84px minmax(110px,1fr) 52px 92px;gap:12px;align-items:center;padding:10px 16px}
+.cab{font-size:12.5px;color:var(--mut);border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--panel2)}
+.cab .r,.lin .r{text-align:right}
+.grp{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);font-size:13.5px}
+.grp b{font-size:15px}.grp .d{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--mut)}
+.grp.pes{box-shadow:inset 4px 0 0 var(--ok)}.grp.dec{box-shadow:inset 4px 0 0 var(--warn)}.grp.sis{box-shadow:inset 4px 0 0 var(--sis)}
+.lin{border-bottom:1px solid var(--line);font-size:14px}
+.lin:hover{background:color-mix(in srgb,var(--azul) 5%,transparent)}
+.nm{display:flex;gap:12px;align-items:center;min-width:0}.nm .ic{font-size:22px;flex:none}
+.nm b{display:block;font-weight:650}.nm small{display:block;color:var(--mut);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec{justify-self:start;white-space:nowrap;font-size:12.5px;font-weight:650;padding:2px 10px;border-radius:var(--r-pill);border:1.5px solid}
+.rec.lev{color:var(--ok);border-color:var(--ok)}.rec.dec{color:var(--warn);border-color:var(--warn)}.rec.nao{color:var(--mut);border-color:var(--line)}
+.mb{font-size:12px;color:var(--mut)}.mb i{display:block;height:6px;border-radius:var(--r-pill);background:var(--livre);overflow:hidden;margin-bottom:4px}.mb i b{display:block;height:100%;background:var(--azul)}
+.tg{position:relative;width:44px;height:24px}.tg input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1}
+.tg s{position:absolute;inset:0;border-radius:var(--r-pill);background:var(--line);transition:background .2s}
+.tg s:after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s}
+.tg input:checked+s{background:var(--ok)}.tg input:checked+s:after{left:23px}
+.tg input:focus-visible+s{outline:2px solid var(--acc);outline-offset:2px}
+.lin .ver{padding:6px 12px;font-size:13px}
+.cp{display:inline-flex;border:1px solid var(--line);border-radius:var(--r-pill);padding:2px;margin-top:4px}
+.cp button{border:0;background:transparent;padding:1px 9px;font-size:11.5px;border-radius:var(--r-pill);color:var(--mut)}
+.cp button[aria-pressed=true]{background:var(--panel2);color:var(--tx);font-weight:650;box-shadow:var(--sh)}
+.ck{width:18px;height:18px;accent-color:var(--azul)}
+
+/* lista (o "Ver lista" aberto no lugar da grade) */
+.lhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 16px 6px}
+.voltar{background:transparent;border-color:transparent;padding:6px 10px;font-weight:650}
+.lhead h2{margin:0;font-size:18px}
+.filt{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 16px 10px;font-size:13.5px}
+.filt .f{display:inline-flex;align-items:center;gap:8px;padding:4px 6px 4px 12px;border-radius:var(--r-pill);border:1px solid var(--azul);color:var(--tx)}
+.filt .f button{border:0;background:transparent;padding:0 6px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-weight:600;color:var(--mut);font-size:12.5px;padding:10px 12px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--panel2);position:sticky;top:0}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}td.num{white-space:nowrap}
+td.nmf{max-width:340px}td.nmf b{font-weight:550}
+td.cam{color:var(--mut);max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:rtl;text-align:left}
+tr.foco td{background:color-mix(in srgb,var(--acc) 9%,transparent)}
+tr{cursor:pointer}
+.st{font-size:12px;font-weight:650;padding:2px 9px;border-radius:var(--r-pill);background:color-mix(in srgb,var(--azul) 14%,transparent);color:var(--azul);white-space:nowrap}
+
+/* faixa de ação: o lugar da decisão (Como guardar + destino + botão) */
+.acao{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);width:min(1392px,calc(100% - 28px));z-index:20;
+ background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:0 18px 50px rgba(0,0,0,.28);padding:12px 14px 12px 18px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.acao .rot{font-size:12.5px;color:var(--mut);margin-bottom:4px}
+.como .seg button{padding:6px 14px}
+.como .seg button[aria-pressed=true]{background:var(--acc);color:var(--acc-tx);box-shadow:none}
+.prev{flex:1;min-width:260px}
+.trilho{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:13px}
+.trilho span{padding:2px 9px;border-radius:var(--r-sm);background:var(--panel2);border:1px solid var(--line);white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis;transition:background .25s,border-color .25s}
+.trilho span.novo{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 14%,var(--panel2))}
+.trilho i{font-style:normal;color:var(--mut)}
+.tot{text-align:right;white-space:nowrap}.tot b{font-size:17px}
+.dest{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:var(--r-md);border:1px dashed var(--line);font-size:13px;background:transparent}
+.ir{background:var(--acc);border-color:var(--acc);color:var(--acc-tx);font-weight:700;padding:11px 22px;font-size:15px}
+.ger-ac{display:none;gap:8px;flex-wrap:wrap}.ger-ac .pri{background:var(--acc);border-color:var(--acc);color:var(--acc-tx);font-weight:700}.ger-ac .lix{color:var(--err);border-color:color-mix(in srgb,var(--err) 45%,var(--line))}
+body.ger .ger-ac{display:flex}body.ger .so-bkp{display:none}
+body.ger .passos{display:none}
+
+@media (max-width:1000px){.corpo{grid-template-columns:1fr}.fac{position:static;max-height:none}}
+@media (max-width:760px){.topo{flex-wrap:wrap;padding:12px 16px}main{padding:0 16px 220px}.cab{display:none}
+ .lin{grid-template-columns:28px 1fr 52px;gap:8px}.lin>.rec,.lin>.n,.lin>.b,.lin>.mb,.lin>.ver{display:none}
+ .passos{overflow-x:auto;padding:0 16px 10px}.prev{min-width:100%}.tot{text-align:left}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="topo">
+ <div class="marca"><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="2" width="36" height="36" rx="9" fill="none" stroke="currentColor" stroke-width="3"/><path d="M11 12h8a8 8 0 010 16h-8z" fill="currentColor"/><path d="M23 12h6v16h-6" fill="none" stroke="var(--acc)" stroke-width="3"/></svg>Destrava!</div>
+ <div class="esp"></div>
+ <div class="seg fin" role="group" aria-label="Finalidade">
+  <button data-fin="ger" aria-pressed="false">Gerenciar dados</button>
+  <button data-fin="bkp" aria-pressed="true">Fazer backup</button>
+ </div>
+ <div class="esp"></div>
+ <button id="tema">Claro / Escuro</button>
+</div>
+<nav class="passos" aria-label="Passos do backup">
+ <span class="on"><i>1</i>Escolher</span><span><i>2</i>Copiar</span><span><i>3</i>Verificar</span><span><i>4</i>Manter</span><span><i>5</i>Concluir</span>
+</nav>
+
+<main>
+ <section class="cock" aria-label="Disco desta máquina">
+  <div class="cock-t"><h1>Macintosh HD</h1><p class="mut">227,94 GB usados de 245,11 GB · varrido hoje às 21:40</p></div>
+  <div class="disco" id="disco"></div>
+  <div class="leg" id="leg"></div>
+ </section>
+
+ <div class="corpo">
+  <aside class="fac" id="fac" aria-label="Filtros"></aside>
+  <section class="painel" id="painel"></section>
+ </div>
+</main>
+
+<div class="acao" role="region" aria-label="Decisão">
+ <div class="como so-bkp">
+  <div class="rot">Como guardar no destino</div>
+  <div class="seg" role="group" aria-label="Como guardar" id="como">
+   <button data-lay="espelho" aria-pressed="true">Espelho</button><button data-lay="ordenado" aria-pressed="false">Ordenado</button><button data-lay="misto" aria-pressed="false">Misto</button>
+  </div>
+ </div>
+ <div class="prev so-bkp">
+  <div class="rot" id="prevrot"></div>
+  <div class="trilho" id="trilho" aria-live="polite"></div>
+ </div>
+ <div class="ger-ac" aria-label="Ações nos selecionados"><span class="mut" style="align-self:center" id="nsel">3 selecionados</span><button class="pri">Mover para…</button><button>Copiar para…</button><button>Renomear</button><button>Disco externo</button><button class="lix">Mandar para a Lixeira</button></div>
+ <button class="dest so-bkp" title="Escolher o destino">💽 HD Externo <span class="mut">17,17 GB livres</span></button>
+ <div class="tot so-bkp"><b class="num" id="totn">8.519 arquivos</b><div class="mut num" id="totb">10,82 GB vão para o backup</div></div>
+ <button class="ir so-bkp">Iniciar cópia</button>
+</div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const GB=1e9,fmt=b=>!b?"0 B":b>=GB?(b/GB).toFixed(2).replace(".",",")+" GB":b>=1e6?(b/1e6).toFixed(1).replace(".",",")+" MB":(b/1e3).toFixed(1).replace(".",",")+" KB";
+const nf=n=>n.toLocaleString("pt-BR");
+// dados de mentira, tirados dos prints da Seleção e do "Ver lista"
+const GRUPOS=[
+ {k:"pes",t:"Pessoal",d:"Já vem marcado: o que a pessoa criou ou guardou.",cor:"var(--ok)",cats:[
+  ["📄","Documentos","PDF, Word, Excel, PowerPoint, textos",1854,2.68*GB,"lev"],["🖼️","Fotos","Fotos e imagens (JPG, PNG, HEIC…)",6548,1.33*GB,"lev"],
+  ["🎬","Vídeos","Vídeos gravados ou baixados (MP4, MOV…)",30,6.78*GB,"lev"],["🎵","Áudios","Músicas, gravações e áudios (MP3, WAV…)",86,37.3e6,"lev"],
+  ["✉️","E-mail e contatos","E-mails e contatos guardados no computador",1,14.4e3,"lev"]]},
+ {k:"dec",t:"Trabalho e dados de programas",d:"Você decide: pode ser importante, depende do cliente.",cor:"var(--warn)",cats:[
+  ["🧩","Dados de apps","Configurações e bancos de programas",412,3.9*GB,"dec"],["🛠️","Projetos","Pastas de código e projetos",2210,6.4*GB,"dec"],
+  ["💬","Conversas","WhatsApp e mensageiros",920,0.81*GB,"dec"],["🔑","Contas e senhas","Chaves, certificados e cofres",14,2.1e6,"dec"],["🌐","Navegadores","Favoritos e históricos",6,8.2e6,"dec"]]},
+ {k:"sis",t:"Sistema e programas",d:"Não vem marcado: o sistema reinstala.",cor:"var(--sis)",cats:[
+  ["📦","Programas","Instaladores e aplicativos",188,9.2*GB,"nao"],["🗑️","Temporários e sistema","Caches e arquivos temporários",74,0.42*GB,"nao"],
+  ["👁️","Arquivos ocultos","Configurações escondidas",6512,1.1*GB,"nao"],["❔","Outros","Tipos sem categoria",7120,2.3*GB,"nao"]]}];
+const ARQ=[["(atualizado)CATÁLOGO - FERRAMENTAS E MAQUINÁRIOS - 03_08_26 (1).pdf","PDF","06/08/2026",14.3e6,[2026,8]],
+ ["00 - 25.06.2025 - CONTRATO SOCIAL.pdf","PDF","14/07/2025",1.7e6,[2025,7]],["00Comprovante de Inscrição e de Situação Cadastral.pdf","PDF","31/10/2025",219.4e3,[2025,10]],
+ ["04-12.xls","Planilha","04/12/2025",493.6e3,[2025,12]],["08. Relatorio_Vendas_Agosto_2025.xlsx","Planilha","02/02/2026",249.8e3,[2026,2]],
+ ["08d6f3f5-9438-4bde-92a5-d44c0e570a47-2.pdf","PDF","25/08/2025",309.8e3,[2025,8]]];
+const MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const S={fin:"bkp",lay:"espelho",vis:"grade",cat:"",foco:1,leva:{},cp:{},grp:"todos"};
+GRUPOS.forEach(g=>g.cats.forEach(c=>{S.leva[c[1]]=g.k==="pes";S.cp[c[1]]="espelhar"}));
+S.cp.Fotos="ordenar";
+
+function cockpit(){
+ const seg=[["pes","Pessoal",10.82*GB,"var(--ok)"],["dec","Você decide",14.83*GB,"var(--warn)"],["sis","Sistema e programas",202.29*GB,"var(--sis)"],["livre","Livre",17.17*GB,"var(--livre)"]];
+ const tot=seg.reduce((a,s)=>a+s[2],0);
+ $("#disco").innerHTML=seg.map(s=>`<i style="width:${s[2]/tot*100}%;background:${s[3]}" title="${s[1]}"></i>`).join("");
+ $("#leg").innerHTML=seg.map(s=>s[0]==="livre"?`<span class="mut" style="padding:4px 10px;font-size:13px"><s style="width:10px;height:10px;border-radius:3px;display:inline-block;background:${s[3]};border:1px solid var(--line)"></s> Livre <b class="num">${fmt(s[2])}</b></span>`
+  :`<button data-g="${s[0]}" aria-pressed="${S.grp===s[0]}"><s style="background:${s[3]}"></s>${s[1]} <b class="num">${fmt(s[2])}</b></button>`).join("");
+ $$("#leg [data-g]").forEach(b=>b.onclick=()=>{S.grp=S.grp===b.dataset.g?"todos":b.dataset.g;S.vis="grade";tudo()});
+}
+function facetas(){
+ const cats=GRUPOS.flatMap(g=>g.cats);
+ $("#fac").innerHTML=`<details open><summary>Pasta</summary><div class="tri"><b>Todas</b></div><label><span>👤</span>marlosdadonas<span class="num">${nf(25995)}</span></label></details>
+  <details open><summary>${S.fin==="bkp"?"Marcados":"Selecionados"}</summary>${["Todos","Marcados","Não marcados"].map((t,i)=>`<label><input type="radio" name="mk" ${i?"":"checked"}>${t}</label>`).join("")}</details>
+  <details open><summary>Categoria</summary>${cats.slice(0,8).map(c=>`<label><input type="checkbox" ${S.cat===c[1]?"checked":""} data-fc="${c[1]}">${c[1]}<span class="num">${nf(c[3])}</span></label>`).join("")}</details>
+  <details><summary>Tipo</summary>${["PDF","Planilha","Imagem","Vídeo"].map(t=>`<label><input type="checkbox">${t}</label>`).join("")}</details>
+  <details><summary>Data</summary>${["Últimos 30 dias","Este ano","Mais antigos"].map(t=>`<label><input type="checkbox">${t}</label>`).join("")}</details>`;
+ $$("[data-fc]").forEach(c=>c.onchange=()=>{S.cat=c.checked?c.dataset.fc:"";S.vis=S.cat?"lista":"grade";tudo()});
+}
+function grade(){
+ const misto=S.lay==="misto"&&S.fin==="bkp",ger=S.fin==="ger";
+ const linha=(c,g)=>{const on=!ger&&S.leva[c[1]],pct=on?100:0;
+  return `<div class="lin">${ger?`<input class="ck" type="checkbox" aria-label="Selecionar ${c[1]}">`:"<span></span>"}
+   <div class="nm"><span class="ic">${c[0]}</span><div style="min-width:0"><b>${c[1]}</b><small>${c[2]}</small>
+    ${misto&&g.k!=="sis"?`<div class="cp" role="group" aria-label="Como copiar ${c[1]}">${["espelhar","ordenar"].map(m=>`<button data-cp="${c[1]}" data-m="${m}" aria-pressed="${S.cp[c[1]]===m}">${m==="espelhar"?"Espelhar":"Ordenar"}</button>`).join("")}</div>`:""}</div></div>
+   <span class="rec ${c[5]}">${(ger?{lev:"Manter",dec:"Revisar",nao:"Pode limpar"}:{lev:"Levar",dec:"Você decide",nao:"Não precisa"})[c[5]]}</span>
+   <span class="r num n">${nf(c[3])}</span><span class="r num b">${fmt(c[4])}</span>
+   <div class="mb"><i><b style="width:${pct}%"></b></i><span class="num">${on?nf(c[3]):0} de ${nf(c[3])}</span></div>
+   ${ger?"<span></span>":`<label class="tg"><input type="checkbox" data-lv="${c[1]}" ${on?"checked":""} aria-label="Levar ${c[1]}"><s></s></label>`}
+   <button class="ver" data-ver="${c[1]}">Ver lista</button></div>`};
+ const gs=GRUPOS.filter(g=>S.grp==="todos"||g.k===S.grp);
+ $("#painel").className="painel"+(ger?" ger":"");
+ $("#painel").innerHTML=`<div class="ptop"><div class="seg" role="group" aria-label="Agrupar"><button aria-pressed="true">Por categoria</button><button aria-pressed="false">Por usuário e pasta</button></div>
+  <div class="chips">${[["todos","Todos",14],["pes","Pessoal",5],["dec","Você decide",5],["sis","Sistema",4]].map(([k,t,n])=>`<button data-g="${k}" aria-pressed="${S.grp===k}">${t}<span>${n}</span></button>`).join("")}</div>
+  <input class="busca" placeholder="Buscar categoria, tipo ou pasta" aria-label="Buscar"></div>
+  <div class="cab"><span></span><span>Categoria</span><span>${ger?"Sugestão":"Recomendação"}</span><span class="r">Arquivos</span><span class="r">Tamanho</span><span>${ger?"Selecionado":"Marcado"}</span><span>${ger?"":"Levar"}</span><span></span></div>
+  ${gs.map(g=>{const n=g.cats.length,lv=g.cats.filter(c=>S.leva[c[1]]),b=lv.reduce((a,c)=>a+c[4],0),t=g.cats.reduce((a,c)=>a+c[4],0);
+   return `<div class="grp ${g.k}"><b>${g.t}</b><span class="d">${g.d}</span><span class="mut num">${n} itens, ${fmt(b)} de ${fmt(t)}</span></div>${g.cats.map(c=>linha(c,g)).join("")}`}).join("")}`;
+ $$("#painel .chips [data-g]").forEach(b=>b.onclick=()=>{S.grp=b.dataset.g;tudo()});
+ $$("[data-lv]").forEach(c=>c.onchange=()=>{S.leva[c.dataset.lv]=c.checked;totais();grade()});
+ $$("[data-ver]").forEach(b=>b.onclick=()=>{S.cat=b.dataset.ver;S.vis="lista";tudo()});
+ $$("[data-cp]").forEach(b=>b.onclick=()=>{S.cp[b.dataset.cp]=b.dataset.m;grade();preview()});
+}
+function lista(){
+ const ger=S.fin==="ger";
+ $("#painel").className="painel";
+ $("#painel").innerHTML=`<div class="lhead"><button class="voltar" id="volta">← Todas as categorias</button><h2>${S.cat}</h2><span class="esp"></span>
+   <select aria-label="Ordenar por" style="padding:7px 12px;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--panel2)"><option>Nome</option><option>Tamanho</option><option>Data</option></select>
+   <div class="seg" role="group" aria-label="Ver como"><button aria-pressed="false">Bloco</button><button aria-pressed="true">Lista</button></div></div>
+  <div class="filt"><b class="num">${nf(1854)} resultados</b><span class="f">Categoria: ${S.cat}<button id="tira" aria-label="Tirar filtro">×</button></span><input class="busca" placeholder="Buscar nome, tipo ou caminho" aria-label="Buscar na lista"></div>
+  <div style="overflow:auto"><table><thead><tr><th><input type="checkbox" checked aria-label="Marcar todos"></th><th>Nome do arquivo</th><th>Tipo</th><th>Situação</th><th>Criado em</th><th style="text-align:right">Tamanho</th><th>Caminho</th>${S.lay==="misto"&&!ger?"<th>Cópia</th>":""}</tr></thead>
+  <tbody>${ARQ.map((a,i)=>`<tr data-i="${i}" class="${S.foco===i?"foco":""}"><td><input type="checkbox" checked aria-label="Marcar ${a[0]}"></td><td class="nmf"><b>${a[0]}</b></td><td>${a[1]}</td>
+   <td><span class="st">${ger?"No disco":"Vai no backup"}</span></td><td class="num">${a[2]}</td><td class="num" style="text-align:right">${fmt(a[3])}</td><td class="cam" title="/Users/marlosdadonas/Downloads">/Users/marlosdadonas/Downloads</td>
+   ${S.lay==="misto"&&!ger?`<td><div class="cp">${["espelhar","ordenar"].map(m=>`<button aria-pressed="${S.cp[S.cat]===m}" data-cpl="${m}">${m==="espelhar"?"Espelhar":"Ordenar"}</button>`).join("")}</div></td>`:""}</tr>`).join("")}</tbody></table></div>`;
+ $("#volta").onclick=$("#tira").onclick=()=>{S.cat="";S.vis="grade";tudo()};
+ $$("tbody tr").forEach(r=>r.onclick=e=>{if(e.target.closest("input,button"))return;S.foco=+r.dataset.i;lista();preview()});
+ $$("[data-cpl]").forEach(b=>b.onclick=()=>{S.cp[S.cat]=b.dataset.cpl;lista();preview()});
+}
+/* o caminho do arquivo em foco, do jeito que vai ficar no destino */
+function preview(){
+ const a=ARQ[S.foco],cat=S.cat||"Documentos";
+ const modo=S.lay==="misto"?(S.cp[cat]==="ordenar"?"ordenado":"espelho"):S.lay;
+ const esp=["Pastas_origem","marlosdadonas","Downloads",a[0]],[y,m]=a[4];
+ const ord=["marlosdadonas",cat,String(y),String(m).padStart(2,"0")+" - "+MESES[m-1],a[0]];
+ const seg=modo==="espelho"?esp:ord,velho=modo==="espelho"?ord:esp;
+ $("#prevrot").textContent=`Assim fica no HD Externo${S.lay==="misto"?" (Misto: "+cat+" vai "+(modo==="espelho"?"espelhado)":"ordenado)"):""}`;
+ $("#trilho").innerHTML=seg.map(x=>`<span class="${velho.includes(x)?"":"novo"}" title="${x}">${x}</span>`).join("<i>/</i>");
+}
+function totais(){
+ const lv=GRUPOS.flatMap(g=>g.cats).filter(c=>S.leva[c[1]]);
+ $("#totn").textContent=nf(lv.reduce((a,c)=>a+c[3],0))+" arquivos";
+ $("#totb").textContent=fmt(lv.reduce((a,c)=>a+c[4],0))+" vão para o backup";
+}
+function tudo(){
+ document.body.className=S.fin==="ger"?"ger":"";
+ $$("[data-fin]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.fin===S.fin));
+ $$("#como [data-lay]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.lay===S.lay));
+ cockpit();facetas();(S.vis==="lista"?lista:grade)();preview();totais();
+}
+$$("[data-fin]").forEach(b=>b.onclick=()=>{S.fin=b.dataset.fin;tudo()});
+$$("#como [data-lay]").forEach(b=>b.onclick=()=>{S.lay=b.dataset.lay;tudo()});
+$("#tema").onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==="light"?"dark":"light"};
+// estado inicial pelo endereço, para conferir as variações: mock-escolher.html#escuro,lista,misto,gerenciar
+const H=location.hash.slice(1).split(",");
+if(H.includes("escuro"))document.documentElement.dataset.theme="dark";
+if(H.includes("lista")){S.cat="Documentos";S.vis="lista"}
+if(H.includes("misto"))S.lay="misto";if(H.includes("ordenado"))S.lay="ordenado";
+if(H.includes("gerenciar"))S.fin="ger";
+tudo();
+</script>
+</body>
+</html>

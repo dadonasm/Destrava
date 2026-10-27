@@ -94,6 +94,19 @@ class BackupCompleto(unittest.TestCase):
         self.assertTrue(self.app.med_parar.is_set(), "a cópia para a medição")
         espera(self.app, ("copied", "error"))
 
+    def test_faixas_do_disco_iguais_as_do_gerenciamento(self):
+        it = self.escanear()
+        m, t = self.app.medicao, time.time()
+        while m["rodando"] and time.time() - t < 20:
+            time.sleep(0.05)
+        d = self.app.faixas_disco()
+        self.assertFalse(d["medindo"])
+        self.assertEqual(d["faixas"]["fotos"], sum(x.size for x in self.app.items if x.cat == "Fotos"))
+        self.assertGreaterEqual(d["faixas"]["caches"], 9, "cache do Thunderbird e Temp, medidos fora da varredura")
+        self.assertEqual(sum(d["faixas"].values()), m["usado"], "as faixas somam o espaço usado do disco")
+        ident = dd_backup.identidade("backup", self.app)
+        self.assertEqual([c["nome"] for c in ident["contas"]], ["Ana"], "as contas são as do disco do backup")
+
     def test_backup_mapa_e_conferencia(self):
         self.escanear()
         self.app.start_copy()

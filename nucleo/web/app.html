@@ -5,13 +5,30 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Destrava! · D&D Technology</title>
 <style>
-:root{--bg:#0e0f12;--panel:#16171c;--panel2:#1d1f26;--line:#2a2c35;--tx:#ececf1;--mut:#9a9cab;--gold:#e0b34a;--ok:#3fb27f;--warn:#e5a23a;--err:#e5534b;--acc:#e0b34a;--r:14px;--sh:0 1px 0 rgba(255,255,255,.03) inset,0 8px 24px rgba(0,0,0,.25);--btnpri:linear-gradient(180deg,#f0cd6b,#d4a62f);--btnpri-tx:#1b1400}
-:root[data-theme=light]{--bg:#f3f3f6;--panel:#fff;--panel2:#f0f0f4;--line:#dcdce3;--tx:#1b1b1f;--mut:#5d5e6a;--gold:#8a6612;--acc:#8a6612;--sh:0 1px 2px rgba(20,20,40,.06),0 8px 24px rgba(20,20,40,.06);--btnpri:linear-gradient(180deg,#f3d27a,#dcae35);--btnpri-tx:#241a00}
+/* ---------- tokens (um só lugar: escuro = dourado, claro = azul) ---------- */
+:root{
+ /* superfícies em 3 níveis: fundo, painel, painel interno */
+ --bg:#0e0f12;--panel:#16171c;--panel2:#1d1f26;--line:#2a2c35;--tx:#ececf1;--mut:#9a9cab;
+ --gold:#e0b34a;--acc:#e0b34a;--azul:#3b7cf4;--ok:#3fb27f;--warn:#e5a23a;--err:#e5534b;
+ --trilho:rgba(120,130,150,.18);--pill:rgba(30,32,40,.72);
+ --sh:0 1px 0 rgba(255,255,255,.03) inset,0 8px 24px rgba(0,0,0,.25);
+ --btnpri:linear-gradient(180deg,#f0cd6b,#d4a62f);--btnpri-tx:#1b1400;--btnpri-bd:#b98a14;
+ /* forma, espaço, tipo e densidade */
+ --r:14px;--r-sm:8px;--r-md:12px;--r-lg:22px;--r-pill:999px;
+ --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:24px;--sp-6:32px;
+ --fs-xs:11.5px;--fs-sm:12.5px;--fs-md:13.5px;--fs-base:15px;--fs-lg:18px;--fs-xl:28px;
+ --linha-pad:10px}
+:root[data-theme=light]{
+ --bg:#f4f6fb;--panel:rgba(255,255,255,.86);--panel2:#eef2f9;--line:rgba(30,50,90,.10);--tx:#1a1d26;--mut:#646b7d;
+ --gold:#8a6612;--acc:#3b7cf4;--azul:#3b7cf4;--trilho:#e3e8f2;--pill:rgba(255,255,255,.8);
+ --sh:0 1px 2px rgba(30,50,90,.05),0 12px 32px rgba(30,60,120,.08);
+ --btnpri:linear-gradient(180deg,#5b93f7,#3b7cf4);--btnpri-tx:#fff;--btnpri-bd:#3b7cf4}
+:root[data-theme=light] body{background:radial-gradient(1200px 600px at 85% -10%,#dfe9fb 0%,transparent 60%),radial-gradient(900px 500px at -10% 10%,#fbf3e6 0%,transparent 55%),#f4f6fb;background-attachment:fixed}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif;-webkit-font-smoothing:antialiased}
 h1,h2,h3,h4{margin:0}
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-header{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:15;min-height:58px}
+header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:transparent;position:sticky;top:0;z-index:15;min-height:58px}
 header h1{font-size:17px;letter-spacing:.4px}header small{color:var(--mut)}
 header .sp{flex:1}
 #hperf{padding:6px 8px}#hperf svg{width:18px;height:18px;display:block}
@@ -30,19 +47,21 @@ button.chip{cursor:pointer;font:inherit;font-size:12px}button.chip:hover{border-
 .jn .c{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;background:var(--panel);position:relative;z-index:1}
 .jn:not(:last-child):after{content:"";position:absolute;top:15px;left:calc(50% + 17px);right:calc(-50% + 17px);height:2px;background:var(--line)}
 .jn.done:not(:last-child):after{background:var(--ok)}
+button.jn{border:0;background:none;padding:0;font:inherit;cursor:pointer;border-radius:10px}button.jn:hover .c{border-color:var(--acc)}button.jn:focus-visible{outline:2px solid var(--acc);outline-offset:4px}
+#suband{display:flex;gap:10px;align-items:center;flex-wrap:wrap;max-width:1500px;margin:10px auto 0;padding:9px 16px;border-radius:12px;border:1px solid var(--warn);background:rgba(229,162,58,.12);font-size:13.5px}
 .jn.done .c{background:var(--ok);border-color:var(--ok);color:#fff}.jn.on .c{border-color:var(--acc);color:var(--acc);box-shadow:0 0 0 4px rgba(224,179,74,.18)}.jn.on{color:var(--tx);font-weight:600}.jn.done{color:var(--ok)}
 
 main{max-width:1100px;margin:0 auto;padding:8px 22px 70px}main.wide{max-width:1500px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;margin-bottom:16px;box-shadow:var(--sh);backdrop-filter:blur(8px)}
 .card h2{font-size:18px;margin:0 0 4px}.card p.h{margin:0 0 14px;color:var(--mut);font-size:13.5px}
 .card h3{font-size:14px;margin:0 0 8px}
 label{display:block;font-size:12px;color:var(--mut);margin:10px 0 4px}
-input[type=text],select{width:100%;padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--tx);font:inherit}
-input[type=text]:focus,select:focus{outline:2px solid var(--acc);outline-offset:-1px}
+input[type=text],input[type=search],select{width:100%;padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--tx);font:inherit}
+input[type=text]:focus,input[type=search]:focus,select:focus{outline:2px solid var(--acc);outline-offset:-1px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.grow{flex:1;min-width:180px}.sp1{flex:1}
-button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--tx);padding:9px 15px;transition:border-color .15s,transform .05s}
+button{font:inherit;cursor:pointer;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--panel2);color:var(--tx);padding:9px 15px;transition:border-color .15s,transform .05s}
 button:hover{border-color:var(--acc)}button:active{transform:translateY(1px)}button:disabled{opacity:.4;cursor:not-allowed}
-button.pri{background:var(--btnpri);color:var(--btnpri-tx);border-color:#b98a14;font-weight:700}
+button.pri{background:var(--btnpri);color:var(--btnpri-tx);border-color:var(--btnpri-bd);font-weight:700}
 button.dng{background:var(--err);border-color:var(--err);color:#fff;font-weight:700}
 button.gh{background:transparent}
 button.sm{padding:5px 10px;font-size:12.5px;border-radius:8px}
@@ -88,7 +107,9 @@ button.sm{padding:5px 10px;font-size:12.5px;border-radius:8px}
 .tg input:focus-visible+s{outline:2px solid var(--acc);outline-offset:2px}
 table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;color:var(--mut);font-weight:500;padding:6px 8px;border-bottom:1px solid var(--line)}
 td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top;word-break:break-word}
-.pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px;font-weight:600}
+.gpill{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px}.gpill:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.gpill.g-programas:before{background:var(--warn)}.gpill.g-cache:before{background:#e8a33d}.gpill.g-instal:before{background:#a78bfa}.gpill.g-sistema:before{background:var(--mut)}.gpill.g-nuvem:before{background:#22b8cf}.gpill.g-bloq:before{background:var(--err)}
+.pill{display:inline-block;white-space:nowrap;padding:1px 8px;border-radius:99px;font-size:11px;font-weight:600}
 .p-ok{background:#16382b;color:#6fe0a8}.p-falha{background:#4a1f1c;color:#ff9189}.p-ignorado{background:#2c2c33;color:#aaa}.p-revisar{background:#4a3a14;color:#ffd27a}.p-desmarcado{background:#2c2c33;color:#c9c9d6}.p-pendente{background:#26304a;color:#9bb8ff}.p-em_uso{background:#2c2c33;color:#c9c9d6}
 :root[data-theme=light] .p-ok{background:#d9f3e6;color:#17714a}:root[data-theme=light] .p-falha{background:#fde0de;color:#a3241d}:root[data-theme=light] .p-ignorado,:root[data-theme=light] .p-desmarcado{background:#e8e8ee;color:#555}:root[data-theme=light] .p-revisar{background:#fdecc6;color:#7a5a05}:root[data-theme=light] .p-pendente{background:#dfe6fb;color:#2f4fa8}:root[data-theme=light] .p-em_uso{background:#e8e8ee;color:#555}
 .log{max-height:150px;overflow:auto;background:var(--panel2);border-radius:10px;padding:8px;border:1px solid var(--line)}
@@ -107,7 +128,7 @@ td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top;word-b
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:12px;padding:12px 18px;z-index:80;box-shadow:0 12px 40px rgba(0,0,0,.4);max-width:min(560px,92vw)}
 .toast.err{border-left-color:var(--err)}.toast.ok{border-left-color:var(--ok)}
 
-.shell{display:flex;min-height:calc(100vh - 58px)}
+.shell{min-height:calc(100vh - 58px)}
 #gaveta{width:200px;flex:none;background:var(--panel);border-right:1px solid var(--line);padding:12px 8px;display:flex;flex-direction:column;gap:4px;position:sticky;top:58px;height:calc(100vh - 58px);transition:width .2s;z-index:6}
 #gaveta .sp{flex:1}
 .gv{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:transparent;padding:11px 12px;border-radius:12px;color:var(--mut)}
@@ -119,7 +140,6 @@ button>svg,button>span>svg{width:16px;height:16px;vertical-align:-3px}
 .gv .bd{margin-left:auto;font-size:10px;padding:1px 7px;border-radius:99px;background:var(--warn);color:#1b1400;font-weight:700}
 .gvfoot{font-size:12px;color:var(--mut);padding:8px 10px;word-break:break-word;line-height:1.3}.gvfoot b{display:block;color:var(--tx);font-size:12.5px}.gvfoot small{opacity:.55;font-size:10.5px;letter-spacing:.5px}
 body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{display:none}
-.content{flex:1;min-width:0}
 .hero{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
 .ring{width:158px;height:158px;flex:none;position:relative}.ring svg{width:100%;height:100%}
 .ring .n{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}.ring .n b{font-size:44px;line-height:1;letter-spacing:-1px}.ring .n span{font-size:12px;color:var(--mut)}
@@ -133,7 +153,7 @@ body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{d
 .mid{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;letter-spacing:.8px;color:var(--mut);opacity:.6;cursor:pointer;border:0;background:transparent;padding:0}
 .mid:hover{opacity:1}
 .badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:99px;font-weight:700;margin:0 4px 4px 0;border:1px solid}
-.b-gold{background:var(--btnpri);color:var(--btnpri-tx);border-color:#b98a14}.b-ok{color:var(--ok);border-color:var(--ok)}.b-bad{color:var(--err);border-color:var(--err)}.b-warn{color:var(--warn);border-color:var(--warn)}.b-mut{color:var(--mut);border-color:var(--line)}
+.b-gold{background:var(--btnpri);color:var(--btnpri-tx);border-color:var(--btnpri-bd)}.b-ok{color:var(--ok);border-color:var(--ok)}.b-bad{color:var(--err);border-color:var(--err)}.b-warn{color:var(--warn);border-color:var(--warn)}.b-mut{color:var(--mut);border-color:var(--line)}
 .delta{font-weight:700}.delta.up{color:var(--ok)}.delta.dn{color:var(--err)}.delta.eq{color:var(--mut)}
 .chars{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
 .ch{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:13px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -190,7 +210,7 @@ body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{d
 @media (max-width:1100px){.dr{position:fixed;right:12px;top:70px;bottom:12px;max-height:none;z-index:30;transform:translateX(calc(100% + 30px));width:min(400px,92vw);opacity:1;border-width:1px;transition:transform .25s;box-shadow:0 20px 60px rgba(0,0,0,.5)}.dr.open{transform:none;width:min(400px,92vw)}.dr .in{width:100%;max-height:none;height:100%}}
 
 /* dados */
-.cock{display:flex;height:34px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--panel2)}
+.cock{display:flex;height:14px;border-radius:var(--r-pill);overflow:hidden;background:var(--panel2);margin:12px 0 8px}
 .cock i{display:block;height:100%;transition:width .5s}
 .lgd{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12.5px}.lgd span{display:flex;align-items:center;gap:6px}.lgd i{width:11px;height:11px;border-radius:3px;display:inline-block}
 .zn{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
@@ -251,22 +271,19 @@ body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{d
 #ilha2{width:58px;height:58px;flex:none;border-radius:50%;background:#0b0b0e;color:#fff;border:0;font-weight:700;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.3);animation:ilha-in .45s cubic-bezier(.2,.9,.3,1.25)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 /* painel da lista do backup (Ver lista) */
-.modal .box.lstb{width:calc(100% - 32px);max-width:1180px;height:min(88vh,920px);max-height:none;display:flex;flex-direction:column;padding:18px 20px;overflow:hidden}
 .lsth{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.lsth h2{margin:0;font-size:19px}
 .lchip{color:var(--tx);border-color:var(--acc)}.lchip button{border:0;background:transparent;padding:0 2px;color:var(--mut);cursor:pointer;font-size:12px}
 .lstn{display:grid;grid-template-columns:repeat(2,minmax(0,1fr)) auto;grid-auto-flow:row;gap:6px 24px;align-items:center;margin-top:12px}
 .lstn span{color:var(--mut);font-size:12.5px;display:block}.lstn b{font-size:18px}.lstn .arco{width:76px;height:76px;grid-column:3;grid-row:1/span 2}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;background:var(--panel2)}.seg button{border:0;background:transparent}.seg button.on{background:var(--panel);box-shadow:var(--sh);font-weight:700}
 .lstc{flex:1;min-height:0;overflow:auto;border-top:1px solid var(--line)}
-.lstbody{display:flex;gap:16px;flex:1;min-height:0;margin-top:12px}.lstm{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}
 .lsts{width:250px;flex:none;overflow:auto;border-right:1px solid var(--line);padding-right:12px}
-.fxg{border-bottom:1px solid var(--line);padding:8px 0}.fxg summary{cursor:pointer;font-weight:700;font-size:14px;list-style-position:inside}.fxn{display:inline-block;min-width:18px;padding:0 6px;border-radius:99px;background:var(--azul);color:#fff;font-size:11px;text-align:center}
-.fxo{display:flex;gap:8px;align-items:center;padding:4px 2px;margin:0;font-size:13.5px;color:var(--tx);cursor:pointer;border-radius:8px}.fxo:hover{background:var(--panel2)}.fxo small{color:var(--mut);font-size:12px}.fxo.zero{opacity:.45;cursor:default}
-.fxq{margin:6px 0 4px!important;padding:6px 10px!important;font-size:13px!important}.fxm{margin-top:4px}
-.fxr{display:flex;gap:6px;align-items:center;margin-top:8px}.fxr input{margin:0!important;padding:6px 8px!important;font-size:12.5px!important;min-width:0;flex:1}.fxr span{font-size:12px;color:var(--mut)}
+.fc-g{border-bottom:1px solid var(--line);padding:8px 0}.fc-g summary{cursor:pointer;font-weight:700;font-size:14px;list-style-position:inside}.fc-n{display:inline-block;min-width:18px;padding:0 6px;border-radius:99px;background:var(--azul);color:#fff;font-size:11px;text-align:center}
+.fc-o{display:flex;gap:8px;align-items:center;padding:4px 2px;margin:0;font-size:13.5px;color:var(--tx);cursor:pointer;border-radius:8px}.fc-o:hover{background:var(--panel2)}.fc-o small{color:var(--mut);font-size:12px}.fc-o.zero{opacity:.45;cursor:default}
+.fc-q{margin:6px 0 4px!important;padding:6px 10px!important;font-size:13px!important}.fc-m{margin-top:4px}
+.fc-r{display:flex;gap:6px;align-items:center;margin-top:8px}.fc-r input{margin:0!important;padding:6px 8px!important;font-size:12.5px!important;min-width:0;flex:1}.fc-r span{font-size:12px;color:var(--mut)}
 .lstbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 8px}.lstord{display:inline-flex;gap:6px;align-items:center}.lstord label{font-size:13px;color:var(--mut);white-space:nowrap}.lstord #lstord{width:auto;min-width:0;padding:6px 30px 6px 10px;font-size:13px}.lstord #lstdir{padding:6px 10px}.lstchips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .lstfb{display:none}
-@media (max-width:820px){.lsts{display:none;position:absolute;inset:150px 14px 14px;z-index:6;width:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 12px;box-shadow:var(--sh)}.lstb.fopen .lsts{display:block}.lstfb{display:inline-flex}.lstb{position:relative}}
 .lstt{min-width:880px}.lstt thead th{position:sticky;top:0;background:var(--panel);z-index:1}.lstt th button{border:0;background:transparent;padding:0;font:inherit;color:inherit;cursor:pointer;border-radius:0}.lstt th button.on{color:var(--tx);font-weight:700}
 .lstt td{vertical-align:middle}.lstt .ck{width:32px}.lstt .cam{font-size:12px;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lstt tr.desm td{color:var(--mut)}
 button.lnk{border:0;background:transparent;padding:0;color:var(--acc);text-align:left;cursor:pointer;font:inherit;border-radius:0}button.lnk:hover{text-decoration:underline}
@@ -276,7 +293,7 @@ button.lnk{border:0;background:transparent;padding:0;color:var(--acc);text-align
 .lbc{position:absolute;top:13px;left:13px;margin:0;z-index:1}.lbc input{width:17px;height:17px}
 button.lbt{height:110px;border-radius:10px;border:0;padding:0;background:var(--panel);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:40px}.lbt img{width:100%;height:100%;object-fit:cover}
 .lbk b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lbk small{color:var(--mut);font-size:11.5px}
-@media (max-width:600px){.lstn{grid-template-columns:1fr 1fr}.lstn .arco{display:none}.modal .box.lstb{height:92vh;padding:14px}}
+@media (max-width:600px){.lstn{grid-template-columns:1fr 1fr}.lstn .arco{display:none}}
 /* painel da Home */
 .phero{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.phero h2{font-size:22px}
 .pnl{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:16px}
@@ -294,8 +311,6 @@ button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-
 .hac b{font-size:15px}.hac small{font-size:12.5px;color:var(--mut);line-height:1.35}
 .warnbox.pend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border-width:2px}.pend .pic{font-size:30px;line-height:1;color:var(--warn);flex:none}
 .idn{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
-.medbar{display:flex;height:16px;border-radius:99px;overflow:hidden;background:var(--line);margin:10px 0 8px}.medbar i{display:block;height:100%}
-.medleg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px}.medleg span{display:inline-flex;align-items:center;gap:6px}.medleg i{width:10px;height:10px;border-radius:3px;display:inline-block}
 .semcon{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9999;background:#b3261e;color:#fff;padding:12px 16px;border-radius:14px;box-shadow:var(--sh);display:flex;gap:12px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 32px);font-size:14px}.semcon button{background:#fff;color:#b3261e;border:0}
 .mfl{display:flex;flex-direction:column;margin-top:8px;max-height:360px;overflow:auto}.mfr{display:flex;gap:10px;align-items:center;padding:8px 4px;border-top:1px solid var(--line);margin:0;cursor:pointer;color:var(--tx)}
 .mfr b{display:block;font-size:12.5px;word-break:break-all}.mfr small{display:block;color:var(--mut);font-size:12px}.mfr .sz{white-space:nowrap;font-size:13px}.mfr.on{background:color-mix(in srgb,var(--ok) 8%,transparent)}
@@ -306,7 +321,7 @@ button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-
 .sgp{padding:0;overflow:hidden}
 .sg-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 16px 10px}
 .sg-abas{display:flex;gap:2px;background:var(--panel2);border-radius:12px;padding:3px;flex:none}.sg-abas button{border:0;background:transparent;padding:7px 14px;border-radius:9px;font-size:13.5px;box-shadow:none}.sg-abas button.on{background:var(--panel);box-shadow:var(--sh);font-weight:700}
-.sg-chips{display:flex;gap:6px;flex-wrap:wrap}.sg-chip{border:1px solid var(--line);background:transparent;border-radius:99px;padding:5px 12px;font-size:13px;box-shadow:none}.sg-chip span{opacity:.6;margin-left:2px}.sg-chip.on{background:var(--azul);color:#fff;border-color:var(--azul)}.sg-chip.on span{opacity:.85}
+.sg-chips{display:flex;gap:6px;flex-wrap:wrap}.sg-chip{white-space:nowrap;border:1px solid var(--line);background:transparent;border-radius:99px;padding:5px 12px;font-size:13px;box-shadow:none}.sg-chip span{opacity:.6;margin-left:2px}.sg-chip.on{background:var(--azul);color:#fff;border-color:var(--azul)}.sg-chip.on span{opacity:.85}
 .sg-q{flex:1;min-width:170px;margin:0!important;padding:8px 12px!important;font-size:13.5px!important}.sg-o{width:auto!important;margin:0!important;padding:8px 30px 8px 10px!important;font-size:13px!important}
 .sg-acoes{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 16px 12px;font-size:12.5px}
 .sg-head,.sg-row{display:grid;grid-template-columns:20px minmax(0,2.6fr) 118px 62px 82px minmax(0,1fr) 46px 78px;gap:10px;align-items:center;padding:10px 16px}
@@ -314,7 +329,8 @@ button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-
 .sg-head{font-size:11.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--panel2)}.sg-head button{border:0;background:transparent;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;text-align:left;box-shadow:none;cursor:pointer}.sg-head .sg-num{text-align:right}
 .sg-grp{display:flex;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px;flex-wrap:nowrap}.sg-grp>b{white-space:nowrap}
 .sg-grp>.sg-gd{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sg-grp>.grow{display:none}.sg-grp>.mut:not(.sg-gd){white-space:nowrap}.sg-grp b{font-size:14.5px}.sg-grp:hover{background:var(--panel2)}.sg-chev{width:14px;color:var(--mut)}
-.sg-g-pessoal{box-shadow:inset 4px 0 0 var(--ok)}.sg-g-decide{box-shadow:inset 4px 0 0 var(--warn)}.sg-g-sistema{box-shadow:inset 4px 0 0 var(--mut)}.sg-g-usuario,.sg-g-whats,.sg-g-origem,.sg-g-disco{box-shadow:inset 4px 0 0 var(--azul)}
+.sg-g-pessoal{box-shadow:inset 4px 0 0 var(--ok)}.sg-g-decide,.sg-g-programas{box-shadow:inset 4px 0 0 var(--warn)}.sg-g-sistema{box-shadow:inset 4px 0 0 var(--mut)}
+.sg-g-cache{box-shadow:inset 4px 0 0 #e8a33d}.sg-g-instal{box-shadow:inset 4px 0 0 #a78bfa}.sg-g-nuvem{box-shadow:inset 4px 0 0 #22b8cf}.sg-g-bloq{box-shadow:inset 4px 0 0 var(--err)}.sg-g-usuario,.sg-g-whats,.sg-g-origem,.sg-g-disco{box-shadow:inset 4px 0 0 var(--azul)}
 .sg-row{border-bottom:1px solid var(--line);font-size:13.5px}.sg-row:hover{background:color-mix(in srgb,var(--azul) 5%,transparent)}.sg-row.off .sg-nome b{color:var(--mut)}
 .sg-x{border:0;background:transparent;padding:2px;color:var(--mut);font-size:12px;box-shadow:none}
 .sg-nome{display:flex;gap:10px;align-items:center;min-width:0}.sg-nome .ic{font-size:20px;line-height:1;flex:none}.sg-nome b{display:block;font-size:14px}.sg-nome small{display:block;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sg-nome small.sg-meta{display:none}
@@ -324,16 +340,6 @@ button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-
 .sg-pe{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 16px;font-size:12.5px}
 @media (max-width:760px){.sg-head{display:none}.sg-row{grid-template-columns:20px 1fr 50px;gap:8px}.sg-row>.sg-rec,.sg-row>.sg-n,.sg-row>.sg-b,.sg-row>.sg-bar,.sg-row>[data-sl]{display:none}.sg-nome small.sg-meta{display:block}.sg-gd{display:none}.sg-grp{flex-wrap:wrap}.sg-grp>.mut{flex:1}.sg-top{overflow-x:auto;flex-wrap:nowrap}.sg-chips{flex-wrap:nowrap}.sg-det{padding-left:16px}}
 /* Backup: como guardar (Espelho, Ordenado, Misto), coluna Cópia e "Como copiar" na lista */
-.lay h2{margin:2px 0 4px}.lay-top{display:flex;gap:14px;align-items:center}.lay-ic{font-size:28px;line-height:1}
-.lay-ops{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:12px}
-.lay-op{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:16px;border-radius:16px;border:1.5px solid var(--line);background:var(--panel2);color:var(--tx);box-shadow:none;transition:border-color .15s,transform .12s}
-.lay-op:hover{border-color:var(--azul);transform:translateY(-1px)}.lay-op:focus-visible{outline:3px solid color-mix(in srgb,var(--azul) 45%,transparent);outline-offset:2px}
-.lay-op.on{border-color:var(--azul);background:color-mix(in srgb,var(--azul) 9%,var(--panel2))}.lay-op b{font-size:16px}.lay-d{font-size:13px;color:var(--mut);line-height:1.4}
-.lay-dg{display:flex;flex-direction:column;gap:3px;width:100%;margin-top:6px;padding-top:8px;border-top:1px dashed var(--line)}.lay-dg small{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;margin-top:4px}
-.lay-cam{display:flex;flex-wrap:wrap;gap:3px;align-items:center;font-size:12px}.lay-cam span{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:1px 6px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
-.lay-cam i{color:var(--mut);font-style:normal}.lay-cam b{font-weight:600;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}
-.lay-resr{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.lay-res{background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:5px 12px;font-size:13px}
-.lay-dica{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--azul) 7%,transparent);font-size:13px}
 .seg2{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel2)}.seg2 button{border:0;border-radius:0;background:transparent;padding:5px 10px;font-size:12.5px;box-shadow:none;color:var(--tx)}
 .seg2 button+button{border-left:1px solid var(--line)}.seg2 button.on{background:var(--azul);color:#fff;font-weight:600}.seg2 button:focus-visible{outline:2px solid var(--azul);outline-offset:-2px}
 .sgp.sg-misto .sg-head,.sgp.sg-misto .sg-row{grid-template-columns:20px minmax(0,2.4fr) 110px 62px 82px minmax(0,1fr) 46px 158px 78px}
@@ -341,19 +347,16 @@ button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-
 .lst-cp{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 8px;padding:9px 12px;border-radius:12px;border:1px solid color-mix(in srgb,var(--azul) 35%,var(--line));background:color-mix(in srgb,var(--azul) 7%,var(--panel))}
 .lst-cp small{display:block;font-size:12px;color:var(--mut)}
 .cpp{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);white-space:nowrap;cursor:help}.cpp-ordenar{background:color-mix(in srgb,var(--warn) 14%,transparent)}.cpp-espelhar{background:color-mix(in srgb,var(--azul) 12%,transparent)}
-.fxtr{display:flex;flex-wrap:wrap;gap:3px;align-items:center;font-size:12.5px;margin:2px 0 6px}.fxtr i{color:var(--mut);font-style:normal}
-.fxp{display:flex;gap:6px;align-items:center;width:100%;border:0;background:transparent;padding:5px 4px;border-radius:8px;text-align:left;font-size:13px;box-shadow:none;color:var(--tx)}.fxp:hover{background:var(--panel2)}.fxp small{color:var(--mut);font-size:11.5px;white-space:nowrap}.fxp .fxo2{color:var(--warn)}
-@media (max-width:760px){.sgp.sg-misto .sg-row{grid-template-columns:20px 1fr 50px}.sg-row>.sg-cp{grid-column:2/-1}.sg-cpg{display:none}.lay-top{flex-wrap:wrap}}
+.fc-tr{display:flex;flex-wrap:wrap;gap:3px;align-items:center;font-size:12.5px;margin:2px 0 6px}.fc-tr i{color:var(--mut);font-style:normal}
+.fc-p{display:flex;gap:6px;align-items:center;width:100%;border:0;background:transparent;padding:5px 4px;border-radius:8px;text-align:left;font-size:13px;box-shadow:none;color:var(--tx)}.fc-p:hover{background:var(--panel2)}.fc-p small{color:var(--mut);font-size:11.5px;white-space:nowrap}.fc-p .fc-o2{color:var(--warn)}
+@media (max-width:760px){.sgp.sg-misto .sg-row{grid-template-columns:20px 1fr 50px}.sg-row>.sg-cp{grid-column:2/-1}.sg-cpg{display:none}}
 
 /* Gerenciamento de dados: grade de arquivos, trilha, menu ⋯ e escolha de destino */
-.sg-dados{grid-template-columns:20px minmax(0,1fr) 110px 66px 88px auto}
-.dg-u{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dg-d{font-size:12.5px}
+.dg-u{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dg-ac{display:flex;gap:4px;justify-content:flex-end;white-space:nowrap}.dg-ac .sm{padding:4px 9px;font-size:12.5px}
 .dg-lock{font-size:13px;text-align:center;cursor:help}
 .dg-ent{cursor:pointer}.dg-ent:hover,.dg-ent:focus{color:var(--azul);text-decoration:underline;outline:none}
-.dg-tri{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 16px 0}
 .dg-trilha{display:flex;gap:4px;align-items:center;flex-wrap:wrap;font-size:13.5px;min-width:0}.dg-trilha .sm{padding:4px 8px}.dg-trilha b{padding:4px 2px}
-.dg-chips{padding:0 16px 12px}
 .sg-nome small.dg-mot{white-space:normal;color:var(--warn)}.dg-lk{border:0;background:transparent;padding:0 0 0 4px;color:var(--azul);font:inherit;font-weight:600;text-decoration:underline;box-shadow:none;cursor:pointer}
 .dg-leg{padding:8px 16px;font-size:12.5px;color:var(--mut);border-bottom:1px solid var(--line)}
 .dg-bar{position:sticky;top:96px;z-index:6;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 16px;background:var(--panel);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
@@ -366,11 +369,8 @@ button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-
 .dg-pi .ic{font-size:18px;flex:none}.dg-pi .t{flex:1;min-width:0}.dg-pi .t b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dg-pi .t small{display:block;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dg-pi .sm{padding:3px 8px}
 .sg-row.dg-realce{background:color-mix(in srgb,var(--azul) 12%,transparent);box-shadow:inset 3px 0 0 var(--azul)}
-.dg-bl{display:inline-flex;align-items:center;gap:7px}.dg-bl i{width:11px;height:11px;border-radius:3px;background:var(--c);flex:none}
-.dg-bl:hover{border-color:var(--c)}.sg-chip.dg-bl.on{background:var(--c);border-color:var(--c);color:#0b0f1a}.sg-chip.dg-bl.on i{background:#0b0f1a;opacity:.55}.sg-chip.dg-bl.on span{opacity:.75}
-.sg-chip.dg-bl.on[data-dgb="apps"]{color:#fff}.sg-chip.dg-bl.on[data-dgb="apps"] i{background:#fff}.dg-abas{margin:0 0 14px;display:inline-flex}
+.dg-abas{margin:0 0 14px;display:inline-flex}
 .dg-ren{margin:0!important;padding:4px 8px!important;font-weight:600;font-size:14px!important}
-.cock i[data-bl]{cursor:pointer}.cock i[data-bl]:hover,.cock i[data-bl]:focus{filter:brightness(1.12);outline:none}.cock i.apaga{opacity:.28}
 .lgb{display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;background:transparent;padding:3px 9px;border-radius:99px;font-size:12.5px;box-shadow:none;color:var(--tx)}
 .lgb:hover{border-color:var(--line);background:var(--panel2)}.lgb.on{border-color:var(--azul);background:color-mix(in srgb,var(--azul) 10%,transparent)}.lgb i,.lgs i{width:11px;height:11px;border-radius:3px;display:inline-block}
 .lgs{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;color:var(--mut)}
@@ -379,7 +379,7 @@ button.hac:hover,button.hkc:hover{border-color:var(--acc);transform:translateY(-
 .dd-ls{display:flex;flex-direction:column;max-height:46vh;overflow:auto;border:1px solid var(--line);border-radius:12px;margin-top:8px}
 .dd-it{display:flex;gap:8px;justify-content:space-between;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;text-align:left;padding:10px 12px;box-shadow:none}.dd-it:hover{background:var(--panel2)}.dd-it:last-child{border-bottom:0}
 .dd-op{display:flex;gap:8px;align-items:center;color:var(--tx);font-size:13px;margin:6px 0 0}
-@media (max-width:760px){.sg-dados{grid-template-columns:20px minmax(0,1fr) auto}.sg-dados>.dg-u,.sg-dados>.dg-d,.sg-dados>.sg-num{display:none}.dg-ac [data-abr]{display:none}}
+@media (max-width:760px){.dg-ac [data-abr]{display:none}}
 .pcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}.pcols .card{margin-bottom:0}@media (max-width:900px){.pcols{grid-template-columns:1fr}}
 button.pli{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 6px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
 button.pli:hover{background:var(--panel2)}.pli .grow{min-width:0}.pli .cod{display:block}.pli small{display:block;color:var(--mut);font-size:11.5px;text-align:right;margin-top:3px}
@@ -390,9 +390,60 @@ textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);b
 .drow .sz{font-weight:700;white-space:nowrap}
 .actbar{position:sticky;bottom:10px;background:var(--panel);border:1px solid var(--acc);border-radius:16px;padding:12px 16px;box-shadow:0 12px 40px rgba(0,0,0,.35);display:flex;gap:12px;align-items:center;flex-wrap:wrap;z-index:8}
 
+/* tela única (Seleção do backup; o Gerenciamento segue o mesmo molde): disco no topo, filtros à esquerda, painel ao centro, decisão embaixo */
+.ckp{padding:18px 20px 16px}.ckp-t{display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap;margin-bottom:12px}.ckp-t h1{font-size:24px;letter-spacing:-.3px}.ckp-t p{margin:0;color:var(--mut);font-size:var(--fs-md)}
+.ckp .lgd{gap:6px 4px}.ckp .lgb b,.ckp .lgs b{font-variant-numeric:tabular-nums}
+.ckp-t h1{margin:0}.ckp-mod{color:var(--mut);font-size:var(--fs-md);font-weight:500}.ckp-quem{margin:2px 0 0;font-size:var(--fs-md);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ckp-sep{width:4px;height:4px;border-radius:50%;background:var(--mut);opacity:.6}.ckp-sub{margin:4px 0 0;color:var(--mut);font-size:var(--fs-sm)}.ckp-med{color:var(--acc)}
+.ck-med{background:repeating-linear-gradient(-45deg,color-mix(in srgb,var(--mut) 45%,transparent) 0 5px,transparent 5px 10px);background-size:14px 14px;animation:ckmed 1.2s linear infinite}
+.lgs i.ck-med{animation:none}.ck-livre{background:var(--panel2);border:1px solid var(--line)}
+@keyframes ckmed{to{background-position:28px 0}}
+.ckp-fora{margin-top:10px}.ckp .dg-idade{margin:8px 0 0}.ckp-fora summary{cursor:pointer;font-size:13px;color:var(--acc)}
+.corpo{display:grid;grid-template-columns:250px minmax(0,1fr);gap:16px;align-items:start;margin-bottom:150px}
+.corpo{transition:grid-template-columns .18s ease}.corpo.gav-fechada{grid-template-columns:48px minmax(0,1fr)}
+.corpo.gav-fechada .fac{padding:6px 4px;overflow:hidden}.corpo.gav-fechada .fac>:not(.gav-cab){display:none}
+.gav-cab{position:sticky;top:0;z-index:1;background:var(--panel);margin:0 -16px;padding:6px 10px 6px 12px;border-bottom:1px solid var(--line)}
+.gav-bt{display:flex;align-items:center;gap:8px;width:100%;border:0;background:transparent;box-shadow:none;padding:6px 6px;border-radius:var(--r-md);font-weight:700;color:var(--tx)}
+.gav-bt:hover{background:var(--panel2)}.gav-bt svg{width:17px;height:17px;flex:none}.gav-t{flex:1;text-align:left}.gav-seta{font-size:18px;line-height:1;color:var(--mut)}
+.corpo.gav-fechada .gav-cab{margin:0;padding:0;border:0}.corpo.gav-fechada .gav-bt{flex-direction:column;padding:10px 0;gap:6px}
+.corpo.gav-fechada .gav-t{writing-mode:vertical-rl;transform:rotate(180deg);font-size:13px}.corpo.gav-fechada .gav-seta{transform:rotate(180deg)}
+.fac{position:sticky;top:72px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh);padding:4px 16px 10px;max-height:calc(100vh - 230px);overflow:auto}
+.fac:empty{min-height:120px}
+.painel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh);min-width:0;margin:0}
+.painel .lsth{padding:14px 16px 0}.painel .lstn{padding:0 16px}.painel .lstbar{padding:10px 16px 0}.painel .lstbar #lstq{flex:1;min-width:200px;margin:0;border-radius:var(--r-pill)}
+.painel .lst-cp{margin:10px 16px 0}.painel .lstc{margin-top:10px;overflow-x:auto}.painel .lbg{padding:12px 16px}.painel .lbbar{padding:10px 16px}
+.voltar{border-color:transparent;background:transparent;font-weight:650;padding:6px 10px}
+.lstt tbody tr{cursor:pointer}.lstt td{white-space:nowrap}.lstt td:nth-child(2){white-space:normal;min-width:220px}.lstt tr.foco td,.lbk.foco{background:color-mix(in srgb,var(--acc) 10%,transparent)}.lbk.foco{border-color:var(--acc)}
+.acao{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);width:min(1240px,calc(100% - 28px));z-index:20;display:flex;gap:10px 18px;align-items:center;flex-wrap:wrap;
+ padding:12px 14px 12px 18px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:0 18px 50px rgba(0,0,0,.28);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.acao .rot{font-size:12.5px;color:var(--mut);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acao .seg button{padding:6px 14px}.acao .seg button[aria-checked=true]{background:var(--btnpri);color:var(--btnpri-tx);font-weight:700;box-shadow:none}
+.acao .prev{flex:1;min-width:240px}
+.acao .dest{border-style:dashed;border-radius:var(--r-md);padding:6px 12px;font-size:13px;white-space:nowrap}
+.acao .tot{text-align:right;white-space:nowrap}.acao .tot b{font-size:17px;font-variant-numeric:tabular-nums}.acao .tot.ruim b{color:var(--err)}
+.acao .ir{padding:11px 22px;font-size:15px}
+.acao .aviso{flex-basis:100%;font-size:13px;padding:7px 12px;border-radius:var(--r-md);border:1px solid}.acao .aviso.err{border-color:var(--err);background:color-mix(in srgb,var(--err) 10%,transparent)}.acao .aviso.info{border-color:var(--line);background:var(--panel2);color:var(--mut)}
+.trilho{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:12.5px;min-height:24px}
+.trilho span,.trilho b{padding:1px 8px;border-radius:var(--r-sm);background:var(--panel2);border:1px solid var(--line);white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.trilho b{font-weight:600}.trilho span.novo{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 14%,var(--panel2))}.trilho span.raiz{color:var(--mut)}.trilho i{font-style:normal;color:var(--mut)}
+.dgt{min-width:720px}.dgt th.r,.dgt td.r{text-align:right}.dgt .ck{width:36px}.dgt tbody tr{cursor:default}.dgt td{vertical-align:middle}
+.dgt th button{border:0;background:transparent;padding:0;font:inherit;color:inherit;cursor:pointer;border-radius:0}.dgt th button.on{color:var(--tx);font-weight:700}
+.dgt tr.dgg td{background:var(--panel2);cursor:pointer;font-size:var(--fs-md)}.dgt tr.dgg:hover td{background:color-mix(in srgb,var(--azul) 6%,var(--panel2))}
+.dgt tr.sg-g-pessoal td:first-child{box-shadow:inset 4px 0 0 var(--ok)}.dgt tr.sg-g-decide td:first-child{box-shadow:inset 4px 0 0 var(--warn)}.dgt tr.sg-g-sistema td:first-child{box-shadow:inset 4px 0 0 var(--mut)}.dgt tr.sg-g-usuario td:first-child{box-shadow:inset 4px 0 0 var(--azul)}
+.dgt tr.dg-realce td{background:color-mix(in srgb,var(--azul) 12%,transparent)}.dgt td.acs{width:1%}.lstt th{white-space:nowrap}.dgt .dg-u{max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.dgt tr.dg-leg td{font-size:12.5px;color:var(--mut)}.dgt .sg-nome small{max-width:460px}
+.fc-o .grow{min-width:0}.fc-o small{white-space:nowrap;flex:none}.sugb{display:inline-block;font-size:11px;font-weight:700;padding:0 7px;border-radius:var(--r-pill);border:1px solid;vertical-align:1px;white-space:nowrap}
+.sugb.s-limpavel{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 50%,transparent)}.sugb.s-ressalva{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,transparent)}.sugb.s-nao_recomendado{color:var(--err);border-color:color-mix(in srgb,var(--err) 45%,transparent)}
+.fc-dica{font-size:12px;margin:2px 2px 6px;line-height:1.35}
+.fc-cor{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
+.painel .dg-bar{border-radius:0}.painel .lstbar>b{font-size:13px;font-weight:600;color:var(--mut)}.painel .lstbar #dgq{flex:1;min-width:200px;margin:0;border-radius:var(--r-pill)}
+.painel .lsth .seg button.on{background:var(--panel);box-shadow:var(--sh);font-weight:650}
+#dcorpo .corpo{margin-bottom:24px}
+@media (max-width:1000px){.corpo,.corpo.gav-fechada{grid-template-columns:1fr}.fac{display:none;position:static;max-height:none}.corpo.fopen .fac{display:block}.corpo.fopen .fac>*{display:revert}.gav-cab{display:none}.lstfb{display:inline-flex}}
+@media (prefers-reduced-motion:reduce){.corpo{transition:none}.ck-med{animation:none}}
+@media (max-width:720px){.acao{position:static;transform:none;width:auto;margin:0 0 16px}.corpo{margin-bottom:16px}.acao .prev{min-width:100%}.acao .tot{text-align:left}}
+
 /* backup */
-.cols{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
-.side{position:sticky;top:72px}
 .ringp{width:170px;height:170px;position:relative;flex:none}.ringp svg{width:100%;height:100%}.ringp .n{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}.ringp .n b{font-size:34px;line-height:1}.ringp .n span{font-size:12px;color:var(--mut)}
 .chkl{list-style:none;margin:0;padding:0}.chkl li{display:flex;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}.chkl li:last-child{border:0}
 .ci{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;flex:none;color:var(--mut)}
@@ -401,19 +452,11 @@ textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);b
 .rc{display:flex;gap:12px;border-radius:14px;padding:14px;border:1px solid;margin-bottom:10px}
 .rc.g{border-color:var(--ok);background:rgba(63,178,127,.09)}.rc.y{border-color:var(--warn);background:rgba(229,162,58,.09)}.rc.r{border-color:var(--err);background:rgba(229,83,75,.09)}
 .rc .ic2{font-size:22px}
-@media (max-width:1000px){.cols{grid-template-columns:1fr}.side{position:static}}
 @media (max-width:760px){#gaveta{width:60px}#gaveta .gv .lb,#gaveta .gvfoot,#gaveta .gv .bd{display:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .mA{display:inline-block}.mB{display:none}
 :root[data-theme=light] .mA{display:none}:root[data-theme=light] .mB{display:inline-block}
 /* ---------- layout "painel" (claro com degradê, navegação em pílulas no topo, medidores em arco) ---------- */
-:root{--azul:#3b7cf4;--trilho:rgba(120,130,150,.18);--pill:rgba(30,32,40,.72)}
-:root[data-theme=light]{--bg:#f4f6fb;--panel:rgba(255,255,255,.86);--panel2:#eef2f9;--line:rgba(30,50,90,.10);--tx:#1a1d26;--mut:#646b7d;--acc:#3b7cf4;--azul:#3b7cf4;--trilho:#e3e8f2;--pill:rgba(255,255,255,.8);
- --sh:0 1px 2px rgba(30,50,90,.05),0 12px 32px rgba(30,60,120,.08);--btnpri:linear-gradient(180deg,#5b93f7,#3b7cf4);--btnpri-tx:#fff}
-:root[data-theme=light] body{background:radial-gradient(1200px 600px at 85% -10%,#dfe9fb 0%,transparent 60%),radial-gradient(900px 500px at -10% 10%,#fbf3e6 0%,transparent 55%),#f4f6fb;background-attachment:fixed}
-:root[data-theme=light] .pri{border-color:#3b7cf4}
-header{background:transparent!important;border-bottom:0!important;backdrop-filter:none}
-.shell{display:block!important}
 #topo{position:fixed;top:9px;left:0;right:0;display:flex;justify-content:center;align-items:flex-start;gap:8px;z-index:30;pointer-events:none}#topo>*{pointer-events:auto}
 #gaveta{position:relative!important;top:auto!important;width:auto!important;height:auto!important;flex-direction:row!important;align-items:flex-start;gap:6px!important;padding:6px!important;border-radius:999px;background:var(--pill)!important;border:1px solid var(--line)!important;box-shadow:var(--sh);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 #gaveta .gv[data-view]{flex:none;transition:width .12s ease-out,height .12s ease-out,background .2s,opacity .3s,transform .42s cubic-bezier(.2,.9,.3,1.12),margin .42s}
@@ -428,9 +471,7 @@ header{background:transparent!important;border-bottom:0!important;backdrop-filte
 #gaveta .gv .lb{display:none}
 #gaveta .gv.on{background:var(--azul)!important;color:#fff!important;box-shadow:0 6px 16px rgba(59,124,244,.35)}
 #gaveta .gv .bd{position:absolute;top:2px;right:2px;font-size:0;width:9px;height:9px;padding:0;border-radius:50%;background:var(--err)}
-.content{max-width:1280px;margin:0 auto;padding:14px 20px 40px}
-.card{border-radius:22px;backdrop-filter:blur(8px)}
-button{border-radius:999px}
+.content{flex:1;min-width:0;max-width:1280px;margin:0 auto;padding:14px 20px 40px}
 .ptitle{margin:6px 4px 18px}.ptitle h1{font-size:28px;font-weight:700;letter-spacing:-.2px}.ptitle p{margin:4px 0 0;color:var(--mut)}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-bottom:18px}
 .kpi2{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px 20px;box-shadow:var(--sh)}
@@ -468,7 +509,7 @@ button{border-radius:999px}
 </header>
 <div class="shell">
 <div id="vidro" aria-hidden="true"></div><div id="vidrob" aria-hidden="true"></div><div id="topo"><aside id="gaveta" aria-label="Menu"></aside><div id="ilha" class="hide"><button id="ilhab" aria-expanded="false" aria-controls="ilhad"></button><div id="ilhad" class="hide"></div></div><button id="ilha2" class="hide" aria-label="Mais atividades rodando"></button></div><span id="ilhavivo" class="sr" aria-live="polite"></span>
-<div class="content"><div class="journey hide" id="steps"></div>
+<div class="content"><div id="suband" class="hide" role="status"></div><div class="journey hide" id="steps"></div>
 <main id="main"></main></div>
 </div>
 <div id="layer"></div>
@@ -504,9 +545,9 @@ async function api(path,body){
   return j;
 }
 let toastT=null;
-function toast(m,kind){let t=$(".toast");if(t)t.remove();t=document.createElement("div");t.className="toast "+(kind||"");t.setAttribute("role","status");t.textContent=m;document.body.appendChild(t);clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),kind==="err"?9000:5000)}
+function toast(m,kind){let t=$(".toast");if(t)t.remove();t=document.createElement("div");t.className="toast "+(kind||"");t.setAttribute("role","status");t.textContent=m;const fx=$(".acao");if(fx&&getComputedStyle(fx).position==="fixed")t.style.bottom=(fx.offsetHeight+28)+"px";document.body.appendChild(t);clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),kind==="err"?9000:5000)}
 async function safe(fn){try{return await fn()}catch(e){onErr(e)}}
-const BUILD="2026-10-26.2";  // igual ao BUILD do dd_backup.py
+const BUILD="2026-10-27.1";  // igual ao BUILD do dd_backup.py
 const erroTela=(m,p)=>{try{fetch("/api/erro_tela",{method:"POST",headers:{"X-DD-Token":TOKEN},body:JSON.stringify({mensagem:String(m),pilha:String(p||""),tela:(typeof view!=="undefined"?view:"")+(typeof step!=="undefined"&&view==="backup"?":"+step:"")})}).catch(()=>{})}catch(e){}};
 addEventListener("unhandledrejection",e=>{const r=e.reason,m=(r&&r.message)||String(r);if(m==="ORFAOS"||REDE.test(m))return;erroTela(m,r&&r.stack);toast("Erro: "+m,"err")});
 /* contato com o programa: só avisa depois de 3 falhas seguidas; some sozinho quando volta */
@@ -547,6 +588,7 @@ const IC={
  trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
  refresh:'<path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/>',
  up:'<path d="M12 19V5M5 12l7-7 7 7"/>',
+ filtro:'<path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/>',
  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>'
 };
 const ic=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||""}</svg>`;
@@ -769,6 +811,9 @@ async function drawPerfil(){
   const IM={nome:'autocomplete="name"',empresa:'autocomplete="organization"',email:'inputmode="email" autocomplete="email"',telefone:'inputmode="tel" autocomplete="tel"',site:'inputmode="url"'};
   $("#main").innerHTML=`<div class="ptitle"><h1>Configurações</h1><p>Permissões do sistema e quem atende. Fica só neste computador, não vai para o git nem para a internet.</p></div>
    <div class="card"><h2>Permissões do sistema</h2><div id="cfperm" class="mut">Verificando…</div></div>
+   <div class="card"><h2>Modo Superusuário</h2><p class="mut" style="margin-top:0">Para o técnico: abre qualquer etapa do backup com um clique, pula as travas do fluxo e permite corrigir o certificado. Cada ação fica no registro.</p>
+    <label style="display:flex;gap:8px;align-items:center;margin:0;color:var(--tx)"><input type="checkbox" id="cfsu" ${SU?"checked":""}> Ligar o modo Superusuário</label>
+    <div class="row" style="margin-top:10px"><button class="sm" id="cfsup" ${SU?"":"disabled"}>Abrir o painel</button></div></div>
    <div class="card" id="cfdiag"><h2>Diagnóstico do programa</h2><div id="cfdiagc" class="mut">Verificando…</div></div>
    <div class="card"><h2>Seus dados (técnico)</h2><p class="mut" style="margin-top:0">Marque o que aparece no certificado entregue ao cliente. Redes sociais são opcionais.</p>
    ${r.campos.map(([c,rot])=>`<div class="pfl"><div class="grow"><label for="pf_${c}">${esc(rot)}</label><input type="text" id="pf_${c}" data-c="${c}" value="${esc(p[c]||"")}" maxlength="120" ${IM[c]||""}></div><label class="pfc"><input type="checkbox" data-cert="${c}" ${marc.has(c)?"checked":""}> no certificado</label></div>`).join("")}
@@ -780,10 +825,14 @@ async function drawPerfil(){
   $$("#main input").forEach(i=>{i.addEventListener("input",prev);i.addEventListener("change",prev)});prev();
   $("#pfsave").onclick=()=>safe(async()=>{$("#pferr").innerHTML="";
     try{const x=await api("/api/perfil",coletar());PERFIL=x.perfil;toast("Perfil salvo.","ok")}catch(e){$("#pferr").innerHTML=`<div class="errbox" style="margin-top:10px">${esc(e.message)}</div>`}});
+  $("#cfsu").onchange=ev=>safe(async()=>{const cb=ev.target;
+    if(cb.checked&&!await dialog({titulo:"Ligar o modo Superusuário?",html:"<p>Com ele ligado dá para abrir etapas fora de ordem, copiar sem as checagens, concluir sem verificar e formatar mesmo com o bloqueio. <b>Isso pode levar à perda de dados.</b> Use só quando souber o que está fazendo.</p>",check:"Entendo os riscos",ok:"Ligar",perigo:true})){cb.checked=false;return}
+    await suLigar(cb.checked);$("#cfsup").disabled=!SU;toast(SU?"Modo Superusuário ligado.":"Modo Superusuário desligado.","ok")});
+  $("#cfsup").onclick=()=>safe(suPainel);
   cfgPerm();cfgDiag();
 }
 /* diagnóstico: autoteste, alertas, erros recentes e relatório para enviar (vai também para a pasta Erros do pendrive) */
-const RECURSOS=["drawHome","drawDados","drawMaq","drawMapas","drawPerfil","drawOS","draw1","draw2","draw3","draw4","draw5","draw6","drawManter","abrirLista","selGrade","showRes5","perfilAbas","medicaoCard","ilhaPoll"];
+const RECURSOS=["drawHome","drawDados","drawMaq","drawMapas","drawPerfil","drawOS","draw1","draw2","draw3","draw4","draw5","draw6","drawManter","abrirLista","selGrade","selCockpit","selBarra","showRes5","perfilAbas","ilhaPoll"];
 function autotestePagina(){
   const faltando=RECURSOS.filter(f=>{try{return typeof eval(f)!=="function"}catch(e){return true}});
   ["fetch","localStorage","Promise"].forEach(r=>{if(!(r in window))faltando.push(r)});
@@ -1503,7 +1552,6 @@ function drawOS(){
 }
 /* ================= Dados (gerenciamento de espaço) ================= */
 let DT=null;const DS={tab:"verde",sel:new Set(),init:false,q:"",modo:"limpar",usr:"",usrAtual:"",exp:null,expT:null,marc:{}};
-const ZN={verde:["Limpeza imediata","Zero risco: o sistema ou o app recria sozinho."],ambar:["Arquivos parados","Valor para você: backup antes de remover, e a decisão é sua."],vermelha:["Bloqueado","Sistema, bibliotecas de apps e credenciais: dá para ver o que tem dentro, mas nunca limpar por aqui."]};
 async function drawDados(){
   setWide(false);clearInterval(DT);DS.exp=null;clearTimeout(DS.expT);
   const e=await api("/api/dados/estado");
@@ -1558,55 +1606,67 @@ function dadosVarrendo(){
     if(e.fase!=="varrendo"){clearInterval(DT);if(e.fase==="erro")toast("A varredura falhou: "+e.erro,"err");drawDados()}},700);
 }
 /* ---------- Gerenciamento de dados: o cockpit no topo é o filtro; abaixo, Sugestão de varredura e Gerenciamento completo ---------- */
-const DG=Object.assign({aba:"geral",bloco:"",cat:"",visao:"arquivos",ordem:"maior",usr:"",fechados:[]},(()=>{try{return JSON.parse(lsGet("dd_dados","{}"))||{}}catch(e){return {}}})(),
-  {pasta:0,q:"",sel:new Map(),rows:[],pastas:[],r:null});
-const dgSalva=()=>lsSet("dd_dados",JSON.stringify({aba:DG.aba,bloco:DG.bloco,cat:DG.cat,visao:DG.visao,ordem:DG.ordem,usr:DG.usr,fechados:DG.fechados}));
-const DG_BL={midias:"Mídias",documentos:"Documentos",apps:"Dados de apps e outros",limpavel:"Limpável"};
-const DG_COR={midias:"#5aa9ff",documentos:"#a78bfa",apps:"#6b7280",limpavel:"#3fb27f"};  // as cores do cockpit: barra, legenda e chips
+const DG_FK=["faixa","grupo","sug","tipo","uso","tam","usuario"];  // filtros da gaveta do Gerenciamento (várias opções em cada um)
+const dgFVazio=()=>Object.fromEntries(DG_FK.map(k=>[k,[]]));
+const DG=Object.assign({aba:"geral",visao:"arquivos",ordem:"maior",fechados:[],fechF:[]},(()=>{try{const x=JSON.parse(lsGet("dd_dados","{}"))||{};delete x.bloco;delete x.cat;delete x.usr;return x}catch(e){return {}}})(),
+  {pasta:0,q:"",sel:new Map(),rows:[],pastas:[],r:null,busca:{},mais:{}});
+DG.f=Object.assign(dgFVazio(),DG.f||{});
+const dgSalva=()=>lsSet("dd_dados",JSON.stringify({aba:DG.aba,visao:DG.visao,ordem:DG.ordem,fechados:DG.fechados,f:DG.f,fechF:DG.fechF}));
+const dgLimpaF=()=>{DG.f=dgFVazio()};
+const dgNAtivos=()=>DG_FK.reduce((a,k)=>a+DG.f[k].length,0);
+const dgQS=o=>new URLSearchParams(Object.assign(Object.fromEntries(DG_FK.map(k=>[k,DG.f[k].join("|")])),{pasta:DG.pasta||"",q:DG.q,ordem:DG.ordem,visao:DG.visao},o||{}));
+const SUG_NOME={limpavel:"Limpável",ressalva:"Com ressalva",nao_recomendado:"Não recomendado"};
+const SUG_DICA={limpavel:"O sistema ou o programa recria: limpar não prejudica nada.",ressalva:"Parado, sem programa ou backup de aparelho: faça backup antes, se quiser.",nao_recomendado:"Protegido (credenciais, bibliotecas, Lixeira): só para ver."};
+const USO_NOME={d30:"Usado nos últimos 30 dias",m6:"Parado de 1 a 6 meses",a1:"Parado de 6 meses a 1 ano",a3:"Parado de 1 a 3 anos",antigo:"Parado há mais de 3 anos",sem:"Sem data"};
 const dgCat=c=>c==="Outros"?"Outros arquivos":c;
 let DGX={},DGG={};const DGM={el:null};
+let DGCK=null;  // atualização do cockpit enquanto Apps e OS são medidos em segundo plano
 async function dadosResultado(e){
-  DS.e=e;
-  const ck=e.cockpit||{total:0,livre:0,usado:0,midias:0,documentos:0,limpavel:0,sistema:0,parado:0};
-  const R=await api("/api/dados/resultado?limit=1");
-  const nz=z=>R.cats.filter(c=>c.zona===z),sz=z=>nz(z).reduce((a,c)=>a+c.bytes,0),nn=z=>nz(z).reduce((a,c)=>a+c.n,0);
-  const T=ck.total||1,pc=x=>Math.max(0,x/T*100);
-  const seg=[["Mídias",ck.midias,DG_COR.midias,"midias"],["Documentos",ck.documentos,DG_COR.documentos,"documentos"],["Dados de apps e outros",ck.apps||0,DG_COR.apps,"apps"],["Sistema e fora da sua pasta",ck.sistema,"#3b4252",""],["Limpável",ck.limpavel,DG_COR.limpavel,"limpavel"],["Livre",ck.livre,"var(--line)",""]];
-  if(!DS.init){DS.init=true;DS.tab=nn("verde")?"verde":"ambar";const v=await api("/api/dados/resultado?zona=verde&limit=1000");v.rows.forEach(r=>{if(r.pre)DS.sel.add(r.id)})}
-  DS.usrAtual=e.usuario_atual||"";
-  const pu=Object.entries(ck.por_usuario||{}).sort((a,b)=>b[1]-a[1]);
-  const ger=DG.aba==="ger",on=s=>ger&&DG.bloco===s[3],ix=e.indice||{};
-  $("#main").innerHTML=(!e.cockpit?`<div class="card"><div class="row"><h2 class="grow" style="margin:0">Itens escolhidos ao explorar</h2><button class="sm" id="dexp">Explorar pastas</button><button class="sm" id="dre">Varrer esta máquina</button></div><p class="h" style="margin-top:6px">Ainda sem varredura: aparecem só os arquivos e pastas que você marcou. A varredura mostra o resto (caches, parados, bloqueados).</p></div>`:`<div class="card"><div class="row"><h2 class="grow" style="margin:0">Gerenciamento de dados</h2><button class="sm" id="dexp">Explorar pastas</button><button class="sm pri" id="dre">${ic("refresh")}<span style="margin-left:6px">Atualizar</span></button></div>
-   <p class="h" style="margin-top:2px">Cockpit do disco: ${fmt(ck.usado)} usados de ${fmt(ck.total)} · <b>${fmt(ck.livre)} livres</b> (${Math.round(pc(ck.livre))}%)</p>
-   ${ix.quando?`<p class="mut dg-idade">Última varredura: <b>${dgIdade(ix.quando)}</b> (${new Date(ix.quando*1000).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}) · ${nf(ix.n)} arquivos${ix.mexidas?` · você mexeu em ${nf(ix.mexidas)} ${ix.mexidas===1?"item":"itens"} desde então`:""}</p>`:""}
-   <div class="cock" role="group" aria-label="Uso do disco por categoria">${seg.map(s=>`<i ${s[3]?`data-bl="${s[3]}" role="button" tabindex="0" aria-pressed="${on(s)}" aria-label="${s[0]}: ${fmt(s[1])}. Ver os arquivos"`:""} class="${ger&&DG.bloco&&!on(s)?"apaga":""}" style="width:${pc(s[1])}%;background:${s[2]}" title="${s[0]}: ${fmt(s[1])}${s[3]?" · clique para ver os arquivos":" · fora das pastas dos usuários: só como número"}"></i>`).join("")}</div>
-   <div class="lgd">${seg.map(s=>s[3]?`<button class="lgb ${on(s)?"on":""}" data-bl="${s[3]}" aria-pressed="${on(s)}"><i style="background:${s[2]}"></i>${s[0]} <b>${fmt(s[1])}</b></button>`:`<span class="lgs" title="Fora das pastas dos usuários: só como número"><i style="background:${s[2]}"></i>${s[0]} <b>${fmt(s[1])}</b></span>`).join("")}</div>
-   <p class="mut" style="font-size:12.5px;margin:8px 0 0">Clique numa categoria para ver os arquivos dela no Gerenciamento completo.</p>
-   ${pu.length>1?`<p class="mut" style="font-size:12.5px;margin:8px 0 0">Por usuário: ${pu.map(x=>`${esc(x[0])} <b>${fmt(x[1])}</b>`).join(" · ")}</p>`:""}
-   ${(e.sem_acesso||[]).length?`<div class="infobox">Sem permissão para ler a pasta de: <b>${e.sem_acesso.map(esc).join(", ")}</b>. Rode como administrador (no Mac e no Linux, com sudo) para incluir esses usuários.</div>`:""}
-   <p class="mut" style="font-size:12px;margin:10px 0 0">Medido pelo espaço <b>real</b> que cada arquivo ocupa no disco, só nas pastas dos usuários. O restante aparece como “Sistema e fora da sua pasta”. O macOS ainda soma snapshots e itens removíveis, então o Ajustes pode mostrar um pouco mais ou menos.</p>
-   ${ck.nuvem_n?`<div class="infobox">${nf(ck.nuvem_n)} arquivo(s) estão só na nuvem (iCloud/OneDrive) e <b>não ocupam espaço aqui</b>: foram ignorados, e o programa nunca baixa nem mexe neles.</div>`:""}${ck.aviso?`<div class="warnbox">${esc(ck.aviso)}</div>`:""}${e.fase==="cancelado"?'<div class="warnbox">A varredura foi cancelada: o resultado é parcial.</div>':""}${e.bloqueados?`<div class="infobox">${nf(e.bloqueados)} pasta(s) não puderam ser lidas por falta de permissão.</div>`:""}</div>`)+`
-  <div class="sg-abas dg-abas" role="tablist">${[["geral","Visão geral"],["sug","Sugestão de varredura"],["ger","Gerenciamento completo"]].map(([k,t])=>`<button role="tab" aria-selected="${DG.aba===k}" class="${DG.aba===k?"on":""}" data-dga="${k}">${t}</button>`).join("")}</div>
+  DS.e=e;setWide(true);clearTimeout(DGCK);
+  const [ID]=await Promise.all([api("/api/identidade?para=dados").catch(()=>({})),tiposPronto()]);
+  if(view!=="dados")return;
+  if(DG.aba!=="ger")DG.aba="geral";
+  $("#main").innerHTML=`<section class="card ckp" id="dgcock"></section>
+  <div class="sg-abas dg-abas" role="tablist">${[["geral","Visão geral"],["ger","Gerenciamento completo"]].map(([k,t])=>`<button role="tab" aria-selected="${DG.aba===k}" class="${DG.aba===k?"on":""}" data-dga="${k}">${t}</button>`).join("")}</div>
   <div id="dcorpo"></div>`;
-  const ir=bl=>{const igual=ger&&DG.bloco===bl;DG.aba="ger";DG.bloco=igual?"":bl;DG.cat="";DG.pasta=0;DG.q="";dgSalva();dadosResultado(e)};
-  $$("[data-bl]").forEach(b=>{b.onclick=()=>ir(b.dataset.bl);b.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();ir(b.dataset.bl)}}});
-  $$("[data-dga]").forEach(b=>b.onclick=()=>{DG.aba=b.dataset.dga;dgSalva();dadosResultado(e)});
-  $("#dre").onclick=()=>safe(()=>dgAtualizar(!e.cockpit));
-  $("#dexp").onclick=()=>{if(e.indice&&e.indice.existe){DG.aba="ger";DG.visao="pastas";DG.pasta=0;DG.q="";dgSalva();dadosResultado(e)}else safe(()=>dadosExplorar(0))};
-  if(ger)return safe(()=>dgGerenciar());
-  if(DG.aba==="sug")return dgSugestao(e,R,sz,nn);
-  dgGeral(e,sz,nn);
+  dgCockpit(e,ID);
+  $$("[data-dga]").forEach(b=>b.onclick=()=>{DG.aba=b.dataset.dga;dgSalva();dadosResultado(DS.e||e)});
+  if(DG.aba==="ger")return safe(()=>dgGerenciar());
+  dgGeral(e);
 }
-/* ---- aba Visão geral (abre ao entrar): avisos, sugestões em números e onde está o peso ---- */
-function dgGeral(e,sz,nn){
-  const ix=e.indice||{},dias=ix.quando?(Date.now()/1000-ix.quando)/86400:0;
+/* o cockpit do disco: o mesmo componente da Seleção do backup; clicar numa faixa abre o Gerenciamento filtrado por ela */
+function dgCockpit(e,ID){
+  const el=$("#dgcock");if(!el)return;
+  const ck=e.cockpit,ix=e.indice||{};
+  const bt=`<button class="sm" id="dexp">Explorar pastas</button><button class="sm pri" id="dre">${ic("refresh")}<span style="margin-left:6px">${ck?"Atualizar":"Varrer esta máquina"}</span></button>`;
+  if(!ck){
+    el.innerHTML=`<div class="ckp-t"><h1>${esc((ID&&ID.nome)||"Esta máquina")}</h1>${ID&&ID.modelo?`<span class="ckp-mod">${esc(ID.modelo)}</span>`:""}<span class="grow"></span>${bt}</div>
+     <p class="h" style="margin-top:6px">Ainda sem varredura: aparecem só os arquivos e pastas que você marcou ao explorar. A varredura monta o cockpit do disco e a lista completa.</p>`;
+  }else{
+    const extras=`${ix.quando?`<p class="mut dg-idade">Última varredura: <b>${dgIdade(ix.quando)}</b> (${new Date(ix.quando*1000).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}) · ${nf(ix.n)} arquivos${ix.mexidas?` · você mexeu em ${nf(ix.mexidas)} ${ix.mexidas===1?"item":"itens"} desde então`:""}</p>`:""}
+     ${(e.sem_acesso||[]).length?`<div class="infobox">Sem permissão para ler a pasta de: <b>${e.sem_acesso.map(esc).join(", ")}</b>. Rode como administrador (no Mac e no Linux, com sudo) para incluir esses usuários.</div>`:""}
+     ${ck.nuvem_n?`<p class="mut" style="font-size:12.5px;margin:6px 0 0">☁️ ${nf(ck.nuvem_n)} arquivo(s) só na nuvem (iCloud/OneDrive): não ocupam espaço aqui e o programa nunca baixa nem mexe neles.</p>`:""}
+     ${ck.aviso?`<div class="warnbox">${esc(ck.aviso)}</div>`:""}${e.fase==="cancelado"?'<div class="warnbox">A varredura foi cancelada: o resultado é parcial.</div>':""}${e.bloqueados?`<div class="infobox">${nf(e.bloqueados)} pasta(s) não puderam ser lidas por falta de permissão.</div>`:""}`;
+    cockpit(el,{ident:ID,total:ck.total,usado:ck.usado,faixas:ck.faixas,resto:ck.resto||0,medindo:!!ck.medindo,so:ck.so,estimado:!!ck.fora_parcial,botoes:bt,extras,
+      nota:"Medido pelo espaço real que cada arquivo ocupa no disco. Apps e sistema são medidos fora das pastas dos usuários; o que ninguém mediu entra em Dados do Sistema, como no Ajustes do Mac.",
+      clicaveis:["fotos","videos","audios","documentos","outros","apps","caches","dados"].filter(k=>(ck.faixas_usuario||{})[k]),ativas:DG.aba==="ger"?DG.f.faixa:[],
+      aoClicar:k=>{const so=DG.aba==="ger"&&DG.f.faixa.length===1&&DG.f.faixa[0]===k;DG.aba="ger";dgLimpaF();if(!so)DG.f.faixa=[k];DG.pasta=0;DG.q="";DG.rows=[];dgSalva();dadosResultado(DS.e)}});
+    if(ck.medindo)DGCK=setTimeout(async()=>{if(view!=="dados"||!$("#dgcock"))return;try{const n=await api("/api/dados/estado");DS.e=n;dgCockpit(n,ID)}catch(x){}},2500);
+  }
+  $("#dre",el).onclick=()=>safe(()=>dgAtualizar(!ck));
+  $("#dexp",el).onclick=()=>{if(ix.existe){DG.aba="ger";DG.visao="pastas";DG.pasta=0;DG.q="";dgSalva();dadosResultado(e)}else safe(()=>dadosExplorar(0))};
+}
+/* ---- aba Visão geral (abre ao entrar): o que a varredura sugere, em números, e onde está o peso ---- */
+function dgGeral(e){
+  const ix=e.indice||{},sg=(e.cockpit||{}).sugestao||{},dias=ix.quando?(Date.now()/1000-ix.quando)/86400:0;
   const velha=ix.quando&&dias>7?`Varredura de ${Math.floor(dias)} dias atrás: os números podem ter mudado.`:ix.mexidas>=10?`Você mexeu em ${nf(ix.mexidas)} itens desde a varredura: atualize para os números certos.`:"";
-  const card=(z,cls,tit,txt,bt)=>`<div class="zc ${cls}"><b style="font-size:20px">${fmt(sz(z))}</b><b>${tit}</b><span>${nf(nn(z))} ${txt}</span><button class="sm ${z==="verde"?"pri":z==="vermelha"?"gh":""}" style="margin-top:8px" data-zt="${z}">${bt}</button></div>`;
+  const card=(k,cls,txt,bt)=>{const x=sg[k]||{n:0,bytes:0};return `<div class="zc ${cls}"><b style="font-size:20px">${fmt(x.bytes)}</b><b>${SUG_NOME[k]}</b><span>${nf(x.n)} arquivo(s). ${txt}</span><button class="sm ${k==="limpavel"?"pri":k==="nao_recomendado"?"gh":""}" style="margin-top:8px" data-zt="${k}">${bt}</button></div>`};
   $("#dcorpo").innerHTML=`${velha?`<div class="warnbox dg-velha"><span>${velha}</span><button class="sm pri" id="dgatu">Atualizar</button></div>`:""}
-   <div class="zn" style="margin-bottom:16px">${card("verde","z-v","Limpeza imediata","item(ns) que se recriam. Zero risco.","Revisar e limpar")}${card("ambar","z-a","Arquivos parados","item(ns) sem uso. Backup antes, se quiser.","Revisar")}${card("vermelha","z-r","Bloqueado","item(ns) protegidos. Só informativo.","Ver")}</div>
+   ${ix.antigo?'<div class="warnbox">O índice de arquivos é de uma versão anterior do programa. Clique em Atualizar para ver as categorias, os grupos e a sugestão de varredura.</div>':""}
+   <div class="zn" style="margin-bottom:16px">${card("limpavel","z-v",SUG_DICA.limpavel,"Ver e limpar")}${card("ressalva","z-a",SUG_DICA.ressalva,"Ver")}${card("nao_recomendado","z-r",SUG_DICA.nao_recomendado,"Ver")}</div>
    <div class="dg-pan" id="dgpan"><div class="card"><p class="mut" style="margin:0">Procurando onde está o peso…</p></div></div>`;
   const a=$("#dgatu");if(a)a.onclick=()=>safe(()=>dgAtualizar());
-  $$("[data-zt]").forEach(b=>b.onclick=()=>{DG.aba="sug";DS.tab=b.dataset.zt;dgSalva();dadosResultado(e)});
+  $$("[data-zt]").forEach(b=>b.onclick=()=>{DG.aba="ger";dgLimpaF();DG.f.sug=[b.dataset.zt];DG.visao="arquivos";DG.pasta=0;DG.q="";dgSalva();dadosResultado(e)});
   safe(async()=>{
     const r=await api("/api/dados/panorama");const el=$("#dgpan");if(!el||view!=="dados"||DG.aba!=="geral")return;
     if(!r.estado.existe){el.innerHTML=`<div class="card"><h3>Onde está o peso</h3><p class="mut">Falta a lista de arquivos desta máquina (varredura antiga ou apagada).</p><button class="pri" id="dgpv">Atualizar</button></div>`;$("#dgpv").onclick=()=>safe(()=>dgAtualizar());return}
@@ -1617,58 +1677,34 @@ function dgGeral(e,sz,nn){
     el.innerHTML=bloco("Maiores pastas","Onde o espaço se concentra.",r.pastas,x=>it(x,true,"~/"+x.sub))+bloco("Maiores arquivos","Os que mais pesam sozinhos.",r.arquivos,x=>it(x,false,dir(x)))
       +bloco("Parados há mais tempo","Arquivos de 50 MB ou mais, sem uso.",r.parados,x=>it(x,false,(x.dias!=null?nf(x.dias)+" d parado · ":"")+dir(x)));
     ligarAcoesArq(el);
-    $$("[data-pi]",el).forEach(d=>{const f=ev=>{if(ev.target.closest("button"))return;DG.aba="ger";DG.visao="pastas";DG.pasta=+d.dataset.pi;DG.realce=+d.dataset.re;DG.q="";DG.cat="";DG.bloco="";dgSalva();dadosResultado(DS.e)};
+    $$("[data-pi]",el).forEach(d=>{const f=ev=>{if(ev.target.closest("button"))return;DG.aba="ger";DG.visao="pastas";DG.pasta=+d.dataset.pi;DG.realce=+d.dataset.re;DG.q="";dgLimpaF();dgSalva();dadosResultado(DS.e)};
       d.onclick=f;d.onkeydown=ev=>{if(ev.key==="Enter"){ev.preventDefault();f(ev)}}});
   });
 }
-/* ---- aba Sugestão de varredura: o que a varredura separou (limpar sem risco, parado, bloqueado) ---- */
-function dgSugestao(e,R,sz,nn){
-  $("#dcorpo").innerHTML=`<div class="card" style="padding:0"><div class="sg-top"><div class="sg-abas" role="tablist">${["verde","ambar","vermelha"].map(z=>`<button role="tab" aria-selected="${DS.tab===z}" class="${DS.tab===z?"on":""}" data-t="${z}">${ZN[z][0]} <span class="mut">${nn(z)}</span></button>`).join("")}</div>
-    <input type="search" class="sg-q" id="dq" placeholder="Buscar pelo caminho" aria-label="Buscar pelo caminho" value="${esc(DS.q)}" autocomplete="off">
-    ${(R.usuarios||[]).length>1?`<select id="dusr" class="sg-o" aria-label="Filtrar por usuário"><option value="">Todos os usuários</option>${R.usuarios.map(u=>`<option value="${esc(u)}" ${DS.usr===u?"selected":""}>${esc(u)}</option>`).join("")}</select>`:""}</div>
-   <div class="sg-acoes"><span class="mut">${ZN[DS.tab][1]}</span></div>
-   ${DS.tab==="vermelha"?"":dgBarraHtml({id:"dbar",cont:"dsel",def:"ddef",del:"dclean",botoes:'<button class="sm" id="doff" title="Copia, confere (SHA-256) e só então tira do computador">Disco externo…</button>'})}
-   <div id="dlist"></div></div>`;
-  $$("[data-t]").forEach(b=>b.onclick=()=>{DS.tab=b.dataset.t;dadosResultado(e)});
-  const du=$("#dusr");if(du)du.onchange=()=>{DS.usr=du.value;dadosLista()};
-  let tq;$("#dq").oninput=()=>{clearTimeout(tq);tq=setTimeout(()=>{DS.q=$("#dq").value;dadosLista()},250)};
-  if($("#dclean")){$("#dclean").onclick=()=>dadosConfirmar("limpar");$("#doff").onclick=()=>dadosConfirmar("offload");$("#ddef").onchange=dadosSel}
-  dadosLista();
-}
-let DROWS=[];
-async function dadosLista(){
-  const r=await api("/api/dados/resultado?zona="+DS.tab+"&q="+encodeURIComponent(DS.q)+"&usuario="+encodeURIComponent(DS.usr)+"&limit=800");DROWS=r.rows;
-  const el=$("#dlist");if(!el)return;
-  const varios=(r.usuarios||[]).length>1,bloq=DS.tab==="vermelha",cor={verde:"pessoal",ambar:"decide",vermelha:"sistema"}[DS.tab];
-  const g={};r.rows.forEach(x=>{(g[x.cat]=g[x.cat]||[]).push(x)});
-  DGX={};DGG={};
-  el.innerHTML=Object.keys(g).length?dgCabeca(!bloq,false)+Object.keys(g).map(c=>{const it=g[c],tot=it.reduce((a,x)=>a+x.bytes,0),fk="s:"+DS.tab+":"+c,fe=DG.fechados.includes(fk);
-    DGG[fk]=bloq?[]:it.map(x=>x.id);
-    return dgGrupo(fk,c,`${it.length} item(ns) · ${fmt(tot)}`,cor,fe,!bloq)+(fe?"":it.map(x=>{const o={k:x.id,no:x.no,nome:x.titulo,sub:x.motivo,path:x.path,usuario:varios?x.usuario:"",dias:x.dias,bytes:x.bytes,tipo:x.tipo,previa:x.previa,pode_abrir:x.pode_abrir,
-      trava:bloq,motivo:bloq?x.motivo:"",selo:x.orfao?'<span class="badge b-warn">provável sem uso · precisa da sua aprovação</span>':"",marc:DS.sel.has(x.id)};DGX[x.no]=o;return dgLinha(o,"dsk")}).join(""))}).join("")
-    :'<p class="mut" style="padding:16px">Nada nesta faixa.</p>';
-  $$(".dsk",el).forEach(c=>c.onchange=()=>{const id=+c.dataset.k;c.checked?DS.sel.add(id):DS.sel.delete(id);c.closest(".sg-row").classList.toggle("off",!c.checked);dgGruposSync(DS.sel);dadosSel()});
-  $$("[data-gk]",el).forEach(c=>{c.onclick=ev=>ev.stopPropagation();c.onchange=()=>{(DGG[c.dataset.gk]||[]).forEach(id=>c.checked?DS.sel.add(id):DS.sel.delete(id));dadosLista()}});
-  dgLigarLinhas(el,()=>dadosLista());
-  dgGruposSync(DS.sel);dadosSel();
-}
-/* ---- peças da grade, iguais nas duas abas ---- */
+/* ---- peças da tabela: as mesmas colunas da lista do backup (Tipo, Categoria, Grupo, Situação, Parado, Criado, Tamanho, Caminho) ---- */
+const DG_NCOL=11;
+const dgTabela=(cab,corpo,id)=>`<div class="lstc"><table class="lstt dgt"><thead>${cab}</thead><tbody id="${id}">${corpo}</tbody></table></div>`;
 function dgCabeca(caixa,ordena){
-  const b=(k,t,c)=>ordena?`<button data-so="${k}" class="${c||""}">${t}${DG.ordem===k?" ▾":""}</button>`:`<span class="${c||""}">${t}</span>`;
-  return `<div class="sg-head sg-dados" aria-hidden="true"><span>${caixa&&ordena?'<input type="checkbox" id="dgall" title="Marcar tudo o que está na lista" tabindex="-1">':""}</span>${b("nome","Nome")}<span>Usuário</span>${b("parado","Parado","sg-num")}${b("maior","Tamanho","sg-num")}<span></span></div>`;
+  const b=(k,t,c)=>`<th class="${c||""}">${ordena?`<button data-so="${k}" class="${DG.ordem===k?"on":""}">${t}${DG.ordem===k?" ▾":""}</button>`:t}</th>`;
+  return `<tr><th class="ck">${caixa&&ordena?'<input type="checkbox" id="dgall" title="Marcar tudo o que está na lista" aria-label="Marcar tudo o que está na lista">':""}</th>${b("nome","Nome do arquivo")}<th>Tipo</th><th>Categoria</th><th>Grupo</th><th>Situação</th>${b("parado","Parado","r")}<th>Criado em</th>${b("maior","Tamanho","r")}<th>Caminho</th><th></th></tr>`;
 }
 function dgGrupo(k,tit,info,cor,fe,caixa){
-  return `<div class="sg-grp sg-g-${cor}" data-dgg="${esc(k)}" role="button" tabindex="0" aria-expanded="${!fe}"><span class="sg-chev">${fe?"▸":"▾"}</span><b>${esc(tit)}</b><span class="sp1"></span><span class="mut">${info}</span>${caixa?`<label class="tg" aria-label="Marcar todos de ${esc(tit)}"><input type="checkbox" data-gk="${esc(k)}"><s></s></label>`:""}</div>`;
+  return `<tr class="dgg sg-g-${cor}" data-dgg="${esc(k)}" tabindex="0" aria-expanded="${!fe}"><td class="ck">${caixa?`<input type="checkbox" data-gk="${esc(k)}" aria-label="Marcar todos de ${esc(tit)}">`:""}</td>
+   <td colspan="${DG_NCOL-1}"><span class="sg-chev">${fe?"▸":"▾"}</span> <b>${esc(tit)}</b> <span class="mut">${info}</span></td></tr>`;
 }
 const DG_ICO={imagem:"🖼️",video:"🎬",audio:"🎵",pdf:"📕",texto:"📝"};
+let TIPOS=null;  // tabela de tipos do servidor (classe.py): faixas, grupos e ícone de cada categoria
+const dgIco=x=>x.tipo==="pasta"?"📁":DG_ICO[x.previa]||(TIPOS&&TIPOS.dados[x.cat]||{}).ico||"📄";
+const dgSit=x=>x.trava?'<span class="pill p-falha">Bloqueado</span>':x.marc?'<span class="pill p-pendente">Selecionado</span>':'<span class="pill p-desmarcado">No disco</span>';
+const dataDe=t=>t?new Date(t*1000).toLocaleDateString("pt-BR"):"—";
 function dgLinha(x,cls){
-  return `<div class="sg-row sg-dados ${x.marc?"":"off"}" data-row="${x.no}">
-   ${x.trava?`<span class="dg-lock" title="${esc(x.motivo||"Bloqueado: só para ver")}" aria-label="Bloqueado">🔒</span>`:`<input type="checkbox" class="${cls}" data-k="${x.k}" ${x.marc?"checked":""} aria-label="Marcar ${esc(x.nome)}">`}
-   <div class="sg-nome"><span class="ic">${x.tipo==="pasta"?"📁":DG_ICO[x.previa]||"📄"}</span><div style="min-width:0"><b class="${x.entrar?"dg-ent":""}" ${x.entrar?`data-entra="${x.no}" role="button" tabindex="0"`:""} title="${esc(x.nome)}">${esc(x.nome)}</b>${x.selo?" "+x.selo:""}${x.trava?`<small class="dg-mot" title="${esc(x.path)}">🔒 ${esc(x.motivo||"Bloqueado: só para ver")}${x.ajuda?` <button class="dg-lk" data-ajuda="${x.ajuda}" title="Abre a pasta do OneDrive no Finder: clique com o botão direito no arquivo e escolha Liberar espaço">Abrir pasta do OneDrive</button>`:""}</small>`:`<small title="${esc(x.path)}">${esc(x.sub||x.path)}</small>`}<small class="sg-meta">${[x.usuario,x.dias!=null?nf(x.dias)+" d parado":"",x.bytes==null?"":fmt(x.bytes)].filter(Boolean).map(esc).join(" · ")}</small></div></div>
-   <span class="dg-u mut" title="${esc(x.usuario||"")}">${esc(x.usuario||"")}</span>
-   <span class="sg-num dg-d mut">${x.dias!=null?nf(x.dias)+" d":""}</span>
-   <span class="sg-num"><b>${x.bytes==null?"…":fmt(x.bytes)}</b></span>
-   <span class="dg-ac">${x.previa?`<button class="sm gh" data-ver="${x.no}" data-tp="${esc(x.previa)}" data-nm="${esc(x.nome)}" aria-label="Ver ${esc(x.nome)}" title="Ver">👁</button>`:""}${x.pode_abrir&&x.tipo!=="pasta"?`<button class="sm gh" data-abr="${x.no}" title="Abrir no programa padrão">Abrir</button>`:""}<button class="sm gh" data-menu="${x.no}" aria-label="Mais ações: ${esc(x.nome)}" aria-haspopup="menu">⋯</button></span></div>`;
+  return `<tr class="${x.marc?"":"off"}" data-row="${x.no}">
+   <td class="ck">${x.trava?`<span class="dg-lock" title="${esc(x.motivo||"Bloqueado: só para ver")}" aria-label="Bloqueado">🔒</span>`:`<input type="checkbox" class="${cls}" data-k="${x.k}" ${x.marc?"checked":""} aria-label="Marcar ${esc(x.nome)}">`}</td>
+   <td><div class="sg-nome"><span class="ic">${dgIco(x)}</span><div style="min-width:0"><b class="${x.entrar?"dg-ent":""}" ${x.entrar?`data-entra="${x.no}" role="button" tabindex="0"`:""} title="${esc(x.nome)}">${esc(x.nome)}</b>${x.sug?` <span class="sugb s-${x.sug}" title="${esc(SUG_DICA[x.sug]||"")}">${SUG_NOME[x.sug]}</span>`:""}${x.trava?`<small class="dg-mot" title="${esc(x.path)}">🔒 ${esc(x.motivo||"Bloqueado: só para ver")}${x.ajuda?` <button class="dg-lk" data-ajuda="${x.ajuda}" title="Abre a pasta do OneDrive no Finder: clique com o botão direito no arquivo e escolha Liberar espaço">Abrir pasta do OneDrive</button>`:""}</small>`:x.tipo==="pasta"?`<small>${esc(x.sub||"")}</small>`:""}${x.usuario?`<small class="mut">${esc(x.usuario)}</small>`:""}</div></div></td>
+   <td>${esc(x.tipo==="pasta"?"Pasta":x.tipo_rot||"")}</td><td>${esc(x.cat?dgCat(x.cat):"")}</td><td>${grupoPill(x.grupo)}</td><td class="sit">${dgSit(x)}</td>
+   <td class="r mut">${x.dias!=null?nf(x.dias)+" d":""}</td><td class="mut">${x.tipo==="pasta"?"":dataDe(x.criado)}</td>
+   <td class="r"><b>${x.bytes==null?"…":fmt(x.bytes)}</b></td><td class="cam mut" title="${esc(x.path)}">${esc(x.tipo==="pasta"?"":x.sub||"")}</td>
+   <td class="acs"><div class="dg-ac">${x.previa?`<button class="sm gh" data-ver="${x.no}" data-tp="${esc(x.previa)}" data-nm="${esc(x.nome)}" aria-label="Ver ${esc(x.nome)}" title="Ver">👁</button>`:""}${x.pode_abrir&&x.tipo!=="pasta"?`<button class="sm gh" data-abr="${x.no}" title="Abrir no programa padrão">Abrir</button>`:""}<button class="sm gh" data-menu="${x.no}" aria-label="Mais ações: ${esc(x.nome)}" aria-haspopup="menu">⋯</button></div></td></tr>`;
 }
 function dgGruposSync(sel){
   const has=k=>sel instanceof Map?sel.has(k):sel.has(k);
@@ -1677,7 +1713,7 @@ function dgGruposSync(sel){
 }
 function dgLigarLinhas(el,redesenha){
   ligarAcoesArq(el);
-  $$("[data-dgg]",el).forEach(d=>{const t=ev=>{if(ev.target.closest(".tg"))return;selTog(DG.fechados,d.dataset.dgg);dgSalva();redesenha()};d.onclick=t;d.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();t(ev)}}});
+  $$("[data-dgg]",el).forEach(d=>{const t=ev=>{if(ev.target.closest("input"))return;selTog(DG.fechados,d.dataset.dgg);dgSalva();redesenha()};d.onclick=t;d.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();t(ev)}}});
   $$("[data-menu]",el).forEach(b=>b.onclick=ev=>{ev.stopPropagation();const x=DGX[b.dataset.menu];if(x)dgMenu(b,x)});
   $$("[data-ajuda]",el).forEach(b=>b.onclick=ev=>{ev.stopPropagation();dgAjuda(+b.dataset.ajuda)});
   $$("[data-entra]",el).forEach(b=>{const f=()=>dgEntrar(+b.dataset.entra);b.onclick=f;b.onkeydown=ev=>{if(ev.key==="Enter"){ev.preventDefault();f()}}});
@@ -1706,54 +1742,51 @@ function dgMenu(btn,x){
   DGM.el=m;const f=$("button",m);if(f)f.focus();
 }
 /* ---- aba Gerenciamento completo: todos os arquivos das pastas dos usuários, pelo índice da varredura ---- */
-function dgEntrar(no){DG.visao="pastas";DG.pasta=no;DG.q="";DG.cat="";dgSalva();safe(()=>dgGerenciar())}
+function dgEntrar(no){DG.visao="pastas";DG.pasta=no;DG.q="";dgSalva();safe(()=>dgGerenciar())}
 async function dgGerenciar(mais){
   const el=$("#dcorpo");if(!el)return;
-  const qs=new URLSearchParams({bloco:DG.bloco,cat:DG.cat,pasta:DG.pasta||"",usuario:DG.usr,q:DG.q,ordem:DG.ordem,visao:DG.visao,offset:mais?DG.rows.length:0,limit:200});
   let r;
-  try{r=await api("/api/dados/indice?"+qs)}catch(err){if(DG.pasta&&!mais){DG.pasta=0;return dgGerenciar()}throw err}
+  try{r=await api("/api/dados/indice?"+dgQS({offset:mais?DG.rows.length:0,limit:200,facetas:mais?"":"1"}))}catch(err){if(DG.pasta&&!mais){DG.pasta=0;return dgGerenciar()}throw err}
   if(view!=="dados"||DG.aba!=="ger"||!$("#dcorpo"))return;
   if(mais){DG.rows=DG.rows.concat(r.rows);dgCorpo();return}
   DG.r=r;DG.rows=r.rows;DG.pastas=r.pastas;
   if(!r.estado.existe){
-    el.innerHTML=`<div class="card"><h2>${r.estado.construindo?"Montando o índice…":"Falta o índice de arquivos"}</h2><p class="h">O Gerenciamento completo usa uma lista de todos os arquivos das pastas dos usuários, feita durante a varredura (só leitura). ${r.estado.construindo?"Espere a varredura terminar.":"Esta máquina foi varrida antes desta versão, ou o resultado foi apagado."}</p>
+    el.innerHTML=`<div class="card"><h2>${r.estado.construindo?"Montando o índice…":r.estado.antigo?"O índice é de uma versão anterior":"Falta o índice de arquivos"}</h2><p class="h">O Gerenciamento completo usa uma lista de todos os arquivos das pastas dos usuários, feita durante a varredura (só leitura). ${r.estado.construindo?"Espere a varredura terminar.":r.estado.antigo?"Varra de novo para ver as categorias, os grupos e a sugestão de varredura.":"Esta máquina foi varrida antes desta versão, ou o resultado foi apagado."}</p>
       ${r.estado.construindo?"":`<button class="pri" id="dgvar">Varrer e montar o índice agora</button>`}</div>`;
     const b=$("#dgvar");if(b)b.onclick=()=>safe(()=>dgAtualizar());
     return;
   }
   const foco=document.activeElement&&document.activeElement.id;
-  const tr=[{t:"Disco",f:()=>{DG.bloco="";DG.cat="";DG.pasta=0;DG.q=""}}];
-  if(DG.bloco)tr.push({t:DG_BL[DG.bloco],f:()=>{DG.cat="";DG.pasta=0}});
-  if(DG.cat)tr.push({t:dgCat(DG.cat),f:()=>{DG.pasta=0}});
+  const tr=[{t:"Disco",f:()=>{DG.pasta=0;DG.q=""}}];
   r.migalhas.forEach(m=>tr.push({t:m.nome,f:()=>{DG.pasta=m.no}}));
-  const bl=r.blocos||{},tot=Object.values(bl).reduce((a,x)=>({n:a.n+x.n,b:a.b+x.bytes}),{n:0,b:0}),varios=(r.usuarios||[]).length>1;
-  const filtro=DG.bloco||DG.cat||DG.pasta||DG.q||DG.usr;
-  el.innerHTML=`<div class="card" style="padding:0">
-   <div class="dg-tri"><nav class="dg-trilha" aria-label="Onde você está">${tr.map((x,i)=>i===tr.length-1?`<b aria-current="location">${esc(x.t)}</b>`:`<button class="sm gh" data-tr="${i}">${esc(x.t)}</button>`).join('<span class="mut">›</span>')}${filtro?`<button class="sm gh" data-tr="0" aria-label="Limpar filtros" title="Limpar filtros">✕</button>`:""}</nav><span class="sp1"></span>
-    <span class="mut" style="font-size:13px">${DG.visao==="pastas"&&!DG.q&&!DG.cat?`${nf(r.pastas.length)} pasta(s) · ${nf(r.total)} arquivo(s) aqui`:`${nf(r.total)} ${r.total===1?"item":"itens"} · ${fmt(r.bytes)}`}</span></div>
-   <div class="sg-top"><div class="sg-abas" role="tablist" aria-label="Ver por">${[["arquivos","Arquivos"],["pastas","Pastas"]].map(([k,t])=>`<button role="tab" aria-selected="${DG.visao===k}" class="${DG.visao===k?"on":""}" data-dgv="${k}">${t}</button>`).join("")}</div>
-    <input type="search" class="sg-q" id="dgq" placeholder="Buscar pelo nome ou caminho" aria-label="Buscar pelo nome ou caminho" value="${esc(DG.q)}" autocomplete="off">
-    <select id="dgo" class="sg-o" aria-label="Ordenar">${[["maior","Maior primeiro"],["menor","Menor primeiro"],["parado","Mais tempo parado"],["nome","Nome (A–Z)"]].map(([k,t])=>`<option value="${k}" ${DG.ordem===k?"selected":""}>${t}</option>`).join("")}</select>
-    ${varios?`<select id="dgu" class="sg-o" aria-label="Filtrar por usuário"><option value="">Todos os usuários</option>${r.usuarios.map(u=>`<option value="${esc(u)}" ${DG.usr===u?"selected":""}>${esc(u)}</option>`).join("")}</select>`:""}
-    ${DG.visao==="pastas"&&DG.pasta?`<button class="sm" id="dgnp">＋ Nova pasta</button>`:""}</div>
-   <div class="sg-chips dg-chips" role="group" aria-label="Filtrar por categoria do cockpit"><button class="sg-chip ${DG.bloco?"":"on"}" data-dgb="">Tudo <span>${fmt(tot.b)}</span></button>${Object.keys(DG_BL).map(k=>`<button class="sg-chip dg-bl ${DG.bloco===k?"on":""}" data-dgb="${k}" style="--c:${DG_COR[k]}" ${bl[k]?"":"disabled"}><i aria-hidden="true"></i>${DG_BL[k]} <span>${fmt((bl[k]||{}).bytes||0)}</span></button>`).join("")}</div>
-   ${DG.bloco&&r.cats.length>1||DG.cat?`<div class="sg-chips dg-chips" role="group" aria-label="Filtrar por tipo"><button class="sg-chip ${DG.cat?"":"on"}" data-dgc="">Todos os tipos</button>${r.cats.map(c=>`<button class="sg-chip ${DG.cat===c.cat?"on":""}" data-dgc="${esc(c.cat)}">${esc(dgCat(c.cat))} <span>${nf(c.n)}</span></button>`).join("")}</div>`:""}
-   ${r.estado.parcial?'<div class="warnbox" style="margin:0 16px 12px">A última varredura foi cancelada: a lista está incompleta. Varra de novo para ver tudo.</div>':""}
-   ${dgBarraHtml({id:"dgbar",cont:"dgsel",def:"dgdef",del:"dgdel",botoes:'<button class="sm gh" id="dgclr">Desmarcar</button><button class="sm" id="dgmov">Mover para…</button><button class="sm" id="dgcop">Copiar para…</button><button class="sm" id="dgext" title="Copia, confere (SHA-256) e só então tira do computador">Disco externo…</button>'})}
-   ${dgCabeca(true,true)}
-   <div id="dgbody"></div><div id="dgmais" class="sg-pe"></div></div>`;
+  // o mesmo molde da Seleção do backup: gaveta de filtros à esquerda, a lista ao centro; as ações na faixa fixa no topo da lista
+  el.innerHTML=`<div class="corpo" id="dgcorpo" data-tela="dados"><aside class="fac" id="dgfac" aria-label="Filtros"></aside>
+   <section class="painel">
+    <div class="lsth"><button class="sm lstfb" id="dgfil">Filtros</button><h2 class="grow">${esc(tr[tr.length-1].t)}</h2>
+     <div class="seg" role="group" aria-label="Ver por">${[["arquivos","Arquivos"],["pastas","Pastas"]].map(([k,t])=>`<button class="sm ${DG.visao===k?"on":""}" aria-pressed="${DG.visao===k}" data-dgv="${k}">${t}</button>`).join("")}</div>
+     <select id="dgo" aria-label="Ordenar" style="width:auto;margin:0">${[["maior","Maior primeiro"],["menor","Menor primeiro"],["parado","Mais tempo parado"],["nome","Nome (A–Z)"]].map(([k,t])=>`<option value="${k}" ${DG.ordem===k?"selected":""}>${t}</option>`).join("")}</select>
+     ${DG.visao==="pastas"&&DG.pasta?`<button class="sm" id="dgnp">＋ Nova pasta</button>`:""}</div>
+    <div class="lstbar"><input type="search" id="dgq" placeholder="Buscar pelo nome ou caminho" aria-label="Buscar pelo nome ou caminho" value="${esc(DG.q)}" autocomplete="off">
+     <b>${DG.visao==="pastas"&&!DG.q&&!dgNAtivos()?`${nf(r.pastas.length)} pasta(s) · ${nf(r.total)} arquivo(s) aqui`:`${nf(r.total)} ${r.total===1?"item":"itens"} · ${fmt(r.bytes)}`}</b><span class="lstchips" id="dgchips"></span></div>
+    ${r.estado.parcial?'<div class="warnbox" style="margin:10px 16px 0">A última varredura foi cancelada: a lista está incompleta. Varra de novo para ver tudo.</div>':""}
+    ${dgBarraHtml({id:"dgbar",cont:"dgsel",def:"dgdef",del:"dgdel",botoes:'<button class="sm gh" id="dglimp" title="Marca, dentro do filtro atual, tudo o que a varredura achou que dá para limpar sem prejudicar o sistema">Marcar tudo que é Limpável</button><button class="sm gh" id="dgclr">Desmarcar</button><button class="sm" id="dgmov">Mover para…</button><button class="sm" id="dgcop">Copiar para…</button><button class="sm" id="dgext" title="Copia, confere (SHA-256) e só então tira do computador">Disco externo…</button>'})}
+    ${dgTabela(dgCabeca(true,true),"","dgbody")}<div id="dgmais" class="sg-pe"></div></section></div>`;
+  gavAplica($("#dgcorpo"),"dados");
+  dgFacetas(r,tr);dgChips();
   const recarrega=()=>{dgSalva();safe(()=>dgGerenciar())};
-  $$("[data-tr]",el).forEach(b=>b.onclick=()=>{tr[+b.dataset.tr].f();recarrega()});
   $$("[data-dgv]",el).forEach(b=>b.onclick=()=>{DG.visao=b.dataset.dgv;recarrega()});
-  $$("[data-dgb]",el).forEach(b=>b.onclick=()=>{DG.bloco=b.dataset.dgb;DG.cat="";dgSalva();dadosResultado(DS.e||{})});
-  $$("[data-dgc]",el).forEach(b=>b.onclick=()=>{DG.cat=b.dataset.dgc;recarrega()});
+  $("#dgfil",el).onclick=()=>$("#dgcorpo").classList.toggle("fopen");
   $$("[data-so]",el).forEach(b=>b.onclick=()=>{DG.ordem=b.dataset.so===DG.ordem&&b.dataset.so==="maior"?"menor":b.dataset.so;recarrega()});
   let tq;$("#dgq",el).oninput=ev=>{clearTimeout(tq);tq=setTimeout(()=>{DG.q=ev.target.value;recarrega()},300)};
   $("#dgo",el).onchange=ev=>{DG.ordem=ev.target.value;recarrega()};
-  const u=$("#dgu",el);if(u)u.onchange=()=>{DG.usr=u.value;recarrega()};
   const np=$("#dgnp",el);if(np)np.onclick=()=>safe(async()=>{const x=await dialog({titulo:"Nova pasta",html:'<p class="mut" style="margin:0">Criada dentro da pasta em que você está.</p>',texto:"Nome da pasta",livre:true,ok:"Criar"});if(!x)return;await api("/api/dados/nova_pasta",{no:DG.pasta,nome:x.texto.trim()});toast("Pasta criada.","ok");dgGerenciar()});
   const lista=()=>[...DG.sel.values()];
   $("#dgclr").onclick=()=>{DG.sel.clear();dgCorpo()};
+  $("#dglimp").onclick=()=>safe(async()=>{  // o que a aba Sugestão pré-marcava, agora dentro do filtro atual
+    let off=0,n=0;const varios=(DG.r.usuarios||[]).length>1;
+    for(;;){const q=await api("/api/dados/indice?"+dgQS({sug:"limpavel",visao:"arquivos",offset:off,limit:1000}));
+      q.rows.forEach(x=>{if(x.pode_marcar&&!DG.sel.has(x.no)){DG.sel.set(x.no,dgArq(x,varios));n++}});off+=q.rows.length;if(!q.rows.length||off>=q.total||off>=20000)break}
+    toast(n?`${nf(n)} ${n===1?"item limpável marcado":"itens limpáveis marcados"}. Confira e escolha a ação na faixa.`:"Nada limpável neste filtro.","ok");dgCorpo()});
   $("#dgmov").onclick=()=>dgDestino("mover",lista());$("#dgcop").onclick=()=>dgDestino("copiar",lista());
   const marcados=async()=>(await api("/api/dados/marcar_nos",{nos:lista().map(x=>x.no)})).ids;
   const itens=()=>lista().map(x=>({titulo:x.nome,bytes:x.bytes||0,usuario:x.usuario}));
@@ -1764,29 +1797,71 @@ async function dgGerenciar(mais){
   if(foco==="dgq"){const q=$("#dgq");q.focus();q.setSelectionRange(q.value.length,q.value.length)}
   dgCorpo();
 }
+/* gaveta do Gerenciamento: os mesmos grupos e o mesmo desenho do "Ver lista" do backup, mais Sugestão de varredura */
+function dgFacetas(r,tr){
+  const el=$("#dgfac");if(!el)return;
+  const fac=r.facetas||{},fb=r.facetas_bytes||{},F=DG.f;
+  const lista=(k,titulo,ordem,rot,o)=>{o=o||{};
+    let vals=ordem?ordem.map(v=>[v,(fac[k]||{})[v]||0]):Object.entries(fac[k]||{}).sort((a,b)=>b[1]-a[1]||String(a[0]).localeCompare(String(b[0])));
+    F[k].forEach(v=>{if(!vals.some(x=>x[0]===v))vals.push([v,0])});
+    if(o.semZero)vals=vals.filter(([v,n])=>n||F[k].includes(v));
+    if(!vals.length)return "";
+    const busca=(DG.busca[k]||"").toLowerCase(),filt=vals.filter(([v])=>!busca||rot(v).toLowerCase().includes(busca)),vis=DG.mais[k]||filt.length<=6?filt:filt.slice(0,6);
+    return fcGrupo(k,titulo,`${o.dica?`<p class="mut fc-dica">${o.dica}</p>`:""}${vals.length>8?`<input type="text" class="fc-q" data-fq="${k}" value="${esc(DG.busca[k]||"")}" placeholder="Buscar" aria-label="Buscar em ${esc(titulo)}" autocomplete="off">`:""}
+      ${vis.map(([v,n])=>fcOpt(k,v,n,rot(v),F[k].includes(v),o.cor?`<i class="fc-cor" style="background:${o.cor(v)}"></i>`:"").replace("<label ",`<label title="${esc((o.title&&o.title(v))||(fb[k]&&fb[k][v]!=null?fmt(fb[k][v]):""))}" `)).join("")}
+      ${filt.length>6?`<button class="sm gh fc-m" data-fm="${k}">${DG.mais[k]?"Ver menos":"Ver mais ("+(filt.length-6)+")"}</button>`:""}`,F[k].length,DG.fechF.includes(k));
+  };
+  const n=dgNAtivos();
+  el.innerHTML=gavCab("dados",n)
+   +fcGrupo("pasta","Onde você está",`<nav class="fc-tr" aria-label="Onde você está">${tr.map((x,i)=>i===tr.length-1?`<b aria-current="location">${esc(x.t)}</b>`:`<button class="lnk" data-tr="${i}">${esc(x.t)}</button>`).join("<i>›</i>")}</nav>${n||DG.pasta||DG.q?'<button class="sm gh" data-tr="limpa">Limpar filtros</button>':""}`,DG.pasta?1:0,DG.fechF.includes("pasta"))
+   +lista("faixa","Categoria",["fotos","videos","audios","documentos","outros","apps","caches","dados"],k=>faixaNome(k),{cor:faixaCor,semZero:true})
+   +lista("grupo","Grupo",((TIPOS&&TIPOS.grupos)||[]).map(g=>g.nome),v=>v,{semZero:true,title:v=>((TIPOS.grupos||[]).find(g=>g.nome===v)||{}).explica})
+   +lista("sug","Sugestão de varredura",["limpavel","ressalva","nao_recomendado"],v=>SUG_NOME[v],{title:v=>SUG_DICA[v],dica:"O que dá para limpar sem prejudicar o sistema, pela última varredura."})
+   +lista("tipo","Tipo de arquivo",null,v=>v)
+   +lista("uso","Último uso",["d30","m6","a1","a3","antigo","sem"],v=>USO_NOME[v])
+   +lista("tam","Tamanho",["p","m","g","gg","xg"],v=>(FX_TAM.find(x=>x[0]===v)||[v,v])[1])
+   +((r.usuarios||[]).length>1?lista("usuario","Usuário",null,v=>v):"");
+  $$("details.fc-g",el).forEach(d=>d.ontoggle=()=>{const k=d.dataset.g,i=DG.fechF.indexOf(k);if(d.open&&i>=0)DG.fechF.splice(i,1);else if(!d.open&&i<0)DG.fechF.push(k);dgSalva()});
+  $$("[data-fk]",el).forEach(c=>c.onchange=()=>{const k=c.dataset.fk,v=c.dataset.fv,a=DG.f[k],i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);dgSalva();
+    if(k==="faixa")dadosResultado(DS.e||{});else safe(()=>dgGerenciar())});  // a faixa também acende no cockpit
+  $$("[data-tr]",el).forEach(b=>b.onclick=()=>{const fx=DG.f.faixa.length;if(b.dataset.tr==="limpa"){dgLimpaF();DG.pasta=0;DG.q=""}else tr[+b.dataset.tr].f();dgSalva();if(fx!==DG.f.faixa.length)dadosResultado(DS.e||{});else safe(()=>dgGerenciar())});
+  $$("[data-fm]",el).forEach(b=>b.onclick=()=>{DG.mais[b.dataset.fm]=!DG.mais[b.dataset.fm];dgFacetas(r,tr)});
+  $$("[data-fq]",el).forEach(i=>i.oninput=()=>{const k=i.dataset.fq,pos=i.selectionStart;DG.busca[k]=i.value;dgFacetas(r,tr);const x=$(`[data-fq="${k}"]`,el);if(x){x.focus();x.setSelectionRange(pos,pos)}});
+}
+/* filtros ativos como etiquetas acima da lista (aparecem mesmo com a gaveta recolhida) */
+function dgChips(){
+  const el=$("#dgchips");if(!el)return;
+  const rot={faixa:k=>faixaNome(k),grupo:v=>v,sug:v=>SUG_NOME[v],tipo:v=>v,uso:v=>USO_NOME[v],tam:v=>(FX_TAM.find(x=>x[0]===v)||[v,v])[1],usuario:v=>v};
+  const ch=[];DG_FK.forEach(k=>DG.f[k].forEach(v=>ch.push([k,v,rot[k](v)])));
+  el.innerHTML=ch.map(([k,v,t],i)=>`<span class="chip lchip">${esc(t)} <button data-dch="${i}" aria-label="Tirar o filtro ${esc(t)}">✕</button></span>`).join("")+(ch.length>1?'<button class="sm gh" id="dglimpa">Limpar tudo</button>':"");
+  $$("[data-dch]",el).forEach(b=>b.onclick=()=>{const [k,v]=ch[+b.dataset.dch];DG.f[k]=DG.f[k].filter(x=>x!==v);dgSalva();if(k==="faixa")dadosResultado(DS.e||{});else safe(()=>dgGerenciar())});
+  const l=$("#dglimpa",el);if(l)l.onclick=()=>{const fx=DG.f.faixa.length;dgLimpaF();dgSalva();if(fx)dadosResultado(DS.e||{});else safe(()=>dgGerenciar())};
+}
+const DG_CASA=/^(\/Users\/[^/]+|\/home\/[^/]+|\/root|[A-Za-z]:\\Users\\[^\\]+)/;
+const dgArq=(x,varios)=>({k:x.no,no:x.no,nome:x.nome,sub:x.path.slice(0,Math.max(0,x.path.length-x.nome.length-1)).replace(DG_CASA,"~")||"~",path:x.path,usuario:varios?x.usuario:"",dias:x.dias,bytes:x.bytes,tipo:x.tipo,cat:x.cat,
+  tipo_rot:x.tipo_rot,grupo:x.grupo,sug:x.sug,criado:x.criado,previa:x.previa,pode_abrir:x.pode_abrir,trava:!x.pode_marcar,motivo:x.motivo,ajuda:x.ajuda_no,gerir:true,entrar:false,marc:DG.sel.has(x.no)});
 function dgCorpo(){
   const el=$("#dgbody");if(!el||!DG.r)return;
-  const varios=(DG.r.usuarios||[]).length>1,casa=/^(\/Users\/[^/]+|\/home\/[^/]+|\/root|[A-Za-z]:\\Users\\[^\\]+)/;
-  const arq=x=>({k:x.no,no:x.no,nome:x.nome,sub:x.path.slice(0,Math.max(0,x.path.length-x.nome.length-1)).replace(casa,"~")||"~",path:x.path,usuario:varios?x.usuario:"",dias:x.dias,bytes:x.bytes,tipo:x.tipo,
-    previa:x.previa,pode_abrir:x.pode_abrir,trava:!x.pode_marcar,motivo:x.motivo,ajuda:x.ajuda_no,gerir:true,entrar:false,marc:DG.sel.has(x.no)});
+  const varios=(DG.r.usuarios||[]).length>1;
   DGX={};DGG={};
   const grupos=[];
-  if(DG.visao==="pastas"&&!DG.q&&!DG.cat){
+  if(DG.visao==="pastas"&&!DG.q&&!dgNAtivos()){
     const ps=DG.pastas.map(p=>({k:p.no,no:p.no,nome:p.nome,sub:p.raiz?"Pasta do usuário":`${nf(p.arquivos)} arquivo(s)`,path:p.path,usuario:varios&&!p.raiz?p.usuario:"",dias:p.dias,bytes:p.bytes,tipo:"pasta",
       pode_abrir:true,trava:!!p.motivo,motivo:p.motivo,gerir:!p.raiz,entrar:true,marc:DG.sel.has(p.no)}));
     if(ps.length)grupos.push(["p:pastas","Pastas",ps]);
-    if(DG.rows.length)grupos.push(["p:arquivos","Arquivos nesta pasta",DG.rows.map(arq)]);
+    if(DG.rows.length)grupos.push(["p:arquivos","Arquivos nesta pasta",DG.rows.map(x=>dgArq(x,varios))]);
   }else{
-    const g={},ordem=[];DG.rows.forEach(x=>{if(!g[x.cat]){g[x.cat]=[];ordem.push(x.cat)}g[x.cat].push(arq(x))});
+    const g={},ordem=[];DG.rows.forEach(x=>{if(!g[x.cat]){g[x.cat]=[];ordem.push(x.cat)}g[x.cat].push(dgArq(x,varios))});
     ordem.forEach(c=>grupos.push(["c:"+c,dgCat(c),g[c]]));
   }
-  const leg=grupos.some(g=>g[2].some(x=>x.trava))?'<div class="dg-leg">🔒 = só para ver. O motivo aparece embaixo do nome.</div>':"";
+  const leg=grupos.some(g=>g[2].some(x=>x.trava))?`<tr class="dg-leg"><td colspan="${DG_NCOL}">🔒 = só para ver. O motivo aparece embaixo do nome.</td></tr>`:"";
   el.innerHTML=leg+grupos.map(([k,t,rs])=>{const fe=DG.fechados.includes(k),b=rs.reduce((a,x)=>a+(x.bytes||0),0);
     rs.forEach(x=>DGX[x.no]=x);DGG[k]=rs.filter(x=>!x.trava&&x.gerir!==false).map(x=>x.no);
     return dgGrupo(k,t,`${nf(rs.length)} ${rs.length===1?"item":"itens"} · ${fmt(b)}`,"usuario",fe,DGG[k].length>0)+(fe?"":rs.map(x=>dgLinha(x,"dgk")).join(""))}).join("")
-    ||`<div style="padding:16px"><p class="mut" style="margin:0 0 10px">${DG.q?"Nada com essa busca.":DG.pasta?"Nada indexado aqui.":"Nada neste filtro."}</p>${DG.pasta&&!DG.q?'<button class="sm" id="dgvivo">Ver esta pasta ao vivo (explorador)</button>':""}</div>`;
+    ||`<tr><td colspan="${DG_NCOL}" style="padding:16px"><p class="mut" style="margin:0 0 10px">${DG.q?"Nada com essa busca.":dgNAtivos()?"Nada com esses filtros. Tire algum filtro na gaveta ou acima da lista.":DG.pasta?"Nada indexado aqui.":"Nada neste filtro."}</p>${DG.pasta&&!DG.q?'<button class="sm" id="dgvivo">Ver esta pasta ao vivo (explorador)</button>':""}</td></tr>`;
   const vivo=$("#dgvivo");if(vivo)vivo.onclick=()=>safe(()=>dadosExplorar(DG.pasta));
-  $$(".dgk",el).forEach(c=>c.onchange=()=>{const k=+c.dataset.k,x=DGX[k];c.checked?DG.sel.set(k,x):DG.sel.delete(k);c.closest(".sg-row").classList.toggle("off",!c.checked);dgGruposSync(DG.sel);dgBarra()});
+  $$(".dgk",el).forEach(c=>c.onchange=()=>{const k=+c.dataset.k,x=DGX[k];c.checked?DG.sel.set(k,x):DG.sel.delete(k);x.marc=c.checked;const tr=c.closest("tr");tr.classList.toggle("off",!c.checked);
+    const sit=$(".sit",tr);if(sit)sit.innerHTML=dgSit(x);dgGruposSync(DG.sel);dgBarra()});
   $$("[data-gk]",el).forEach(c=>{c.onclick=ev=>ev.stopPropagation();c.onchange=()=>{(DGG[c.dataset.gk]||[]).forEach(k=>c.checked?DG.sel.set(k,DGX[k]):DG.sel.delete(k));dgCorpo()}});
   dgLigarLinhas(el,dgCorpo);
   const falta=DG.r.total-DG.rows.length,mais=$("#dgmais");
@@ -1899,23 +1974,18 @@ async function dadosExplorar(no,soLista){
    ${(r.sem_acesso||[]).length?`<div class="infobox">Sem permissão para ler: <b>${r.sem_acesso.map(esc).join(", ")}</b>. Rode como administrador (no Mac e no Linux, com sudo).</div>`:""}
    <p class="mut ${r.medindo?"":"hide"}" id="xmed" style="font-size:12px">Medindo o tamanho das pastas…</p>
    <div id="xlist">${lista}</div>${r.total>r.filhos.length?`<p class="mut">Mostrando os ${r.filhos.length} maiores de ${r.total}.</p>`:""}</div>
-   <div class="actbar"><div class="grow"><b id="xn">${DS.sel.size} selecionado(s)</b><div class="mut" style="font-size:12px">O que você marcar aparece em “Arquivos parados”, para limpar ou mover para um disco externo.</div></div><button class="pri" id="xsel">Ir para a seleção</button></div>`;
+   <div class="actbar"><div class="grow"><b id="xn">${DS.sel.size} selecionado(s)</b><div class="mut" style="font-size:12px">Marque o que quiser limpar ou levar para um disco externo.</div></div><button id="xoff">Disco externo…</button><button class="pri" id="xsel">Enviar para a Lixeira</button></div>`;
   $$("[data-exp]").forEach(b=>b.onclick=()=>safe(()=>dadosExplorar(+b.dataset.exp)));
   $("#xvolta").onclick=()=>{DS.exp=null;drawDados()};
-  $("#xsel").onclick=()=>{DS.exp=null;DS.tab="ambar";drawDados()};
+  $("#xsel").onclick=()=>safe(()=>dadosConfirmar("limpar"));$("#xoff").onclick=()=>safe(()=>dadosConfirmar("offload"));
   ligar();
-}
-function dadosSel(){
-  const bar=$("#dbar");if(!bar)return;
-  const bytes=DROWS.filter(x=>DS.sel.has(x.id)).reduce((a,x)=>a+x.bytes,0);
-  dgBarraEstado(bar,DS.sel.size,bytes,$("#ddef").checked,"Limpar selecionados",["#dclean","#doff"]);
 }
 async function dadosConfirmar(tipo,o){
   let ids,itens,def;
   if(o){ids=o.ids;itens=o.itens;def=!!o.def}  // Gerenciamento completo: a tela já sabe o que marcou
   else{ids=[...DS.sel];if(!ids.length)return;
     const all=await api("/api/dados/resultado?limit=2000");const mapa={};all.rows.forEach(x=>mapa[x.id]=x);
-    itens=ids.map(i=>mapa[i]).filter(Boolean);def=$("#ddef").checked}
+    itens=ids.map(i=>mapa[i]).filter(Boolean);def=false}  // vindo do explorador: Lixeira (apagar de vez só pela faixa do Gerenciamento)
   if(!ids.length)return;
   const bytes=itens.reduce((a,x)=>a+x.bytes,0),orf=itens.some(x=>x.orfao);
   const lista=itens.slice().sort((a,b)=>b.bytes-a.bytes).slice(0,8).map(x=>`<li>${esc(x.titulo)} <span class="mut">· ${fmt(x.bytes)}</span></li>`).join("");
@@ -1969,21 +2039,103 @@ function dadosFim(a){
   $("#anv").onclick=()=>drawDados();$("#aha").onclick=()=>nav("home");
 }
 
+/* ================= UI comum: cockpit do disco e gaveta de filtros (Seleção do backup e Gerenciamento de dados) ================= */
+async function tiposPronto(){if(!TIPOS){try{TIPOS=await api("/api/classes")}catch(e){}}return TIPOS||{faixas:[],grupos:[],backup:{},dados:{}}}
+const faixaNome=(k,so)=>k==="os"?(so||"OS"):((TIPOS&&TIPOS.faixas||[]).find(x=>x.k===k)||{}).nome||k;
+const faixaCor=k=>((TIPOS&&TIPOS.faixas||[]).find(x=>x.k===k)||{}).cor||"#9aa4b5";
+/* o.ident {nome, modelo, dono, dono_nome, tecnico, contas}; o.faixas {chave: bytes}; o.resto = ainda medindo; o.clicaveis/o.ativas: faixas que filtram */
+function cockpit(el,o){
+  if(!el)return;
+  const F=(TIPOS&&TIPOS.faixas)||[],id=o.ident||{},tot=Math.max(o.total||0,o.usado||0)||1,livre=o.total?Math.max(0,o.total-(o.usado||0)):0;
+  const segs=F.map(f=>({k:f.k,nome:faixaNome(f.k,o.so),cor:f.cor,b:(o.faixas||{})[f.k]||0})).filter(x=>x.b>0);
+  const dono=id.dono==="terceiros"?`<span class="chip own-t"><i class="d"></i>Terceiros</span> ${esc(id.dono_nome||"Cliente")}`:id.dono==="particular"?`<span class="chip own-p"><i class="d"></i>Particular</span>${id.tecnico?" de "+esc(id.tecnico):""}`:"";
+  const contas=(id.contas||[]).map(c=>`<b>${esc(c.nome)}</b>${c.em_uso?' <small class="mut">(em uso)</small>':""}`).join(", ");
+  el.innerHTML=`<div class="ckp-t"><h1>${esc(id.nome||"Esta máquina")}</h1>${id.modelo?`<span class="ckp-mod">${esc(id.modelo)}</span>`:""}<span class="grow"></span>${o.botoes||""}</div>
+   ${dono||contas?`<p class="ckp-quem">${dono}${dono&&contas?'<span class="ckp-sep"></span>':""}${contas?`${(id.contas||[]).length>1?"Contas":"Conta"}: ${contas}`:""}</p>`:""}
+   <p class="ckp-sub" title="${esc(o.nota||"")}">${esc(o.disco||"")}${o.usado?`${o.disco?" · ":""}${fmt(o.usado)} usados de ${fmt(o.total)}`:""}${o.medindo?' · <span class="ckp-med">medindo apps e sistema…</span>':o.estimado?" · estimado":""}</p>
+   <div class="cock" role="img" aria-label="Uso do disco por categoria">${segs.map(x=>`<i style="width:${x.b/tot*100}%;background:${x.cor}" title="${esc(x.nome)}: ${fmt(x.b)}"></i>`).join("")}${o.resto>0?`<i class="ck-med" style="width:${o.resto/tot*100}%" title="Ainda medindo: ${fmt(o.resto)}"></i>`:""}</div>
+   <div class="lgd">${segs.map(x=>{const cl=(o.clicaveis||[]).includes(x.k),on=(o.ativas||[]).includes(x.k);
+     return cl?`<button class="lgb ${on?"on":""}" data-ckf="${x.k}" aria-pressed="${on}" title="Ver os arquivos"><i style="background:${x.cor}"></i>${esc(x.nome)} <b>${fmt(x.b)}</b></button>`:`<span class="lgs"><i style="background:${x.cor}"></i>${esc(x.nome)} <b>${fmt(x.b)}</b></span>`}).join("")}
+    ${o.resto>0?`<span class="lgs"><i class="ck-med"></i>Medindo <b>${fmt(o.resto)}</b></span>`:""}${livre?`<span class="lgs"><i class="ck-livre"></i>Livre <b>${fmt(livre)}</b></span>`:""}</div>
+   ${o.extras||""}`;
+  $$("[data-ckf]",el).forEach(b=>b.onclick=()=>o.aoClicar&&o.aoClicar(b.dataset.ckf));
+}
+/* gaveta de filtros: a mesma nas duas telas; recolhida vira um trilho fino e a lista ganha a largura toda (lembrada por tela) */
+const GAV=(()=>{try{return JSON.parse(lsGet("dd_gaveta","{}"))||{}}catch(e){return {}}})();
+const gavCab=(tela,n)=>`<div class="gav-cab"><button type="button" class="gav-bt" data-gav="${tela}" aria-expanded="${!GAV[tela]}" title="${GAV[tela]?"Abrir":"Recolher"} os filtros (F)">${ic("filtro")}<span class="gav-t">Filtros</span>${n?`<span class="fc-n">${n}</span>`:""}<span class="gav-seta" aria-hidden="true">‹</span></button></div>`;
+function gavAplica(corpo,tela){if(corpo)corpo.classList.toggle("gav-fechada",!!GAV[tela])}
+function gavTroca(tela){GAV[tela]=!GAV[tela];lsSet("dd_gaveta",JSON.stringify(GAV));const c=$(`[data-tela="${tela}"]`);gavAplica(c,tela);
+  $$(`[data-gav="${tela}"]`).forEach(b=>{b.setAttribute("aria-expanded",!GAV[tela]);b.title=(GAV[tela]?"Abrir":"Recolher")+" os filtros (F)"})}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-gav]");if(b)gavTroca(b.dataset.gav)});
+document.addEventListener("keydown",e=>{  // Esc com o foco na gaveta: recolhe (e devolve o foco ao botão dela)
+  if(e.key!=="Escape"||!e.target.closest||$("#layer").children.length)return;
+  const c=e.target.closest(".corpo[data-tela]");if(!c||!e.target.closest(".fac")||GAV[c.dataset.tela])return;
+  e.stopPropagation();gavTroca(c.dataset.tela);const b=$(`[data-gav="${c.dataset.tela}"]`,c);if(b)b.focus()},true);
+document.addEventListener("keydown",e=>{
+  if(e.key!=="f"&&e.key!=="F"||e.metaKey||e.ctrlKey||e.altKey||$("#layer").children.length)return;
+  if(e.target.closest&&e.target.closest("input,select,textarea,[contenteditable]"))return;
+  const c=$(".corpo[data-tela]");if(c){e.preventDefault();gavTroca(c.dataset.tela)}});
+/* opções da gaveta (o mesmo desenho nas duas telas) */
+const fcOpt=(k,v,n,lab,on,antes)=>{const z=!n&&!on;return `<label class="fc-o ${z?"zero":""}"><input type="checkbox" data-fk="${k}" data-fv="${esc(v)}" ${on?"checked":""} ${z?"disabled":""}>${antes||""}<span class="grow">${esc(lab)}</span><small>${nf(n||0)}</small></label>`};
+const fcGrupo=(k,titulo,corpo,n,fechado)=>`<details class="fc-g" data-g="${k}" ${fechado?"":"open"}><summary>${titulo}${n?` <span class="fc-n">${n}</span>`:""}</summary>${corpo}</details>`;
+
 /* ================= Backup (jornada) ================= */
 const STEPS=["Origem e destino","Checagens","Seleção","Cópia","Verificação","O que manter","Conclusão"];
-let step=0,S={sources:[],chosen:{},dest:"",folder:""},st=null,timer=null;
+let step=0,maxStep=0,S={sources:[],chosen:{},dest:"",folder:""},st=null,timer=null;
+/* cada etapa abre com um clique: as já alcançadas sempre; as seguintes só no modo Superusuário */
 function renderSteps(){
   const el=$("#steps");if(view!=="backup"){el.innerHTML="";return}
-  el.innerHTML=`<div class="jn done" title="Termo aceito"><span class="c">✓</span>Termo</div>`+STEPS.map((t,i)=>`<div class="jn ${i===step?"on":i<step?"done":""}" ${i===step?'aria-current="step"':""}><span class="c">${i<step?"✓":i+1}</span>${esc(t)}</div>`).join("");
+  el.innerHTML=`<div class="jn done" title="Termo aceito"><span class="c">✓</span>Termo</div>`+STEPS.map((t,i)=>{
+    const cls=`jn ${i===step?"on":i<step?"done":""}`,c=`<span class="c">${i<step?"✓":i+1}</span>${esc(t)}`;
+    return i!==step&&(i<=maxStep||SU)?`<button type="button" class="${cls}" data-st="${i}" title="Abrir ${esc(t)}${i>maxStep?" (Superusuário)":""}">${c}</button>`:`<div class="${cls}" ${i===step?'aria-current="step"':""}>${c}</div>`}).join("");
+  $$("[data-st]",el).forEach(b=>b.onclick=()=>{const n=+b.dataset.st;if(n>maxStep)toast("Etapa aberta pelo Superusuário: pode faltar o que as anteriores preparam.");go(n)});
 }
-function go(n){step=n;view="backup";markNav();$("#steps").classList.remove("hide");renderSteps();draw();window.scrollTo(0,0)}
+function go(n){step=n;if(!SU||n<=maxStep+1)maxStep=Math.max(maxStep,n);view="backup";markNav();$("#steps").classList.remove("hide");renderSteps();draw();window.scrollTo(0,0)}
+
+/* ---- modo Superusuário: ligado na engrenagem, fica numa faixa visível enquanto estiver ativo ---- */
+let SU=lsGet("dd_su","0")==="1";
+async function suLigar(v){
+  const r=await api("/api/su",{ligado:!!v});SU=r.ligado;lsSet("dd_su",SU?"1":"0");suFaixa();if(view==="backup")renderSteps();return r}
+function suFaixa(){
+  const el=$("#suband");if(!el)return;el.classList.toggle("hide",!SU);if(!SU){el.innerHTML="";return}
+  el.innerHTML=`<b>⚠ Modo Superusuário ligado</b><span class="mut grow">Todas as etapas abrem e as travas do fluxo podem ser puladas. Tudo fica no registro.</span><button class="sm" id="supn">Painel</button><button class="sm" id="suof">Desligar</button>`;
+  $("#supn").onclick=()=>safe(suPainel);$("#suof").onclick=()=>safe(()=>suLigar(false));
+}
+const SU_ADMIN={mac:"Ajustes do Sistema › Privacidade e Segurança › Acesso Total ao Disco: libere o Terminal (ou o app que abre o Destrava!) e abra de novo.",
+  windows:"Feche o Destrava! e abra pelo Iniciar-Windows.bat, que pede a permissão de administrador.",
+  linux:"Feche o Destrava! e abra de novo com sudo (ex.: sudo python3 dd_backup.py)."};
+async function suPainel(){
+  const e=await api("/api/su"),c=e.mapa_dir?await api("/api/su/certificado").catch(()=>null):null;
+  const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
+  d.innerHTML=`<div class="box" style="max-width:640px"><h2>Painel do Superusuário</h2>
+   <h3 style="font-size:14px;margin:12px 0 4px">Estado do backup</h3>
+   <p class="mut" style="margin:0;font-size:13px">Fase: <b>${esc(e.phase)}</b> · Verificação: <b>${esc(e.verified_mode||"não feita")}</b></p>
+   <label for="sulm">Como guardar</label><select id="sulm" ${e.layout_editavel?"":"disabled"}><option value="">(não escolhido)</option>${["espelho","ordenado","misto"].map(m=>`<option value="${m}" ${e.layout_modo===m?"selected":""}>${m[0].toUpperCase()+m.slice(1)}</option>`).join("")}</select>
+   ${e.layout_editavel?"":'<div class="mut" style="font-size:12.5px">A cópia já começou: o jeito de guardar não muda mais neste backup.</div>'}
+   <h3 style="font-size:14px;margin:16px 0 4px">Administrador</h3>
+   <p style="margin:0;font-size:13px">${e.admin?"✓ O Destrava! está rodando como administrador.":"Sem administrador agora. "+esc(SU_ADMIN[e.so]||"")}</p>
+   <h3 style="font-size:14px;margin:16px 0 4px">Certificado</h3>
+   ${c?`<p class="mut" style="margin:0 0 6px;font-size:12.5px">Código ${esc(c.codigo)}. Os originais ficam em .bak e a correção aparece marcada no certificado.${c.editado.length?` Já editado ${c.editado.length} vez(es).`:""}</p>
+     ${c.campos.map(f=>f.id==="status"?`<label for="suc_${f.id}">${esc(f.nome)}</label><select id="suc_${f.id}" data-suc="${f.id}"><option value="sem_falhas" ${f.valor==="sem_falhas"?"selected":""}>Sem falhas</option><option value="ressalvas" ${f.valor!=="sem_falhas"?"selected":""}>Com ressalvas</option></select>`
+       :`<label for="suc_${f.id}">${esc(f.nome)}</label><input type="text" id="suc_${f.id}" data-suc="${f.id}" value="${esc(f.valor)}" maxlength="200">`).join("")}`
+    :'<p class="mut" style="margin:0;font-size:13px">Ainda não há certificado gerado neste backup.</p>'}
+   <div class="row" style="margin-top:18px;justify-content:flex-end"><button id="sucn">Fechar</button>${c?'<button class="pri" id="sucs">Salvar certificado</button>':""}</div></div>`;
+  $("#layer").appendChild(d);
+  const fecha=()=>d.remove();$("#sucn",d).onclick=fecha;
+  $("#sulm",d).onchange=ev=>safe(async()=>{if(!ev.target.value)return;await api("/api/layout",{modo:ev.target.value});toast("Jeito de guardar alterado.","ok");if(view==="backup"&&step===2)draw()});
+  const sv=$("#sucs",d);if(sv)sv.onclick=()=>safe(async()=>{const b={};$$("[data-suc]",d).forEach(i=>b[i.dataset.suc]=i.value);
+    const r=await api("/api/su/certificado",b);toast(r.mudou?`Certificado corrigido (${r.mudou} campo(s)).`:"Nada mudou.","ok");fecha();if(view==="backup"&&step===6)draw()});
+}
 function draw(){clearInterval(timer);[draw1,draw2,draw3,draw4,draw5,()=>drawManter("",true),draw6][step]()}
 const CATORD=["Documentos","Fotos","Videos","Audios","Projetos","Email_Contatos","Conversas","Contas_Senhas","Dados_de_apps","Sistemas","Navegadores","Outros","Nuvem","Ocultos","Programas","Configuracoes","Temporarios","Extras"];
 const CATNAME={Fotos:"Fotos",Videos:"Vídeos",Audios:"Áudios",Documentos:"Documentos",Projetos:"Projetos (Photoshop, CAD…)",Email_Contatos:"E-mail e contatos",Conversas:"Conversas (WhatsApp)",Contas_Senhas:"Contas e senhas",Outros:"Outros",Navegadores:"Favoritos dos navegadores",
  Dados_de_apps:"Dados de programas",Sistemas:"Bancos de dados de sistemas",Nuvem:"Só na nuvem (OneDrive/iCloud)",Ocultos:"Arquivos ocultos",Programas:"Programas e instaladores",Configuracoes:"Configurações e atalhos",Temporarios:"Temporários e sistema",Extras:"Incluídos por você"};
 const CATICO={Fotos:"🖼️",Videos:"🎬",Audios:"🎵",Documentos:"📄",Projetos:"📐",Email_Contatos:"✉️",Conversas:"💬",Contas_Senhas:"🔑",Outros:"📦",Navegadores:"⭐",Dados_de_apps:"🧩",Sistemas:"🗄️",Nuvem:"☁️",Ocultos:"👻",Programas:"⚙️",Configuracoes:"🛠️",Temporarios:"🧹",Extras:"📂"};
 /* o que é cada categoria, em português simples: bloco, o que é, para que serve guardar, recomendação */
-const CAT_BLOCOS=[["pessoal","Pessoal","Já vem marcado: o que a pessoa criou ou guardou."],["decide","Trabalho e dados de programas","Você decide: pode ser importante, depende do cliente."],["sistema","Sistema e programas","Normalmente não precisa: o Windows e os programas recriam ou se reinstalam."]];
+/* blocos da grade = os Grupos (classe.py): o mesmo "o que fazer com isso" do Gerenciamento */
+const GRUPO_K={"Pessoal":"pessoal","Dados de programas":"programas","Cache temporário":"cache","Instaladores":"instal","Sistema":"sistema","Só na nuvem":"nuvem","Bloqueado":"bloq"};
+const blocosGrupo=()=>((TIPOS&&TIPOS.grupos)||[{nome:"Pessoal",explica:""}]).map(g=>[GRUPO_K[g.nome]||g.nome,g.nome,g.explica]);
+const grupoDeCat=c=>((TIPOS&&TIPOS.backup[c])||{}).grupo||"Pessoal";
 const CAT_INFO={
  Documentos:["pessoal","PDF, Word, Excel, PowerPoint, textos e notas.","É o principal do backup: trabalho e vida pessoal.","Levar"],
  Fotos:["pessoal","Fotos e imagens (JPG, PNG, HEIC…), organizadas por ano e mês.","Lembranças que não voltam se forem perdidas.","Levar"],
@@ -2004,7 +2156,6 @@ const CAT_INFO={
  Ocultos:["sistema","Pastas e arquivos escondidos (de sistema ou de programas).","Em geral não são da pessoa; confira antes de levar.","Normalmente não"],
  Temporarios:["sistema","Temporários e arquivos que o sistema recria sozinho.","Não precisam de backup.","Normalmente não"]};
 const CAT_REC={"Levar":"b-ok","Você decide":"b-warn","Normalmente não":"b-mut","Você incluiu":"b-ok"};
-const catBloco=c=>(CAT_INFO[c]||["decide"])[0];
 
 /* seletor de pasta reutilizável */
 async function pickFolder(input,box,onUse,start){
@@ -2027,7 +2178,7 @@ async function draw1(){
     try{S.sources=(await api("/api/sources")).sources}
     catch(e){$("#main").innerHTML=`<div class="card"><div class="errbox">Não consegui listar os discos: ${esc(e.message||String(e))}</div><button id="d1r">Tentar de novo</button></div>`;$("#d1r").onclick=()=>draw1();return}
     if(step!==0||view!=="backup")return;
-    S.sources.forEach(s=>{if(s.kind==="windows"||s.kind==="linux")S.chosen[s.path]=true})}
+    S.sources.forEach(s=>{if(s.kind==="windows"||s.kind==="linux"||s.kind==="mac")S.chosen[s.path]=true})}
   const t=CTX.t,nome=t?t.nome:info.host||"PC";
   $("#main").innerHTML=`<div class="card fluxo" id="fluxo"></div>
   <div class="od"><div class="card"><div class="eyebrow">ORIGEM</div><h2>De onde vamos copiar?</h2><p class="h">Marque os discos ou pastas de origem. O programa só <b>lê</b> deles: nada é apagado ou alterado.</p><div id="srcs"></div>
@@ -2071,7 +2222,7 @@ function srcSemRepetir(p){
 }
 function drawSrcs(){
   $("#srcs").innerHTML=S.sources.map((s,i)=>`<label class="src ${S.chosen[s.path]?"sel":""}"><input type="checkbox" data-i="${i}" ${S.chosen[s.path]?"checked":""}>
-   <div class="t"><b>${esc(s.label)} ${s.kind==="windows"?'<span class="tag win">Windows</span>':s.kind==="linux"?'<span class="tag lin">Linux</span>':'<span class="tag">pasta</span>'} ${s.fs?`<span class="tag">${esc(s.fs)}</span>`:""}</b><span>${esc(s.path)} · ${fmt(s.total-s.free)} usados de ${fmt(s.total)}${s.users&&s.users.length?" · usuários: "+esc(s.users.join(", ")):""}</span></div>
+   <div class="t"><b>${esc(s.label)} ${s.kind==="windows"?'<span class="tag win">Windows</span>':s.kind==="linux"?'<span class="tag lin">Linux</span>':s.kind==="mac"?'<span class="tag lin">macOS</span>':'<span class="tag">pasta</span>'} ${s.fs?`<span class="tag">${esc(s.fs)}</span>`:""}</b><span>${esc(s.path)} · ${fmt(s.total-s.free)} usados de ${fmt(s.total)}${s.users&&s.users.length?" · usuários: "+esc(s.users.join(", ")):""}</span></div>
    ${s.kind==="windows"?`<div class="mut" style="font-size:12px">Letra<br><input type="text" class="l" data-l="${i}" value="${esc(s.letter||"C")}" maxlength="1" aria-label="Letra do disco"></div>`:""}</label>`).join("")||'<p class="mut">Nenhum disco encontrado. Digite o caminho abaixo.</p>';
   $$("#srcs input[type=checkbox]").forEach(c=>c.onchange=()=>{const p=S.sources[+c.dataset.i].path;S.chosen[p]=c.checked;if(c.checked)srcSemRepetir(p);drawSrcs()});
   $$("#srcs input.l").forEach(c=>{c.onclick=e=>e.stopPropagation();c.oninput=()=>{S.sources[+c.dataset.l].letter=c.value.toUpperCase()}});
@@ -2098,10 +2249,10 @@ function drawFluxo(){
   const oSub=!o?"marque abaixo":sel.length>1?`${sel.length} origens · só leitura`:(o.total?`${fmt(o.total-o.free)} usados · só leitura`:"só leitura");
   const dSub=!S.dest?"HD externo, pendrive ou pasta":L===false?"pasta não encontrada":`em ${base}${L&&L.total?" · "+fmt(L.free)+" livres":""}`;
   el.innerHTML=`<p class="fx-leg">Copiando <b>do computador</b> para <b>o disco do backup</b>. A origem só é lida: nada é apagado.</p>
-   <div class="fx-row"><button type="button" class="fx-tile ${o?"":"fx-vazio"}" id="fxo" title="Ver as origens"><span class="fx-ico">${FX_PC}</span><b>${o?esc(o.label)+(sel.length>1?" +"+(sel.length-1):""):"Escolha a origem"}</b><small>${esc(oSub)}</small></button>
+   <div class="fx-row"><button type="button" class="fx-tile ${o?"":"fx-vazio"}" id="fc-o" title="Ver as origens"><span class="fx-ico">${FX_PC}</span><b>${o?esc(o.label)+(sel.length>1?" +"+(sel.length-1):""):"Escolha a origem"}</b><small>${esc(oSub)}</small></button>
    <div class="fx-seta ${ok?"":"off"}" role="img" aria-label="${ok?"Os arquivos vão da origem para o destino":"Falta escolher a origem ou o destino"}"><span class="fx-dots"><i></i><i></i><i></i></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5l9.5 7.5L8 19.5z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
    <button type="button" class="fx-tile ${temD?"":"fx-vazio"} ${L===false?"fx-err":""}" id="fxd" title="Escolher o destino"><span class="fx-ico">${FX_PASTA}</span><b>${temD?esc(pasta):"Escolher destino"}</b><small>${esc(dSub)}</small></button></div>`;
-  $("#fxo").onclick=()=>$("#srcs").scrollIntoView({behavior:"smooth",block:"center"});
+  $("#fc-o").onclick=()=>$("#srcs").scrollIntoView({behavior:"smooth",block:"center"});
   $("#fxd").onclick=()=>{$("#pick").click();$("#dest").scrollIntoView({behavior:"smooth",block:"center"})};
 }
 
@@ -2139,64 +2290,106 @@ async function tick(){
     if(st.phase==="scanned"){clearInterval(timer);go(2)}
     if(st.phase==="error"){clearInterval(timer);toast("Erro: "+st.error,"err")}
     if(st.phase==="idle"){clearInterval(timer);$("#scan").disabled=false;$("#scanbox").classList.add("hide")}
+  }else if(step===2&&$("#s3f")){
+    $("#s3f").textContent=nf(st.scan.files);$("#s3d").textContent=nf(st.scan.dirs);$("#s3z").textContent=fmt(st.scan.bytes);$("#s3c").textContent=st.scan.current;
+    if(st.phase==="scanned"){clearInterval(timer);draw3()}
+    if(st.phase==="error"){clearInterval(timer);toast("Erro: "+st.error,"err")}
+    if(st.phase==="idle"){clearInterval(timer);$("#main").innerHTML=`<div class="card"><h2>Escaneamento cancelado</h2><p class="h">Nada foi copiado.</p><button class="pri" id="s3r">Escanear de novo</button></div>`;$("#s3r").onclick=()=>safe(async()=>{await api("/api/scan",{});draw3()})}
   }else if(step===3)tick4();else if(step===4)tick5();
+}
+/* Seleção aberta sem escaneamento (Superusuário): escaneia sozinha com a origem e o destino da etapa 1 */
+async function sel3Escanear(){
+  const s=await api("/api/status");if(view!=="backup"||step!==2)return true;
+  const vazio=s.n_items===0&&["idle","error"].includes(s.phase);
+  if(s.phase!=="scanning"&&!vazio)return false;
+  if(vazio){
+    if(!(s.cfg&&(s.cfg.sources||[]).length)){
+      const sources=S.sources.filter(x=>S.chosen[x.path]).map(x=>({path:x.path,kind:x.kind,letter:x.letter||"C",label:x.label}));
+      if(!sources.length||!S.dest){$("#main").innerHTML=`<div class="card"><h2>Nada escaneado ainda</h2><p class="h">Escolha a origem e o destino primeiro; depois a Seleção escaneia sozinha.</p><button class="pri" id="s3o">Ir para Origem e destino</button></div>`;$("#s3o").onclick=()=>go(0);return true}
+      await api("/api/config",{sources,dest:S.dest,folder:S.folder});
+    }
+    await api("/api/scan",{});
+  }
+  $("#main").innerHTML=`<div class="card"><h2>Escaneando a máquina…</h2><p class="h">A Seleção abre sozinha quando terminar.</p>
+   <div class="grid"><div class="kpi"><div class="mut">Arquivos</div><div class="big" id="s3f">0</div></div><div class="kpi"><div class="mut">Pastas</div><div class="big" id="s3d">0</div></div><div class="kpi"><div class="mut">Tamanho</div><div class="big" id="s3z">0</div></div></div>
+   <div class="mono mut" id="s3c" style="margin-top:8px;word-break:break-all"></div><div class="row" style="margin-top:8px"><button class="sm" id="s3x">Cancelar</button></div></div>`;
+  $("#s3x").onclick=()=>safe(()=>api("/api/cancel",{}));poll();return true;
 }
 
 /* ---- 3 seleção ---- */
 async function draw3(){
   setWide(true);
-  const [g,t,L,MD]=await Promise.all([api("/api/groups"),api("/api/totals"),api("/api/layout"),api("/api/medicao").catch(()=>({}))]);
+  if(await sel3Escanear())return;
+  const [g,t,L,MD,s,ID]=await Promise.all([api("/api/groups"),api("/api/totals"),api("/api/layout"),api("/api/medicao").catch(()=>({})),api("/api/status"),api("/api/identidade?para=backup").catch(()=>({})),tiposPronto()]);
   if(view!=="backup"||step!==2)return;
-  LAY=Object.assign(L,{abrir:!L.modo});
-  $("#main").innerHTML=`<div class="ptitle"><h1>O que vai para o backup</h1><p>Tudo o que existe nesta máquina, organizado. Você escolhe — o que não for marcado fica registrado no Mapa e no certificado.</p></div>
-  <div class="kpis" id="selkpi"></div>
-  <div class="cols"><div>
-  <div class="card lay" id="layc"></div>
-  <div class="card" id="medc"></div>
-  <div class="card sgp" id="selp"></div>
-  <aside class="side card" id="tot" aria-label="Resumo da seleção"></aside></div>`;
-  layCard();selKpis(g,t,MD);selGrade(g);
-  drawTot(t);MED.t=t;medicaoCard(MD);
+  LAY=L;st=s;SELG=g;Object.assign(SB,{t,cfg:s.cfg||{},foco:null,hover:"",ident:ID});
+  // uma tela só: o disco no topo, filtros à esquerda, a grade (ou a lista, no lugar dela) ao centro e a decisão embaixo
+  $("#main").innerHTML=`<section class="card ckp" id="selcock" aria-label="O disco desta máquina"></section>
+   <div class="corpo" id="selcorpo" data-tela="sel"><aside class="fac" id="lsts" aria-label="Filtros"></aside><section class="painel sgp" id="selp"></section></div>
+   <div class="acao" id="selacao" role="region" aria-label="Como guardar e iniciar a cópia"></div>`;
+  gavAplica($("#selcorpo"),"sel");selCockpit(g,t,MD);selBarra();
+  if(LST.aberta)return abrirLista(LST.f,LST.rot);
+  selGrade(g);selFacetas();
 }
-/* ---- como guardar este backup: Espelho, Ordenado ou Misto (escolhido a cada backup) ---- */
+/* os filtros da esquerda já aparecem na grade, com as contagens de tudo: escolher um abre a lista no lugar da grade */
+async function selFacetas(){
+  const F=await api("/api/files?limit=0&facets=1&pastas=1");
+  if(view!=="backup"||step!==2||LST.aberta)return;
+  Object.assign(LST,{f:{},q:"",fac:F.facets,pastas:F.pastas,mais:{},busca:{}});lstSide();
+}
+/* ---- como guardar este backup: Espelho, Ordenado ou Misto (escolhido a cada backup), na faixa de baixo ---- */
 let LAY={modo:"",espelhar:{n:0,bytes:0},ordenar:{n:0,bytes:0},fixos:{n:0,bytes:0}};
 const LAY_MODOS=[["espelho","🪞","Espelho","Cada pasta continua onde estava, do jeito que estava."],
  ["ordenado","🗂️","Ordenado","Tudo por tipo e data (Fotos › 2024 › Maio), a partir do usuário. Perde a pasta de onde veio; o Mapa lembra."],
  ["misto","🧩","Misto","Fica espelhado, e você escolhe o que vai ordenado: qualquer pasta ou tipo, na lista ou na grade."]];
-const layDoUsuario=p=>String(p||"").replace(/^[A-Za-z]:\\Users\\|^\/(Users|home)\//,"");
-function layCaminho(p,max){
-  const s=String(p||"").split(/[\\/]/).filter(Boolean),nome=s.pop()||"",pre=s.length>max?["…",...s.slice(-max)]:s;
-  return `<span class="lay-cam">${pre.map(x=>`<span>${x==="…"?"…":"📁 "+esc(x)}</span>`).join("<i>›</i>")}${pre.length?"<i>›</i>":""}<b>📄 ${esc(nome)}</b></span>`;
+const SB={t:null,cfg:{},foco:null,hover:""};  // faixa de baixo: totais, destino, arquivo em foco na lista e o jeito sob o mouse
+const nomeDe=p=>String(p||"").split(/[\\/]/).filter(Boolean).pop()||String(p||"");
+/* o caminho no backup em pedaços; os pedaços que mudam de um jeito para o outro ficam destacados */
+function trilho(cam,outro,raiz){
+  const s=String(cam||"").split("/").filter(Boolean),o=new Set(String(outro||"").split("/").filter(Boolean)),nm=s.pop()||"";
+  const ps=s.length>5?[s[0],"…",...s.slice(-3)]:s;
+  const peca=x=>x==="…"?"<i>…</i>":`<span class="${outro&&!o.has(x)?"novo":""}" title="${esc(x)}">${esc(x)}</span>`;
+  return [...(raiz?[`<span class="raiz" title="Pasta do backup no destino">${esc(raiz)}</span>`]:[]),...ps.map(peca),`<b title="${esc(nm)}">${esc(nm)}</b>`].join("<i>/</i>");
 }
-function layDiag(modo,ex){
-  if(!ex)return "";
-  const fim=modo==="ordenado"?ex.ordenado:ex.espelho;
-  return `<span class="lay-dg"><small>Na máquina</small>${layCaminho(layDoUsuario(ex.origem),3)}<small>No backup</small>${layCaminho(fim,4)}${modo==="misto"?`<small>O que você marcar como ordenado</small>${layCaminho(ex.ordenado,4)}`:""}</span>`;
-}
-function layCard(){
-  const el=$("#layc");if(!el)return;
-  const L=LAY,ed=L.editavel!==false,m=LAY_MODOS.find(x=>x[0]===L.modo);
-  if(L.modo&&!L.abrir){
-    el.innerHTML=`<div class="lay-top"><span class="lay-ic">${m[1]}</span><div class="grow"><div class="eyebrow">COMO GUARDAR ESTE BACKUP</div><h2>${m[2]}</h2><p class="h" style="margin:0">${m[3]}</p></div>
-      ${ed?'<button class="sm" id="laymud">Mudar</button>':'<span class="badge b-mut">a cópia já começou</span>'}</div>
-     <div class="lay-resr"><span class="lay-res"><b>🪞 ${nf(L.espelhar.n)}</b> espelhados · ${fmt(L.espelhar.bytes)}</span><span class="lay-res"><b>🗂️ ${nf(L.ordenar.n)}</b> ordenados · ${fmt(L.ordenar.bytes)}</span>${L.fixos.n?`<span class="lay-res mut" title="Dados de programas, ocultos e sistemas guardam sempre o caminho original">📌 ${nf(L.fixos.n)} com caminho fixo</span>`:""}</div>
-     ${L.modo==="misto"&&ed?`<div class="lay-dica"><span>Para ordenar uma pasta ou um tipo, abra a lista e use <b>Como copiar</b>; ela navega por <b>Pasta</b> a partir dos usuários. Na grade, use a coluna <b>Cópia</b>. O que você não mudar fica espelhado.</span><button class="sm pri" id="laypasta">Escolher por pasta…</button></div>`:""}`;
-    const mu=$("#laymud",el);if(mu)mu.onclick=()=>{LAY.abrir=true;layCard()};
-    const lp=$("#laypasta",el);if(lp)lp.onclick=()=>abrirLista({},"Escolher por pasta");
-    return;
-  }
-  el.innerHTML=`<div class="eyebrow">COMO GUARDAR ESTE BACKUP</div><h2>Como você quer guardar os arquivos?</h2>
-   <p class="h">Escolha a cada backup. Não muda <b>o que</b> vai, só como fica organizado no disco do backup. Dados de programas, ocultos e sistemas guardam o caminho original sempre.</p>
-   <div class="lay-ops" role="radiogroup" aria-label="Como guardar este backup">${LAY_MODOS.map(([k,ic,t,d])=>`<button class="lay-op ${L.modo===k?"on":""}" role="radio" aria-checked="${L.modo===k}" tabindex="${(L.modo||"espelho")===k?0:-1}" data-lm="${k}" ${ed?"":"disabled"}><span class="lay-ic">${ic}</span><b>${t}</b><span class="lay-d">${d}</span>${layDiag(k,L.exemplo)}</button>`).join("")}</div>
-   ${L.modo?`<div class="row" style="justify-content:flex-end;margin-top:10px"><button class="sm gh" id="layfec">Manter ${esc(L.nome)}</button></div>`:'<p class="mut" style="font-size:12.5px;margin:10px 0 0">A cópia só começa depois desta escolha.</p>'}`;
+function selBarra(){
+  const el=$("#selacao");if(!el||!SB.t)return;
+  const t=SB.t,L=LAY,ed=L.editavel!==false,cfg=SB.cfg||{},pct=t.free?Math.min(100,t.sel_bytes/t.free*100):0,av=[];
+  if(!t.cabe)av.push(["err",`Não cabe no destino: precisa de ${fmt(t.sel_bytes)} e há ${fmt(t.free)} livres. ${t.solucao||""}`]);
+  if(t.fat32_problema)av.push(["err","O destino é FAT32 e há arquivo maior que 4 GB. Escolha outro destino."]);
+  if(!L.modo&&ed)av.push(["info","Escolha como guardar: Espelho, Ordenado ou Misto. Passe o mouse em cada um para ver onde os arquivos ficam."]);
+  el.innerHTML=`${av.map(([c,x])=>`<div class="aviso ${c}">${esc(x)}</div>`).join("")}
+   <div class="como"><div class="rot">Como guardar no destino${ed?"":" · a cópia já começou"}</div>
+    <div class="seg" role="radiogroup" aria-label="Como guardar este backup">${LAY_MODOS.map(([k,,nm,d])=>`<button role="radio" aria-checked="${L.modo===k}" tabindex="${(L.modo||"espelho")===k?0:-1}" data-lm="${k}" title="${esc(d)}" ${ed?"":"disabled"}>${nm}</button>`).join("")}</div></div>
+   <div class="prev"><div class="rot" id="sbrot"></div><div class="trilho" id="sbtri" aria-live="polite"></div></div>
+   <button class="dest" id="sbdest" title="Trocar o destino: volta para Origem e destino">💽 ${esc(nomeDe(cfg.dest)||"Destino")} <span class="mut">${fmt(t.free)} livres</span></button>
+   <div class="tot ${!t.cabe||t.fat32_problema?"ruim":""}" title="Ocupa ${pct.toFixed(pct<10?1:0)}% do espaço livre no destino"><b>${nf(t.sel_n)} ${t.sel_n===1?"arquivo":"arquivos"}</b><div class="mut">${fmt(t.sel_bytes)} vão para o backup</div></div>
+   <button class="pri ir" id="go3">Iniciar cópia</button>`;
+  $("#go3").disabled=!t.cabe||t.fat32_problema||t.sel_n===0||!L.modo;
+  $("#go3").onclick=()=>safe(()=>preVoo(t));
+  $("#sbdest").onclick=()=>go(0);
   const ops=$$("[data-lm]",el);
-  ops.forEach((b,i)=>{b.onclick=()=>safe(async()=>{LAY=Object.assign(await api("/api/layout",{modo:b.dataset.lm}),{abrir:false});toast("Este backup vai como "+LAY.nome+".","ok");draw3()});
-    b.onkeydown=e=>{const d=e.key==="ArrowRight"||e.key==="ArrowDown"?1:e.key==="ArrowLeft"||e.key==="ArrowUp"?-1:0;if(d){e.preventDefault();const n=ops[(i+d+ops.length)%ops.length];n.focus()}}});
-  const fe=$("#layfec",el);if(fe)fe.onclick=()=>{LAY.abrir=false;layCard()};
+  ops.forEach((b,i)=>{
+    b.onclick=()=>safe(async()=>{if(b.dataset.lm===LAY.modo)return;LAY=await api("/api/layout",{modo:b.dataset.lm});SB.hover="";toast("Este backup vai como "+LAY.nome+".","ok");selModo()});
+    b.onmouseenter=b.onfocus=()=>{SB.hover=b.dataset.lm;sbPrevia()};b.onmouseleave=b.onblur=()=>{SB.hover="";sbPrevia()};
+    b.onkeydown=e=>{const d=e.key==="ArrowRight"||e.key==="ArrowDown"?1:e.key==="ArrowLeft"||e.key==="ArrowUp"?-1:0;if(d){e.preventDefault();ops[(i+d+ops.length)%ops.length].focus()}}});
+  sbPrevia();
 }
+/* prévia: onde o arquivo em foco (ou o exemplo real desta máquina) fica no destino, no jeito escolhido ou no que está sob o mouse */
+function sbPrevia(){
+  const rot=$("#sbrot"),tri=$("#sbtri");if(!tri)return;
+  const f=SB.foco,ex=f||LAY.exemplo,modo=SB.hover||LAY.modo;
+  if(!ex){rot.textContent="Onde fica no destino";tri.innerHTML='<small class="mut">Marque algum arquivo para ver um exemplo.</small>';return}
+  if(!modo){rot.textContent=`${f?"Arquivo escolhido":"Exemplo real"}: ${nomeDe(ex.origem)}`;tri.innerHTML='<small class="mut">Passe o mouse em Espelho, Ordenado ou Misto para ver onde ele fica.</small>';return}
+  const fixo=f&&f.copia==="fixo",qual=fixo?"fixo":modo==="ordenado"?"ordenado":modo==="espelho"?"espelho":f&&f.copia==="ordenar"?"ordenado":"espelho";
+  const cam=fixo?f.atual:qual==="ordenado"?ex.ordenado:ex.espelho,outro=fixo?"":qual==="ordenado"?ex.espelho:ex.ordenado,nm=(LAY_MODOS.find(x=>x[0]===modo)||[])[2];
+  rot.textContent=`${f?"Arquivo escolhido":"Exemplo real"} · ${SB.hover&&SB.hover!==LAY.modo?"se for "+nm:nm}${fixo?" · caminho fixo (dados de programa)":modo==="misto"?(qual==="ordenado"?" · este vai ordenado":" · este vai espelhado"):""}`;
+  tri.innerHTML=trilho(cam,outro,(SB.cfg||{}).folder||"");tri.title="Na máquina: "+ex.origem;
+}
+function selModo(){selBarra();if(LST.aberta){lstCarrega(true);if(SB.foco)lstFoco(SB.foco.i)}else{selGrade();lstSide()}}
+async function selTotais(){const [t,L]=await Promise.all([api("/api/totals"),api("/api/layout")]);SB.t=t;LAY=L;selBarra()}
 async function layAplica(filter,copia){
   const x=await api("/api/layout/copia",{filter,copia});
-  LAY=Object.assign(x.resumo,{abrir:false});layCard();
+  LAY=x.resumo;selBarra();
   toast(`${nf(x.n)} arquivo${x.n===1?"":"s"} ${copia==="ordenar"?"vão ordenados por tipo e data":"vão espelhados, como estavam"}.`,"ok");
   return x;
 }
@@ -2209,10 +2402,10 @@ const selSalva=()=>lsSet("dd_sel",JSON.stringify({aba:SEL.aba,filtro:SEL.filtro,
 const selTog=(lista,k)=>{const i=lista.indexOf(k);if(i>=0)lista.splice(i,1);else lista.push(k)};
 function selLinhasCat(g){
   const rows=g.cats.map(c=>{const inf=CAT_INFO[c.cat]||["decide","","","Você decide"];
-    return {key:"c:"+c.cat,bloco:inf[0],ico:CATICO[c.cat]||"📁",nome:CATNAME[c.cat]||c.cat,oque:inf[1],serve:inf[2],rec:inf[3],n:c.n,b:c.bytes,sn:c.sel_n,sb:c.sel_bytes,ex:c.ex||[],
+    return {key:"c:"+c.cat,bloco:GRUPO_K[grupoDeCat(c.cat)]||"pessoal",ico:CATICO[c.cat]||"📁",nome:CATNAME[c.cat]||c.cat,oque:inf[1],serve:inf[2],rec:inf[3],n:c.n,b:c.bytes,sn:c.sel_n,sb:c.sel_bytes,ex:c.ex||[],
       sel:{cat:c.cat,act:""},lista:[{cat:c.cat},CATNAME[c.cat]||c.cat],ord:CATORD.indexOf(c.cat),esp:c.esp||0,ordn:c.ord||0}});
   const rv=g.acts.revisar,ig=g.acts.ignorar;
-  if(rv&&rv.n)rows.push({key:"a:revisar",bloco:"decide",ico:"❓",nome:"Tipo desconhecido",oque:"Tipos que o programa não reconhece: vão marcados, por segurança.",serve:"Confira a lista: pode ter algo importante com extensão rara.",
+  if(rv&&rv.n)rows.push({key:"a:revisar",bloco:"pessoal",ico:"❓",nome:"Tipo desconhecido",oque:"Tipos que o programa não reconhece: vão marcados, por segurança.",serve:"Confira a lista: pode ter algo importante com extensão rara.",
     rec:"Você decide",n:rv.n,b:rv.bytes,sn:rv.sel_n,sb:rv.sel_bytes,ex:rv.ex||[],sel:{act:"revisar"},lista:[{act:"revisar"},"Tipo desconhecido"],ord:90,esp:rv.esp||0,ordn:rv.ord||0});
   if(ig&&ig.n)rows.push({key:"a:ignorar",bloco:"sistema",ico:"🔒",nome:"Do sistema (não vai)",oque:"Arquivos que o Windows usa e recria (desktop.ini, thumbs.db, memória virtual).",serve:"Não precisam de backup; muitos ficam em uso e não dá para copiar.",
     rec:"Normalmente não",n:ig.n,b:ig.bytes,sn:ig.sel_n,sb:ig.sel_bytes,ex:ig.ex||[],sel:{act:"ignorar"},lista:[{act:"ignorar"},"do sistema (não vai)"],ord:91,esp:ig.esp||0,ordn:ig.ord||0});
@@ -2230,10 +2423,11 @@ function selLinhasUsr(g){
 function selGrade(g){
   if(g)SELG=g;const el=$("#selp");if(!el||!SELG)return;
   const cat=SEL.aba==="cat",rows=cat?selLinhasCat(SELG):selLinhasUsr(SELG),cont={todos:rows.length};
-  CAT_BLOCOS.forEach(([b])=>cont[b]=rows.filter(r=>r.bloco===b).length);
+  blocosGrupo().forEach(([b])=>cont[b]=rows.filter(r=>r.bloco===b).length);
+  if(SEL.filtro!=="todos"&&!cont[SEL.filtro])SEL.filtro="todos";
   el.classList.toggle("sg-misto",LAY.modo==="misto"&&LAY.editavel!==false);
-  el.innerHTML=`<div class="sg-top"><div class="sg-abas" role="tablist">${[["cat","Por categoria"],["usr","Por usuário e pasta"]].map(([k,t])=>`<button role="tab" aria-selected="${SEL.aba===k}" class="${SEL.aba===k?"on":""}" data-sa="${k}">${t}</button>`).join("")}</div>
-    ${cat?`<div class="sg-chips" role="group" aria-label="Filtrar por bloco">${[["todos","Todos"],["pessoal","Pessoal"],["decide","Você decide"],["sistema","Sistema"]].map(([k,t])=>`<button class="sg-chip ${SEL.filtro===k?"on":""}" data-sf="${k}">${t} <span>${cont[k]||0}</span></button>`).join("")}</div>`:""}
+  el.innerHTML=`<div class="sg-top"><button class="sm lstfb" id="sgfil">Filtros</button><div class="sg-abas" role="tablist">${[["cat","Por categoria"],["usr","Por usuário e pasta"]].map(([k,t])=>`<button role="tab" aria-selected="${SEL.aba===k}" class="${SEL.aba===k?"on":""}" data-sa="${k}">${t}</button>`).join("")}</div>
+    ${cat?`<div class="sg-chips" role="group" aria-label="Filtrar por grupo">${[["todos","Todos"],...blocosGrupo().filter(([k])=>cont[k]).map(([k,t])=>[k,t])].map(([k,t])=>`<button class="sg-chip ${SEL.filtro===k?"on":""}" data-sf="${k}">${t} <span>${cont[k]||0}</span></button>`).join("")}</div>`:""}
     <input type="search" class="sg-q" id="sgq" placeholder="Buscar ${cat?"categoria ou tipo":"usuário ou pasta"}" aria-label="Buscar" value="${esc(SEL.q)}" autocomplete="off">
     <select id="sgo" aria-label="Ordenar" class="sg-o">${[["padrao","Ordem padrão"],["maior","Maior primeiro"],["menor","Menor primeiro"],["nome","Nome (A–Z)"]].map(([k,t])=>`<option value="${k}" ${SEL.ordem===k?"selected":""}>${t}</option>`).join("")}</select>
     <button class="sm gh" id="sgexp">${SEL.fechados.length?"Expandir tudo":"Recolher tudo"}</button></div>
@@ -2246,7 +2440,8 @@ function selGrade(g){
   let tq;$("#sgq",el).oninput=e=>{clearTimeout(tq);tq=setTimeout(()=>{SEL.q=e.target.value;selCorpo()},150)};
   $("#sgo",el).onchange=e=>{SEL.ordem=e.target.value;selSalva();selCorpo()};
   $$("[data-so]",el).forEach(b=>b.onclick=()=>{SEL.ordem=b.dataset.so===SEL.ordem&&b.dataset.so==="maior"?"menor":b.dataset.so;$("#sgo",el).value=SEL.ordem;selSalva();selCorpo()});
-  $("#sgexp",el).onclick=()=>{const bl=(SEL.aba==="cat"?CAT_BLOCOS:USR_BLOCOS).map(x=>SEL.aba+":"+x[0]);SEL.fechados=SEL.fechados.length?[]:bl;selSalva();selGrade()};
+  $("#sgfil",el).onclick=()=>$("#selcorpo").classList.toggle("fopen");
+  $("#sgexp",el).onclick=()=>{const bl=(SEL.aba==="cat"?blocosGrupo():USR_BLOCOS).map(x=>SEL.aba+":"+x[0]);SEL.fechados=SEL.fechados.length?[]:bl;selSalva();selGrade()};
   $("#mtudo",el).onclick=()=>safe(async()=>{await api("/api/select",{filter:{},on:true});toast("Tudo o que foi encontrado está marcado. Confira se cabe no destino.","ok");selAtualiza()});
   $("#mpad",el).onclick=()=>safe(async()=>{await api("/api/select",{padrao:true});toast("De volta ao padrão: só o pessoal marcado.","ok");selAtualiza()});
   $("#vtodos",el).onclick=()=>abrirLista({},"");
@@ -2255,7 +2450,7 @@ function selGrade(g){
 }
 function selCorpo(){
   const el=$("#sgbody");if(!el||!SELG)return;
-  const cat=SEL.aba==="cat",rows=cat?selLinhasCat(SELG):selLinhasUsr(SELG),blocos=cat?CAT_BLOCOS:USR_BLOCOS,q=semAc(SEL.q.trim());
+  const cat=SEL.aba==="cat",rows=cat?selLinhasCat(SELG):selLinhasUsr(SELG),blocos=cat?blocosGrupo():USR_BLOCOS,q=semAc(SEL.q.trim());
   const vis=r=>(!cat||SEL.filtro==="todos"||r.bloco===SEL.filtro)&&(!q||semAc([r.nome,r.oque,...r.ex].join(" ")).includes(q));
   const ord={padrao:(a,b)=>a.ord-b.ord||b.b-a.b,maior:(a,b)=>b.b-a.b,menor:(a,b)=>a.b-b.b,nome:(a,b)=>a.nome.localeCompare(b.nome,"pt-BR")}[SEL.ordem]||((a,b)=>0);
   const pct=(s,n)=>n?Math.round(s/n*100):0,misto=LAY.modo==="misto"&&LAY.editavel!==false;
@@ -2288,61 +2483,45 @@ function selCorpo(){
   $$("[data-gt]",el).forEach(c=>{c.onclick=e=>e.stopPropagation();c.onchange=()=>safe(async()=>{for(const r of rows.filter(r=>r.bloco===c.dataset.gt))await api("/api/select",{filter:r.sel,on:c.checked});await selAtualiza()})});
   $$("[data-ck]",el).forEach(b=>b.onclick=()=>safe(async()=>{const r=acha(b.dataset.ck);if(!r)return;await layAplica(r.sel,b.dataset.cv);await selAtualiza()}));
   $$("[data-gc]",el).forEach(b=>b.onclick=e=>{e.stopPropagation();safe(async()=>{let n=0;for(const r of rows.filter(r=>r.bloco===b.dataset.gc))n+=(await api("/api/layout/copia",{filter:r.sel,copia:b.dataset.cv})).n;
-    LAY=Object.assign(await api("/api/layout"),{abrir:false});layCard();toast(`${nf(n)} arquivos ${b.dataset.cv==="ordenar"?"vão ordenados":"vão espelhados"}.`,"ok");await selAtualiza()})});
+    LAY=await api("/api/layout");selBarra();toast(`${nf(n)} arquivos ${b.dataset.cv==="ordenar"?"vão ordenados":"vão espelhados"}.`,"ok");await selAtualiza()})});
 }
-/* depois de marcar/desmarcar: só os números mudam (linha, grupos, cartões do topo e resumo), sem redesenhar a página */
+/* depois de marcar/desmarcar: só os números mudam (linhas, grupos, disco, filtros e a faixa de baixo), sem redesenhar a página */
 async function selAtualiza(){
-  const [g,t,MD]=await Promise.all([api("/api/groups"),api("/api/totals"),api("/api/medicao").catch(()=>({}))]);
+  const [g,t,MD,L]=await Promise.all([api("/api/groups"),api("/api/totals"),api("/api/medicao").catch(()=>({})),api("/api/layout")]);
   if(view!=="backup"||step!==2)return;
-  SELG=g;selKpis(g,t,MD);selCorpo();drawTot(t);MED.t=t;
+  SELG=g;SB.t=t;LAY=L;selCockpit(g,t,MD);selCorpo();selBarra();
+  if(!LST.aberta)selFacetas();
 }
-function selKpis(g,t,MD){
-  const el=$("#selkpi");if(!el)return;
-  const cats=g.cats,tot=cats.reduce((a,c)=>({n:a.n+c.n,b:a.b+c.bytes}),{n:0,b:0}),rv=g.acts.revisar||{n:0,bytes:0};tot.n+=rv.n;tot.b+=rv.bytes;
-  const nv=cats.find(c=>c.cat==="Nuvem")||{n:0,bytes:0,sel_bytes:0},pdest=t.free?t.sel_bytes/t.free*100:100;
-  el.innerHTML=`${kpi2("Arquivos pessoais encontrados","🗂️",fmt(tot.b),nf(tot.n)+" arquivos"+(MD&&MD.usado?" · de "+fmt(MD.usado)+" usados no disco":""),tot.b?t.sel_bytes/tot.b*100:0)}${kpi2("Vai para o backup","📥",fmt(t.sel_bytes),nf(t.sel_n)+" arquivos",tot.n?t.sel_n/tot.n*100:0,"var(--ok)")}
-   ${kpi2("Espaço no destino","💽",fmt(t.free),t.cabe?"livres":"<b style='color:var(--err)'>não cabe</b>",pdest,t.cabe?(pdest>85?"var(--warn)":"var(--azul)"):"var(--err)")}${kpi2("Nuvem","☁️",fmt(nv.bytes),nv.n?nf(nv.n)+" só na nuvem":"nada só na nuvem",nv.bytes?nv.sel_bytes/nv.bytes*100:0,"#f0a020")}`;
-}
-/* onde está o resto do disco: o que a varredura não lê (Windows, programas, caches) medido em segundo plano */
-const MED_COR={"Vai para o backup":"var(--ok)","Pessoal não marcado":"#7fa7ff","Windows e programas":"#8a8f9c","Sistema e programas":"#8a8f9c","Caches e temporários":"#f0a020","Lixeira e sistema":"#c96a6a","Arquivos do sistema":"#a07ec9","Outros pulados":"#b4b4bf","Resto do sistema":"var(--line)"};
+/* o disco no topo: o que vai para o backup, o pessoal que não vai e o resto (Windows, programas, caches), medido em segundo plano */
+const MED_COR={"Vai para o backup":"var(--ok)","Pessoal não marcado":"#7fa7ff","Windows e programas":"#8a8f9c","Sistema e programas":"#8a8f9c","Caches e temporários":"#f0a020","Lixeira e sistema":"#c96a6a","Arquivos do sistema":"#a07ec9","Outros pulados":"#b4b4bf","Resto do sistema":"#5b6070"};
+const MED_DICA={"Windows e programas":"se reinstalam","Sistema e programas":"se reinstalam","Caches e temporários":"se recriam sozinhos","Lixeira e sistema":"não precisa","Arquivos do sistema":"memória virtual, miniaturas, arquivos em uso","Resto do sistema":"memória virtual, hibernação, restauração e arquivos protegidos"};
 let MEDT=null;const MED={aberto:false,t:null};
-function medicaoCard(m){
-  clearTimeout(MEDT);const el=$("#medc");if(!el)return;
-  if(!m||m.achado===undefined){el.classList.add("hide");return}
-  el.classList.remove("hide");
-  const seg=[["Vai para o backup",m.marcado],["Pessoal não marcado",Math.max(0,m.achado-m.marcado)],...Object.entries(m.grupos||{}),["Resto do sistema",m.resto||0]].filter(x=>x[1]>0);
-  const tot=Math.max(m.usado||0,seg.reduce((a,x)=>a+x[1],0))||1;
-  const dica={"Windows e programas":"se reinstalam","Sistema e programas":"se reinstalam","Caches e temporários":"se recriam sozinhos","Lixeira e sistema":"não precisa","Arquivos do sistema":"memória virtual, miniaturas, arquivos em uso","Resto do sistema":"memória virtual, hibernação, restauração e arquivos protegidos"};
-  el.innerHTML=`<h2>Onde está o resto do disco?</h2><p class="h">${m.usado?`O disco tem <b>${fmt(m.usado)}</b> usados. Seus arquivos pessoais somam <b>${fmt(m.achado)}</b> e <b>${fmt(m.marcado)}</b> estão marcados para o backup. O resto é do Windows, de programas, caches e arquivos de sistema: não precisa de backup.`:`Seus arquivos pessoais somam <b>${fmt(m.achado)}</b>; <b>${fmt(m.marcado)}</b> estão marcados para o backup.`}</p>
-   <div class="medbar" role="img" aria-label="Divisão do espaço usado do disco">${seg.map(([k,v])=>`<i style="width:${Math.max(.6,v/tot*100)}%;background:${MED_COR[k]||"#b4b4bf"}" title="${esc(k)}: ${fmt(v)}"></i>`).join("")}</div>
-   <div class="medleg">${seg.map(([k,v])=>`<span><i style="background:${MED_COR[k]||"#b4b4bf"}"></i>${esc(k)} <b>${fmt(v)}</b>${dica[k]?` <small class="mut">· ${dica[k]}</small>`:""}</span>`).join("")}</div>
-   ${m.rodando?`<p class="mut" style="font-size:12.5px;margin:8px 0 0">Medindo o restante do disco… ${m.pct||0}%</p>`:m.parcial?'<p class="mut" style="font-size:12.5px;margin:8px 0 0">Medição parcial: parte das pastas do sistema não deu tempo de medir.</p>':""}
-   ${(m.fora||[]).length?`<details style="margin-top:8px" ${MED.aberto?"open":""} id="medfora"><summary style="cursor:pointer;font-size:13px;color:var(--acc)">Ver e incluir no backup as pastas que ficaram de fora (${m.fora.length})</summary>
+function selCockpit(g,t,m){
+  clearTimeout(MEDT);const el=$("#selcock");if(!el)return;
+  m=m||{};MED.t=t;
+  const cfg=SB.cfg||{},disco=(cfg.sources||[]).map(x=>x.label||nomeDe(x.path)).join(" + ");
+  let fx=m.faixas;
+  if(!fx){fx={};g.cats.forEach(c=>{const k=((TIPOS&&TIPOS.backup[c.cat])||{}).faixa;if(k)fx[k]=(fx[k]||0)+c.bytes})}  // antes de a medição começar: só o que a varredura achou
+  const nv=g.cats.find(c=>c.cat==="Nuvem"),fora=(m.fora||[]).length;
+  const catsDe=k=>Object.entries((TIPOS&&TIPOS.backup)||{}).filter(([c,v])=>v.faixa===k).map(([c])=>c);
+  const extras=`${nv&&nv.n?`<p class="mut" style="font-size:12.5px;margin:6px 0 0">☁️ ${nf(nv.n)} arquivo(s) só na nuvem (${fmt(nv.bytes)}): não ocupam espaço aqui.</p>`:""}
+   ${fora?`<details class="ckp-fora" ${MED.aberto?"open":""} id="medfora"><summary>Ver e incluir no backup as pastas que ficaram de fora (${fora})</summary>
      <div class="mfl">${m.fora.map(x=>{const inc=(m.incluidas||[]).some(q=>x.real&&(x.real===q||x.real.startsWith(q.replace(/[\\/]$/,"")+(q.includes("\\")?"\\":"/"))));
        return `<label class="mfr ${inc?"on":""}"><input type="checkbox" data-fr="${esc(x.real||"")}" data-fb="${x.bytes}" ${inc?"checked disabled":""}><span class="grow"><b class="mono">${esc(x.caminho)}</b><small>${esc(x.explica||x.grupo)}</small></span><span class="sz">${fmt(x.bytes)}</span>${inc?`<span class="badge b-ok" style="margin:0">Incluída</span><button class="sm gh" data-tirar="${esc(x.real)}">Tirar</button>`:""}</label>`}).join("")}</div>
      ${m.incl&&m.incl.rodando?`<p class="mut" style="font-size:12.5px">Incluindo… ${nf(m.incl.arquivos||0)} arquivos (${fmt(m.incl.bytes||0)})</p>`:`<div class="row" style="margin-top:8px"><button class="pri sm" id="mincl" disabled>Incluir as selecionadas</button><span class="mut" style="font-size:12.5px" id="minfo">Marque as pastas que quer levar.</span></div>`}</details>`:""}`;
-  const fo=$("#medfora");if(fo)fo.ontoggle=()=>{MED.aberto=fo.open};
-  const marcadas=()=>$$("#medc [data-fr]:checked:not(:disabled)");
-  $$("#medc [data-fr]").forEach(c=>c.onchange=()=>{const ms=marcadas(),b=ms.reduce((a,x)=>a+(+x.dataset.fb||0),0),t=MED.t||{},cabe=!t.free||(t.sel_bytes||0)+b<=t.free*0.98;
+  cockpit(el,{ident:SB.ident,disco,total:m.total,usado:m.usado,faixas:fx,resto:m.resto||0,medindo:!!m.medindo,so:m.so,estimado:!!m.parcial,
+    clicaveis:["fotos","videos","audios","documentos","outros","caches","dados"].filter(k=>catsDe(k).length),
+    aoClicar:k=>abrirLista({cat:catsDe(k).join("|")},faixaNome(k)),extras});
+  const fo=$("#medfora",el);if(fo)fo.ontoggle=()=>{MED.aberto=fo.open};
+  const marcadas=()=>$$("#selcock [data-fr]:checked:not(:disabled)");
+  $$("[data-fr]",el).forEach(c=>c.onchange=()=>{const ms=marcadas(),b=ms.reduce((a,x)=>a+(+x.dataset.fb||0),0),tt=MED.t||{},cabe=!tt.free||(tt.sel_bytes||0)+b<=tt.free*0.98;
     $("#mincl").disabled=!ms.length;$("#minfo").innerHTML=ms.length?`${ms.length} pasta${ms.length>1?"s":""} · ${fmt(b)} · ${cabe?'<b style="color:var(--ok)">cabe no destino</b>':'<b style="color:var(--err)">não cabe no destino</b>'}`:"Marque as pastas que quer levar."});
-  const mi=$("#mincl");if(mi)mi.onclick=()=>safe(async()=>{const ms=marcadas(),b=ms.reduce((a,x)=>a+(+x.dataset.fb||0),0);
+  const mi=$("#mincl",el);if(mi)mi.onclick=()=>safe(async()=>{const ms=marcadas(),b=ms.reduce((a,x)=>a+(+x.dataset.fb||0),0);
     if(!await dialog({titulo:"Incluir no backup?",html:`<p>${ms.length} pasta${ms.length>1?"s":""}, cerca de <b>${fmt(b)}</b>, entram na categoria <b>Incluídos por você</b>, com o caminho original.</p><p class="mut">Windows e programas se reinstalam sozinhos; aqui é só para guardar. Arquivos em uso pelo Windows aparecem como falha, com a explicação.</p>`,ok:"Incluir"}))return;
-    await api("/api/incluir",{caminhos:ms.map(x=>x.dataset.fr)});MED.aberto=true;toast("Incluindo as pastas… acompanhe na ilha do topo.","ok");medicaoCard(await api("/api/medicao"))});
-  $$("#medc [data-tirar]").forEach(b=>b.onclick=e=>{e.preventDefault();safe(async()=>{await api("/api/incluir/tirar",{caminho:b.dataset.tirar});toast("Pasta tirada do backup.","ok");draw3()})});
+    await api("/api/incluir",{caminhos:ms.map(x=>x.dataset.fr)});MED.aberto=true;toast("Incluindo as pastas… acompanhe na ilha do topo.","ok");selCockpit(SELG,SB.t,await api("/api/medicao"))});
+  $$("[data-tirar]",el).forEach(b=>b.onclick=e=>{e.preventDefault();safe(async()=>{await api("/api/incluir/tirar",{caminho:b.dataset.tirar});toast("Pasta tirada do backup.","ok");draw3()})});
   const incl=m.incl&&m.incl.rodando;
-  if(m.rodando||incl)MEDT=setTimeout(async()=>{if(view!=="backup"||step!==2)return;try{const n=await api("/api/medicao");if(incl&&!(n.incl&&n.incl.rodando))return draw3();medicaoCard(n)}catch(e){}},incl?1500:2000);
-}
-function drawTot(t){
-  const pct=t.free?Math.min(100,t.sel_bytes/t.free*100):0;
-  let w="";if(!t.cabe)w+=`<div class="errbox">Não cabe no destino: precisa de ${fmt(t.sel_bytes)} e há ${fmt(t.free)} livres.<div><b>Como resolver:</b> ${esc(t.solucao||"")}</div></div>`;
-  if(t.fat32_problema)w+=`<div class="errbox">O destino é FAT32 e há arquivo maior que 4 GB. Escolha outro destino.</div>`;
-  $("#tot").innerHTML=`<h3 style="margin:0 0 10px">Resumo</h3><div class="kpi"><div class="mut">Arquivos marcados</div><div class="big">${nf(t.sel_n)}</div></div>
-   <div class="kpi" style="margin-top:8px"><div class="mut">Tamanho a copiar</div><div class="big">${fmt(t.sel_bytes)}</div></div>
-   <div style="margin-top:12px" class="mut">Ocupa ${pct.toFixed(pct<10?1:0)}% do espaço livre no destino (${fmt(t.free)})</div><div class="bar"><i style="width:${pct}%;${pct>90?"background:var(--err)":""}"></i></div>${w}
-   <div class="row" style="margin-top:14px"><button id="back3">← Voltar</button><button class="pri grow" id="go3">Iniciar cópia →</button></div>`;
-  $("#go3").disabled=!t.cabe||t.fat32_problema||t.sel_n===0||!LAY.modo;
-  if(!LAY.modo)$("#go3").insertAdjacentHTML("afterend",'<p class="mut" style="font-size:12.5px;margin:8px 0 0;width:100%">Escolha acima como guardar este backup.</p>');
-  $("#back3").onclick=()=>go(1);$("#go3").onclick=()=>safe(()=>preVoo(t));
+  if(m.rodando||incl)MEDT=setTimeout(async()=>{if(view!=="backup"||step!==2)return;try{const n=await api("/api/medicao");if(incl&&!(n.incl&&n.incl.rodando))return draw3();selCockpit(SELG,SB.t,n)}catch(e){}},incl?1500:2000);
 }
 /* pré-voo: confere as mídias de novo, avisa dos programas abertos e da bateria e ensaia a leitura dos arquivos marcados antes de copiar */
 async function preVoo(t){
@@ -2352,7 +2531,8 @@ async function preVoo(t){
   finally{if(bt&&document.body.contains(bt)){bt.disabled=false;bt.textContent=txt}}
   const er=pf.checks.filter(c=>c.nivel==="erro"),av=pf.checks.filter(c=>c.nivel==="aviso");
   const lista=cs=>`<ul style="margin:6px 0 0;padding-left:18px">${cs.map(c=>`<li><b>${esc(c.titulo)}</b><div class="mut" style="font-size:13px">${esc(c.detalhe)}${c.solucao?" · "+esc(c.solucao):""}</div></li>`).join("")}</ul>`;
-  if(er.length)return dialog({titulo:"Não dá para copiar agora",html:`<p>A conferência das mídias, logo antes da cópia, achou problema:</p>${lista(er)}`,ok:"Entendi",semCancelar:true});
+  if(er.length&&!SU)return dialog({titulo:"Não dá para copiar agora",html:`<p>A conferência das mídias, logo antes da cópia, achou problema:</p>${lista(er)}`,ok:"Entendi",semCancelar:true});
+  if(er.length&&!await dialog({titulo:"Copiar apesar dos problemas?",html:`<p>A conferência achou problema:</p>${lista(er)}<p>No modo Superusuário dá para seguir mesmo assim.</p>`,ok:"Seguir mesmo assim",perigo:true}))return;
   const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
   d.innerHTML=`<div class="box" style="max-width:720px"><h2>Pronto para copiar?</h2>
    <div class="okbox">Origem e destino lidos agora: <b>${nf(t.sel_n)} arquivos (${fmt(t.sel_bytes)})</b> cabem no destino (${fmt(t.free)} livres).${ab.estimativa.segundos&&ab.estimativa.segundos<7200?` Tempo previsto: cerca de ${ab.estimativa.segundos<90?"1 minuto":Math.round(ab.estimativa.segundos/60)+" minutos"}.`:""}</div>
@@ -2375,22 +2555,24 @@ async function preVoo(t){
   $("#pvok",d).onclick=()=>safe(async()=>{fecha();await api("/api/copy",{});go(3)});
 }
 /* ---- lista do backup: painel aberto pelo "Ver lista" (filtro, busca, ordem, Bloco ou Lista, rolagem infinita) ---- */
-const LST={f:{},rot:"",q:"",ord:"nome",dir:"asc",modo:"lista",off:0,fim:false,carregando:false,gen:0,tot:null,fac:null,mais:{},busca:{},fechado:new Set()};
+const LST={aberta:false,f:{},rot:"",q:"",ord:"nome",dir:"asc",modo:"lista",off:0,fim:false,carregando:false,gen:0,tot:null,fac:null,mais:{},busca:{},fechado:new Set()};
 const STNOME={ok:"Copiado",pendente:"Pendente",falha:"Falha",em_uso:"Em uso (normal)",revisar:"Revisar",ignorado:"Ignorado",desmarcado:"Desmarcado"};
 const stPill=s=>s?`<span class="pill p-${esc(s)}">${esc(STNOME[s]||s)}</span>`:"";
+const grupoPill=g=>g?`<span class="gpill g-${GRUPO_K[g]||"x"}" title="${esc(((TIPOS&&TIPOS.grupos||[]).find(x=>x.nome===g)||{}).explica||"")}">${esc(g)}</span>`:"";
 const TIPO_IC={PDF:"📕",Word:"📘",Documento:"📄",Planilha:"📗","Apresentação":"📙",Texto:"📝",OneNote:"📓","E-mail":"✉️",Contato:"👤",Compactado:"🗜️",Imagem:"🖼️","Vídeo":"🎬","Áudio":"🎵"};
 const ORD_ROT=[["nome","Nome"],["tipo","Tipo"],["categoria","Categoria"],["situacao","Situação"],["data","Data de criação"],["tamanho","Tamanho"],["caminho","Caminho"]];
 const lstUrl=i=>"/api/files/ver?i="+i+"&t="+encodeURIComponent(TOKEN);
 const lstCurto=d=>{const p=String(d||"").split(/[\\/]/).filter(Boolean).slice(0,-1);return p.length?(p.length>2?"…/":"")+p.slice(-2).join("/")+"/":""};
-const lstLinha=x=>({i:x[0],disp:x[1],size:x[2],data:x[3],cat:x[4],act:x[5],inc:!!x[6],motivo:x[7]||"",status:x[8]||"",nome:x[10]||x[1],tipo:x[11]||"",prev:x[13]||"",copia:x[14]||"",destino:x[15]||""});
+const lstLinha=x=>({i:x[0],disp:x[1],size:x[2],data:x[3],cat:x[4],act:x[5],inc:!!x[6],motivo:x[7]||"",status:x[8]||"",nome:x[10]||x[1],tipo:x[11]||"",prev:x[13]||"",copia:x[14]||"",destino:x[15]||"",grupo:x[16]||"",mtime:x[17]||0});
+const diasDe=t=>t?Math.max(0,Math.floor((Date.now()/1000-t)/86400)):null;  // "Parado": dias desde a última mudança
 const CP_ROT={espelhar:"🪞 Espelhado",ordenar:"🗂️ Ordenado",fixo:"📌 Caminho fixo"};
 const cpPill=o=>LAY.modo?`<span class="cpp cpp-${o.copia||"fixo"}" title="No backup: ${esc(o.destino)}">${CP_ROT[o.copia||"fixo"]}</span>`:"";
 const locNome=k=>/^Disco_[A-Z]$/.test(k)?"💽 Disco "+k.slice(-1)+": (fora das pastas de usuário)":/^Pastas_(origem|mae)\//.test(k)?"📁 "+k.replace(/^Pastas_(origem|mae)\//,""):/^WhatsApp( \(|$)/.test(k)?"💬 WhatsApp"+(k.match(/\((.*)\)/)?" de "+k.match(/\((.*)\)/)[1]:""):"👤 "+k;
 const FX_DATA=[["d30","Últimos 30 dias"],["m6","1 a 6 meses"],["a1","6 meses a 1 ano"],["a3","1 a 3 anos"],["antigo","Mais de 3 anos"],["sem","Sem data"]];
 const FX_TAM=[["p","Até 100 KB"],["m","100 KB a 1 MB"],["g","1 a 10 MB"],["gg","10 a 100 MB"],["xg","Mais de 100 MB"]];
-const FX_GRUPOS=[["cat","Categoria"],["tipo","Tipo de arquivo"],["copia","Como copiar"],["status","Situação"],["data","Data"],["tam","Tamanho"],["local","Usuário e pasta de origem"],["tag","Etiqueta"]];
+const FX_GRUPOS=[["cat","Categoria"],["grupo","Grupo"],["tipo","Tipo de arquivo"],["copia","Como copiar"],["status","Situação"],["data","Data"],["tam","Tamanho"],["local","Usuário e pasta de origem"],["tag","Etiqueta"]];
 const fVals=k=>String(LST.f[k]||"").split("|").filter(Boolean);
-function fTroca(k,v){const a=fVals(k),i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);if(a.length)LST.f[k]=a.join("|");else delete LST.f[k];lstCarrega(true)}
+function fTroca(k,v){const a=fVals(k),i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);if(a.length)LST.f[k]=a.join("|");else delete LST.f[k];lstIr()}
 function fRotulo(k,v){
   if(k==="cat")return CATNAME[v]||v;
   if(k==="status")return STNOME[v]||v;
@@ -2416,15 +2598,15 @@ function fChips(){
 }
 function lstSide(){
   const fac=LST.fac||{},el=$("#lsts");if(!el)return;
-  const opt=(k,v,n,lab)=>{const on=fVals(k).includes(v),z=!n&&!on;return `<label class="fxo ${z?"zero":""}"><input type="checkbox" data-fk="${k}" data-fv="${esc(v)}" ${on?"checked":""} ${z?"disabled":""}><span class="grow">${esc(lab)}</span><small>${nf(n||0)}</small></label>`};
-  const grupo=(k,titulo,corpo,n)=>`<details class="fxg" data-g="${k}" ${LST.fechado.has(k)?"":"open"}><summary>${titulo}${n?` <span class="fxn">${n}</span>`:""}</summary>${corpo}</details>`;
+  const opt=(k,v,n,lab)=>fcOpt(k,v,n,lab,fVals(k).includes(v));
+  const grupo=(k,titulo,corpo,n)=>fcGrupo(k,titulo,corpo,n,LST.fechado.has(k));
   const fi=fac.inc||{},n1=fi["1"]||0,n0=fi["0"]||0;
   const pz=LST.pastas;
-  let h=pz?grupo("pasta","Pasta",`<nav class="fxtr" aria-label="Pasta atual"><button class="lnk" data-pb="">Todas</button>${pz.migalhas.map((m,i)=>`<i>›</i><button class="lnk" data-pb="${esc(pz.migalhas.slice(0,i+1).join("/"))}">${esc(m)}</button>`).join("")}</nav>
-    ${pz.pastas.slice(0,LST.mais.pasta?400:12).map(x=>`<button class="fxp" data-pc="${esc(x.chave)}" title="${esc(x.chave)}"><span>${pz.base?"📁":"👤"}</span><span class="grow">${esc(x.nome)}</span><small>${nf(x.n)} · ${fmt(x.bytes)}</small>${LAY.modo==="misto"&&x.ordenar?`<small class="fxo2" title="${nf(x.ordenar)} vão ordenados">🗂️ ${nf(x.ordenar)}</small>`:""}</button>`).join("")||'<p class="mut" style="font-size:12.5px;margin:4px 0">Sem subpastas aqui.</p>'}
-    ${pz.pastas.length>12?`<button class="sm gh fxm" data-fm="pasta">${LST.mais.pasta?"Ver menos":"Ver todas ("+pz.pastas.length+")"}</button>`:""}
-    ${pz.base&&pz.soltos.n?`<p class="mut" style="font-size:12px;margin:6px 0 0">${nf(pz.soltos.n)} arquivo(s) direto nesta pasta.</p>`:""}`,LST.f.pasta?1:0):"";
-  h+=grupo("inc","Marcados",[["","Todos",n1+n0],["1","Marcados",n1],["0","Não marcados",n0]].map(([v,t,n])=>`<label class="fxo"><input type="radio" name="fxinc" data-fi="${v}" ${(LST.f.inc||"")===v?"checked":""}><span class="grow">${t}</span><small>${nf(n)}</small></label>`).join(""),LST.f.inc?1:0);
+  let h=gavCab("sel",LST.aberta?fChips().length:0)+(pz?grupo("pasta","Pasta",`<nav class="fc-tr" aria-label="Pasta atual"><button class="lnk" data-pb="">Todas</button>${pz.migalhas.map((m,i)=>`<i>›</i><button class="lnk" data-pb="${esc(pz.migalhas.slice(0,i+1).join("/"))}">${esc(m)}</button>`).join("")}</nav>
+    ${pz.pastas.slice(0,LST.mais.pasta?400:12).map(x=>`<button class="fc-p" data-pc="${esc(x.chave)}" title="${esc(x.chave)}"><span>${pz.base?"📁":"👤"}</span><span class="grow">${esc(x.nome)}</span><small title="${fmt(x.bytes)}">${nf(x.n)}</small>${LAY.modo==="misto"&&x.ordenar?`<small class="fc-o2" title="${nf(x.ordenar)} vão ordenados">🗂️ ${nf(x.ordenar)}</small>`:""}</button>`).join("")||'<p class="mut" style="font-size:12.5px;margin:4px 0">Sem subpastas aqui.</p>'}
+    ${pz.pastas.length>12?`<button class="sm gh fc-m" data-fm="pasta">${LST.mais.pasta?"Ver menos":"Ver todas ("+pz.pastas.length+")"}</button>`:""}
+    ${pz.base&&pz.soltos.n?`<p class="mut" style="font-size:12px;margin:6px 0 0">${nf(pz.soltos.n)} arquivo(s) direto nesta pasta.</p>`:""}`,LST.f.pasta?1:0):"");
+  h+=grupo("inc","Marcados",[["","Todos",n1+n0],["1","Marcados",n1],["0","Não marcados",n0]].map(([v,t,n])=>`<label class="fc-o"><input type="radio" name="fc-inc" data-fi="${v}" ${(LST.f.inc||"")===v?"checked":""}><span class="grow">${t}</span><small>${nf(n)}</small></label>`).join(""),LST.f.inc?1:0);
   for(const [k,t] of FX_GRUPOS){
     if(k==="copia"&&LAY.modo!=="misto")continue;
     let vals=k==="data"?FX_DATA.map(([v])=>[v,(fac.data||{})[v]||0]):k==="tam"?FX_TAM.map(([v])=>[v,(fac.tam||{})[v]||0]):Object.entries(fac[k]||{}).sort((a,b)=>b[1]-a[1]||String(a[0]).localeCompare(String(b[0])));
@@ -2432,67 +2614,81 @@ function lstSide(){
     if(!vals.length)continue;
     const busca=(LST.busca[k]||"").toLowerCase(),filt=vals.filter(([v])=>!busca||fRotulo(k,v).toLowerCase().includes(busca));
     const vis=LST.mais[k]||filt.length<=6?filt:filt.slice(0,6);
-    h+=grupo(k,t,`${vals.length>8?`<input type="text" class="fxq" data-fq="${k}" value="${esc(LST.busca[k]||"")}" placeholder="Buscar" aria-label="Buscar em ${esc(t)}" autocomplete="off">`:""}
+    h+=grupo(k,t,`${vals.length>8?`<input type="text" class="fc-q" data-fq="${k}" value="${esc(LST.busca[k]||"")}" placeholder="Buscar" aria-label="Buscar em ${esc(t)}" autocomplete="off">`:""}
       ${vis.map(([v,n])=>opt(k,v,n,fRotulo(k,v))).join("")||'<p class="mut" style="font-size:12.5px;margin:4px 0">Nada encontrado.</p>'}
-      ${filt.length>6?`<button class="sm gh fxm" data-fm="${k}">${LST.mais[k]?"Ver menos":"Ver mais ("+(filt.length-6)+")"}</button>`:""}
-      ${k==="data"?`<div class="fxr"><input type="date" id="fxd1" value="${esc(LST.f.dmin||"")}" aria-label="Data inicial"><span>até</span><input type="date" id="fxd2" value="${esc(LST.f.dmax||"")}" aria-label="Data final"><button class="sm" id="fxdok" aria-label="Aplicar intervalo de datas">OK</button></div>`:""}
-      ${k==="tam"?`<div class="fxr"><input type="text" inputmode="decimal" id="fxs1" value="${LST.f.smin?mbTxt(LST.f.smin):""}" placeholder="mín. MB" aria-label="Tamanho mínimo em MB"><span>a</span><input type="text" inputmode="decimal" id="fxs2" value="${LST.f.smax?mbTxt(LST.f.smax):""}" placeholder="máx. MB" aria-label="Tamanho máximo em MB"><button class="sm" id="fxsok" aria-label="Aplicar faixa de tamanho">OK</button></div>`:""}`,
+      ${filt.length>6?`<button class="sm gh fc-m" data-fm="${k}">${LST.mais[k]?"Ver menos":"Ver mais ("+(filt.length-6)+")"}</button>`:""}
+      ${k==="data"?`<div class="fc-r"><input type="date" id="fc-d1" value="${esc(LST.f.dmin||"")}" aria-label="Data inicial"><span>até</span><input type="date" id="fc-d2" value="${esc(LST.f.dmax||"")}" aria-label="Data final"><button class="sm" id="fc-dok" aria-label="Aplicar intervalo de datas">OK</button></div>`:""}
+      ${k==="tam"?`<div class="fc-r"><input type="text" inputmode="decimal" id="fc-s1" value="${LST.f.smin?mbTxt(LST.f.smin):""}" placeholder="mín. MB" aria-label="Tamanho mínimo em MB"><span>a</span><input type="text" inputmode="decimal" id="fc-s2" value="${LST.f.smax?mbTxt(LST.f.smax):""}" placeholder="máx. MB" aria-label="Tamanho máximo em MB"><button class="sm" id="fc-sok" aria-label="Aplicar faixa de tamanho">OK</button></div>`:""}`,
       fVals(k).length+(k==="data"&&(LST.f.dmin||LST.f.dmax)?1:0)+(k==="tam"&&(LST.f.smin||LST.f.smax)?1:0));
   }
   el.innerHTML=h;
-  $$("details.fxg",el).forEach(d=>d.ontoggle=()=>{if(d.open)LST.fechado.delete(d.dataset.g);else LST.fechado.add(d.dataset.g)});
+  $$("details.fc-g",el).forEach(d=>d.ontoggle=()=>{if(d.open)LST.fechado.delete(d.dataset.g);else LST.fechado.add(d.dataset.g)});
   $$("[data-fk]",el).forEach(c=>c.onchange=()=>fTroca(c.dataset.fk,c.dataset.fv));
-  $$("[data-pc],[data-pb]",el).forEach(b=>b.onclick=()=>{const v=b.dataset.pc!=null?b.dataset.pc:b.dataset.pb;if(v)LST.f.pasta=v;else delete LST.f.pasta;LST.mais.pasta=false;lstCarrega(true)});
-  $$("[data-fi]",el).forEach(c=>c.onchange=()=>{if(c.dataset.fi)LST.f.inc=c.dataset.fi;else delete LST.f.inc;lstCarrega(true)});
+  $$("[data-pc],[data-pb]",el).forEach(b=>b.onclick=()=>{const v=b.dataset.pc!=null?b.dataset.pc:b.dataset.pb;if(v)LST.f.pasta=v;else delete LST.f.pasta;LST.mais.pasta=false;lstIr()});
+  $$("[data-fi]",el).forEach(c=>c.onchange=()=>{if(c.dataset.fi)LST.f.inc=c.dataset.fi;else delete LST.f.inc;lstIr()});
   $$("[data-fm]",el).forEach(b=>b.onclick=()=>{LST.mais[b.dataset.fm]=!LST.mais[b.dataset.fm];lstSide()});
   $$("[data-fq]",el).forEach(i=>i.oninput=()=>{const k=i.dataset.fq,pos=i.selectionStart;LST.busca[k]=i.value;lstSide();const n=$(`[data-fq="${k}"]`,el);if(n){n.focus();n.setSelectionRange(pos,pos)}});
-  const dok=$("#fxdok",el);if(dok)dok.onclick=()=>{const a=$("#fxd1",el).value,b=$("#fxd2",el).value;if(a)LST.f.dmin=a;else delete LST.f.dmin;if(b)LST.f.dmax=b;else delete LST.f.dmax;lstCarrega(true)};
-  const sok=$("#fxsok",el);if(sok)sok.onclick=()=>{const mb=x=>{x=String(x).trim().replace(",",".");return x===""||isNaN(+x)?null:Math.round(+x*1048576)};const a=mb($("#fxs1",el).value),b=mb($("#fxs2",el).value);
-    if(a!=null)LST.f.smin=String(a);else delete LST.f.smin;if(b!=null)LST.f.smax=String(b);else delete LST.f.smax;lstCarrega(true)};
+  const dok=$("#fc-dok",el);if(dok)dok.onclick=()=>{const a=$("#fc-d1",el).value,b=$("#fc-d2",el).value;if(a)LST.f.dmin=a;else delete LST.f.dmin;if(b)LST.f.dmax=b;else delete LST.f.dmax;lstIr()};
+  const sok=$("#fc-sok",el);if(sok)sok.onclick=()=>{const mb=x=>{x=String(x).trim().replace(",",".");return x===""||isNaN(+x)?null:Math.round(+x*1048576)};const a=mb($("#fc-s1",el).value),b=mb($("#fc-s2",el).value);
+    if(a!=null)LST.f.smin=String(a);else delete LST.f.smin;if(b!=null)LST.f.smax=String(b);else delete LST.f.smax;lstIr()};
 }
+/* a lista abre no lugar da grade (não é mais uma janela): os filtros da esquerda continuam, e "Visão geral" volta para a grade */
+function lstIr(){if(LST.aberta)lstCarrega(true);else abrirLista(LST.f,"")}
 function abrirLista(filtro,rotulo){
-  Object.assign(LST,{f:Object.assign({},filtro||{}),rot:rotulo||"",q:"",ord:"nome",dir:"asc",modo:lsGet("dd_lista_modo","lista")==="bloco"?"bloco":"lista",tot:null,fac:null,pastas:null,mais:{},busca:{},fechado:new Set(["tag"])});
-  const d=document.createElement("div");d.className="modal";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","lstt");
-  d.innerHTML=`<div class="box lstb"><div class="lsth"><h2 class="grow" id="lstt"></h2><button class="sm" id="lstx">Fechar</button></div>
+  Object.assign(LST,{aberta:true,f:Object.assign({},filtro||{}),rot:rotulo||"",q:"",ord:"nome",dir:"asc",modo:lsGet("dd_lista_modo","lista")==="bloco"?"bloco":"lista",tot:null,fac:null,pastas:null,mais:{},busca:{},fechado:LST.fechado.size?LST.fechado:new Set(["tag"])});
+  SB.foco=null;sbPrevia();
+  const el=$("#selp");if(!el)return;
+  el.classList.remove("sg-misto");
+  el.innerHTML=`<div class="lsth"><button class="voltar" id="lstx" title="Voltar para a grade (Esc)">← Visão geral</button><h2 class="grow" id="lstt"></h2><button class="sm lstfb" id="lstfb">Filtros</button>
+    <span class="lstord"><label for="lstord" style="margin:0">Ordenar por</label><select id="lstord" style="width:auto;margin:0">${ORD_ROT.map(([k,t])=>`<option value="${k}">${t}</option>`).join("")}</select><button class="sm" id="lstdir" aria-label="Inverter a ordem"></button></span>
+    <div class="seg" role="group" aria-label="Como mostrar"><button class="sm" data-m="bloco">Bloco</button><button class="sm" data-m="lista">Lista</button></div></div>
    <div class="lstn" id="lstn"></div>
-   <div class="lstbody"><aside class="lsts" id="lsts" aria-label="Filtros"></aside>
-    <div class="lstm">
-     <div class="row" style="margin:0 0 8px"><button class="sm lstfb" id="lstfb">Filtros</button><input type="text" id="lstq" class="grow" placeholder="Buscar: nome, tipo ou caminho" aria-label="Buscar por nome, tipo ou caminho" style="margin:0" autocomplete="off">
-      <span class="lstord"><label for="lstord" style="margin:0">Ordenar por</label><select id="lstord" style="width:auto;margin:0">${ORD_ROT.map(([k,t])=>`<option value="${k}">${t}</option>`).join("")}</select><button class="sm" id="lstdir" aria-label="Inverter a ordem"></button></span>
-      <div class="seg" role="group" aria-label="Como mostrar"><button class="sm" data-m="bloco">Bloco</button><button class="sm" data-m="lista">Lista</button></div></div>
-     <div class="lstbar"><b id="lstres"></b><span class="lstchips" id="lstchips"></span></div>
-     <div class="lst-cp hide" id="lstcp" role="group" aria-label="Como copiar o que está nesta lista"></div>
-     <div class="lstc" id="lstc"></div></div></div></div>`;
-  $("#layer").appendChild(d);
-  const tecla=ev=>{if(ev.key==="Escape"&&$("#layer").lastElementChild===d)fechar()};
-  const fechar=()=>{d.remove();document.removeEventListener("keydown",tecla);if(view==="backup"&&step===2)draw3()};
-  document.addEventListener("keydown",tecla);
-  $("#lstx",d).onclick=fechar;
-  $("#lstfb",d).onclick=()=>$(".lstb",d).classList.toggle("fopen");
-  let tq;$("#lstq",d).oninput=e=>{clearTimeout(tq);tq=setTimeout(()=>{LST.q=e.target.value.trim();lstCarrega(true)},300)};
-  $$("[data-m]",d).forEach(b=>b.onclick=()=>{LST.modo=b.dataset.m;lsSet("dd_lista_modo",LST.modo);lstCarrega(true)});
-  $("#lstord",d).onchange=e=>{LST.ord=e.target.value;LST.dir=LST.ord==="data"||LST.ord==="tamanho"?"desc":"asc";lstCarrega(true)};
-  $("#lstdir",d).onclick=()=>{LST.dir=LST.dir==="asc"?"desc":"asc";lstCarrega(true)};
-  const c=$("#lstc",d);
-  c.onscroll=()=>{if(c.scrollTop+c.clientHeight>c.scrollHeight-400)lstCarrega()};
+   <div class="lstbar"><input type="text" id="lstq" placeholder="Buscar: nome, tipo ou caminho" aria-label="Buscar por nome, tipo ou caminho" autocomplete="off"><b id="lstres"></b><span class="lstchips" id="lstchips"></span></div>
+   <div class="lst-cp hide" id="lstcp" role="group" aria-label="Como copiar o que está nesta lista"></div>
+   <div class="lstc" id="lstc"></div>`;
+  $("#lstx",el).onclick=lstFecha;
+  $("#lstfb",el).onclick=()=>$("#selcorpo").classList.toggle("fopen");
+  let tq;$("#lstq",el).oninput=e=>{clearTimeout(tq);tq=setTimeout(()=>{LST.q=e.target.value.trim();lstCarrega(true)},300)};
+  $$("[data-m]",el).forEach(b=>b.onclick=()=>{LST.modo=b.dataset.m;lsSet("dd_lista_modo",LST.modo);lstCarrega(true)});
+  $("#lstord",el).onchange=e=>{LST.ord=e.target.value;LST.dir=LST.ord==="data"||LST.ord==="tamanho"?"desc":"asc";lstCarrega(true)};
+  $("#lstdir",el).onclick=()=>{LST.dir=LST.dir==="asc"?"desc":"asc";lstCarrega(true)};
+  const c=$("#lstc",el);
   c.addEventListener("change",e=>{const k=e.target.closest("[data-s]");if(k)safe(()=>lstMarca(k))});
-  $("#lstcp",d).addEventListener("click",e=>{const b=e.target.closest("[data-lc]");if(b)safe(async()=>{await layAplica({...LST.f,q:LST.q},b.dataset.lc);lstCarrega(true)})});
+  $("#lstcp",el).addEventListener("click",e=>{const b=e.target.closest("[data-lc]");if(b)safe(async()=>{await layAplica({...LST.f,q:LST.q},b.dataset.lc);lstCarrega(true)})});
   c.addEventListener("click",e=>{const v=e.target.closest("[data-p]");if(v)verPrevia(lstUrl(v.dataset.p),v.dataset.tp,v.dataset.nm);
-    const o=e.target.closest("[data-o]");if(o){const k=o.dataset.o;if(LST.ord===k)LST.dir=LST.dir==="asc"?"desc":"asc";else{LST.ord=k;LST.dir=k==="data"||k==="tamanho"?"desc":"asc"}lstCarrega(true)}});
-  lstCarrega(true);$("#lstq",d).focus();
+    const o=e.target.closest("[data-o]");if(o){const k=o.dataset.o;if(LST.ord===k)LST.dir=LST.dir==="asc"?"desc":"asc";else{LST.ord=k;LST.dir=k==="data"||k==="tamanho"?"desc":"asc"}lstCarrega(true)}
+    const r=e.target.closest("[data-i]");if(r&&!e.target.closest("input,button,label,a"))safe(()=>lstFoco(+r.dataset.i))});
+  lstCarrega(true);
+  const cp=$("#selcorpo");if(cp&&cp.getBoundingClientRect().top<0)cp.scrollIntoView({block:"start"});
+  $("#lstq",el).focus({preventScroll:true});
 }
+function lstFecha(){LST.aberta=false;SB.foco=null;draw3()}
+/* clicar numa linha: a faixa de baixo mostra onde esse arquivo fica no backup */
+async function lstFoco(i){
+  const d=await api("/api/destino?i="+i);SB.foco=Object.assign(d,{i});
+  $$("#lstl .foco").forEach(x=>x.classList.remove("foco"));const r=$(`#lstl [data-i="${i}"]`);if(r)r.classList.add("foco");
+  sbPrevia();
+}
+window.addEventListener("scroll",()=>{if(!LST.aberta||LST.fim||LST.carregando)return;const f=$("#lstfim");if(f&&f.getBoundingClientRect().top<innerHeight+500)lstCarrega()},{passive:true});
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape"||!LST.aberta||view!=="backup"||step!==2||$("#layer").children.length)return;
+  const t=e.target&&e.target.closest?e.target:document.body;
+  if(t.id==="lstq"&&t.value){t.value="";LST.q="";return lstCarrega(true)}  // Esc na busca: primeiro limpa, depois volta para a grade
+  if(t.id!=="lstq"&&t.closest("input[type=text],input[type=date],select,textarea"))return;
+  lstFecha();
+});
 function lstCab(){
-  $("#lstt").textContent="Lista"+(LST.rot?": "+LST.rot:LST.f.cat&&fVals("cat").length===1?": "+(CATNAME[LST.f.cat]||LST.f.cat):"");
+  $("#lstt").textContent=LST.rot||(LST.f.cat&&fVals("cat").length===1?CATNAME[LST.f.cat]||LST.f.cat:"Todos os arquivos");
   const ch=fChips();
   $("#lstchips").innerHTML=ch.map((x,i)=>`<span class="chip lchip">${esc(x[0])} <button data-ch="${i}" aria-label="Tirar o filtro ${esc(x[0])}">✕</button></span>`).join("")+(ch.length?'<button class="sm gh" id="lstlimpa">Limpar tudo</button>':"");
   $$("#lstchips [data-ch]").forEach(b=>b.onclick=()=>{ch[+b.dataset.ch][1]();lstCarrega(true)});
   const lp=$("#lstlimpa");if(lp)lp.onclick=()=>{LST.f={};LST.rot="";LST.q="";$("#lstq").value="";lstCarrega(true)};
   $("#lstfb").textContent=ch.length?`Filtros (${ch.length})`:"Filtros";
   $("#lstord").value=LST.ord;$("#lstdir").textContent=LST.dir==="asc"?"▲":"▼";
-  $$("[data-m]").forEach(b=>{b.classList.toggle("on",b.dataset.m===LST.modo);b.setAttribute("aria-pressed",b.dataset.m===LST.modo)});
+  $$("#selp [data-m]").forEach(b=>{b.classList.toggle("on",b.dataset.m===LST.modo);b.setAttribute("aria-pressed",b.dataset.m===LST.modo)});
   const seta=k=>LST.ord===k?(LST.dir==="asc"?" ▲":" ▼"):"";
   $("#lstc").innerHTML=(LST.modo==="lista"
-   ?`<table class="lstt"><thead><tr><th class="ck"><input type="checkbox" id="lsta" aria-label="Marcar todos desta lista"></th>${[["nome","Nome do arquivo"],["tipo","Tipo"],["categoria","Categoria"],["situacao","Situação"],["data","Data de criação"],["tamanho","Tamanho"],["caminho","Caminho"]].map(([k,t])=>`<th><button data-o="${k}" class="${LST.ord===k?"on":""}">${t}${seta(k)}</button></th>`).join("")}${LAY.modo?"<th>No backup</th>":""}</tr></thead><tbody id="lstl"></tbody></table>`
+   ?`<table class="lstt"><thead><tr><th class="ck"><input type="checkbox" id="lsta" aria-label="Marcar todos desta lista"></th>${[["nome","Nome do arquivo"],["tipo","Tipo"],["categoria","Categoria"],["grupo","Grupo",1],["situacao","Situação"],["parado","Parado",1],["data","Data de criação"],["tamanho","Tamanho"],["caminho","Caminho"]].map(([k,t,so])=>so?`<th>${t}</th>`:`<th><button data-o="${k}" class="${LST.ord===k?"on":""}">${t}${seta(k)}</button></th>`).join("")}${LAY.modo?"<th>No backup</th>":""}</tr></thead><tbody id="lstl"></tbody></table>`
    :`<div class="lbbar"><label class="pfc" style="margin:0"><input type="checkbox" id="lsta"> Marcar todos</label></div><div class="lbg" id="lstl"></div>`)
    +'<div id="lstfim" class="mut" style="text-align:center;padding:14px;font-size:13px"></div>';
   $("#lsta").onchange=e=>safe(()=>lstMarcaTodos(e.target.checked));
@@ -2512,12 +2708,12 @@ async function lstCarrega(reset){
   const os=r.rows.map(lstLinha);
   $("#lstl").insertAdjacentHTML("beforeend",os.map(LST.modo==="lista"?lstTr:lstBloco).join(""));
   $("#lstfim").textContent=r.total?(LST.fim?`${nf(r.total)} arquivo${r.total>1?"s":""}`:"Carregando mais…"):"Nada com esses filtros. Tire algum filtro acima.";
-  const c=$("#lstc");if(!LST.fim&&c.scrollHeight<=c.clientHeight+400)lstCarrega();
+  const f=$("#lstfim");if(!LST.fim&&f&&f.getBoundingClientRect().top<innerHeight+500)lstCarrega();
 }
-function lstTr(o){return `<tr class="${o.inc?"":"desm"}"><td class="ck"><input type="checkbox" data-s="${o.i}" data-a="${esc(o.act)}" ${o.inc?"checked":""} aria-label="Marcar ${esc(o.nome)}"></td>
- <td>${o.prev?`<button class="lnk" data-p="${o.i}" data-tp="${o.prev}" data-nm="${esc(o.nome)}">${esc(o.nome)}</button>`:esc(o.nome)}</td><td>${esc(o.tipo)}</td><td>${esc(CATNAME[o.cat]||o.cat)}</td><td title="${esc(o.motivo)}">${stPill(o.status)}</td>
- <td style="white-space:nowrap">${o.data?dataBR(o.data):"—"}</td><td style="white-space:nowrap">${fmt(o.size)}</td><td class="mut cam" title="${esc(o.disp)}">${esc(lstCurto(o.disp))}</td>${LAY.modo?`<td>${cpPill(o)}</td>`:""}</tr>`}
-function lstBloco(o){return `<div class="lbk ${o.inc?"":"desm"}"><label class="lbc"><input type="checkbox" data-s="${o.i}" data-a="${esc(o.act)}" ${o.inc?"checked":""} aria-label="Marcar ${esc(o.nome)}"></label>
+function lstTr(o){return `<tr data-i="${o.i}" class="${o.inc?"":"desm"}${SB.foco&&SB.foco.i===o.i?" foco":""}"><td class="ck"><input type="checkbox" data-s="${o.i}" data-a="${esc(o.act)}" ${o.inc?"checked":""} aria-label="Marcar ${esc(o.nome)}"></td>
+ <td>${o.prev?`<button class="lnk" data-p="${o.i}" data-tp="${o.prev}" data-nm="${esc(o.nome)}">${esc(o.nome)}</button>`:esc(o.nome)}</td><td>${esc(o.tipo)}</td><td>${esc(CATNAME[o.cat]||o.cat)}</td><td>${grupoPill(o.grupo)}</td><td title="${esc(o.motivo)}">${stPill(o.status)}</td>
+ <td class="mut">${o.mtime?nf(diasDe(o.mtime))+" d":"—"}</td><td style="white-space:nowrap">${o.data?dataBR(o.data):"—"}</td><td style="white-space:nowrap">${fmt(o.size)}</td><td class="mut cam" title="${esc(o.disp)}">${esc(lstCurto(o.disp))}</td>${LAY.modo?`<td>${cpPill(o)}</td>`:""}</tr>`}
+function lstBloco(o){return `<div data-i="${o.i}" class="lbk ${o.inc?"":"desm"}${SB.foco&&SB.foco.i===o.i?" foco":""}"><label class="lbc"><input type="checkbox" data-s="${o.i}" data-a="${esc(o.act)}" ${o.inc?"checked":""} aria-label="Marcar ${esc(o.nome)}"></label>
  <button class="lbt" ${o.prev?`data-p="${o.i}" data-tp="${o.prev}" data-nm="${esc(o.nome)}" aria-label="Ver ${esc(o.nome)}"`:'tabindex="-1" aria-hidden="true"'}>${o.prev==="imagem"?`<img loading="lazy" src="${lstUrl(o.i)}" alt="">`:`<span>${TIPO_IC[o.tipo]||"📄"}</span>`}</button>
  <b title="${esc(o.disp)}">${esc(o.nome)}</b><small>${esc(o.tipo)} · ${fmt(o.size)}${o.data?" · "+dataBR(o.data):""}</small><span title="${esc(o.motivo)}">${stPill(o.status)}</span>${cpPill(o)}</div>`}
 /* Misto: "Como copiar o que está nesta lista" vale para o filtro inteiro (tipo, pasta, data, busca…), não só para o que está na tela */
@@ -2539,13 +2735,13 @@ async function lstTotais(){const r=await api("/api/files?"+new URLSearchParams({
 async function lstMarca(k){
   await api("/api/select",{idx:[+k.dataset.s],on:k.checked});
   const caixa=k.closest("tr,.lbk");if(caixa)caixa.classList.toggle("desm",!k.checked);
-  await lstTotais();
+  await Promise.all([lstTotais(),selTotais()]);
 }
 async function lstMarcaTodos(on){
   await api("/api/select",{filter:{...LST.f,q:LST.q},on});
   // o servidor só liga/desliga em massa o que é pessoal (copiar), a não ser que o filtro seja de situação: a tela segue a mesma regra
   $$("#lstl [data-s]").forEach(k=>{if(LST.f.act||k.dataset.a==="copiar"){k.checked=on;const c=k.closest("tr,.lbk");if(c)c.classList.toggle("desm",!on)}});
-  await lstTotais();
+  await Promise.all([lstTotais(),selTotais()]);
 }
 
 /* ---- 4 cópia ---- */
@@ -2586,12 +2782,13 @@ function draw5(){
   setWide(false);
   $("#main").innerHTML=`<div class="card"><h2>Verificação final</h2><p class="h">Confere cada arquivo copiado contra o original e faz uma nova varredura para achar o que mudou, apareceu ou sumiu.</p>
    <div class="row" id="vopt"><label style="margin:0;display:flex;gap:6px;align-items:center;color:var(--tx)"><input type="radio" name="vm" value="completa" checked> <b>Completa</b> (SHA-256, recomendado)</label><label style="margin:0;display:flex;gap:6px;align-items:center;color:var(--tx)"><input type="radio" name="vm" value="rapida"> Rápida (só tamanho)</label></div>
-   <div class="row" style="margin-top:12px"><button class="pri" id="vgo">Verificar agora</button><button id="b5">← Voltar</button></div>
+   <div class="row" style="margin-top:12px"><button class="pri" id="vgo">Verificar agora</button><button id="b5">← Voltar</button>${SU?'<button class="dng" id="vsk">Pular verificação (Superusuário)</button>':""}</div>
    <div id="vbox" class="hide" style="margin-top:16px"><div class="row" style="gap:24px;align-items:center">${ringP(0,"0%","conferido")}
     <ul class="chkl grow" id="vl"><li class="run" id="vl1"><span class="ci"></span><div><b>Conferindo cada arquivo copiado</b><div class="mut" id="cur5" style="word-break:break-all;font-size:12px"></div></div></li><li class="wait" id="vl2"><span class="ci"></span><b>Nova varredura na origem</b></li><li class="wait" id="vl3"><span class="ci"></span><b>Resultado</b></li></ul></div>
     <div class="grid" style="margin-top:12px"><div class="kpi"><div class="mut">Conferidos</div><div class="big" id="v1">0</div></div><div class="kpi"><div class="mut">Divergências</div><div class="big" id="v2">0</div></div><div class="kpi"><div class="mut">Tempo restante</div><div class="big" id="v3">–</div></div></div>
     <div class="row" style="margin-top:8px"><button class="sm" id="vc">Cancelar</button></div></div></div><div id="res5"></div>`;
   $("#b5").onclick=()=>go(2);$("#vc").onclick=()=>safe(()=>api("/api/cancel",{}));
+  const vsk=$("#vsk");if(vsk)vsk.onclick=()=>safe(async()=>{if(await dialog({titulo:"Pular a verificação?",html:"<p>O certificado sai como <b>não verificado</b> e a formatação fica bloqueada (a não ser que você a libere aqui no Superusuário).</p>",ok:"Pular",perigo:true}))go(5)});
   $("#vgo").onclick=()=>safe(async()=>{const m=document.querySelector("input[name=vm]:checked").value;await api("/api/verify",{mode:m});$("#vbox").classList.remove("hide");$("#vgo").disabled=true;poll()});
   api("/api/status").then(s=>{st=s;if(s.phase==="verifying"){$("#vbox").classList.remove("hide");$("#vgo").disabled=true;poll()}else if(s.phase==="verified"||s.phase==="done")showRes5();else if(s.n_failures)$("#res5").innerHTML=`<div class="warnbox">${s.n_failures} arquivo(s) falharam na cópia. Verifique e depois veja o que fazer.</div>`});
 }
@@ -2661,7 +2858,10 @@ async function draw6(){
    <p class="mono mut">Pasta do backup: ${esc(st.dest_root)}<br>Mapa: ${esc(st.dest_root)}/Mapa/visualizador.html</p>
    <div class="row"><button class="pri" id="omi">Abrir o Mapa no Destrava!</button><button id="ocert">Certificado</button><button id="om">Visualizador offline</button><button id="newb">Novo backup</button></div></div>
   <div class="card"><h2>Formatar a máquina</h2>${g.ok?`<p class="h">Tudo certo para seguir. O computador reinicia direto na tela de firmware (BIOS/UEFI) para você escolher o boot e formatar.</p>
-   <label style="display:flex;gap:8px;align-items:center;margin:0 0 12px;color:var(--tx)"><input type="checkbox" id="cf"> Confirmo que o backup foi conferido e que posso formatar.</label><button class="dng" id="fw" disabled>Reiniciar para a BIOS/UEFI</button>`:`<div class="warnbox">Formatação bloqueada: ${esc(g.motivo)}</div>${g.falta_receita?'<button class="pri" id="fwman">Definir o que manter</button>':""}`}</div>`;
+   <label style="display:flex;gap:8px;align-items:center;margin:0 0 12px;color:var(--tx)"><input type="checkbox" id="cf"> Confirmo que o backup foi conferido e que posso formatar.</label><button class="dng" id="fw" disabled>Reiniciar para a BIOS/UEFI</button>`:`<div class="warnbox">Formatação bloqueada: ${esc(g.motivo)}</div><div class="row">${g.falta_receita?'<button class="pri" id="fwman">Definir o que manter</button>':""}${SU?'<button class="dng" id="fwsu">Formatar mesmo assim (Superusuário)</button>':""}</div>`}</div>`;
+  const fs=$("#fwsu");if(fs)fs.onclick=()=>safe(async()=>{
+    const x=await dialog({titulo:"Ignorar o bloqueio e formatar?",html:`<div class="errbox"><b>Motivo do bloqueio:</b> ${esc(g.motivo)}</div><p>Formatar agora pode apagar dados sem cópia garantida. Fica registrado no histórico da máquina.</p>`,texto:"Digite FORMATAR para confirmar",exige:"FORMATAR",ok:"Reiniciar para a BIOS/UEFI",perigo:true});
+    if(!x)return;const r=await api("/api/firmware",{confirmo:true,forcar:true,digitou:x.texto||""});toast(r.simulado?"(Teste) reinício simulado.":"Reiniciando para a BIOS/UEFI em alguns segundos…","ok")});
   $("#om").onclick=()=>safe(()=>api("/api/open_mapa",{}));
   const omi=$("#omi");if(omi)omi.onclick=()=>safe(async()=>{await api("/api/mapa/abrir",{pasta:st.dest_root});nav("mapas")});
   $("#ocert").onclick=()=>safe(async()=>{await api("/api/mapa/abrir",{pasta:st.dest_root});MP.cert=true;nav("mapas")});
@@ -2681,13 +2881,15 @@ async function draw6(){
   try{info=await api("/api/info")}catch(e){document.body.innerHTML='<p style="padding:30px">Sessão inválida. Feche e abra o Destrava! de novo.</p>';return}
   $("#hperf").innerHTML=ic("gear");$("#hperf").onclick=()=>nav("perfil");
   try{PERFIL=(await api("/api/perfil")).perfil}catch(e){}
+  api("/api/classes").then(r=>{TIPOS=r}).catch(()=>{});
   FB=/darwin|mac/i.test(info.os||"")?1000:1024;
   $("#hver").onclick=()=>{if(info.servidor){toast("No modo servidor o programa já vem na versão do servidor.");return}safe(openUpdate)};
   await loadCtx();setTimeout(autotestePagina,1500);
   let s;try{s=await api("/api/status")}catch(e){s={phase:"idle"}}
   st=s;
   const map={idle:0,scanning:1,scanned:2,copying:3,copied:4,verifying:4,verified:4,finishing:6,done:6,error:0};
-  step=map[s.phase]||0;
+  step=maxStep=map[s.phase]||0;
+  if(SU)api("/api/su",{ligado:true}).then(()=>suFaixa()).catch(()=>{SU=false});
   if(s.phase==="idle"){nav("home")}else{view="backup";nav("backup");}
   if(["scanning","copying","verifying"].includes(s.phase))poll();
   const t=CTX.t;
