@@ -195,3 +195,22 @@ Pedidos do Marlos depois de ver a v3.6, todos no mesmo padrão para Gerenciament
 - (feito) Telas abertas fora de ordem: Cópia, Verificação e Conclusão dizem o que falta e levam à etapa certa (`semDados`).
 - Não conferido no navegador. Testes: `tests/test_superusuario.py` e a suíte toda (206, OK).
 - Ideia em aberto: levar o backup para dentro do Gerenciamento de dados.
+
+## D4b — a Seleção virou o Finder (v3.9, BUILD 2026-10-27.3, branch `Finder-Bkp`)
+- E0/E0b (commit b9cb253): interruptor **BKP Mode** (disquete, paleta `[data-modo=bkp]`), seção Destino na lateral e cartão origem → destino.
+- **Guia "Vai no backup"** (`selGuia`, alimentado por `/api/groups`): uma etiqueta por categoria, agrupada pelos Grupos. A caixa leva ou
+  tira a categoria inteira; o nome filtra o Finder (o `title` traz o `CAT_INFO` e os exemplos reais). Apagada = não vai. Total à direita
+  (arquivos · tamanho · livres no destino). "Tipo desconhecido" e "Do sistema" entram como etiquetas de situação (`act`).
+- **Finder do backup** (`bfCarrega`, `bfDesenha`, `bfCorpo`, `bfLinha`, `bfIcone`, `bfAbre`, `bfMenu`, `bfFoco`, teclado): começa em
+  "Esta máquina" (usuários, WhatsApp, Pastas de origem, Disco C) e desce; voltar/avançar, migalhas, seta que abre no lugar, Pastas |
+  Todos os arquivos, Lista | Ícones, ordem. Caixa da pasta = Levar tudo o que é pessoal dentro dela (com os filtros); caixa do arquivo =
+  só ele. Faixa do topo: "X de Y vão", Levar tudo daqui, Não levar nada daqui, Voltar ao padrão, Pastas puladas. Misto: "Como copiar o que
+  está aqui" (lote) e no menu ⋯ (pasta ou arquivo). Barra lateral (`lstSide`): Destino, Locais, Marcados e os filtros de sempre (`LST.f`).
+- Não foi feito o `finder()` genérico do plano (E2): os dois Finders compartilham CSS, `menuAbre`, `dgTabela`, `FND_SETA`, `lstLinha`,
+  `cpPill`, `grupoPill`; os dados são diferentes demais (seleção no servidor × no navegador) e o Gerenciamento ficou intacto.
+- Backend: `direto=1` no filtro (`parse_filtro`) = só o que está na própria pasta; a chave da pasta no filtro passou a ser a mesma de
+  `subpastas()` (`pk or local0 or local`). Sem rota nova. Teste `test_finder_pasta_direto_so_o_que_esta_nela`.
+- Saíram a grade (`selGrade`, `selCorpo`, `SEL`) e a lista antiga (`abrirLista`, `lstCarrega`, `lstTr`, `lstBloco`…), mais 81 regras de CSS mortas.
+- Conferido no harness (`fsel.py`, `bk.py`, `ger.py`): Finder, guia somando igual ao rodapé, marcar/desmarcar pasta e arquivo, chip
+  filtrando, seta, teclado, ícones, Misto, claro/escuro/estreito, jornada inteira até a Conclusão e Gerenciamento. Sem erro de JS.
+  **Falta o Marlos ver na máquina dele** (e com a varredura grande: cada clique refaz o filtro no servidor).

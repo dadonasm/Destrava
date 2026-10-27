@@ -41,8 +41,8 @@ from urllib.parse import parse_qs, urlparse
 if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-VERSION = "3.8"
-BUILD = "2026-10-27.2"  # igual ao BUILD do app.html: se forem diferentes, o pendrive tem arquivos de versões misturadas
+VERSION = "3.9"
+BUILD = "2026-10-27.3"  # igual ao BUILD do app.html: se forem diferentes, o pendrive tem arquivos de versões misturadas
 import classe as CLS  # noqa: E402  (tipos de arquivo: a mesma tabela do Gerenciamento)
 import disco  # noqa: E402  (conferência lendo do disco, não da memória)
 import mapa as MAPA  # noqa: E402
@@ -894,7 +894,7 @@ def parse_filtro(q):
             "dmin": _data_iso(f.get("dmin")), "dmax": _data_iso(f.get("dmax")),
             "smin": int(f["smin"]) if str(f.get("smin") or "").isdigit() else None, "smax": int(f["smax"]) if str(f.get("smax") or "").isdigit() else None,
             "q": str(f.get("q") or "").lower(), "facets": str(f.get("facets") or "") in ("1", "true"),
-            "pasta": lst("pasta"), "copia": f.get("copia") if f.get("copia") in ("espelhar", "ordenar") else ""}
+            "pasta": lst("pasta"), "direto": str(f.get("direto") or "") in ("1", "true"), "copia": f.get("copia") if f.get("copia") in ("espelhar", "ordenar") else ""}
 
 
 class App(object):
@@ -1915,6 +1915,7 @@ class App(object):
         hoje = datetime.date.today()
         tipo = lambda it: tipo_de(nome_de(it.disp))
         grupo = lambda it: CLS.grupo_backup(it.cat, it.act)
+        pk = lambda it: it.pk or it.local0 or it.local  # a mesma chave de pasta de subpastas()
         G = [("cat", bool(f["cat"]), lambda it: it.cat in f["cat"], lambda it: (it.cat,)),
              ("grupo", bool(f["grupo"]), lambda it: grupo(it) in f["grupo"], lambda it: (grupo(it),)),
              ("tipo", bool(f["tipo"]), lambda it: tipo(it) in f["tipo"], lambda it: (tipo(it),)),
@@ -1929,7 +1930,7 @@ class App(object):
               lambda it: faixa_tam(it.size) in f["tam"] or ((f["smin"] is not None or f["smax"] is not None) and (f["smin"] is None or it.size >= f["smin"]) and (f["smax"] is None or it.size <= f["smax"])),
               lambda it: (faixa_tam(it.size),)),
              ("act", bool(f["act"]), lambda it: it.act == f["act"], None),
-             ("pasta", bool(f["pasta"]), lambda it: any(it.pk == p or it.pk.startswith(p + "/") for p in f["pasta"]), None),
+             ("pasta", bool(f["pasta"]), lambda it: any(pk(it) == p or (not f["direto"] and pk(it).startswith(p + "/")) for p in f["pasta"]), None),  # direto: só o que está na própria pasta (o Finder)
              ("copia", bool(f["copia"]), lambda it: it.eleg and self.copia_de(it) == f["copia"],
               lambda it: (self.copia_de(it) if it.eleg else "fixo",)),
              ("q", bool(f["q"]), lambda it: f["q"] in it.disp.lower() or f["q"] in tipo(it).lower(), None)]

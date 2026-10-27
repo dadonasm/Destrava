@@ -121,6 +121,22 @@ class Lista(unittest.TestCase):
         self.assertIn("contrato.pdf", self.nomes(self.lista(local="TEMP")))
         self.assertNotIn("contrato.pdf", self.nomes(self.lista(local="TEM")))
 
+    def test_finder_pasta_direto_so_o_que_esta_nela(self):
+        """O Finder da Seleção: pasta=X traz tudo dentro; direto=1 só o que está na própria pasta; subpastas soma os filhos."""
+        docs = self.itens["b_relatorio.docx"].pk
+        self.assertTrue(docs, "o arquivo tem chave de pasta")
+        tudo = self.lista(pasta=docs.split("/")[0])
+        self.assertIn("b_relatorio.docx", self.nomes(tudo))
+        self.assertNotIn("b_relatorio.docx", self.nomes(self.lista(pasta=docs.split("/")[0], direto=1)))
+        direto = self.lista(pasta=docs, direto=1)
+        self.assertIn("b_relatorio.docx", self.nomes(direto))
+        self.assertTrue(all(self.app.items[x[0]].pk == docs for x in direto["rows"]))
+        raiz = self.lista(limit=0, pastas=1)["pastas"]
+        self.assertEqual(sum(p["n"] for p in raiz["pastas"]), len(self.app.items))
+        n = self.app.select({"filter": {"pasta": docs, "direto": "1"}, "on": False})
+        self.assertGreater(n, 0)
+        self.assertFalse(self.itens["b_relatorio.docx"].inc)
+
     def test_previa_so_pelo_indice(self):
         i = self.app.items.index(self.itens["foto.jpg"])
         arq, mime, tipo, limite = self.app.previa(str(i))
