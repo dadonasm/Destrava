@@ -2931,8 +2931,13 @@ async function lstMarcaTodos(on){
 /* ---- 4 cópia ---- */
 function ringP(p,txt,sub){const r=70,c=2*Math.PI*r;return `<div class="ringp"><svg viewBox="0 0 170 170"><circle cx="85" cy="85" r="${r}" fill="none" stroke="var(--line)" stroke-width="12"/><circle id="rgc" cx="85" cy="85" r="${r}" fill="none" stroke="var(--acc)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-p/100)}" transform="rotate(-90 85 85)" style="transition:stroke-dashoffset .5s"/></svg><div class="n"><b id="rgt">${txt}</b><span id="rgs">${sub||""}</span></div></div>`}
 function setRing(p,txt,sub){const c=2*Math.PI*70,e=$("#rgc");if(!e)return;e.setAttribute("stroke-dashoffset",c*(1-Math.min(100,p)/100));$("#rgt").textContent=txt;$("#rgs").textContent=sub||""}
-function draw4(){
+/* etapa aberta fora de ordem (Superusuário) sem o que as anteriores preparam: diz o que falta e leva até lá */
+function semDados(tit,txt,ir,rot){$("#main").innerHTML=`<div class="card"><h2>${tit}</h2><p class="h">${txt}</p><button class="pri" id="sdir">${rot}</button></div>`;$("#sdir").onclick=()=>go(ir)}
+const FASES_COPIA=["copying","copied","verifying","verified","finishing","done"];
+async function draw4(){
   setWide(false);
+  if(!FASES_COPIA.includes((st=await api("/api/status")).phase)&&!(st.cp&&st.cp.done_files))return semDados("Nada sendo copiado","A cópia começa nas Checagens, depois da Seleção e do destino.",2,"Ir para as Checagens");
+  if(view!=="backup"||step!==3)return;
   $("#main").innerHTML=`<div id="alv4"></div><div class="card"><div class="row" style="gap:24px;align-items:center">${ringP(0,"0%","copiado")}
    <div class="grow"><h2 id="t4" style="margin-top:0">Copiando…</h2><p class="h">Cada arquivo é gravado, conferido e catalogado. Você pode pausar ou cancelar; o que já foi copiado fica.</p><div class="mono mut" id="cur4" style="word-break:break-all;min-height:18px"></div>
    <div class="row" style="margin-top:10px"><button id="pz">Pausar</button><button class="dng" id="cn">Cancelar</button></div></div></div>
@@ -2962,8 +2967,10 @@ function tick4(){
 
 /* ---- 5 verificação ---- */
 const VPASSOS=[["Conferindo cada arquivo copiado","comp"],["Nova varredura na origem","sweep"],["Fechando o relatório","fim"]];
-function draw5(){
+async function draw5(){
   setWide(false);
+  if(!FASES_COPIA.includes((st=await api("/api/status")).phase))return semDados("Nada copiado ainda","A verificação confere o que foi copiado. Faça a cópia primeiro.",2,"Ir para as Checagens");
+  if(view!=="backup"||step!==4)return;
   $("#main").innerHTML=`<div class="card"><h2>Verificação final</h2><p class="h">Confere cada arquivo copiado contra o original e faz uma nova varredura para achar o que mudou, apareceu ou sumiu.</p>
    <div class="row" id="vopt"><label style="margin:0;display:flex;gap:6px;align-items:center;color:var(--tx)"><input type="radio" name="vm" value="completa" checked> <b>Completa</b> (SHA-256, recomendado)</label><label style="margin:0;display:flex;gap:6px;align-items:center;color:var(--tx)"><input type="radio" name="vm" value="rapida"> Rápida (só tamanho)</label></div>
    <div class="row" style="margin-top:12px"><button class="pri" id="vgo">Verificar agora</button><button id="b5">← Voltar</button>${SU?'<button class="dng" id="vsk">Pular verificação (Superusuário)</button>':""}</div>
@@ -3028,7 +3035,7 @@ async function showRes5(){
 /* ---- 6 conclusão ---- */
 async function draw6(){
   setWide(false);st=await api("/api/status");const c=st.cert;
-  if(!c){$("#main").innerHTML=`<div class="card">Gere o certificado no passo anterior.</div>`;return}
+  if(!c)return semDados("Ainda sem certificado","O certificado sai depois da verificação e da escolha dos programas.",FASES_COPIA.includes(st.phase)?4:2,FASES_COPIA.includes(st.phase)?"Ir para a Verificação":"Ir para as Checagens");
   const ok=c.status==="sem_falhas",g=await api("/api/firmware_gate",{}),terc=ownT();
   const rec=c.recuperado_bytes?`<div class="kpi"><div class="mut">Espaço recuperado (Dados)</div><div class="big">${fmt(c.recuperado_bytes)}</div></div>`:"";
   $("#main").innerHTML=`<div class="card"><div class="row" style="gap:18px"><div class="seal">${DD.seal({variant:"ouro",bottom:"flat",bottomText:ok?"BACKUP VERIFICADO":"COM RESSALVAS",size:92})}</div>

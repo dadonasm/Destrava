@@ -190,6 +190,6 @@ Pedidos do Marlos depois de ver a v3.6, todos no mesmo padrão para Gerenciament
 
 ## Não feito ainda
 - Editar o histórico/registro da máquina (só o certificado e o Mapa).
-- Telas abertas fora de ordem não mostram aviso próprio de "sem dados"; algumas podem ficar vazias.
+- (feito) Telas abertas fora de ordem: Cópia, Verificação e Conclusão dizem o que falta e levam à etapa certa (`semDados`).
 - Não conferido no navegador. Testes: `tests/test_superusuario.py` e a suíte toda (206, OK).
 - Ideia em aberto: levar o backup para dentro do Gerenciamento de dados.
