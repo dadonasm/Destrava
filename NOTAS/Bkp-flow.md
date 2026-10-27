@@ -111,6 +111,40 @@ Pedidos do Marlos depois de ver a v3.6, todos no mesmo padrão para Gerenciament
   arquivos e categorias com os campos novos. 223 testes. Harness: Seleção e Gerenciamento sem erro de JS.
 - "Limpo" (na Situação) não aparece: o que é limpo/movido sai do índice na hora.
 
+## Medição de apps e sistema que travava em 0% (parte A do plano da 3.8)
+- **Causa:** o Backup media antes de tudo /Applications, /System… (`medir_fora`) sem mexer no `pct`, com um prazo só
+  de 240 s para tudo. **Correção:** `dados.medir_fora(raiz, so, parar, prazo, progresso)` mede **região por região**,
+  cada uma com prazo próprio (`FORA_PRAZO` = 90 s); a que estoura fica em `estimadas` e as outras seguem. O progresso
+  (`pct`, região atual, quanto já foi lido) sobe a cada região e durante ela.
+- **Medição única:** `dados.medicao_fora` serve Backup e Gerenciamento; quem chega com outra em andamento acompanha
+  o progresso dela; o resultado fica em `FORA["ultimo"]` e no índice (meta `fora`) por `FORA_IDADE` (30 min), então
+  reabrir a tela não mede de novo. As pastas puladas do Backup também têm prazo próprio (60 s cada).
+- **Bug achado no teste real:** no Mac, `/System/Volumes/Data` (o disco das pessoas) tem o mesmo `st_dev` de `/` e
+  entrava como "OS" (77 GB em vez de 16,8 GB). Agora `PULAR_FORA` tira `/System/Volumes`. Mac real: 31 s, nada estimado.
+- Tela: ilha e cockpit mostram "medindo /System… 12 GB lidos · 25%" (`medTexto`); "estimado" diz qual região
+  passou do tempo. O Gerenciamento ganhou a sua atividade na ilha ("Medindo apps e sistema").
+
+## Varredura completa do disco (parte B do plano da 3.8)
+- **Disco inteiro:** depois das pastas dos usuários, `_varrer_sistema(raiz, so)` lê o resto do disco arquivo a arquivo
+  (sem sair do volume, sem seguir atalhos, sem junções do Windows, sem `/System/Volumes` no Mac), região por região
+  (pasta do topo) com progresso. No índice o dono é **"Sistema"** (`SIS`) com raiz no disco: `donos()`/`dono_idx()`
+  servem só para o índice e a navegação; `dono()` e as travas não mudam. Faixa pela região (`REGIOES_FORA`), grupo
+  Sistema. Com a varredura completa o cockpit não mede mais nada depois (`ck["completa"]`, sem "medindo"/"estimado").
+  Índice **v3** (coluna de pasta para `os`; meta `sistema` com a raiz). Testes: `H["raiz_sistema"]`/`H["so_sistema"]`
+  dão um disco de mentira; sem eles, teste com pasta de mentira não lê o disco de verdade.
+- **O que era pulado agora aparece** (pasta numa linha, com tamanho, sem ler por dentro, grupo Bloqueado): `.git`,
+  `node_modules`, `.ssh` e chaves, `Library/Keychains|Mail|Messages|Safari|Cookies|Preferences`. Atalhos: linha de 0 B
+  (tipo `atalho`). Só na nuvem: linha de 0 B, grupo "Só na nuvem", travada. Hard link: a 2ª vez com 0 B.
+- **Travas com tipo** (`_trava` → motivo e tipo): `nucleo_so` (System, usr, bin, sbin, etc; Windows; no Linux também
+  lib e boot) nunca destrava; `fixo` (atalho, a pasta do usuário inteira, as pastas principais) também não;
+  `protegido` (o resto, inclusive programas fora das pastas) destrava com confirmação. O disco ou um usuário inteiro
+  não destrava de uma vez. `zona_vermelha` continua sendo o portão de toda ação e respeita `DESBLOQ` (sessão).
+- **Cadeado:** `POST /api/dados/desbloquear {no}` devolve o risco (`risco_trava`); com `confirmo: true` destrava e
+  grava no histórico da máquina; `POST /api/dados/bloquear {no}` trava de novo. Na lista o 🔒 dos protegidos é botão
+  (`dgDestravar`: pop-up com motivo, risco e caixa "Entendo o risco"); destravado mostra "Liberado por você · Travar de novo".
+- O painel inicial (maiores pastas/arquivos) deixa o Sistema de fora, a não ser que o filtro de usuário peça.
+- O Backup não muda (`plan_roots`/`walk_plan`): continua levando só o do cliente.
+
 ## Não feito ainda
 - Editar o histórico/registro da máquina (só o certificado e o Mapa).
 - Telas abertas fora de ordem não mostram aviso próprio de "sem dados"; algumas podem ficar vazias.

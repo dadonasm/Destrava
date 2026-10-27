@@ -1749,26 +1749,41 @@ class App(object):
 
     def _medir_thread(self, alvos, parar, raizes=()):
         m = self.medicao
-        ate = time.time() + 240
+        # progresso em passos: cada região de sistema (Applications, System…) e cada pasta pulada é um passo, com prazo próprio
+        regs = sum(len(DADOS.regioes_fora(r, so)) for r, so in raizes) if DADOS else 0
+        passos = max(1, regs + len(alvos))
+        m["estimadas"] = []
+        feitos = 0
         for raiz, so in raizes:  # Applications, System… (Mac): não estão em pasta pulada nenhuma
-            if not parar.is_set() and DADOS:
-                fora, parcial = DADOS.medir_fora(raiz, so, parar, ate)
-                m["regioes"] = fora
-                m["parcial"] = m["parcial"] or parcial
+            if parar.is_set() or not DADOS:
+                break
+            base = feitos
+
+            def prog(p, base=base):
+                m["pct"] = int((base + p.get("i", 0)) * 100 / passos)
+                m["atual"] = p.get("atual") or ""
+                m["medido_sis"] = p.get("medido", 0)
+            u = DADOS.medicao_fora(raiz, so, parar, prog)
+            feitos += len(DADOS.regioes_fora(raiz, so))
+            if u:
+                m["regioes"] = u["fora"]
+                m["estimadas"] += u["estimadas"]
+                m["parcial"] = m["parcial"] or bool(u["estimadas"])
         for i, (real, disp, motivo) in enumerate(alvos):
             if parar.is_set():
                 break
-            b, n, ok = _medir_pasta(real, parar, ate)
-            if not ok:
+            m["atual"] = disp
+            m["pct"] = int((feitos + i) * 100 / passos)
+            b, n, ok = _medir_pasta(real, parar, time.time() + 60)
+            if not ok and not parar.is_set():
                 m["parcial"] = True
+                m["estimadas"].append(disp)
             if b:
                 grupo = next((g for k, g in GRUPO_FORA if k.lower() in motivo.lower()), "Outros pulados")
-                m["fora"].append({"caminho": disp, "real": real, "motivo": motivo, "bytes": b, "arquivos": n, "grupo": grupo, "explica": explica_pasta(real)})
+                m["fora"].append({"caminho": disp, "real": real, "motivo": motivo, "bytes": b, "arquivos": n, "grupo": grupo, "explica": explica_pasta(real), "estimado": not ok})
                 m["grupos"][grupo] = m["grupos"].get(grupo, 0) + b
-            m["pct"] = int((i + 1) * 100 / max(1, len(alvos)))
-            if time.time() > ate:
-                m["parcial"] = True
-                break
+        m["pct"] = 100
+        m["atual"] = ""
         if m["grupos"].get("Windows e programas"):
             m["grupos"]["Windows e programas"] = max(0, m["grupos"]["Windows e programas"] - m["desconto"])
         medido = sum(m["grupos"].values())
@@ -2975,9 +2990,15 @@ def atividades():
                     "info": "%d arquivos (%s)" % (inc.get("arquivos", 0), fmt_bytes(inc.get("bytes", 0))), "tela": "backup"})
     md = APP.medicao or {}
     if md.get("rodando"):
-        feito = sum(md.get("grupos", {}).values())
-        out.append({"id": "medicao", "titulo": "Medindo o restante do disco", "pct": md.get("pct", 0), "detalhe": "Windows, programas e caches: só para explicar o espaço usado",
+        feito = sum(md.get("grupos", {}).values()) + (md.get("medido_sis") or 0)
+        out.append({"id": "medicao", "titulo": "Medindo o restante do disco", "pct": md.get("pct", 0),
+                    "detalhe": ("Lendo %s…" % md["atual"]) if md.get("atual") else "Sistema, programas e caches: só para explicar o espaço usado",
                     "info": "%s medidos" % fmt_bytes(feito), "tela": "backup"})
+    elif DADOS and DADOS.FORA["rodando"]:
+        fp = DADOS.FORA["prog"] or {}
+        out.append({"id": "medicao", "titulo": "Medindo apps e sistema", "pct": fp.get("pct", 0),
+                    "detalhe": ("Lendo %s…" % fp["atual"]) if fp.get("atual") else "Fora das pastas dos usuários: só para explicar o espaço usado",
+                    "info": "%s medidos" % fmt_bytes(fp.get("medido", 0)), "tela": "dados"})
     cf = MAPA.CONF
     if cf.get("rodando"):
         out.append({"id": "conferencia", "titulo": "Conferindo o backup no disco", "pct": _pct(cf.get("feitos", 0), cf.get("total", 0)),
@@ -3743,6 +3764,22 @@ class Handler(BaseHTTPRequestHandler):
             return {"ok": True}
         if path == "/api/dados/marcar":
             return {"id": DADOS.marcar(b.get("no"))}
+        if path == "/api/dados/desbloquear":  # sem confirmo devolve o risco; com confirmo destrava e vai para o histórico da máquina
+            self.exigir("limpeza")
+            r = DADOS.desbloquear(b.get("no"), b.get("confirmo") is True)
+            if r.get("liberado"):
+                try:
+                    FICHA.hist_add(FICHA.machine_id_cache(), "desbloqueio", "Destravado pelo técnico: %s (%s)" % (r["path"], r["motivo"]))
+                except Exception:
+                    registrar_erro("histórico do desbloqueio")
+            return r
+        if path == "/api/dados/bloquear":
+            r = DADOS.bloquear(b.get("no"))
+            try:
+                FICHA.hist_add(FICHA.machine_id_cache(), "desbloqueio", "Travado de novo: %s" % r["path"])
+            except Exception:
+                registrar_erro("histórico do bloqueio")
+            return r
         if path == "/api/dados/marcar_nos":
             return {"ids": DADOS.marcar_nos(b.get("nos") or [])}
         if path == "/api/dados/renomear":

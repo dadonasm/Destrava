@@ -39,6 +39,8 @@ def set_helpers(**kw):
     H.update(kw)
     if "user_home" in kw:
         redefinir_usuarios()
+    if "indice_dir" in kw:  # outro índice: o Sistema dele é lido de novo
+        _SIS.update(raiz=None, lido=False)
 
 
 def home():
@@ -108,6 +110,10 @@ def _norm(p):
     return os.path.normcase(os.path.abspath(p)).replace("\\", "/")
 
 
+SIS = "Sistema"  # o "dono" do que está fora das pastas dos usuários, no índice e na navegação
+_SIS = {"raiz": None, "lido": False}  # raiz do disco varrida como Sistema no índice atual (None: só as pastas dos usuários)
+
+
 # ----------------------------------------------------------------------------------------------
 # usuários do computador: a varredura passa pela pasta de cada um
 # ----------------------------------------------------------------------------------------------
@@ -165,6 +171,50 @@ def redefinir_usuarios():
     del _HOMES[:]
 
 
+def _sis_raiz():
+    """Raiz do disco varrida como Sistema no índice atual (lida do índice depois de reiniciar), ou None."""
+    if _SIS["raiz"] is None and not _SIS["lido"]:
+        _SIS["lido"] = True
+        c = _idx_con()
+        if c:
+            try:
+                r = c.execute("SELECT v FROM meta WHERE k='sistema'").fetchone()
+                _SIS["raiz"] = json.loads(r[0]) if r and r[0] else None
+            except (sqlite3.DatabaseError, ValueError):
+                pass
+            finally:
+                c.close()
+    return _SIS["raiz"]
+
+
+def donos():
+    """As raízes do índice: a pasta de cada usuário e, se a varredura foi do disco inteiro, o Sistema (a raiz do disco)."""
+    r = _sis_raiz()
+    return list(homes()) + ([(SIS, r)] if r else [])
+
+
+def dono_idx(path):
+    """Como dono(), mas o que está fora das pastas dos usuários é do Sistema (só para o índice e a navegação;
+    as travas continuam valendo pela zona_vermelha)."""
+    u, h = dono(path)
+    if h is None:
+        r = _sis_raiz()
+        if r and _dentro(path, r):
+            return SIS, r
+    return u, h
+
+
+def raiz_sistema():
+    """Raiz do disco que a varredura completa lê fora das pastas dos usuários. Com pasta de usuário de mentira (testes),
+    só se o teste der uma raiz de mentira (raiz_sistema)."""
+    r = H.get("raiz_sistema")
+    if r:
+        return r() if callable(r) else r
+    if H.get("indice_dir") and not H.get("medir_fora"):
+        return None
+    return raiz_local()
+
+
 def dono(path):
     """(usuário, pasta do usuário) que contém path, ou (None, None)."""
     p = _norm(path)
@@ -176,23 +226,92 @@ def dono(path):
     return best
 
 
-def zona_vermelha(path):
-    """Motivo do bloqueio (str) ou None se pode ser considerado."""
+# o disco fora das pastas dos usuários: tudo é listado e travado; o núcleo do sistema nunca destrava
+NUCLEO_SO = {"mac": ("system", "usr", "bin", "sbin", "etc", "private/etc", "private/var/db"), "windows": ("windows",),
+             "linux": ("usr", "bin", "sbin", "lib", "lib32", "lib64", "libx32", "boot", "etc")}
+MOTIVO_NUCLEO = "núcleo do sistema operacional: só para ver"
+MOTIVO_SISTEMA = "fora das pastas de usuário (sistema e programas)"
+DESBLOQ = {}  # caminho normalizado -> {"path", "motivo", "quando"}: o que o técnico destravou nesta sessão
+
+
+def _trava(path):
+    """(motivo, tipo) do bloqueio, ou (None, ""). tipo: "protegido" (destrava com confirmação), "nucleo_so" (nunca destrava)
+    ou "fixo" (regra da ferramenta: atalho, a pasta do usuário inteira, as pastas principais)."""
     p = _norm(path)
     if os.path.islink(path):
-        return "atalho/link simbólico: não seguimos"
+        return "atalho/link simbólico: não seguimos", "fixo"
     _, dh = dono(path)
     if dh is None:
-        return "fora das pastas de usuário"
+        r = _SIS["raiz"] or raiz_local()
+        rn = _norm(r).rstrip("/")
+        rel = unicodedata.normalize("NFC", p[len(rn) + 1:]).lower() if p.startswith(rn + "/") else ""
+        so = H.get("so_sistema") or so_local()
+        if rel and any(rel == n or rel.startswith(n + "/") for n in NUCLEO_SO.get(so, ())):
+            return MOTIVO_NUCLEO, "nucleo_so"
+        return MOTIVO_SISTEMA, "protegido"
     h = _norm(dh).rstrip("/")
     if p == h:
-        return "pasta do usuário (não removemos a pasta inteira)"
+        return "pasta do usuário (não removemos a pasta inteira)", "fixo"
     # as regras são em minúsculas: no Mac e no Linux as pastas reais são "Documents", "Library/Keychains"...
     # NFC porque o macOS pode devolver acentos decompostos ("Área de Trabalho")
     rel = unicodedata.normalize("NFC", p[len(h) + 1:]).lower()
     if rel in ("desktop", "documents", "downloads", "pictures", "movies", "music", "videos", "library", "appdata", "área de trabalho", "documentos", "imagens", "vídeos", "música"):
-        return "pasta principal do usuário (não removemos a pasta inteira)"
+        return "pasta principal do usuário (não removemos a pasta inteira)", "fixo"
+    m = _trava_usuario(rel)
+    return (m, "protegido") if m else (None, "")
+
+
+def _liberado(path):
+    if not DESBLOQ:
+        return False
+    k = _norm(path)
+    return any(k == d or k.startswith(d.rstrip("/") + "/") for d in DESBLOQ)
+
+
+def zona_vermelha(path):
+    """Motivo do bloqueio (str) ou None se pode ser considerado (inclui o que o técnico destravou)."""
+    m, tipo = _trava(path)
+    if m and tipo == "protegido" and _liberado(path):
+        return None
+    return m
+
+
+def tipo_trava(path):
+    return _trava(path)[1]
+
+
+def risco_trava(path, motivo=""):
+    """O que se perde ao mexer no que estava travado (o texto do "tem certeza?")."""
+    m = (motivo or _trava(path)[0] or "").lower()
+    r = _norm(path).lower()
+    if "chave" in m or "credencia" in m or "senha" in m or "keychain" in r:
+        return "Senhas, chaves e certificados apagados não se recuperam: contas, acessos e assinaturas podem parar de funcionar."
+    if "e-mail" in m or "/mail" in r:
+        return "O Mail perde o histórico de e-mails guardado neste computador."
+    if "mensagens" in m:
+        return "O app Mensagens perde as conversas e os anexos guardados aqui."
+    if "safari" in m or "cookies" in m or "navegador" in m:
+        return "O navegador perde históricos, logins salvos e cookies: as contas pedem senha de novo."
+    if "/.git" in r or r.endswith("/.git"):
+        return "O projeto perde o histórico de versões (.git): só volta se houver cópia em outro lugar."
+    if "node_modules" in r:
+        return "O projeto para de funcionar até as dependências serem instaladas de novo."
+    if "lixeira" in m:
+        return "O que está na Lixeira some de vez."
+    if "biblioteca" in m or r.endswith(".app"):
+        return "A biblioteca ou o programa pode quebrar: fotos, vídeos ou o próprio app podem deixar de abrir."
+    if m == MOTIVO_SISTEMA:
+        return "São arquivos de programas e do sistema: apagar ou mover pode quebrar programas ou o próprio sistema."
+    return "Pode quebrar o programa que usa estes arquivos."
+
+
+def _trava_usuario(rel):
+    """Travas dentro da pasta de um usuário (rel em minúsculas)."""
     segs = set(rel.split("/"))
+    if segs & {".trash", ".trashes", "$recycle.bin"}:
+        return "Lixeira: esvazie pelo botão Esvaziar a Lixeira"
+    if "node_modules" in segs:
+        return "dependências de um projeto (node_modules)"
     if segs & _VERM_SEG:
         return "credenciais, chaves ou repositório ativo"
     for parte in _VERM_PARTES:
@@ -534,6 +653,13 @@ def _add(it):
     return it
 
 
+_ESC = [1.0]  # com o disco inteiro, as pastas dos usuários ficam com a primeira parte da barra
+
+
+def _pct(v):
+    ST["pct"] = int(v * _ESC[0])
+
+
 def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
     """Passos 1 a 3 numa pasta de usuário. Devolve os bytes da zona verde encontrados nela."""
     try:
@@ -546,7 +672,7 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
 
     # 1) zona verde: caches conhecidos
     ST["atual"] = "Procurando caches conhecidos"
-    ST["pct"] = 3
+    _pct(3)
     for i, (p, tit, mot, filhos) in enumerate(alvos):
         if CANCEL.is_set():
             break
@@ -580,7 +706,7 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
                 _ib_arq(p, usr, "pasta", "Caches e temporários", "caches", b, n, ult, grupo="Cache temporário", sug="limpavel")
             elif n:
                 _ib_arq(p, usr, "pasta", "Caches e temporários", "caches", b, n, ult, grupo="Cache temporário", sug="limpavel")
-        ST["pct"] = 3 + int(12.0 * (i + 1) / max(1, len(alvos)))
+        _pct(3 + int(12.0 * (i + 1) / max(1, len(alvos))))
 
     # 1b) backups de iPhone/iPad (Mac): grandes e muitas vezes esquecidos; mover para HD externo é o caminho
     mb = os.path.join(h, "Library", "Application Support", "MobileSync", "Backup")
@@ -625,9 +751,9 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
         if parado:
             _add({"path": q, "tipo": "pasta", "zona": "ambar", "cat": "Projetos do CapCut", "titulo": "Projeto CapCut: %s" % os.path.basename(q), "motivo": "Sem edição há %d dias." % dias,
                   "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": False})
-    ST["pct"] = 16
+    _pct(16)
     _orfaos(agora, idle_dias, pular, h)
-    ST["pct"] = 20
+    _pct(20)
 
     # 3) varredura geral por arquivos grandes e parados
     raizes = [h]
@@ -654,9 +780,10 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
                 if CANCEL.is_set():
                     break
                 try:
-                    if e.is_symlink():
-                        continue
                     nome = e.name
+                    if e.is_symlink():  # atalho: aparece (0 B), nunca é seguido
+                        _ib_arq(e.path, usr, "atalho", "Atalhos", "outros", 0, 1, 0, "atalho/link simbólico: não seguimos", grupo="Bloqueado", sug="nao_recomendado")
+                        continue
                     if e.is_dir(follow_symlinks=False):
                         ln = nome.lower()
                         if ln in (".git", "node_modules", ".trash", ".trashes", "$recycle.bin") or ln.endswith(_VERM_BIBLIO) or zona_vermelha(e.path) and ln in _VERM_SEG:
@@ -664,6 +791,10 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
                                 b, n, ult = tamanho_dir(e.path, CANCEL)
                                 ST["bytes"] += b
                                 _ib_arq(e.path, usr, "pasta", "Lixeira", "caches", b, n, ult, "Lixeira: esvazie pelo botão Esvaziar a Lixeira", grupo="Bloqueado", sug="nao_recomendado")
+                            elif not ln.endswith(_VERM_BIBLIO):  # .git, node_modules, .ssh, chaves: a pasta inteira numa linha, sem ler por dentro
+                                b, n, ult = tamanho_dir(e.path, CANCEL)
+                                ST["bytes"] += b
+                                _ib_arq(e.path, usr, "pasta", "Protegidos", "outros", b, n, ult, zona_vermelha(e.path) or "pasta protegida", grupo="Bloqueado", sug="nao_recomendado")
                             if ln.endswith(_VERM_BIBLIO):
                                 b, n, ult = tamanho_dir(e.path, CANCEL)
                                 ST["bytes"] += b
@@ -673,6 +804,9 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
                                     _add({"path": e.path, "tipo": "pasta", "zona": "vermelha", "cat": "Bibliotecas e apps", "titulo": nome, "motivo": zona_vermelha(e.path) or "biblioteca de aplicativo", "bytes": b, "arquivos": n, "ultimo_uso": ult, "pre": False})
                             continue
                         if os.path.basename(os.path.dirname(e.path)).lower() == "library" and ln in ("keychains", "mail", "messages", "safari", "cookies", "preferences"):
+                            b, n, ult = tamanho_dir(e.path, CANCEL)
+                            ST["bytes"] += b
+                            _ib_arq(e.path, usr, "pasta", "Protegidos", "dados", b, n, ult, zona_vermelha(e.path) or "dados de contas", grupo="Bloqueado", sug="nao_recomendado")
                             continue
                         try:
                             if dev_home is not None and e.stat(follow_symlinks=False).st_dev != dev_home:
@@ -687,11 +821,15 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
                     continue
                 except OSError:
                     continue
-                if _nuvem(st):
+                if _nuvem(st):  # só na nuvem: aparece com 0 B aqui e nunca é baixado
                     ST["nuvem_n"] += 1
                     ST["nuvem_bytes"] += st.st_size
+                    _ib_arq(e.path, usr, "arquivo", categoria(nome), CLS.faixa_arquivo(nome, ctx), 0, 1, max(st.st_mtime, st.st_atime),
+                            "só na nuvem: o programa nunca baixa", grupo="Só na nuvem", criado=_criado(st))
                     continue
-                if _repetido(st):
+                if _repetido(st):  # hard link: o espaço já foi contado na primeira vez
+                    _ib_arq(e.path, usr, "arquivo", categoria(nome), CLS.faixa_arquivo(nome, ctx), 0, 1, max(st.st_mtime, st.st_atime),
+                            grupo=CLS.grupo_arquivo(nome, ctx, False), criado=_criado(st))
                     continue
                 tam = _aloc(st)
                 ST["arquivos"] += 1
@@ -724,8 +862,107 @@ def _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes):
                     _add(amb)
         visitados += 1
         if visitados % 40 == 0:
-            ST["pct"] = min(95, 18 + int(77.0 * (1 - 1.0 / (1 + visitados / 3000.0))))
+            _pct(min(95, 18 + int(77.0 * (1 - 1.0 / (1 + visitados / 3000.0)))))
     return verde_bytes
+
+
+def _faixa_sistema(so):
+    """{pasta do topo em minúsculas: faixa} das regiões do disco; o que não está aqui é Dados do Sistema."""
+    return {a.lower(): fx for fx, alvos in REGIOES_FORA.get(so, ()) for a in alvos}
+
+
+def _varrer_sistema(raiz, so, pct0=60, pct1=98):
+    """O disco inteiro fora das pastas dos usuários, arquivo a arquivo, sem sair do volume e sem seguir atalhos.
+    Cada arquivo vai para o índice como do Sistema, travado (núcleo do sistema nunca destrava). Progresso por região."""
+    try:
+        dev = os.lstat(raiz).st_dev
+    except OSError:
+        return 0
+    pular = {_norm(h) for _, h in homes()} | {_norm(os.path.join(raiz, *x)) for x in PULAR_FORA.get(so, ())}
+    fxs = _faixa_sistema(so)
+    try:
+        topo = sorted(os.scandir(raiz), key=lambda e: e.name.lower())
+    except OSError:
+        return 0
+    total = 0
+    regioes = []
+    for e in topo:
+        try:
+            if e.is_symlink() or _norm(e.path) in pular:
+                continue
+            regioes.append((e, e.is_dir(follow_symlinks=False)))
+        except OSError:
+            continue
+    rn = _norm(raiz).rstrip("/")
+    for i, (e, d) in enumerate(regioes):
+        if CANCEL.is_set():
+            break
+        ST["atual"] = "Lendo %s" % e.path
+        ST["regiao"] = e.path
+        ST["pct"] = pct0 + int((pct1 - pct0) * i / max(1, len(regioes)))
+        fx0 = fxs.get(e.name.lower(), "dados")
+        mot = zona_vermelha(e.path) or MOTIVO_SISTEMA  # a trava é a mesma em toda a região (núcleo ou sistema)
+        if not d:
+            try:
+                st = e.stat(follow_symlinks=False)
+                if not _repetido(st):
+                    total += _arq_sistema(e.path, e.name, st, fx0, mot)
+            except OSError:
+                pass
+            continue
+        pilha = [e.path]
+        visto = 0
+        while pilha and not CANCEL.is_set():
+            dd = pilha.pop()
+            try:
+                it = os.scandir(dd)
+            except PermissionError:
+                ST["bloqueados"] += 1
+                continue
+            except OSError:
+                continue
+            ST["pastas"] += 1
+            _ib_pasta(dd, SIS)
+            cache = "/caches" in _norm(dd)[len(rn):].lower() or "/tmp" in _norm(dd)[len(rn):].lower()
+            with it:
+                for x in it:
+                    try:
+                        if x.is_symlink():
+                            continue
+                        if x.is_dir(follow_symlinks=False):
+                            st = x.stat(follow_symlinks=False)
+                            if (st.st_dev and dev and st.st_dev != dev) or _norm(x.path) in pular:
+                                continue  # outro volume montado aqui dentro (ou /System/Volumes no Mac)
+                            if IS_WIN and getattr(st, "st_file_attributes", 0) & 0x400:
+                                continue  # junção do Windows
+                            pilha.append(x.path)
+                            continue
+                        st = x.stat(follow_symlinks=False)
+                    except PermissionError:
+                        ST["bloqueados"] += 1
+                        continue
+                    except OSError:
+                        continue
+                    if _repetido(st):
+                        _ib_arq(x.path, SIS, "arquivo", categoria(x.name), fx0, 0, 1, max(st.st_mtime, st.st_atime), mot, grupo="Sistema")
+                        continue
+                    total += _arq_sistema(x.path, x.name, st, "caches" if cache and fx0 == "dados" else fx0, mot)
+            visto += 1
+            if visto % 200 == 0:
+                time.sleep(0.001)  # cede a vez às requisições da tela
+    ST["regiao"] = ""
+    return total
+
+
+def _arq_sistema(path, nome, st, fx, mot):
+    if _nuvem(st):
+        _ib_arq(path, SIS, "arquivo", categoria(nome), fx, 0, 1, max(st.st_mtime, st.st_atime), mot, grupo="Só na nuvem")
+        return 0
+    tam = _aloc(st)
+    ST["arquivos"] += 1
+    ST["bytes"] += tam
+    _ib_arq(path, SIS, "arquivo", categoria(nome), fx, tam, 1, max(st.st_mtime, st.st_atime), mot, grupo="Sistema", criado=_criado(st))
+    return tam
 
 
 def _varrer(idle_dias, min_mb):
@@ -744,6 +981,9 @@ def _varrer(idle_dias, min_mb):
         ST["usuarios"] = [u for u, _ in usuarios]
         ST["usuario_atual"] = usuarios[0][0] if usuarios else ""
         ST["sem_acesso"] = list(SEM_ACESSO)
+        raiz_s = raiz_sistema()  # disco inteiro: depois das pastas dos usuários, o resto do disco entra no índice como Sistema
+        _SIS.update(raiz=raiz_s, lido=True)
+        _ESC[0] = 0.6 if raiz_s else 1.0
         try:
             _IB[0] = _Construtor()
         except Exception:
@@ -758,6 +998,13 @@ def _varrer(idle_dias, min_mb):
             antes = ST["bytes"]
             verde_bytes += _varrer_usuario(usr, h, agora, idle_dias, min_b, cat_bytes)
             por_usuario[usr] = ST["bytes"] - antes
+        completa = False
+        if raiz_s and not CANCEL.is_set():
+            _USR[0] = SIS
+            antes = ST["bytes"]
+            _varrer_sistema(raiz_s, H.get("so_sistema") or so_local())
+            por_usuario[SIS] = ST["bytes"] - antes
+            completa = not CANCEL.is_set()
         h = usuarios[0][1] if usuarios else home()
         # 4) cockpit: as faixas do disco. O que está nas pastas dos usuários já foi somado (_FB); Apps instalados, OS e o resto
         #    vêm da medição fora delas, em segundo plano, quando a varredura termina (_medir_fora_inicia)
@@ -778,21 +1025,21 @@ def _varrer(idle_dias, min_mb):
         ambar = sum(i["bytes"] for i in ITENS.values() if i["zona"] == "ambar")
         ck = {"por_usuario": por_usuario, "total": total, "livre": livre, "usado": usado, "faixas_usuario": fx, "so": so_nome(), "medido": medido, "aviso": aviso,
               "limpavel": (_SB.get("limpavel") or [0, 0])[1], "parado": ambar, "sugestao": {k: {"n": v[0], "bytes": v[1]} for k, v in _SB.items()},
-              "nuvem_n": ST["nuvem_n"], "nuvem_bytes": ST["nuvem_bytes"], "por_tipo": cat_bytes, "base": int(base_unidade())}
-        _aplicar_fora(ck, None)
+              "nuvem_n": ST["nuvem_n"], "nuvem_bytes": ST["nuvem_bytes"], "por_tipo": cat_bytes, "base": int(base_unidade()), "completa": completa}
+        _aplicar_fora(ck, {} if completa else None)  # varredura completa: o disco todo já foi lido, nada fica "medindo"
         RES["cockpit"] = ck
         if _IB[0]:
             ST["atual"] = "Gravando o índice de arquivos"
             try:
                 _IB[0].fechar(CANCEL.is_set(), {"cockpit": RES["cockpit"], "st": {k: ST.get(k) for k in _ST_SALVO},
-                                                "itens": list(ITENS.values()), "params": {"idle_dias": idle_dias, "min_mb": min_mb}})
+                                                "itens": list(ITENS.values()), "params": {"idle_dias": idle_dias, "min_mb": min_mb}, "sistema": raiz_s})
             except Exception:
                 _IB[0].descartar()
             _IB[0] = None
         ST["pct"] = 100
         ST["fase"] = "cancelado" if CANCEL.is_set() else "pronto"
         ST["atual"] = ""
-        if not CANCEL.is_set():
+        if not CANCEL.is_set() and not completa:
             _medir_fora_inicia()
     except Exception as e:
         if _IB[0]:
@@ -810,8 +1057,16 @@ REGIOES_FORA = {  # sistema -> [(faixa, pastas a partir da raiz do disco)]; o qu
     "windows": (("os", ("Windows",)), ("apps", ("Program Files", "Program Files (x86)")), ("dados", ("ProgramData",)), ("caches", ("$Recycle.Bin",))),
     "linux": (("os", ("usr", "lib", "lib32", "lib64", "libx32", "bin", "sbin", "boot", "etc")), ("apps", ("opt", "snap")), ("dados", ("var", "srv", "root"))),
 }
+# dentro das regiões, o que não é delas: no Mac, /System/Volumes/Data (o disco das pessoas) tem o mesmo st_dev de / e
+# seria contado de novo como sistema
+PULAR_FORA = {"mac": (("System", "Volumes"),)}
 SO_NOME = {"mac": "macOS", "windows": "Windows", "linux": "Linux"}
-FORA = {"rodando": False, "cancel": threading.Event()}
+# uma medição só para o Backup e o Gerenciamento: quem chega com outra em andamento acompanha o progresso dela;
+# o resultado fica guardado (e no índice) e vale por FORA_IDADE segundos
+FORA = {"rodando": False, "cancel": threading.Event(), "prog": {}, "ultimo": None}
+FORA_LOCK = threading.Lock()
+FORA_PRAZO = 90  # segundos por região; a que estourar fica "estimada" e as outras seguem
+FORA_IDADE = 1800
 
 
 def so_local():
@@ -828,14 +1083,20 @@ def raiz_local():
     return "/"
 
 
-def _medir_arvore(p, parar, ate):
-    """Espaço real ocupado por uma pasta, sem sair do volume dela (no Mac, /System/Volumes/Data é o disco de dados: não entra)."""
+def _medir_arvore(p, parar, ate, tique=None, pular=()):
+    """Espaço real ocupado por uma pasta, sem sair do volume dela (no Mac, /System/Volumes/Data é o disco de dados: não entra).
+    tique(total) é chamado de tempos em tempos com o que já foi medido; as pastas em pular não entram."""
     try:
         dev = os.lstat(p).st_dev
     except OSError:
         return 0, True
-    total, pilha, vistos = 0, [p], set()
+    total, pilha, vistos, visto = 0, [p], set(), 0
     while pilha:
+        visto += 1
+        if visto % 200 == 0:
+            if tique:
+                tique(total)
+            time.sleep(0.001)  # cede a vez às requisições da tela
         if parar.is_set() or time.time() > ate:
             return total, False
         d = pilha.pop()
@@ -852,7 +1113,8 @@ def _medir_arvore(p, parar, ate):
                     if st.st_dev != dev:
                         continue
                     if e.is_dir(follow_symlinks=False):
-                        pilha.append(e.path)
+                        if e.path not in pular:
+                            pilha.append(e.path)
                         continue
                     if st.st_nlink > 1:
                         k = (st.st_dev, st.st_ino)
@@ -865,17 +1127,95 @@ def _medir_arvore(p, parar, ate):
     return total, True
 
 
-def medir_fora(raiz, so, parar, ate):
-    """{apps, os, dados, caches} medidos nas pastas de sistema de um disco (o local ou o de outro computador montado)."""
-    out, parcial = {"apps": 0, "os": 0, "dados": 0, "caches": 0}, False
+def regioes_fora(raiz, so):
+    """[(faixa, caminho, nome)] das pastas de sistema que existem neste disco, na ordem em que são medidas."""
+    out = []
     for fx, alvos in REGIOES_FORA.get(so, ()):
         for a in alvos:
             p = os.path.join(raiz, a)
             if os.path.isdir(p) and not os.path.islink(p):
-                b, ok = _medir_arvore(p, parar, ate)
-                out[fx] += b
-                parcial = parcial or not ok
-    return out, parcial
+                out.append((fx, p, ("/" + a) if so != "windows" else a))
+    return out
+
+
+def medir_fora(raiz, so, parar, prazo=FORA_PRAZO, progresso=None):
+    """{apps, os, dados, caches} medidos nas pastas de sistema de um disco (o local ou o de outro computador montado),
+    uma região de cada vez, cada uma com o seu prazo. progresso({pct, atual, medido, i, n}) a cada região e durante ela.
+    Devolve (medido, regiões que estouraram o prazo)."""
+    out, estimadas = {"apps": 0, "os": 0, "dados": 0, "caches": 0}, []
+    regs = regioes_fora(raiz, so)
+    n = len(regs)
+    pular = {os.path.join(raiz, *x) for x in PULAR_FORA.get(so, ())}
+
+    def avisa(i, nome, parte=0):
+        if progresso:
+            progresso({"pct": int(i * 100 / max(1, n)), "atual": nome, "medido": sum(out.values()) + parte, "i": i, "n": n, "estimadas": list(estimadas)})
+    for i, (fx, p, nome) in enumerate(regs):
+        if parar.is_set():
+            break
+        avisa(i, nome)
+        b, ok = _medir_arvore(p, parar, time.time() + prazo, lambda t, i=i, nome=nome: avisa(i, nome, t), pular)
+        out[fx] += b
+        if not ok and not parar.is_set():
+            estimadas.append(nome)
+    avisa(n, "")
+    return out, estimadas
+
+
+def _fora_meta(fora=None):
+    """Lê (ou grava) no índice a última medição fora das pastas dos usuários, para valer depois de reiniciar."""
+    c = _idx_con()
+    if not c:
+        return None
+    try:
+        with IDX_LOCK:
+            if fora is not None:
+                c.execute("INSERT OR REPLACE INTO meta(k,v) VALUES ('fora',?)", (json.dumps(fora, ensure_ascii=False),))
+                c.commit()
+                return fora
+            r = c.execute("SELECT v FROM meta WHERE k='fora'").fetchone()
+            return json.loads(r[0]) if r else None
+    except (sqlite3.DatabaseError, ValueError):
+        return None
+    finally:
+        c.close()
+
+
+def medicao_fora(raiz, so, parar, progresso=None, prazo=FORA_PRAZO):
+    """A medição única de Apps/OS/dados do sistema: devolve a guardada se for recente, acompanha a que já está em
+    andamento ou mede. {raiz, so, quando, fora, estimadas}, ou None se foi parada antes de terminar."""
+    chave = (os.path.abspath(raiz), so)
+    while True:
+        with FORA_LOCK:
+            u = FORA["ultimo"]
+            if u is None and not FORA["rodando"]:
+                u = FORA["ultimo"] = _fora_meta()
+            if u and (u.get("raiz"), u.get("so")) == chave and time.time() - u.get("quando", 0) < FORA_IDADE:
+                return u
+            if not FORA["rodando"]:
+                FORA["rodando"] = True
+                FORA["prog"] = {"pct": 0, "atual": "", "medido": 0, "i": 0, "n": 0, "estimadas": []}
+                break
+        if parar.is_set():
+            return None
+        if progresso:
+            progresso(dict(FORA["prog"]))
+        time.sleep(0.25)  # outra tela já está medindo: acompanha
+
+    def prog(p):
+        FORA["prog"] = p
+        if progresso:
+            progresso(p)
+    try:
+        fora, estimadas = medir_fora(raiz, so, parar, prazo, prog)
+        if parar.is_set():
+            return None
+        u = {"raiz": chave[0], "so": so, "quando": time.time(), "fora": fora, "estimadas": estimadas}
+        FORA["ultimo"] = u
+        _fora_meta(u)
+        return u
+    finally:
+        FORA["rodando"] = False
 
 
 def _aplicar_fora(ck, fora, parcial=False):
@@ -892,7 +1232,7 @@ def _aplicar_fora(ck, fora, parcial=False):
         f = ck["usado"] / float(soma)
         fx = {k: int(v * f) for k, v in fx.items()}
     fx["dados"] = fx.get("dados", 0) + max(0, ck["usado"] - sum(fx.values()))  # o que ninguém mediu é do sistema (como no Ajustes do Mac)
-    ck.update(faixas=fx, medindo=False, fora_parcial=bool(parcial), resto=0)
+    ck.update(faixas=fx, medindo=False, fora_parcial=bool(parcial), fora_estimadas=list(parcial) if isinstance(parcial, list) else [], resto=0)
 
 
 def _medir_fora_inicia():
@@ -908,22 +1248,18 @@ def _medir_fora_inicia():
     FORA["cancel"] = ev
 
     def corre():
-        FORA["rodando"] = True
-        try:
-            fora, parcial = medir_fora(raiz_local(), so_local(), ev, time.time() + 150)
-            if ev.is_set() or RES["cockpit"] is not ck:
-                return
-            _aplicar_fora(ck, fora, parcial)
-            c = _idx_con()
-            if c:
-                try:
-                    with IDX_LOCK:
-                        c.execute("INSERT OR REPLACE INTO meta(k,v) VALUES ('cockpit',?)", (json.dumps(ck, ensure_ascii=False),))
-                        c.commit()
-                finally:
-                    c.close()
-        finally:
-            FORA["rodando"] = False
+        u = medicao_fora(raiz_local(), so_local(), ev)
+        if not u or ev.is_set() or RES["cockpit"] is not ck:
+            return
+        _aplicar_fora(ck, u["fora"], u["estimadas"])
+        c = _idx_con()
+        if c:
+            try:
+                with IDX_LOCK:
+                    c.execute("INSERT OR REPLACE INTO meta(k,v) VALUES ('cockpit',?)", (json.dumps(ck, ensure_ascii=False),))
+                    c.commit()
+            finally:
+                c.close()
     threading.Thread(target=corre, daemon=True).start()
 
 
@@ -973,6 +1309,7 @@ def estado():
         d["acao"]["erros"] = list(ST["acao"]["erros"][-30:])
     d["cockpit"] = RES["cockpit"]
     d["medindo_fora"] = FORA["rodando"]
+    d["fora_prog"] = dict(FORA["prog"]) if FORA["rodando"] else {}
     d["n_itens"] = len(ITENS)
     d["indice"] = indice_estado()
     return d
@@ -1027,7 +1364,7 @@ def no_de(path, usuario=None):
     nid = _NOS_IDX.get(k)
     if nid is None:
         nid = len(NOS) + 1
-        NOS[nid] = {"path": os.path.abspath(path), "usuario": usuario if usuario is not None else (dono(path)[0] or "")}
+        NOS[nid] = {"path": os.path.abspath(path), "usuario": usuario if usuario is not None else (dono_idx(path)[0] or "")}
         _NOS_IDX[k] = nid
     return nid
 
@@ -1072,7 +1409,7 @@ def caminho_no(nid):
         raise ValueError("Já não existe: %s" % p)
     if os.path.islink(p):
         raise ValueError("Atalho/link simbólico: não seguimos.")
-    if dono(p)[1] is None:
+    if dono_idx(p)[1] is None:
         raise ValueError("Fora das pastas de usuário.")
     return p
 
@@ -1142,7 +1479,7 @@ def explorar(nid=None, item=None, limite=1500):
     if not nid:
         por_usr = (RES.get("cockpit") or {}).get("por_usuario") or {}
         out, pend = [], []
-        for usr, h in homes():
+        for usr, h in donos():
             t = _TAM.get(_norm(h))
             tam = t[0] if t else por_usr.get(usr)
             if tam is None:
@@ -1153,7 +1490,7 @@ def explorar(nid=None, item=None, limite=1500):
             _medir_fundo(pend)
         return {"no": 0, "path": "", "migalhas": [], "filhos": out, "total": len(out), "medindo": bool(pend) and MEDIR["ativo"], "sem_acesso": list(SEM_ACESSO)}
     p = caminho_no(nid)
-    usr, h = dono(p)
+    usr, h = dono_idx(p)
     migalhas = [{"no": 0, "nome": "Usuários"}]
     hn = os.path.abspath(h)
     cur = hn
@@ -1210,6 +1547,34 @@ def marcar(nid):
     return it["id"]
 
 
+def desbloquear(nid, confirmo=False):
+    """Destrava um item protegido para esta sessão. Sem confirmo devolve o risco (o "tem certeza?") e não muda nada;
+    o núcleo do sistema e as regras fixas recusam sempre."""
+    p = caminho_no(nid)
+    m, tipo = _trava(p)
+    if not m:
+        return {"ok": True, "path": p, "liberado": False, "motivo": ""}
+    if tipo != "protegido":
+        raise ValueError("Não dá para destravar: %s." % m)
+    if _norm(p).rstrip("/") in {_norm(h).rstrip("/") for _, h in donos()} or _norm(p).rstrip("/") == _norm(raiz_local()).rstrip("/"):
+        raise ValueError("Não dá para destravar o disco ou a pasta de um usuário inteira: escolha uma pasta dentro.")
+    r = {"path": p, "motivo": m, "risco": risco_trava(p, m), "tipo": tipo}
+    if not confirmo:
+        return dict(r, ok=False, precisa_confirmar=True)
+    DESBLOQ[_norm(p)] = {"path": p, "motivo": m, "quando": time.time()}
+    return dict(r, ok=True, liberado=True)
+
+
+def bloquear(nid):
+    """Trava de novo o que foi destravado (o próprio caminho ou uma pasta acima dele)."""
+    p = caminho_no(nid)
+    k = _norm(p)
+    tirar = [d for d in DESBLOQ if k == d or k.startswith(d.rstrip("/") + "/")]
+    for d in tirar:
+        DESBLOQ.pop(d, None)
+    return {"ok": True, "path": p, "travados": len(tirar)}
+
+
 def marcar_nos(nos):
     """Vários nós de uma vez (Gerenciamento de dados): devolve os ids na lista de ações, na mesma ordem."""
     return [marcar(n) for n in nos]
@@ -1219,8 +1584,8 @@ def marcar_nos(nos):
 # índice de arquivos (Gerenciamento de dados): cada arquivo das pastas dos usuários, gravado na varredura num SQLite local
 # (na pasta temporária DESTE computador, nunca no pendrive: são os caminhos dos arquivos do cliente)
 # ----------------------------------------------------------------------------------------------
-FX = CLS.FAIXAS_USUARIO  # faixas do cockpit somadas por pasta no índice
-IDX_VERSAO = 2  # índice de antes (blocos) é descartado: a tela pede uma varredura nova
+FX = tuple(CLS.FAIXAS_USUARIO) + ("os",)  # faixas do cockpit somadas por pasta no índice (com o disco inteiro, o OS também)
+IDX_VERSAO = 3  # índice de antes (v2: só as pastas dos usuários) é descartado: a tela pede uma varredura nova
 _FB, _SB = {}, {}  # da varredura em curso: bytes por faixa (cockpit) e [n, bytes] por sugestão
 _IB = [None]  # construtor do índice durante a varredura
 IDX_LOCK = threading.Lock()
@@ -1267,7 +1632,7 @@ def _kk(p):
 
 
 def _homes_chaves():
-    return {_kk(h) for _, h in homes()}
+    return {_kk(h) for _, h in donos()}
 
 
 def _faixa(col, k):
@@ -1290,7 +1655,7 @@ def _caminho(r):
 
 def _busca_pastas(c, termos):
     """Para cada termo, uma tabela temporária com as pastas cujo caminho (dentro da pasta do usuário) tem o termo: roda uma vez só."""
-    hs = homes()
+    hs = donos()
     args = []
     for u, h in hs:
         args += [u, len(os.path.abspath(h)) + 2]
@@ -1340,7 +1705,7 @@ def _linha_arq(path, usr, tipo, cat, faixa, b, n, uso, zona, grupo="", sug="", c
     p = os.path.abspath(path)
     d, nome = os.path.dirname(p), os.path.basename(p)
     k = _kk(d)
-    return (usr, k, d if d != k else None, nome, _sem_acento(nome), tipo, cat, faixa, grupo or "Pessoal", sug or "", CLS.tipo_de(nome) if tipo == "arquivo" else "Pasta",
+    return (usr, k, d if d != k else None, nome, _sem_acento(nome), tipo, cat, faixa, grupo or "Pessoal", sug or "", CLS.tipo_de(nome) if tipo == "arquivo" else "Atalho" if tipo == "atalho" else "Pasta",
             int(b or 0), int(n or 0), uso or 0, criado or 0, zona or "")
 
 
@@ -1451,7 +1816,7 @@ def _idx_subir(c, dirpath, delta):
     if not delta:
         return
     hs = _homes_chaves()
-    usr, _ = dono(dirpath)
+    usr, _ = dono_idx(dirpath)
     tb, tn = sum(v[0] for v in delta.values()), sum(v[1] for v in delta.values())
     sets = ",".join("b_%s=b_%s+?,n_%s=n_%s+?" % (x, x, x, x) for x in FX)
     vals = []
@@ -1481,7 +1846,7 @@ def _idx_tirar(c, path):
 def _idx_por(c, path):
     """Põe no índice o que existe agora em path (depois de renomear, mover, copiar ou criar)."""
     p = os.path.abspath(path)
-    usr, h = dono(p)
+    usr, h = dono_idx(p)
     usr = usr or ""
     linhas = []
     pastas = _Pastas({_kk(p)}, _homes_chaves())
@@ -1586,7 +1951,7 @@ def indice_estado():
 
 
 def _migalhas_pasta(p):
-    usr, h = dono(p)
+    usr, h = dono_idx(p)
     hn = os.path.abspath(h)
     out = [{"no": no_de(hn, usr), "nome": usr}]
     cur = hn
@@ -1613,12 +1978,19 @@ def onedrive_pasta(home_dir=None):
 
 def _linha_saida(r, agora):
     p = _caminho(r)
-    trava = (zona_vermelha(p) or r["zona"]) if r["zona"] else ""  # motivo de agora: índices antigos também ganham os textos novos
+    tipo_t, liberado = "", False
+    if r["zona"]:
+        m, tipo_t = _trava(p)
+        liberado = bool(m) and tipo_t == "protegido" and _liberado(p)
+        trava = "" if liberado else (m or r["zona"])  # motivo de agora; o que só o índice trava (nuvem, atalho) não destrava
+        tipo_t = tipo_t if m else "fixo"
+    else:
+        trava = ""
     out = {"id": r["id"], "no": no_de(p, r["usuario"]), "nome": r["nome"], "path": p, "tipo": r["tipo"], "cat": r["cat"], "faixa": r["faixa"], "grupo": r["grupo"],
            "sug": r["sug"], "tipo_rot": r["trot"], "criado": r["criado"] or None, "bytes": r["bytes"],
            "arquivos": r["narq"], "dias": int((agora - r["uso"]) / 86400) if r["uso"] else None, "usuario": r["usuario"], "zona": "vermelha" if trava else "",
            "motivo": trava, "previa": tipo_previa(p) if r["tipo"] == "arquivo" and not trava else None, "pode_abrir": pode_abrir(p), "pode_marcar": not trava,
-           "ajuda_no": None}
+           "ajuda_no": None, "trava": tipo_t, "liberado": liberado}
     if trava == _MOTIVO_ONEDRIVE:
         od = onedrive_pasta(dono(p)[1])
         out["ajuda_no"] = no_de(od, r["usuario"]) if od else None
@@ -1701,23 +2073,24 @@ def indice_consulta(faixa="", cat="", pasta=None, usuario="", q="", ordem="maior
             if pp:
                 sub = c.execute("SELECT * FROM pasta WHERE pai=?", (_kk(pp),)).fetchall()
             else:
-                hs = [(u, h) for u, h in homes() if not F["usuario"] or u in F["usuario"]]
+                hs = [(u, h) for u, h in donos() if not F["usuario"] or u in F["usuario"]]
                 sub = [r for r in (c.execute("SELECT * FROM pasta WHERE chave=?", (_kk(h),)).fetchone() for _, h in hs) if r]
             for r in sub:
                 b = sum(r["b_" + x] for x in F["faixa"]) if F["faixa"] else r["bytes"]
                 n = sum(r["n_" + x] for x in F["faixa"]) if F["faixa"] else r["n"]
                 if F["faixa"] and not n:
                     continue
+                m, tipo_t = _trava(r["path"])
                 trava = zona_vermelha(r["path"]) or ""
                 pastas.append({"no": no_de(r["path"], r["usuario"]), "nome": os.path.basename(r["path"]) if pp else r["usuario"], "path": r["path"], "tipo": "pasta",
                                "bytes": b, "arquivos": n, "dias": int((agora - r["uso"]) / 86400) if r["uso"] else None, "usuario": r["usuario"],
-                               "motivo": trava, "pode_renomear": not trava, "raiz": not pp})
+                               "motivo": trava, "pode_renomear": not trava, "raiz": not pp, "trava": tipo_t if m else "", "liberado": bool(m) and not trava})
             pastas.sort(key=lambda x: (-(x["bytes"] or 0), x["nome"].lower()) if ordem != "nome" else x["nome"].lower())
         return {"estado": est, "rows": rows, "total": int(tot[0] or 0), "bytes": int(tot[1] or 0),
                 "faixas": {k: {"n": v, "bytes": facb["faixa"][k]} for k, v in fac["faixa"].items()},
                 "cats": sorted(({"cat": k, "n": v, "bytes": facb["cat"][k]} for k, v in fac["cat"].items()), key=lambda x: -x["bytes"]),
                 "facetas": fac if facetas else {}, "facetas_bytes": facb if facetas else {}, "pastas": pastas,
-                "migalhas": _migalhas_pasta(pp) if pp else [], "pasta_no": int(pasta) if pp else 0, "usuarios": [u for u, _ in homes()]}
+                "migalhas": _migalhas_pasta(pp) if pp else [], "pasta_no": int(pasta) if pp else 0, "usuarios": [u for u, _ in donos()]}
     finally:
         c.close()
 
@@ -1733,8 +2106,8 @@ def indice_panorama(usuario="", n=5):
     c = _idx_con()
     try:
         cand = {}
-        for u, h in homes():
-            if usuario and u != usuario:
+        for u, h in donos():
+            if (usuario and u != usuario) or (not usuario and u == SIS):  # o Sistema só quando pedido: o painel é sobre o que dá para liberar
                 continue
             for r in c.execute("SELECT * FROM pasta WHERE pai=? ORDER BY bytes DESC LIMIT ?", (_kk(h), n * 3)).fetchall():
                 for _ in range(30):  # desce enquanto uma subpasta guardar 60% ou mais do peso
@@ -1746,12 +2119,12 @@ def indice_panorama(usuario="", n=5):
                     cand[r["chave"]] = r
         pastas = []
         for r in sorted(cand.values(), key=lambda r: -r["bytes"])[:n]:
-            usr, hh = dono(r["path"])
+            usr, hh = dono_idx(r["path"])
             trava = zona_vermelha(r["path"]) or ""
             pastas.append({"no": no_de(r["path"], r["usuario"]), "nome": os.path.basename(r["path"]), "path": r["path"],
                            "sub": os.path.relpath(r["path"], hh) if hh else r["path"], "usuario": r["usuario"], "bytes": r["bytes"], "arquivos": r["n"],
                            "dias": int((agora - r["uso"]) / 86400) if r["uso"] else None, "motivo": trava})
-        fu, au = (" AND usuario=?", [usuario]) if usuario else ("", [])
+        fu, au = (" AND usuario=?", [usuario]) if usuario else (" AND usuario<>?", [SIS])
         def linhas(sql, args):
             out = []
             for r in c.execute(sql, args).fetchall():
@@ -1920,7 +2293,7 @@ def _selecionar(ids, confirma_orfaos=True):
         it = ITENS.get(int(i))
         if not it:
             raise ValueError("Item %s não existe mais; faça a varredura de novo." % i)
-        if it["zona"] == "vermelha":
+        if it["zona"] == "vermelha" and not _liberado(it["path"]):
             raise ValueError("Zona vermelha: bloqueado.")
         mot = zona_vermelha(it["path"])
         if mot:
