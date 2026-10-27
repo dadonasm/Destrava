@@ -41,8 +41,8 @@ from urllib.parse import parse_qs, urlparse
 if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-VERSION = "3.7"
-BUILD = "2026-10-27.1"  # igual ao BUILD do app.html: se forem diferentes, o pendrive tem arquivos de versões misturadas
+VERSION = "3.8"
+BUILD = "2026-10-27.2"  # igual ao BUILD do app.html: se forem diferentes, o pendrive tem arquivos de versões misturadas
 import classe as CLS  # noqa: E402  (tipos de arquivo: a mesma tabela do Gerenciamento)
 import disco  # noqa: E402  (conferência lendo do disco, não da memória)
 import mapa as MAPA  # noqa: E402
