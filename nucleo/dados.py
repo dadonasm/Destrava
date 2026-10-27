@@ -1032,7 +1032,7 @@ def _varrer(idle_dias, min_mb):
             ST["atual"] = "Gravando o índice de arquivos"
             try:
                 _IB[0].fechar(CANCEL.is_set(), {"cockpit": RES["cockpit"], "st": {k: ST.get(k) for k in _ST_SALVO},
-                                                "itens": list(ITENS.values()), "params": {"idle_dias": idle_dias, "min_mb": min_mb}, "sistema": raiz_s})
+                                                "itens": list(ITENS.values()), "params": {"idle_dias": idle_dias, "min_mb": min_mb, "duracao": int(time.time() - ST["inicio"])}, "sistema": raiz_s})
             except Exception:
                 _IB[0].descartar()
             _IB[0] = None
@@ -1943,7 +1943,8 @@ def indice_estado():
         except ValueError:
             params = {}
         return {"existe": True, "construindo": bool(_IB[0]), "parcial": bool(m.get("parcial")), "quando": float(m.get("quando") or 0), "n": int(m.get("n") or 0),
-                "mexidas": int(m.get("mexidas") or 0), "idle_dias": params.get("idle_dias"), "min_mb": params.get("min_mb")}
+                "mexidas": int(m.get("mexidas") or 0), "idle_dias": params.get("idle_dias"), "min_mb": params.get("min_mb"),
+                "duracao": params.get("duracao"), "tamanho": os.path.getsize(_idx_arquivo())}
     except sqlite3.DatabaseError:
         return {"existe": False, "construindo": bool(_IB[0])}
     finally:

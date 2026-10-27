@@ -1617,6 +1617,7 @@ async function dgAtualizar(primeira){
   const op=(id,vals,sel,suf)=>`<select id="${id}">${vals.map(x=>`<option value="${x}" ${x==sel?"selected":""}>${x} ${suf}</option>`).join("")}</select>`;
   const pr=dialog({titulo:primeira?"Primeira varredura":"Atualizar a varredura",ok:"Varrer agora",
     html:`<p class="mut" style="margin:0 0 6px">Lê o disco inteiro, só leitura: as pastas dos usuários, os programas e o sistema. Pode levar alguns minutos em discos grandes, e a lista de arquivos guardada fica maior.${tem?" Enquanto varre, o resultado atual continua guardado até a nova terminar.":""}</p>
+     ${tem&&(DS.e.indice.duracao||DS.e.indice.tamanho)?`<p class="mut" style="margin:0 0 6px;font-size:12.5px">Na última vez${DS.e.indice.duracao?` levou <b>${DS.e.indice.duracao<90?DS.e.indice.duracao+" s":Math.round(DS.e.indice.duracao/60)+" min"}</b>`:""} para ${nf(DS.e.indice.n)} arquivos${DS.e.indice.tamanho?`, e a lista guardada ocupa <b>${fmt(DS.e.indice.tamanho)}</b> neste computador`:""}.</p>`:""}
      <div class="row"><div><label for="uid">Considerar parado após</label>${op("uid",[60,90,180],v.idle,"dias")}</div><div><label for="umb">Arquivos grandes a partir de</label>${op("umb",[50,100,500],v.mb,"MB")}</div></div>
      ${tem?'<p style="margin:16px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="sm gh" id="uesq">Esquecer esta varredura</button><span class="mut" style="font-size:12px">apaga o cockpit, as sugestões e a lista de arquivos guardados neste computador</span></p>':""}`});
   const m=$("#layer .modal:last-child");

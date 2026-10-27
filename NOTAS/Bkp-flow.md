@@ -182,6 +182,12 @@ Pedidos do Marlos depois de ver a v3.6, todos no mesmo padrão para Gerenciament
   integridade do registro (`log_verificar`), as cláusulas para ler, "Abrir o termo para imprimir ou salvar em PDF" (`/api/doc/abrir`).
   Sem aceite: aviso e "Ler e aceitar o termo". Sem rota nova (`/api/termo`).
 
+## Medição real da varredura completa (Mac do Marlos, 27/10/2026)
+- MacBook Air M2, 245 GB: **1.119.902 arquivos, 200 GB, 281 mil pastas** (565 mil da conta, 555 mil do Sistema), 269 pastas sem permissão,
+  162 arquivos só na nuvem. **Até 3 min 41 s** (programa aberto 16:47:05, varredura gravada 16:50:46). Índice: **726 MB** no TMPDIR.
+- A partir de agora o índice guarda a duração (`params.duracao`) e o tamanho (`indice_estado().tamanho`), e o aviso de "Atualizar a
+  varredura" mostra os dois da última vez.
+
 ## Não feito ainda
 - Editar o histórico/registro da máquina (só o certificado e o Mapa).
 - Telas abertas fora de ordem não mostram aviso próprio de "sem dados"; algumas podem ficar vazias.

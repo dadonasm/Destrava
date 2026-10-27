@@ -22,7 +22,8 @@ EPOCA = 1768478400  # 2026-01-15 12:00 UTC (meio do mês: o mesmo dia em qualque
 # o que muda de uma execução para outra (relógio, máquina, disco, ordem do sistema de arquivos)
 VOLATIL = {"free", "total", "data", "hora", "codigo", "base_hash", "dados_js_sha256", "maquina_id", "maquina_nome", "sistema", "versao",
            "eventos", "tecnico", "tecnico_perfil", "recuperado_bytes", "os", "autorizou", "dono", "dono_nome", "raiz", "dias", "uso",
-           "no", "id", "quando", "equipamento", "pc", "metodo", "verificacao", "idade", "mexidas", "duracao", "inicio", "fim", "atual"}
+           "no", "id", "quando", "equipamento", "pc", "metodo", "verificacao", "idade", "mexidas", "duracao", "inicio", "fim", "atual",
+           "tamanho"}  # tamanho: o arquivo do índice (SQLite) muda de tamanho de uma execução para outra
 
 
 def normaliza(x, tmp):
