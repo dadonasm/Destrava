@@ -167,6 +167,15 @@ Pedidos do Marlos depois de ver a v3.6, todos no mesmo padrão para Gerenciament
 - **Cockpit minimizável** (`DG.ckMin`): só a barra de 14px; passar o mouse mostra a legenda com os GB; "Expandir" volta.
 - `tests/test_dados.py` usava o índice real do TMPDIR (falhava com uma varredura de verdade na máquina): agora usa pasta temporária.
 
+## Etapas do backup na ordem nova (D4, parte 1)
+- **Seleção · Origem e destino · Checagens · Cópia · Verificação · Programas · Conclusão.** Ids: Seleção 0, Origem e destino 1, Checagens 2;
+  3 a 6 iguais (Retomar, ilha e certificado não mudam). O "Termo ✓" saiu da faixa de etapas.
+- A Seleção escaneia sozinha com os discos de sistema desta máquina (`sel3Escanear` pega `/api/sources`); o destino não é exigido para
+  escanear (`App.set_config` aceita sem destino; `totals().cabe` = None até haver destino). Origem e destino: se a origem mudou, escaneia
+  de novo e volta à Seleção; senão vai às Checagens. Destino escolhido dentro da origem tira esses itens da lista.
+- Checagens: só as checagens (o escaneamento saiu daqui) + resumo e "Iniciar cópia" (pré-voo de sempre). Exigem destino; `start_copy` também.
+- Harness `bk.py`: a jornada inteira em ordem, sem erro de JS.
+
 ## Não feito ainda
 - Editar o histórico/registro da máquina (só o certificado e o Mapa).
 - Telas abertas fora de ordem não mostram aviso próprio de "sem dados"; algumas podem ficar vazias.

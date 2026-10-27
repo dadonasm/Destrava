@@ -1467,7 +1467,7 @@ function wireReg(g){
 const ILHA={ativas:[],alertas:[],aberta:false,t:null,aviso:null,ta:null,fixa:false,sobre:false,tc:null,th:null};
 const ILHA_ORD=["backup","ensaio","incluir","medicao","ficha","dados","conferencia","envio"];
 const ILHA_IC={backup:"backup",ensaio:"shield",incluir:"up",medicao:"disk",ficha:"cpu",dados:"dados",conferencia:"shield",envio:"up"};
-const ILHA_PASSO={scanning:1,copying:3,verifying:4,finishing:6};
+const ILHA_PASSO={scanning:0,copying:3,verifying:4,finishing:6};
 const ILHA_FIM={
  ficha:f=>f.erro?["erro","A análise falhou"]:["ok","Análise pronta"],
  backup:f=>f.erro||f.fase==="error"?["erro","O backup parou com erro"]:({scanned:["ok","Escaneamento pronto"],copied:["ok","Cópia concluída"],verified:["ok","Verificação concluída"],done:["ok","Mapa e certificado prontos"]})[f.fase]||null,
@@ -1517,7 +1517,7 @@ function ilhaDesenha(){
   $$("[data-ir]",d).forEach(k=>k.onclick=e=>{e.stopPropagation();ilhaIr(k.dataset.ir)});
 }
 function ilhaIr(id){const a=ILHA.ativas.find(x=>x.id===id);ILHA.aberta=false;ILHA.fixa=false;ilhaDesenha();if(!a)return;
-  if(a.id==="backup")go(ILHA_PASSO[a.fase]!=null?ILHA_PASSO[a.fase]:step);else if((a.id==="medicao"&&a.tela!=="dados")||a.id==="incluir"||a.id==="ensaio")go(2);else nav(a.tela)}
+  if(a.id==="backup")go(ILHA_PASSO[a.fase]!=null?ILHA_PASSO[a.fase]:step);else if((a.id==="medicao"&&a.tela!=="dados")||a.id==="incluir"||a.id==="ensaio")go(0);else nav(a.tela)}
 function ilhaLigar(){
   const el=$("#ilha"),fecha=()=>{ILHA.fixa=false;ILHA.aberta=false;ilhaDesenha()};
   $("#ilhab").onclick=()=>{if(!ILHA.ativas.length)return;ILHA.fixa=!ILHA.fixa;ILHA.aberta=ILHA.fixa||ILHA.sobre;clearTimeout(ILHA.tc);ilhaDesenha()};  // clique/toque fixa
@@ -2239,12 +2239,12 @@ const fcOpt=(k,v,n,lab,on,antes)=>{const z=!n&&!on;return `<label class="fc-o ${
 const fcGrupo=(k,titulo,corpo,n,fechado)=>`<details class="fc-g" data-g="${k}" ${fechado?"":"open"}><summary>${titulo}${n?` <span class="fc-n">${n}</span>`:""}</summary>${corpo}</details>`;
 
 /* ================= Backup (jornada) ================= */
-const STEPS=["Origem e destino","Checagens","Seleção","Cópia","Verificação","O que manter","Conclusão"];
+const STEPS=["Seleção","Origem e destino","Checagens","Cópia","Verificação","Programas","Conclusão"];  // ids: 0 Seleção, 1 Origem e destino, 2 Checagens; 3 a 6 como sempre
 let step=0,maxStep=0,S={sources:[],chosen:{},dest:"",folder:""},st=null,timer=null;
 /* cada etapa abre com um clique: as já alcançadas sempre; as seguintes só no modo Superusuário */
 function renderSteps(){
   const el=$("#steps");if(view!=="backup"){el.innerHTML="";return}
-  el.innerHTML=`<div class="jn done" title="Termo aceito"><span class="c">✓</span>Termo</div>`+STEPS.map((t,i)=>{
+  el.innerHTML=STEPS.map((t,i)=>{
     const cls=`jn ${i===step?"on":i<step?"done":""}`,c=`<span class="c">${i<step?"✓":i+1}</span>${esc(t)}`;
     return i!==step&&(i<=maxStep||SU)?`<button type="button" class="${cls}" data-st="${i}" title="Abrir ${esc(t)}${i>maxStep?" (Superusuário)":""}">${c}</button>`:`<div class="${cls}" ${i===step?'aria-current="step"':""}>${c}</div>`}).join("");
   $$("[data-st]",el).forEach(b=>b.onclick=()=>{const n=+b.dataset.st;if(n>maxStep)toast("Etapa aberta pelo Superusuário: pode faltar o que as anteriores preparam.");go(n)});
@@ -2281,11 +2281,11 @@ async function suPainel(){
    <div class="row" style="margin-top:18px;justify-content:flex-end"><button id="sucn">Fechar</button>${c?'<button class="pri" id="sucs">Salvar certificado</button>':""}</div></div>`;
   $("#layer").appendChild(d);
   const fecha=()=>d.remove();$("#sucn",d).onclick=fecha;
-  $("#sulm",d).onchange=ev=>safe(async()=>{if(!ev.target.value)return;await api("/api/layout",{modo:ev.target.value});toast("Jeito de guardar alterado.","ok");if(view==="backup"&&step===2)draw()});
+  $("#sulm",d).onchange=ev=>safe(async()=>{if(!ev.target.value)return;await api("/api/layout",{modo:ev.target.value});toast("Jeito de guardar alterado.","ok");if(view==="backup"&&step===0)draw()});
   const sv=$("#sucs",d);if(sv)sv.onclick=()=>safe(async()=>{const b={};$$("[data-suc]",d).forEach(i=>b[i.dataset.suc]=i.value);
     const r=await api("/api/su/certificado",b);toast(r.mudou?`Certificado corrigido (${r.mudou} campo(s)).`:"Nada mudou.","ok");fecha();if(view==="backup"&&step===6)draw()});
 }
-function draw(){clearInterval(timer);[draw1,draw2,draw3,draw4,draw5,()=>drawManter("",true),draw6][step]()}
+function draw(){clearInterval(timer);[draw3,draw1,draw2,draw4,draw5,()=>drawManter("",true),draw6][step]()}
 const CATORD=["Documentos","Fotos","Videos","Audios","Projetos","Email_Contatos","Conversas","Contas_Senhas","Dados_de_apps","Sistemas","Navegadores","Outros","Nuvem","Ocultos","Programas","Configuracoes","Temporarios","Extras"];
 const CATNAME={Fotos:"Fotos",Videos:"Vídeos",Audios:"Áudios",Documentos:"Documentos",Projetos:"Projetos (Photoshop, CAD…)",Email_Contatos:"E-mail e contatos",Conversas:"Conversas (WhatsApp)",Contas_Senhas:"Contas e senhas",Outros:"Outros",Navegadores:"Favoritos dos navegadores",
  Dados_de_apps:"Dados de programas",Sistemas:"Bancos de dados de sistemas",Nuvem:"Só na nuvem (OneDrive/iCloud)",Ocultos:"Arquivos ocultos",Programas:"Programas e instaladores",Configuracoes:"Configurações e atalhos",Temporarios:"Temporários e sistema",Extras:"Incluídos por você"};
@@ -2336,7 +2336,7 @@ async function draw1(){
     $("#main").innerHTML='<div class="card"><p class="mut" style="margin:0">Procurando os discos desta máquina…</p></div>';
     try{S.sources=(await api("/api/sources")).sources}
     catch(e){$("#main").innerHTML=`<div class="card"><div class="errbox">Não consegui listar os discos: ${esc(e.message||String(e))}</div><button id="d1r">Tentar de novo</button></div>`;$("#d1r").onclick=()=>draw1();return}
-    if(step!==0||view!=="backup")return;
+    if(step!==1||view!=="backup")return;
     S.sources.forEach(s=>{if(s.kind==="windows"||s.kind==="linux"||s.kind==="mac")S.chosen[s.path]=true})}
   const t=CTX.t,nome=t?t.nome:info.host||"PC";
   $("#main").innerHTML=`<div class="card fluxo" id="fluxo"></div>
@@ -2358,7 +2358,12 @@ async function draw1(){
     const sources=S.sources.filter(s=>S.chosen[s.path]).map(s=>({path:s.path,kind:s.kind,letter:s.letter||"C",label:s.label}));
     if(!sources.length)return toast("Marque pelo menos uma origem.","err");
     if(!S.dest)return toast("Escolha o destino do backup.","err");
-    await api("/api/config",{sources,dest:S.dest,folder:S.folder});go(1)});
+    const antes=((st&&st.cfg&&st.cfg.sources)||[]).map(x=>x.path).sort().join("|");
+    await api("/api/config",{sources,dest:S.dest,folder:S.folder});
+    const s2=await api("/api/status");st=s2;
+    if(!s2.n_items||antes!==(s2.cfg.sources||[]).map(x=>x.path).sort().join("|")){  // origem nova: a Seleção escaneia de novo
+      await api("/api/scan",{});toast("A origem mudou: escaneando de novo. Confira a Seleção.","ok");return go(0)}
+    go(2)});
   destInfo();identBackup();
 }
 async function identBackup(){
@@ -2424,32 +2429,25 @@ function pedirChave(onde){return new Promise(res=>{const d=document.createElemen
   $("#layer").appendChild(d);$("#blk",d).focus();$("#blc",d).onclick=()=>{d.remove();res(null)};$("#blo",d).onclick=()=>{const v=$("#blk",d).value.trim();d.remove();res(v)}})}
 async function draw2(){
   setWide(false);
-  $("#main").innerHTML=`<div class="card"><h2>Checagens de segurança</h2><p class="h">Antes de mexer em qualquer coisa.</p><div id="checks" class="mut">Verificando…</div></div>
-  <div class="card"><h2>Escanear o computador</h2><p class="h">Varre todos os usuários, pastas ocultas e discos escolhidos. Só lê; nada é copiado ainda.</p>
-   <div class="row"><button class="pri" id="scan" disabled>Escanear agora</button><button id="back2">← Voltar</button></div>
-   <div id="scanbox" class="hide" style="margin-top:14px"><div class="bar"><i id="sb" style="width:100%;opacity:.5"></i></div>
-    <div class="grid" style="margin-top:10px"><div class="kpi"><div class="mut">Arquivos</div><div class="big" id="sf">0</div></div><div class="kpi"><div class="mut">Pastas</div><div class="big" id="sd">0</div></div><div class="kpi"><div class="mut">Tamanho</div><div class="big" id="sz">0</div></div></div>
-    <div class="mono mut" id="scur" style="margin-top:8px;word-break:break-all"></div><div class="row" style="margin-top:8px"><button class="sm" id="scancel">Cancelar</button></div></div></div>`;
-  $("#back2").onclick=()=>go(0);
+  $("#main").innerHTML=`<div class="card"><h2>Checagens de segurança</h2><p class="h">Origem, destino e o computador, antes de copiar qualquer coisa.</p><div id="checks" class="mut">Verificando…</div></div>
+  <div class="card"><h2>Copiar</h2><p class="h" id="c2res">Conferindo a seleção…</p>
+   <div class="row"><button class="pri" id="go3" disabled>Iniciar cópia</button><button id="back2">← Origem e destino</button><button class="gh" id="sel2">Voltar à Seleção</button></div></div>`;
+  $("#back2").onclick=()=>go(1);$("#sel2").onclick=()=>go(0);
   let r;try{r=await api("/api/preflight",{})}catch(e){$("#checks").innerHTML=`<div class="errbox">Não deu para checar: ${esc(e.message||String(e))}</div><button class="sm" id="chk2r">Tentar de novo</button>`;$("#chk2r").onclick=()=>draw2();return onErr(e)}
   const ICK={ok:"✓",aviso:"!",erro:"✕"};
   $("#checks").innerHTML=`<div class="chks">${r.checks.map(c=>`<div class="chk2 ${c.nivel}"><span class="ci">${ICK[c.nivel]||"·"}</span><div class="grow"><b>${esc(c.titulo)}</b><div class="mut">${esc(c.detalhe)}</div>${c.solucao?`<div class="sol"><b>Como resolver:</b> ${esc(c.solucao)}</div>`:""}${/trancado: /.test(c.titulo)?`<button class="sm pri" style="margin-top:6px" data-bl="${esc(c.titulo.replace(/^.*trancado: /,""))}">Destravar com a chave</button>`:""}</div></div>`).join("")}</div>`;
   $$("[data-bl]").forEach(b=>b.onclick=()=>safe(async()=>{const k=await pedirChave(b.dataset.bl);if(!k)return;await api("/api/bitlocker",{onde:b.dataset.bl,chave:k});toast("Destravado. Conferindo de novo…","ok");draw2()}));
-  const bad=r.checks.some(c=>c.nivel==="erro");$("#scan").disabled=bad;
+  const bad=r.checks.some(c=>c.nivel==="erro");
   if(bad)$("#checks").insertAdjacentHTML("beforeend",'<div class="errbox">Há um erro acima. Corrija antes de continuar.</div>');
-  $("#scan").onclick=()=>safe(async()=>{await api("/api/scan",{});$("#scanbox").classList.remove("hide");$("#scan").disabled=true;poll()});
-  $("#scancel").onclick=()=>safe(()=>api("/api/cancel",{}));
-  const s=await safe(()=>api("/api/status"));if(s&&s.phase==="scanning"){$("#scanbox").classList.remove("hide");$("#scan").disabled=true;poll()}
+  const [t,L]=await Promise.all([api("/api/totals"),api("/api/layout")]);if(view!=="backup"||step!==2)return;LAY=L;
+  const falta=!t.sel_n?"Nada marcado na Seleção.":!L.modo?"Falta escolher como guardar (Espelho, Ordenado ou Misto), na Seleção.":t.cabe===false?`Não cabe no destino: precisa de ${fmt(t.sel_bytes)} e há ${fmt(t.free)} livres. ${t.solucao||""}`:t.fat32_problema?"O destino é FAT32 e há arquivo maior que 4 GB.":"";
+  $("#c2res").innerHTML=falta?`<span style="color:var(--err)">${esc(falta)}</span>`:`<b>${nf(t.sel_n)} ${t.sel_n===1?"arquivo":"arquivos"} (${fmt(t.sel_bytes)})</b> vão para o destino, que tem ${fmt(t.free)} livres. Como guardar: <b>${esc(L.nome||"")}</b>.`;
+  $("#go3").disabled=(bad&&!SU)||!!falta;$("#go3").onclick=()=>safe(()=>preVoo(t));
 }
 function poll(){clearInterval(timer);timer=setInterval(tick,700);tick()}
 async function tick(){
   try{st=await api("/api/status")}catch(e){return}
-  if(step===1&&$("#sf")){
-    $("#sf").textContent=nf(st.scan.files);$("#sd").textContent=nf(st.scan.dirs);$("#sz").textContent=fmt(st.scan.bytes);$("#scur").textContent=st.scan.current;
-    if(st.phase==="scanned"){clearInterval(timer);go(2)}
-    if(st.phase==="error"){clearInterval(timer);toast("Erro: "+st.error,"err")}
-    if(st.phase==="idle"){clearInterval(timer);$("#scan").disabled=false;$("#scanbox").classList.add("hide")}
-  }else if(step===2&&$("#s3f")){
+  if(step===0&&$("#s3f")){
     $("#s3f").textContent=nf(st.scan.files);$("#s3d").textContent=nf(st.scan.dirs);$("#s3z").textContent=fmt(st.scan.bytes);$("#s3c").textContent=st.scan.current;
     if(st.phase==="scanned"){clearInterval(timer);draw3()}
     if(st.phase==="error"){clearInterval(timer);toast("Erro: "+st.error,"err")}
@@ -2458,13 +2456,16 @@ async function tick(){
 }
 /* Seleção aberta sem escaneamento (Superusuário): escaneia sozinha com a origem e o destino da etapa 1 */
 async function sel3Escanear(){
-  const s=await api("/api/status");if(view!=="backup"||step!==2)return true;
+  const s=await api("/api/status");if(view!=="backup"||step!==0)return true;
   const vazio=s.n_items===0&&["idle","error"].includes(s.phase);
   if(s.phase!=="scanning"&&!vazio)return false;
   if(vazio){
     if(!(s.cfg&&(s.cfg.sources||[]).length)){
+      if(!S.sources.length){$("#main").innerHTML='<div class="card"><p class="mut" style="margin:0">Procurando os discos desta máquina…</p></div>';
+        S.sources=(await api("/api/sources")).sources;S.sources.forEach(x=>{if(x.kind==="windows"||x.kind==="linux"||x.kind==="mac")S.chosen[x.path]=true});
+        if(view!=="backup"||step!==0)return true}
       const sources=S.sources.filter(x=>S.chosen[x.path]).map(x=>({path:x.path,kind:x.kind,letter:x.letter||"C",label:x.label}));
-      if(!sources.length||!S.dest){$("#main").innerHTML=`<div class="card"><h2>Nada escaneado ainda</h2><p class="h">Escolha a origem e o destino primeiro; depois a Seleção escaneia sozinha.</p><button class="pri" id="s3o">Ir para Origem e destino</button></div>`;$("#s3o").onclick=()=>go(0);return true}
+      if(!sources.length){$("#main").innerHTML=`<div class="card"><h2>Escolha de onde copiar</h2><p class="h">Não achei um sistema (Windows, macOS ou Linux) nos discos desta máquina. Escolha a origem; depois a Seleção escaneia sozinha.</p><button class="pri" id="s3o">Ir para Origem e destino</button></div>`;$("#s3o").onclick=()=>go(1);return true}
       await api("/api/config",{sources,dest:S.dest,folder:S.folder});
     }
     await api("/api/scan",{});
@@ -2480,7 +2481,7 @@ async function draw3(){
   setWide(true);
   if(await sel3Escanear())return;
   const [g,t,L,MD,s,ID]=await Promise.all([api("/api/groups"),api("/api/totals"),api("/api/layout"),api("/api/medicao").catch(()=>({})),api("/api/status"),api("/api/identidade?para=backup").catch(()=>({})),tiposPronto()]);
-  if(view!=="backup"||step!==2)return;
+  if(view!=="backup"||step!==0)return;
   LAY=L;st=s;SELG=g;Object.assign(SB,{t,cfg:s.cfg||{},foco:null,hover:"",ident:ID});
   // uma tela só: o disco no topo, filtros à esquerda, a grade (ou a lista, no lugar dela) ao centro e a decisão embaixo
   $("#main").innerHTML=`<section class="card ckp" id="selcock" aria-label="O disco desta máquina"></section>
@@ -2493,7 +2494,7 @@ async function draw3(){
 /* os filtros da esquerda já aparecem na grade, com as contagens de tudo: escolher um abre a lista no lugar da grade */
 async function selFacetas(){
   const F=await api("/api/files?limit=0&facets=1&pastas=1");
-  if(view!=="backup"||step!==2||LST.aberta)return;
+  if(view!=="backup"||step!==0||LST.aberta)return;
   Object.assign(LST,{f:{},q:"",fac:F.facets,pastas:F.pastas,mais:{},busca:{}});lstSide();
 }
 /* ---- como guardar este backup: Espelho, Ordenado ou Misto (escolhido a cada backup), na faixa de baixo ---- */
@@ -2513,19 +2514,19 @@ function trilho(cam,outro,raiz){
 function selBarra(){
   const el=$("#selacao");if(!el||!SB.t)return;
   const t=SB.t,L=LAY,ed=L.editavel!==false,cfg=SB.cfg||{},pct=t.free?Math.min(100,t.sel_bytes/t.free*100):0,av=[];
-  if(!t.cabe)av.push(["err",`Não cabe no destino: precisa de ${fmt(t.sel_bytes)} e há ${fmt(t.free)} livres. ${t.solucao||""}`]);
+  if(t.cabe===false)av.push(["err",`Não cabe no destino: precisa de ${fmt(t.sel_bytes)} e há ${fmt(t.free)} livres. ${t.solucao||""}`]);
   if(t.fat32_problema)av.push(["err","O destino é FAT32 e há arquivo maior que 4 GB. Escolha outro destino."]);
   if(!L.modo&&ed)av.push(["info","Escolha como guardar: Espelho, Ordenado ou Misto. Passe o mouse em cada um para ver onde os arquivos ficam."]);
   el.innerHTML=`${av.map(([c,x])=>`<div class="aviso ${c}">${esc(x)}</div>`).join("")}
    <div class="como"><div class="rot">Como guardar no destino${ed?"":" · a cópia já começou"}</div>
     <div class="seg" role="radiogroup" aria-label="Como guardar este backup">${LAY_MODOS.map(([k,,nm,d])=>`<button role="radio" aria-checked="${L.modo===k}" tabindex="${(L.modo||"espelho")===k?0:-1}" data-lm="${k}" title="${esc(d)}" ${ed?"":"disabled"}>${nm}</button>`).join("")}</div></div>
    <div class="prev"><div class="rot" id="sbrot"></div><div class="trilho" id="sbtri" aria-live="polite"></div></div>
-   <button class="dest" id="sbdest" title="Trocar o destino: volta para Origem e destino">💽 ${esc(nomeDe(cfg.dest)||"Destino")} <span class="mut">${fmt(t.free)} livres</span></button>
-   <div class="tot ${!t.cabe||t.fat32_problema?"ruim":""}" title="Ocupa ${pct.toFixed(pct<10?1:0)}% do espaço livre no destino"><b>${nf(t.sel_n)} ${t.sel_n===1?"arquivo":"arquivos"}</b><div class="mut">${fmt(t.sel_bytes)} vão para o backup</div></div>
-   <button class="pri ir" id="go3">Iniciar cópia</button>`;
-  $("#go3").disabled=!t.cabe||t.fat32_problema||t.sel_n===0||!L.modo;
-  $("#go3").onclick=()=>safe(()=>preVoo(t));
-  $("#sbdest").onclick=()=>go(0);
+   <button class="dest" id="sbdest" title="${cfg.dest?"Trocar o destino":"Escolher o destino"}: abre Origem e destino">💽 ${cfg.dest?`${esc(nomeDe(cfg.dest))} <span class="mut">${fmt(t.free)} livres</span>`:'Destino <span class="mut">escolha na próxima etapa</span>'}</button>
+   <div class="tot ${t.cabe===false||t.fat32_problema?"ruim":""}" title="${cfg.dest?`Ocupa ${pct.toFixed(pct<10?1:0)}% do espaço livre no destino`:"O espaço no destino é conferido quando ele for escolhido"}"><b>${nf(t.sel_n)} ${t.sel_n===1?"arquivo":"arquivos"}</b><div class="mut">${fmt(t.sel_bytes)} vão para o backup</div></div>
+   <button class="pri ir" id="go3">Seguir para Origem e destino →</button>`;
+  $("#go3").disabled=t.cabe===false||t.fat32_problema||t.sel_n===0||!L.modo;
+  $("#go3").onclick=()=>go(1);
+  $("#sbdest").onclick=()=>go(1);
   const ops=$$("[data-lm]",el);
   ops.forEach((b,i)=>{
     b.onclick=()=>safe(async()=>{if(b.dataset.lm===LAY.modo)return;LAY=await api("/api/layout",{modo:b.dataset.lm});SB.hover="";toast("Este backup vai como "+LAY.nome+".","ok");selModo()});
@@ -2647,7 +2648,7 @@ function selCorpo(){
 /* depois de marcar/desmarcar: só os números mudam (linhas, grupos, disco, filtros e a faixa de baixo), sem redesenhar a página */
 async function selAtualiza(){
   const [g,t,MD,L]=await Promise.all([api("/api/groups"),api("/api/totals"),api("/api/medicao").catch(()=>({})),api("/api/layout")]);
-  if(view!=="backup"||step!==2)return;
+  if(view!=="backup"||step!==0)return;
   SELG=g;SB.t=t;LAY=L;selCockpit(g,t,MD);selCorpo();selBarra();
   if(!LST.aberta)selFacetas();
 }
@@ -2680,7 +2681,7 @@ function selCockpit(g,t,m){
     await api("/api/incluir",{caminhos:ms.map(x=>x.dataset.fr)});MED.aberto=true;toast("Incluindo as pastas… acompanhe na ilha do topo.","ok");selCockpit(SELG,SB.t,await api("/api/medicao"))});
   $$("[data-tirar]",el).forEach(b=>b.onclick=e=>{e.preventDefault();safe(async()=>{await api("/api/incluir/tirar",{caminho:b.dataset.tirar});toast("Pasta tirada do backup.","ok");draw3()})});
   const incl=m.incl&&m.incl.rodando;
-  if(m.rodando||incl)MEDT=setTimeout(async()=>{if(view!=="backup"||step!==2)return;try{const n=await api("/api/medicao");if(incl&&!(n.incl&&n.incl.rodando))return draw3();selCockpit(SELG,SB.t,n)}catch(e){}},incl?1500:2000);
+  if(m.rodando||incl)MEDT=setTimeout(async()=>{if(view!=="backup"||step!==0)return;try{const n=await api("/api/medicao");if(incl&&!(n.incl&&n.incl.rodando))return draw3();selCockpit(SELG,SB.t,n)}catch(e){}},incl?1500:2000);
 }
 /* pré-voo: confere as mídias de novo, avisa dos programas abertos e da bateria e ensaia a leitura dos arquivos marcados antes de copiar */
 async function preVoo(t){
@@ -2830,7 +2831,7 @@ async function lstFoco(i){
 }
 window.addEventListener("scroll",()=>{if(!LST.aberta||LST.fim||LST.carregando)return;const f=$("#lstfim");if(f&&f.getBoundingClientRect().top<innerHeight+500)lstCarrega()},{passive:true});
 document.addEventListener("keydown",e=>{
-  if(e.key!=="Escape"||!LST.aberta||view!=="backup"||step!==2||$("#layer").children.length)return;
+  if(e.key!=="Escape"||!LST.aberta||view!=="backup"||step!==0||$("#layer").children.length)return;
   const t=e.target&&e.target.closest?e.target:document.body;
   if(t.id==="lstq"&&t.value){t.value="";LST.q="";return lstCarrega(true)}  // Esc na busca: primeiro limpa, depois volta para a grade
   if(t.id!=="lstq"&&t.closest("input[type=text],input[type=date],select,textarea"))return;
@@ -2946,7 +2947,7 @@ function draw5(){
     <ul class="chkl grow" id="vl"><li class="run" id="vl1"><span class="ci"></span><div><b>Conferindo cada arquivo copiado</b><div class="mut" id="cur5" style="word-break:break-all;font-size:12px"></div></div></li><li class="wait" id="vl2"><span class="ci"></span><b>Nova varredura na origem</b></li><li class="wait" id="vl3"><span class="ci"></span><b>Resultado</b></li></ul></div>
     <div class="grid" style="margin-top:12px"><div class="kpi"><div class="mut">Conferidos</div><div class="big" id="v1">0</div></div><div class="kpi"><div class="mut">Divergências</div><div class="big" id="v2">0</div></div><div class="kpi"><div class="mut">Tempo restante</div><div class="big" id="v3">–</div></div></div>
     <div class="row" style="margin-top:8px"><button class="sm" id="vc">Cancelar</button></div></div></div><div id="res5"></div>`;
-  $("#b5").onclick=()=>go(2);$("#vc").onclick=()=>safe(()=>api("/api/cancel",{}));
+  $("#b5").onclick=()=>go(0);$("#vc").onclick=()=>safe(()=>api("/api/cancel",{}));
   const vsk=$("#vsk");if(vsk)vsk.onclick=()=>safe(async()=>{if(await dialog({titulo:"Pular a verificação?",html:"<p>O certificado sai como <b>não verificado</b> e a formatação fica bloqueada (a não ser que você a libere aqui no Superusuário).</p>",ok:"Pular",perigo:true}))go(5)});
   $("#vgo").onclick=()=>safe(async()=>{const m=document.querySelector("input[name=vm]:checked").value;await api("/api/verify",{mode:m});$("#vbox").classList.remove("hide");$("#vgo").disabled=true;poll()});
   api("/api/status").then(s=>{st=s;if(s.phase==="verifying"){$("#vbox").classList.remove("hide");$("#vgo").disabled=true;poll()}else if(s.phase==="verified"||s.phase==="done")showRes5();else if(s.n_failures)$("#res5").innerHTML=`<div class="warnbox">${s.n_failures} arquivo(s) falharam na cópia. Verifique e depois veja o que fazer.</div>`});
@@ -3046,7 +3047,7 @@ async function draw6(){
   await loadCtx();setTimeout(autotestePagina,1500);
   let s;try{s=await api("/api/status")}catch(e){s={phase:"idle"}}
   st=s;
-  const map={idle:0,scanning:1,scanned:2,copying:3,copied:4,verifying:4,verified:4,finishing:6,done:6,error:0};
+  const map={idle:0,scanning:0,scanned:0,copying:3,copied:4,verifying:4,verified:4,finishing:6,done:6,error:0};
   step=maxStep=map[s.phase]||0;
   if(SU)api("/api/su",{ligado:true}).then(()=>suFaixa()).catch(()=>{SU=false});
   if(s.phase==="idle"){nav("home")}else{view="backup";nav("backup");}

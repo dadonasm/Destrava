@@ -68,3 +68,33 @@ class OrigensEIdentificacao(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DestinoDepois(OrigensEIdentificacao):
+    """A Seleção vem primeiro: escaneia só com a origem; o destino é exigido nas Checagens e na cópia."""
+
+    def test_origem_sem_destino(self):
+        app = dd_backup.App()
+        cfg = app.set_config({"sources": [{"path": self.disco, "kind": "windows"}]})
+        self.assertEqual(cfg["dest"], "")
+        self.assertEqual(app.dest_root, "")
+        t = app.totals()
+        self.assertIsNone(t["cabe"])
+        self.assertEqual(t["solucao"], "")
+        self.assertEqual(app.preflight()[0]["titulo"], "Falta o destino")
+        app.items = [dd_backup.Item()]
+        with self.assertRaises(ValueError):
+            app.start_copy()
+        app.set_config({"sources": [{"path": self.disco, "kind": "windows"}], "dest": self.dest, "folder": "B"})
+        self.assertEqual(app.dest_root, os.path.join(self.dest, "B"))
+
+    def test_destino_dentro_da_origem_sai_da_lista(self):
+        app = dd_backup.App()
+        app.set_config({"sources": [{"path": self.disco, "kind": "windows"}]})
+        dentro, fora = dd_backup.Item(), dd_backup.Item()
+        dentro.src = os.path.join(self.disco, "Backups", "B", "x.txt")
+        fora.src = os.path.join(self.disco, "Users", "Ana", "Documents", "a.txt")
+        app.items = [dentro, fora]
+        os.makedirs(os.path.join(self.disco, "Backups"))
+        app.set_config({"sources": [{"path": self.disco, "kind": "windows"}], "dest": os.path.join(self.disco, "Backups"), "folder": "B"})
+        self.assertEqual(app.items, [fora])

@@ -988,8 +988,9 @@ class App(object):
         if not srcs:
             raise ValueError("Escolha pelo menos uma origem.")
         srcs = [s for s in srcs if not any(o is not s and _dentro(s["path"], o["path"]) and s["path"] != o["path"] for o in srcs)]  # pasta dentro de outra origem: já vai junto
-        dest = os.path.abspath(os.path.expanduser(d.get("dest", "")))
-        if not d.get("dest") or not os.path.isdir(dest):
+        # o destino pode vir depois: a Seleção escaneia só com a origem; Checagens e cópia exigem o destino
+        dest = os.path.abspath(os.path.expanduser(d["dest"])) if (d.get("dest") or "").strip() else ""
+        if dest and not os.path.isdir(dest):
             raise ValueError("Escolha uma pasta de destino que exista.")
         folder = safe_seg((d.get("folder") or "").strip() or ("Backup_" + socket.gethostname()))
         ident = self.identificacao()
@@ -998,8 +999,10 @@ class App(object):
             "cliente": ident["cliente"] or (d.get("cliente") or "").strip(), "tecnico": ident["tecnico"] or (d.get("tecnico") or "").strip(),
             "equip": ident["equip"] or (d.get("equip") or "").strip() or socket.gethostname(),
         }
-        self.dest_root = os.path.join(dest, folder)
-        self.mapa_dir = os.path.join(self.dest_root, "Mapa")
+        self.dest_root = os.path.join(dest, folder) if dest else ""
+        self.mapa_dir = os.path.join(self.dest_root, "Mapa") if dest else ""
+        if self.dest_root and self.items:  # destino escolhido depois do escaneamento e dentro da origem: o backup não entra nele mesmo
+            self.items = [it for it in self.items if not _dentro(getattr(it, "src", "") or "", self.dest_root)]
         return self.cfg
 
     # ------------------------------------------------------------------ checagens iniciais
@@ -1012,7 +1015,9 @@ class App(object):
 
         cfg = self.cfg
         if not cfg:
-            return [{"nivel": "erro", "titulo": "Configuração incompleta", "detalhe": "Escolha origens e destino.", "solucao": "Volte ao passo 1."}]
+            return [{"nivel": "erro", "titulo": "Configuração incompleta", "detalhe": "Escolha origens e destino.", "solucao": "Volte à etapa Origem e destino."}]
+        if not cfg.get("dest"):
+            return [{"nivel": "erro", "titulo": "Falta o destino", "detalhe": "Escolha para onde vai o backup.", "solucao": "Volte à etapa Origem e destino."}]
         # permissões
         adm = (hasattr(os, "geteuid") and os.geteuid() == 0)
         if IS_WIN:
@@ -2107,12 +2112,13 @@ class App(object):
                 b += it.size
                 if it.size > big:
                     big = it.size
-        total, free = disk_usage(self.cfg["dest"]) if self.cfg else (0, 0)
-        fs = fs_type(self.cfg["dest"]) if self.cfg else None
-        cabe = b * 1.02 + 256 * 1024 * 1024 <= free
+        dst = (self.cfg or {}).get("dest") or ""
+        total, free = disk_usage(dst) if dst else (0, 0)
+        fs = fs_type(dst) if dst else None
+        cabe = b * 1.02 + 256 * 1024 * 1024 <= free if dst else None  # sem destino ainda: não dá para dizer se cabe
         return {"sel_n": n, "sel_bytes": b, "free": free, "total": total, "fs": fs, "biggest": big, "cabe": cabe,
                 "fat32_problema": fs in ("vfat", "msdos") and big > 4 * 1024 ** 3 - 1,
-                "solucao": "" if cabe else "Faltam %s: desmarque categorias (Programas, Ocultos, Vídeos…) ou use um disco maior." % fmt_bytes(b * 1.02 + 256 * 1024 * 1024 - free)}
+                "solucao": "" if cabe is not False else "Faltam %s: desmarque categorias (Programas, Ocultos, Vídeos…) ou use um disco maior." % fmt_bytes(b * 1.02 + 256 * 1024 * 1024 - free)}
 
     def final_status(self, it):
         if it.inc:
@@ -2142,6 +2148,8 @@ class App(object):
                 raise Busy("Já existe um processo em andamento.")
             if not self.items:
                 raise ValueError("Escaneie antes de copiar.")
+            if not self.dest_root:
+                raise ValueError("Escolha o destino do backup antes de copiar.")
             t = self.totals()
             if not t["cabe"]:
                 raise ValueError("Não cabe no destino: precisa de %s e há %s livres." % (fmt_bytes(t["sel_bytes"]), fmt_bytes(t["free"])))
