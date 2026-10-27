@@ -1472,6 +1472,31 @@ def hist_add(mid, tipo, resumo, extra=None):
     _registrar_etapa(mid, h[:-1], ev)
 
 
+def hist_corrigir(mid, idx, resumo, por=""):
+    """Corrige o texto de um evento do histórico sem apagar nada: o original e quem corrigiu ficam em extra.corrigido."""
+    resumo = (resumo or "").strip()
+    if not resumo:
+        raise ValueError("Escreva o texto corrigido.")
+    p = os.path.join(pasta(mid), "historico.json")
+    h = hist_get(mid)
+    try:
+        idx = int(idx)
+        ev = h[idx]
+    except (ValueError, TypeError, IndexError):
+        raise ValueError("Evento não encontrado; abra a máquina de novo.")
+    if idx < 0 or resumo == ev.get("resumo"):
+        raise ValueError("Nada para corrigir.")
+    ex = ev.setdefault("extra", {})
+    ex.setdefault("corrigido", []).append({"original": ev.get("resumo", ""), "por": por or tecnico_atual(mid) or "", "quando": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")})
+    ev["resumo"] = resumo[:300]
+    tmp = p + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(h, fh, ensure_ascii=False, indent=1)
+    os.replace(tmp, p)
+    _gravou(p)
+    return ev
+
+
 def hist_get(mid):
     _garantir(mid)
     try:

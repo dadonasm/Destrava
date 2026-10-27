@@ -189,7 +189,9 @@ Pedidos do Marlos depois de ver a v3.6, todos no mesmo padrão para Gerenciament
   varredura" mostra os dois da última vez.
 
 ## Não feito ainda
-- Editar o histórico/registro da máquina (só o certificado e o Mapa).
+- (feito) Corrigir o histórico da máquina, só no Superusuário: "Corrigir" em cada evento da linha do tempo (`FICHA.hist_corrigir`,
+  `POST /api/maquina/historico/corrigir`). Nada é apagado: o original, quem corrigiu e quando ficam em `extra.corrigido`, a marca
+  "corrigido por X em …" aparece no evento (original no título) e a correção entra no log de consentimentos (`historico_corrigido`).
 - (feito) Telas abertas fora de ordem: Cópia, Verificação e Conclusão dizem o que falta e levam à etapa certa (`semDados`).
 - Não conferido no navegador. Testes: `tests/test_superusuario.py` e a suíte toda (206, OK).
 - Ideia em aberto: levar o backup para dentro do Gerenciamento de dados.

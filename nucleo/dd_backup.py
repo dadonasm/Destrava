@@ -3738,6 +3738,15 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/maquina/receita":
             mid = str(b.get("mid") or "") or FICHA.machine_id_cache()
             return {"receita": FICHA.salvar_receita(mid, b.get("itens"), bool(b.get("nenhum")))}
+        if path == "/api/maquina/historico/corrigir":
+            if not SU["ligado"]:
+                raise ValueError("Corrigir o histórico só no modo Superusuário.")
+            mid = str(b.get("mid") or "")
+            ev = FICHA.hist_corrigir(mid, b.get("idx"), str(b.get("resumo") or ""))
+            c = ev["extra"]["corrigido"][-1]
+            TERMO.log_add("historico_corrigido", mid, quando_evento=ev.get("quando", ""), original=c["original"], novo=ev["resumo"])
+            APP.log("SUPERUSUÁRIO: histórico de %s corrigido (%s)." % (mid, ev.get("quando", "")))
+            return {"ok": True}
         if path == "/api/maquina/registro":
             return {"registro": FICHA.salvar_contato(str(b.get("mid") or ""), b.get("telefone", ""), b.get("email", ""), b.get("observacoes", ""), b.get("dono_nome"))}
         if path == "/api/maquina/apagar":
