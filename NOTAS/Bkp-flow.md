@@ -214,3 +214,19 @@ Pedidos do Marlos depois de ver a v3.6, todos no mesmo padrão para Gerenciament
 - Conferido no harness (`fsel.py`, `bk.py`, `ger.py`): Finder, guia somando igual ao rodapé, marcar/desmarcar pasta e arquivo, chip
   filtrando, seta, teclado, ícones, Misto, claro/escuro/estreito, jornada inteira até a Conclusão e Gerenciamento. Sem erro de JS.
   **Falta o Marlos ver na máquina dele** (e com a varredura grande: cada clique refaz o filtro no servidor).
+
+## BKP Mode no lugar (BUILD 2026-10-27.4)
+- Erro da 3.9 corrigido: o interruptor chamava `nav()` e trocava a página inteira. Agora `bkpModo(on)` liga e desliga **na mesma tela**
+  (a do Gerenciamento completo): o cockpit e as abas ficam; só o `#dcorpo` (o Finder) e as faixas em volta mudam, e o Finder fica no
+  mesmo lugar da tela (âncora pelo topo do Finder, não pelo `scrollY`). Ligado = `view="backup"`, `step=0` (`naSelecao()`); desligado =
+  `view="dados"`. "Fazer backup" e `go(0)` abrem a mesma tela ligada (`draw3` → `dadosResultado` → `selHost`). Clicar em "Visão geral"
+  ou em "Atualizar" no cockpit desliga o modo.
+- Destino (seção da lateral, cartão origem → destino, botão da faixa de baixo) só aparece com o BKP Mode ligado.
+- Espelhar ou ordenar é escolha de cada pasta (e arquivo), na coluna "Como copiar" logo depois do nome (`bfCp`, `POST /api/layout/copia`
+  com `{pasta}` ou `idx`). O seletor global Espelho/Ordenado/Misto saiu da faixa de baixo; o servidor roda sempre em `misto` (posto ao
+  abrir a Seleção) e o que ninguém escolheu vai espelhado. Checagens e pré-voo mostram "N espelhados e M ordenados".
+- O cockpit do backup (`selCockpit`) saiu: as pastas que ficaram de fora e o "só na nuvem" foram para `selFora`, abaixo do guia.
+- Mesma pasta nos dois modos: `POST /api/pasta/ponte` (`App.ponte_pasta`): nó do Gerenciamento ↔ chave `pk` da Seleção. Se não houver
+  correspondente, e a pessoa não andou no outro modo, volta para onde estava (`BKPV`). Teste `test_ponte_de_pasta_entre_os_modos`.
+- Harness `fsw.py` (troca no lugar), `bk.py`, `fsel.py`, `ger.py`: sem erro de JS. No harness o Gerenciamento e o backup olham árvores
+  diferentes, então a ponte só foi conferida no teste de unidade. **Falta o Marlos ver na máquina dele.**

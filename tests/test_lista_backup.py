@@ -137,6 +137,23 @@ class Lista(unittest.TestCase):
         self.assertGreater(n, 0)
         self.assertFalse(self.itens["b_relatorio.docx"].inc)
 
+    def test_ponte_de_pasta_entre_os_modos(self):
+        """BKP Mode liga e desliga no mesmo Finder: a pasta do Gerenciamento (nó) vira a chave da Seleção e volta."""
+        D = dd_backup.DADOS
+        if D is None:
+            self.skipTest("sem o módulo dados")
+        it = self.itens["b_relatorio.docx"]
+        docs = os.path.dirname(it.src)
+        self.assertEqual(self.app.ponte_pasta({"de": "dados", "no": D.no_de(docs)})["chave"], it.pk)
+        self.assertEqual(self.app.ponte_pasta({"de": "dados", "no": D.no_de(os.path.dirname(docs))})["chave"], it.pk.rsplit("/", 1)[0])
+        volta = self.app.ponte_pasta({"de": "bkp", "chave": it.pk})["no"]
+        self.assertEqual(os.path.normpath(D.NOS[volta]["path"]), os.path.normpath(docs))
+        volta = self.app.ponte_pasta({"de": "bkp", "chave": it.pk.rsplit("/", 1)[0]})["no"]
+        self.assertEqual(os.path.normpath(D.NOS[volta]["path"]), os.path.normpath(os.path.dirname(docs)))
+        self.assertEqual(self.app.ponte_pasta({"de": "dados", "no": 0}), {"chave": ""})
+        self.assertEqual(self.app.ponte_pasta({"de": "dados", "no": "x"}), {"chave": ""})
+        self.assertEqual(self.app.ponte_pasta({"de": "bkp", "chave": "Ninguem/Nada"}), {"no": 0})
+
     def test_previa_so_pelo_indice(self):
         i = self.app.items.index(self.itens["foto.jpg"])
         arq, mime, tipo, limite = self.app.previa(str(i))

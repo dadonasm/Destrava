@@ -42,7 +42,7 @@ if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 VERSION = "3.9"
-BUILD = "2026-10-27.3"  # igual ao BUILD do app.html: se forem diferentes, o pendrive tem arquivos de versões misturadas
+BUILD = "2026-10-27.4"  # igual ao BUILD do app.html: se forem diferentes, o pendrive tem arquivos de versões misturadas
 import classe as CLS  # noqa: E402  (tipos de arquivo: a mesma tabela do Gerenciamento)
 import disco  # noqa: E402  (conferência lendo do disco, não da memória)
 import mapa as MAPA  # noqa: E402
@@ -2087,6 +2087,41 @@ class App(object):
         return {"base": base, "migalhas": [x for x in base.split("/") if x], "pastas": sorted(sub.values(), key=lambda x: -x["bytes"]),
                 "soltos": soltos}
 
+    def ponte_pasta(self, d):
+        """A mesma pasta nos dois modos do Finder (BKP Mode): nó do Gerenciamento <-> chave da Seleção (pk). Sem correspondência: a raiz."""
+        barra = lambda p: str(p).replace("\\", "/").rstrip("/")
+        if d.get("de") == "dados":
+            try:
+                n = DADOS.NOS.get(int(d.get("no") or 0)) if DADOS else None
+            except (TypeError, ValueError):
+                n = None
+            if not n:
+                return {"chave": ""}
+            base = barra(n["path"]) + "/"
+            for it in self.items:
+                pk = it.pk or it.local0 or it.local
+                if not pk or not barra(it.src).startswith(base):
+                    continue
+                meio = barra(os.path.dirname(it.src))[len(base) - 1:].strip("/")  # pastas entre a pasta e o arquivo
+                k = len(meio.split("/")) if meio else 0
+                partes = pk.split("/")
+                if k < len(partes):
+                    return {"chave": "/".join(partes[:len(partes) - k])}
+            return {"chave": ""}
+        chave = str(d.get("chave") or "").strip("/")
+        if not chave or not DADOS:
+            return {"no": 0}
+        for it in self.items:
+            pk = it.pk or it.local0 or it.local
+            if pk == chave or pk.startswith(chave + "/"):
+                p = os.path.dirname(it.src)
+                for _ in range(pk.count("/") - chave.count("/")):
+                    p = os.path.dirname(p)
+                if DADOS.dono_idx(p)[1] is None:  # fora das pastas que o Gerenciamento mostra
+                    return {"no": 0}
+                return {"no": DADOS.no_de(p)}
+        return {"no": 0}
+
     def previa(self, i):
         """Prévia de um arquivo da origem pelo índice da lista: a tela nunca manda caminho. Só na nuvem não abre (baixaria o arquivo)."""
         try:
@@ -3781,6 +3816,8 @@ class Handler(BaseHTTPRequestHandler):
             return {"ok": True}
         if path == "/api/layout":
             return APP.set_modo(b.get("modo", ""))
+        if path == "/api/pasta/ponte":
+            return APP.ponte_pasta(b)
         if path == "/api/layout/copia":
             return APP.copia(b)
         if path == "/api/bitlocker":
