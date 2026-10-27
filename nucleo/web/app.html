@@ -85,6 +85,9 @@ button.sm{padding:5px 10px;font-size:12.5px;border-radius:8px}
 @keyframes fxd{0%,100%{opacity:.25;transform:translateX(-3px)}50%{opacity:1;transform:translateX(3px)}}
 .fx-seta:not(.off){color:var(--azul)}.fx-seta:not(.off) .fx-dots i{opacity:.4}
 .fx-seta.off .fx-dots i{animation:none}.fx-seta.off svg{opacity:.3}
+.fx-mini{padding:10px 14px 8px;margin-bottom:12px}.fx-mini .fx-leg{margin:0 0 4px;font-size:12.5px}.fx-mini .fx-row{max-width:520px}
+.fx-mini .fx-ico{width:56px;height:56px;border-radius:14px;margin-bottom:2px}.fx-mini .fx-ico svg{width:50px;height:50px}.fx-mini .fx-seta{margin-top:16px}.fx-mini .fx-seta svg{width:22px;height:22px}
+.fnd-falta{color:var(--acc);font-weight:600;border:1px dashed var(--line)}.fnd-dest .fnd-ls>.sm{margin-top:6px}.ds-ext{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}.ds-ext .fnd-li{width:auto}
 .od{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin-bottom:16px}.od .card{margin-bottom:0}
 @media (max-width:900px){.od{grid-template-columns:1fr}}
 @media (max-width:560px){.fx-ico{width:72px;height:72px}.fx-ico svg{width:64px;height:64px}.fx-seta{margin-top:22px;padding:0}.fx-seta svg{width:24px;height:24px}}
@@ -442,6 +445,22 @@ textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);b
 .ckp{position:relative}.ckp-tg{position:absolute;right:12px;bottom:12px;padding:3px 10px;font-size:12px}.ckp.min{padding:10px 96px 10px 16px}@media(max-width:700px){.ckp:not(.min) .ckp-tg{position:static;display:block;margin:8px 0 0 auto}}.ckp.min>:not(.cock):not(.lgd):not(.ckp-tg){display:none}.ckp.min .cock{margin:0}.ckp.min .ckp-tg{top:50%;bottom:auto;transform:translateY(-50%)}
 .ckp.min .lgd{display:none;position:absolute;left:12px;right:12px;top:100%;margin-top:6px;z-index:30;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh);padding:10px}.ckp.min:hover .lgd,.ckp.min:focus-within .lgd{display:flex}
 .fnd-bar{gap:8px}.fnd-nv{display:inline-flex;gap:2px}.fnd-nv button{min-width:32px;font-size:18px;line-height:1;padding:3px 8px}.fnd-tit{min-width:0;display:flex;flex-direction:column}.fnd-tit h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* BKP Mode: interruptor com botão de disquete 3,5" e a paleta do modo backup (disquetes clássicos: corpo grafite, janela prata, etiqueta creme, azul-disquete) */
+.bkpsw{display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:2px 4px;cursor:pointer;color:var(--tx);font:inherit;font-weight:700;font-size:12.5px;letter-spacing:.04em;border-radius:var(--r-pill)}
+.bkpsw:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
+.bkpsw-tr{position:relative;width:52px;height:28px;border-radius:var(--r-pill);background:var(--trilho);border:1px solid var(--line);transition:background .18s,border-color .18s}
+.bkpsw-k{position:absolute;top:1px;left:1px;width:24px;height:24px;display:block;transition:transform .18s;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.35))}
+.bkpsw-k svg{width:24px;height:24px;display:block}
+.bkpsw[aria-checked=true] .bkpsw-tr{background:#2f6fb5;border-color:#c9ccd1}
+.bkpsw[aria-checked=true] .bkpsw-k{transform:translateX(24px)}
+@media (prefers-reduced-motion:reduce){.bkpsw-tr,.bkpsw-k{transition:none}}
+.bkpbar{display:flex;align-items:center;gap:12px;margin:0 0 10px}
+.corpo[data-modo=bkp]{--panel:#23252c;--panel2:#2b2d33;--line:#4a4d57;--acc:#6aa3e0;--azul:#4a86cc;--trilho:#3a3d46;
+ --btnpri:linear-gradient(180deg,#4a86cc,#2f6fb5);--btnpri-tx:#fff;--btnpri-bd:#2f6fb5;--ok:#4cae66;--warn:#e0b432;--err:#d9524a}
+:root[data-theme=light] .corpo[data-modo=bkp]{--panel:#ebe8e0;--panel2:#f4efe2;--line:#c9ccd1;--acc:#2f6fb5;--azul:#2f6fb5;--trilho:#d6d3ca;--ok:#3f9b57;--warn:#b98a14;--err:#c8433a}
+.corpo[data-modo=bkp] .fac,.corpo[data-modo=bkp] .painel{border-color:#c9ccd1}
+.corpo[data-modo=bkp] .fac summary,.corpo[data-modo=bkp] .fnd-s summary{background:#f4efe2;color:#2b2d33;border-radius:var(--r-sm);padding:3px 8px}
 .fnd-mig{display:flex;gap:4px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--mut)}.fnd-mig:empty{display:none}.fnd-mig i{font-style:normal;opacity:.6}.fnd-mig .lnk{font-size:12px}
 .fnd-s summary{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}.fnd-ls{display:flex;flex-direction:column;gap:1px;margin-top:6px}
 .fnd-li{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:0;box-shadow:none;border-radius:8px;padding:6px 8px;font:inherit;font-size:13.5px;color:var(--tx);cursor:pointer}
@@ -909,7 +928,7 @@ let hp=null;
 function nav(v,arg){
   view=v;HOMEP=false;markNav();renderChrome();clearInterval(hp);
   $("#steps").classList.toggle("hide",v!=="backup");
-  if(v==="home")drawHome();else if(v==="perfil")drawPerfil();else if(v==="maq")drawMaq(arg);else if(v==="manter")drawManter(arg,false);else if(v==="dados"){DG.aba="geral";drawDados()}else if(v==="mapas")drawMapas();else if(v==="os")drawOS();else{setWide(false);renderSteps();draw()}
+  if(v==="home")drawHome();else if(v==="perfil")drawPerfil();else if(v==="maq")drawMaq(arg);else if(v==="manter")drawManter(arg,false);else if(v==="dados"){DG.aba=arg==="ger"?"ger":"geral";drawDados()}else if(v==="mapas")drawMapas();else if(v==="os")drawOS();else{setWide(false);renderSteps();draw()}
 }
 let HOMEP=false;  // HOMEP: ficha desta máquina aberta a partir da Home
 async function drawHome(){
@@ -1858,6 +1877,10 @@ function dgLateral(r,tr){
   $("#dgfdet",el).onclick=()=>{DG.filDet=true;dgFacetas(r,tr);const c=$("#dgfac [data-fk]");if(c)c.focus()};
   const lp=$("#dgflimpa",el);if(lp)lp.onclick=()=>{const fx=DG.f.faixa.length;dgLimpaF();DG.q="";dgSalva();if(fx)dadosResultado(DS.e||{});else safe(()=>dgGerenciar())};
 }
+/* interruptor BKP Mode: o botão é um disquete 3,5"; ligado = modo backup (pipeline, caixas Levar, paleta de disquete) */
+const BKP_DISQUETE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 1.5h16l4 4v17h-20z" fill="#2b2d33" stroke="#c9ccd1" stroke-width="1"/><rect x="6.5" y="1.5" width="10" height="6.5" fill="#c9ccd1"/><rect x="12.5" y="2.8" width="2.5" height="4" fill="#2b2d33"/><rect x="5" y="12" width="14" height="10.5" rx="1" fill="#f4efe2"/><path d="M7.5 15.5h9M7.5 18h9" stroke="#c8433a" stroke-width="1" stroke-linecap="round"/></svg>';
+const bkpSwitch=on=>`<button class="bkpsw" id="bkpsw" role="switch" aria-checked="${!!on}" title="${on?"Voltar ao Gerenciamento de dados":"Ligar o modo backup: escolher o que levar e onde gravar"}"><span>BKP Mode</span><span class="bkpsw-tr"><span class="bkpsw-k">${BKP_DISQUETE}</span></span></button>`;
+function bkpSwitchLiga(el,on){const b=$("#bkpsw",el||document);if(b)b.onclick=()=>on?nav("dados","ger"):nav("backup")}
 async function dgGerenciar(mais){
   const el=$("#dcorpo");if(!el)return;
   let r;const g=DG.gen=(DG.gen||0)+1;  // cliques rápidos (voltar, avançar, filtros): só a última resposta desenha
@@ -1888,6 +1911,7 @@ async function dgGerenciar(mais){
     <div class="lsth fnd-bar"><button class="sm lstfb" id="dgfil">Locais e filtros</button>
      <div class="fnd-nv"><button class="sm gh" id="dgvolta" aria-label="Voltar" title="Voltar (Alt+←)" ${DG.hi>0?"":"disabled"}>‹</button><button class="sm gh" id="dgavan" aria-label="Avançar" title="Avançar (Alt+→)" ${DG.hi<DG.hist.length-1?"":"disabled"}>›</button></div>
      <div class="fnd-tit grow"><nav class="fnd-mig" aria-label="Caminho">${mig}</nav><h2>${esc(tr[tr.length-1].t)}</h2></div>
+     ${bkpSwitch(false)}
      <div class="seg" role="group" aria-label="Ver por">${[["pastas","Pastas"],["arquivos","Todos os arquivos"]].map(([k,t])=>`<button class="sm ${DG.visao===k?"on":""}" aria-pressed="${DG.visao===k}" data-dgv="${k}">${t}</button>`).join("")}</div>
      <div class="seg" role="group" aria-label="Mostrar como">${[["lista","☰ Lista"],["icones","▦ Ícones"]].map(([k,t])=>`<button class="sm ${DG.modo===k?"on":""}" aria-pressed="${DG.modo===k}" data-dgm="${k}">${t}</button>`).join("")}</div>
      <select id="dgo" aria-label="Ordenar" style="width:auto;margin:0">${[["maior","Maior primeiro"],["menor","Menor primeiro"],["parado","Mais tempo parado"],["nome","Nome (A–Z)"]].map(([k,t])=>`<option value="${k}" ${DG.ordem===k?"selected":""}>${t}</option>`).join("")}</select>
@@ -1900,6 +1924,7 @@ async function dgGerenciar(mais){
   gavAplica($("#dgcorpo"),"dados");
   dgLateral(r,tr);dgChips();
   const recarrega=()=>{dgSalva();safe(()=>dgGerenciar())};
+  bkpSwitchLiga(el,false);
   $$("[data-dgv]",el).forEach(b=>b.onclick=()=>{DG.visao=b.dataset.dgv;recarrega()});
   $$("[data-dgm]",el).forEach(b=>b.onclick=()=>{DG.modo=b.dataset.dgm;recarrega()});
   $$("[data-mg]",el).forEach(b=>b.onclick=()=>{tr[+b.dataset.mg].f();DG.visao="pastas";recarrega()});
@@ -2431,20 +2456,74 @@ const FX_PC=`<svg viewBox="0 0 96 96" aria-hidden="true"><defs><linearGradient i
 const FX_PASTA=`<svg viewBox="0 0 96 96" aria-hidden="true"><defs><linearGradient id="fxFb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6db8f2"/><stop offset="1" stop-color="#3f97e3"/></linearGradient><linearGradient id="fxFf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a3d8fb"/><stop offset="1" stop-color="#5eaff0"/></linearGradient></defs>
  <path d="M8 23a5 5 0 015-5h21l7 7h42a5 5 0 015 5v8H8z" fill="url(#fxFb)"/><rect x="8" y="31" width="80" height="51" rx="6" fill="url(#fxFf)"/>
  <path d="M48 42v19M39.5 53l8.5 8.5 8.5-8.5M35 70h26" stroke="#2f80cf" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".8"/></svg>`;
+/* cartão "do computador para o disco do backup": o mesmo na etapa Origem e destino e, compacto, na Seleção */
+function fluxoHtml(o){
+  return `<p class="fx-leg">Copiando <b>do computador</b> para <b>o disco do backup</b>. A origem só é lida: nada é apagado.</p>
+   <div class="fx-row"><button type="button" class="fx-tile ${o.oVazio?"fx-vazio":""}" id="${o.idO}" title="Ver as origens"><span class="fx-ico">${FX_PC}</span><b>${esc(o.oTit)}</b><small>${esc(o.oSub)}</small></button>
+   <div class="fx-seta ${o.ok?"":"off"}" role="img" aria-label="${o.ok?"Os arquivos vão da origem para o destino":"Falta escolher a origem ou o destino"}"><span class="fx-dots"><i></i><i></i><i></i></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5l9.5 7.5L8 19.5z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
+   <button type="button" class="fx-tile ${o.dVazio?"fx-vazio":""} ${o.dErr?"fx-err":""}" id="${o.idD}" title="Escolher onde gravar o backup"><span class="fx-ico">${FX_PASTA}</span><b>${esc(o.dTit)}</b><small>${esc(o.dSub)}</small></button></div>`;
+}
+const nomeBase=p=>String(p||"").replace(/[\\/]+$/,"").split(/[\\/]/).pop()||String(p||"");
 function drawFluxo(){
   const el=$("#fluxo");if(!el)return;
   const sel=S.sources.filter(s=>S.chosen[s.path]),o=sel[0];
   const fi=$("#folder"),pasta=(fi&&fi.value.trim())||S.folder||"Backup";
-  const L=S.destLs,temD=!!S.dest&&L!==false,ok=!!o&&temD;
-  const base=S.dest?((L&&L.path)||S.dest).replace(/[\\/]+$/,"").split(/[\\/]/).pop()||S.dest:"";
-  const oSub=!o?"marque abaixo":sel.length>1?`${sel.length} origens · só leitura`:(o.total?`${fmt(o.total-o.free)} usados · só leitura`:"só leitura");
-  const dSub=!S.dest?"HD externo, pendrive ou pasta":L===false?"pasta não encontrada":`em ${base}${L&&L.total?" · "+fmt(L.free)+" livres":""}`;
-  el.innerHTML=`<p class="fx-leg">Copiando <b>do computador</b> para <b>o disco do backup</b>. A origem só é lida: nada é apagado.</p>
-   <div class="fx-row"><button type="button" class="fx-tile ${o?"":"fx-vazio"}" id="fc-o" title="Ver as origens"><span class="fx-ico">${FX_PC}</span><b>${o?esc(o.label)+(sel.length>1?" +"+(sel.length-1):""):"Escolha a origem"}</b><small>${esc(oSub)}</small></button>
-   <div class="fx-seta ${ok?"":"off"}" role="img" aria-label="${ok?"Os arquivos vão da origem para o destino":"Falta escolher a origem ou o destino"}"><span class="fx-dots"><i></i><i></i><i></i></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5l9.5 7.5L8 19.5z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
-   <button type="button" class="fx-tile ${temD?"":"fx-vazio"} ${L===false?"fx-err":""}" id="fxd" title="Escolher o destino"><span class="fx-ico">${FX_PASTA}</span><b>${temD?esc(pasta):"Escolher destino"}</b><small>${esc(dSub)}</small></button></div>`;
+  const L=S.destLs,temD=!!S.dest&&L!==false;
+  const base=S.dest?nomeBase((L&&L.path)||S.dest):"";
+  el.innerHTML=fluxoHtml({idO:"fc-o",idD:"fxd",ok:!!o&&temD,oVazio:!o,oTit:o?o.label+(sel.length>1?" +"+(sel.length-1):""):"Escolha a origem",
+    oSub:!o?"marque abaixo":sel.length>1?`${sel.length} origens · só leitura`:(o.total?`${fmt(o.total-o.free)} usados · só leitura`:"só leitura"),
+    dVazio:!temD,dErr:L===false,dTit:temD?pasta:"Escolher destino",dSub:!S.dest?"HD externo, pendrive ou pasta":L===false?"pasta não encontrada":`em ${base}${L&&L.total?" · "+fmt(L.free)+" livres":""}`});
   $("#fc-o").onclick=()=>$("#srcs").scrollIntoView({behavior:"smooth",block:"center"});
   $("#fxd").onclick=()=>{$("#pick").click();$("#dest").scrollIntoView({behavior:"smooth",block:"center"})};
+}
+/* ---- onde gravar: escolher o destino sem sair da Seleção (barra lateral e cartão), com o mesmo navegador de pastas ---- */
+async function destSalvar(dest,folder){
+  const st0=await api("/api/status"),cfg=st0.cfg||{};
+  let src=cfg.sources||[];if(!src.length)src=S.sources.filter(x=>S.chosen[x.path]);
+  if(!src.length)throw new Error("Escolha a origem primeiro (etapa Origem e destino).");
+  await api("/api/config",{sources:src.map(x=>({path:x.path,kind:x.kind,letter:x.letter||"C",label:x.label})),dest,folder});
+  S.dest=dest;S.folder=folder;
+}
+function destinoEscolher(depois){safe(async()=>{
+  const cfg=(SB&&SB.cfg)||{},nome=(CTX.t&&CTX.t.nome)||info.host||"PC";
+  const L=await api("/api/dados/locais").catch(()=>({externos:[]}));
+  const ext=(L.externos||[]);
+  const d=document.createElement("div");d.className="modal";
+  d.innerHTML=`<div class="box" style="max-width:620px" role="dialog" aria-modal="true" aria-labelledby="dsT"><h2 id="dsT">Onde gravar o backup?</h2>
+   <p class="h">HD externo, pendrive ou pasta. Para poder formatar depois, escolha um disco <b>diferente</b> do que será formatado.</p>
+   ${ext.length?`<div class="eyebrow">DISCOS CONECTADOS</div><div class="ds-ext">${ext.map(x=>`<button class="fnd-li" data-dx="${esc(x.path)}"><span class="ic">💾</span><span class="t">${esc(x.nome)}</span></button>`).join("")}</div>`:'<p class="mut" style="font-size:12.5px">Nenhum disco externo conectado. Ligue o HD ou pendrive, ou escolha uma pasta abaixo.</p>'}
+   <label for="dsDest">Pasta de destino</label><div class="row"><input type="text" id="dsDest" class="grow" value="${esc(cfg.dest||S.dest||"")}" aria-label="Pasta de destino"><button id="dsPick">Procurar…</button></div><div id="dsBr"></div><div id="dsInfo" class="mut" style="margin-top:6px"></div>
+   <label for="dsPasta">Nome da pasta do backup</label><input type="text" id="dsPasta" value="${esc(cfg.folder||S.folder||("Backup_"+nome.replace(/[^\w\-]+/g,"_")))}">
+   <div class="row" style="margin-top:16px;justify-content:flex-end"><button id="dsC">Cancelar</button><button class="pri" id="dsOk">Gravar aqui</button></div></div>`;
+  $("#layer").appendChild(d);
+  const inp=$("#dsDest",d),info2=async()=>{const el=$("#dsInfo",d);if(!inp.value.trim()){el.textContent="";return}
+    try{const r=await api("/api/ls?path="+encodeURIComponent(inp.value.trim()));el.textContent=r.path?`${fmt(r.free)} livres de ${fmt(r.total)} · ${r.fs||"sistema de arquivos desconhecido"}`:""}catch(e){el.textContent="Pasta não encontrada."}};
+  const fecha=()=>{d.remove();document.removeEventListener("keydown",esc1)},esc1=ev=>{if(ev.key==="Escape")fecha()};document.addEventListener("keydown",esc1);
+  $$("[data-dx]",d).forEach(b=>b.onclick=()=>{inp.value=b.dataset.dx;$$("[data-dx]",d).forEach(x=>x.classList.toggle("on",x===b));info2()});
+  $("#dsPick",d).onclick=()=>safe(()=>pickFolder(inp,$("#dsBr",d),info2));
+  inp.oninput=info2;$("#dsC",d).onclick=fecha;
+  $("#dsOk",d).onclick=()=>safe(async()=>{const v=inp.value.trim();if(!v)return toast("Escolha um disco ou uma pasta.","err");
+    await destSalvar(v,$("#dsPasta",d).value.trim());fecha();toast("O backup vai para "+nomeBase(v)+".","ok");if(depois)depois()});
+  info2();inp.focus();
+})}
+/* seção Destino no alto da barra lateral da Seleção */
+function selDestLado(){
+  const cfg=SB.cfg||{},t=SB.t||{},sit=t.cabe===false?"não cabe":t.cabe?"cabe":"";
+  return `<details class="fc-g fnd-s fnd-dest" data-g="dest" open><summary>Destino</summary><div class="fnd-ls">
+   ${cfg.dest?`<button class="fnd-li on" data-dst="1" title="${esc(cfg.dest)}"><span class="ic">💾</span><span class="t">${esc(nomeBase(cfg.dest))}</span><small>${fmt(t.free)} livres</small></button>
+     <p class="mut fc-dica">${esc(t.fs||"")}${t.fs&&sit?" · ":""}${sit?`<b style="color:var(--${t.cabe===false?"err":"ok"})">${sit}</b>`:""} · pasta <b>${esc(cfg.folder||"")}</b></p>`
+   :`<button class="fnd-li fnd-falta" data-dst="1"><span class="ic">💾</span><span class="t">Escolher onde gravar</span></button>`}
+   <button class="sm" data-dst="1">${cfg.dest?"Trocar destino…":"Escolher destino…"}</button></div></details>`;
+}
+/* cartão compacto origem → destino acima da lista da Seleção */
+function selFluxo(){
+  const el=$("#selfx");if(!el)return;
+  const cfg=SB.cfg||{},t=SB.t||{},src=cfg.sources||[],o=src[0],so=o&&S.sources.find(x=>x.path===o.path);
+  el.innerHTML=fluxoHtml({idO:"sfo",idD:"sfd",ok:!!o&&!!cfg.dest,oVazio:!o,oTit:o?(o.label||nomeBase(o.path))+(src.length>1?" +"+(src.length-1):""):"Escolha a origem",
+    oSub:!o?"etapa Origem e destino":src.length>1?`${src.length} origens · só leitura`:so&&so.total?`${fmt(so.total-so.free)} usados · só leitura`:"só leitura",
+    dVazio:!cfg.dest,dErr:t.cabe===false,dTit:cfg.dest?cfg.folder||nomeBase(cfg.dest):"Escolher destino",
+    dSub:!cfg.dest?"HD externo, pendrive ou pasta":`em ${nomeBase(cfg.dest)} · ${fmt(t.free)} livres${t.cabe===false?" · não cabe":""}`});
+  $("#sfo",el).onclick=()=>go(1);$("#sfd",el).onclick=()=>destinoEscolher(()=>draw3());
 }
 
 /* ---- 2 checagens e escaneamento ---- */
@@ -2511,10 +2590,11 @@ async function draw3(){
   if(view!=="backup"||step!==0)return;
   LAY=L;st=s;SELG=g;Object.assign(SB,{t,cfg:s.cfg||{},foco:null,hover:"",ident:ID});
   // uma tela só: o disco no topo, filtros à esquerda, a grade (ou a lista, no lugar dela) ao centro e a decisão embaixo
-  $("#main").innerHTML=`<section class="card ckp" id="selcock" aria-label="O disco desta máquina"></section>
-   <div class="corpo" id="selcorpo" data-tela="sel"><aside class="fac" id="lsts" aria-label="Filtros"></aside><section class="painel sgp" id="selp"></section></div>
+  $("#main").innerHTML=`<div class="bkpbar">${bkpSwitch(true)}</div><section class="card ckp" id="selcock" aria-label="O disco desta máquina"></section>
+   <section class="card fluxo fx-mini" id="selfx" aria-label="De onde para onde"></section>
+   <div class="corpo" id="selcorpo" data-tela="sel" data-modo="bkp"><aside class="fac" id="lsts" aria-label="Filtros"></aside><section class="painel sgp" id="selp"></section></div>
    <div class="acao" id="selacao" role="region" aria-label="Como guardar e iniciar a cópia"></div>`;
-  gavAplica($("#selcorpo"),"sel");selCockpit(g,t,MD);selBarra();
+  bkpSwitchLiga($("#main"),true);gavAplica($("#selcorpo"),"sel");selCockpit(g,t,MD);selFluxo();selBarra();
   if(LST.aberta)return abrirLista(LST.f,LST.rot);
   selGrade(g);selFacetas();
 }
@@ -2548,12 +2628,12 @@ function selBarra(){
    <div class="como"><div class="rot">Como guardar no destino${ed?"":" · a cópia já começou"}</div>
     <div class="seg" role="radiogroup" aria-label="Como guardar este backup">${LAY_MODOS.map(([k,,nm,d])=>`<button role="radio" aria-checked="${L.modo===k}" tabindex="${(L.modo||"espelho")===k?0:-1}" data-lm="${k}" title="${esc(d)}" ${ed?"":"disabled"}>${nm}</button>`).join("")}</div></div>
    <div class="prev"><div class="rot" id="sbrot"></div><div class="trilho" id="sbtri" aria-live="polite"></div></div>
-   <button class="dest" id="sbdest" title="${cfg.dest?"Trocar o destino":"Escolher o destino"}: abre Origem e destino">💽 ${cfg.dest?`${esc(nomeDe(cfg.dest))} <span class="mut">${fmt(t.free)} livres</span>`:'Destino <span class="mut">escolha na próxima etapa</span>'}</button>
+   <button class="dest" id="sbdest" title="${cfg.dest?"Trocar o destino":"Escolher onde gravar"}">💽 ${cfg.dest?`${esc(nomeDe(cfg.dest))} <span class="mut">${fmt(t.free)} livres</span>`:'Destino <span class="mut">escolher onde gravar</span>'}</button>
    <div class="tot ${t.cabe===false||t.fat32_problema?"ruim":""}" title="${cfg.dest?`Ocupa ${pct.toFixed(pct<10?1:0)}% do espaço livre no destino`:"O espaço no destino é conferido quando ele for escolhido"}"><b>${nf(t.sel_n)} ${t.sel_n===1?"arquivo":"arquivos"}</b><div class="mut">${fmt(t.sel_bytes)} vão para o backup</div></div>
-   <button class="pri ir" id="go3">Seguir para Origem e destino →</button>`;
+   <button class="pri ir" id="go3">${cfg.dest?"Seguir para as Checagens →":"Seguir para Origem e destino →"}</button>`;
   $("#go3").disabled=t.cabe===false||t.fat32_problema||t.sel_n===0||!L.modo;
-  $("#go3").onclick=()=>go(1);
-  $("#sbdest").onclick=()=>go(1);
+  $("#go3").onclick=()=>go(cfg.dest?2:1);
+  $("#sbdest").onclick=()=>destinoEscolher(()=>draw3());
   const ops=$$("[data-lm]",el);
   ops.forEach((b,i)=>{
     b.onclick=()=>safe(async()=>{if(b.dataset.lm===LAY.modo)return;LAY=await api("/api/layout",{modo:b.dataset.lm});SB.hover="";toast("Este backup vai como "+LAY.nome+".","ok");selModo()});
@@ -2789,7 +2869,7 @@ function lstSide(){
   const grupo=(k,titulo,corpo,n)=>fcGrupo(k,titulo,corpo,n,LST.fechado.has(k));
   const fi=fac.inc||{},n1=fi["1"]||0,n0=fi["0"]||0;
   const pz=LST.pastas;
-  let h=gavCab("sel",LST.aberta?fChips().length:0)+(pz?grupo("pasta","Pasta",`<nav class="fc-tr" aria-label="Pasta atual"><button class="lnk" data-pb="">Todas</button>${pz.migalhas.map((m,i)=>`<i>›</i><button class="lnk" data-pb="${esc(pz.migalhas.slice(0,i+1).join("/"))}">${esc(m)}</button>`).join("")}</nav>
+  let h=gavCab("sel",LST.aberta?fChips().length:0)+selDestLado()+(pz?grupo("pasta","Pasta",`<nav class="fc-tr" aria-label="Pasta atual"><button class="lnk" data-pb="">Todas</button>${pz.migalhas.map((m,i)=>`<i>›</i><button class="lnk" data-pb="${esc(pz.migalhas.slice(0,i+1).join("/"))}">${esc(m)}</button>`).join("")}</nav>
     ${pz.pastas.slice(0,LST.mais.pasta?400:12).map(x=>`<button class="fc-p" data-pc="${esc(x.chave)}" title="${esc(x.chave)}"><span>${pz.base?"📁":"👤"}</span><span class="grow">${esc(x.nome)}</span><small title="${fmt(x.bytes)}">${nf(x.n)}</small>${LAY.modo==="misto"&&x.ordenar?`<small class="fc-o2" title="${nf(x.ordenar)} vão ordenados">🗂️ ${nf(x.ordenar)}</small>`:""}</button>`).join("")||'<p class="mut" style="font-size:12.5px;margin:4px 0">Sem subpastas aqui.</p>'}
     ${pz.pastas.length>12?`<button class="sm gh fc-m" data-fm="pasta">${LST.mais.pasta?"Ver menos":"Ver todas ("+pz.pastas.length+")"}</button>`:""}
     ${pz.base&&pz.soltos.n?`<p class="mut" style="font-size:12px;margin:6px 0 0">${nf(pz.soltos.n)} arquivo(s) direto nesta pasta.</p>`:""}`,LST.f.pasta?1:0):"");
@@ -2809,6 +2889,7 @@ function lstSide(){
       fVals(k).length+(k==="data"&&(LST.f.dmin||LST.f.dmax)?1:0)+(k==="tam"&&(LST.f.smin||LST.f.smax)?1:0));
   }
   el.innerHTML=h;
+  $$("[data-dst]",el).forEach(b=>b.onclick=()=>destinoEscolher(()=>draw3()));
   $$("details.fc-g",el).forEach(d=>d.ontoggle=()=>{if(d.open)LST.fechado.delete(d.dataset.g);else LST.fechado.add(d.dataset.g)});
   $$("[data-fk]",el).forEach(c=>c.onchange=()=>fTroca(c.dataset.fk,c.dataset.fv));
   $$("[data-pc],[data-pb]",el).forEach(b=>b.onclick=()=>{const v=b.dataset.pc!=null?b.dataset.pc:b.dataset.pb;if(v)LST.f.pasta=v;else delete LST.f.pasta;LST.mais.pasta=false;lstIr()});
