@@ -439,6 +439,20 @@ textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);b
 .fc-dica{font-size:12px;margin:2px 2px 6px;line-height:1.35}
 .fc-cor{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
 .painel .dg-bar{border-radius:0}.painel .lstbar>b{font-size:13px;font-weight:600;color:var(--mut)}.painel .lstbar #dgq{flex:1;min-width:200px;margin:0;border-radius:var(--r-pill)}
+.ckp{position:relative}.ckp-tg{position:absolute;right:12px;bottom:12px;padding:3px 10px;font-size:12px}.ckp.min{padding:10px 96px 10px 16px}@media(max-width:700px){.ckp:not(.min) .ckp-tg{position:static;display:block;margin:8px 0 0 auto}}.ckp.min>:not(.cock):not(.lgd):not(.ckp-tg){display:none}.ckp.min .cock{margin:0}.ckp.min .ckp-tg{top:50%;bottom:auto;transform:translateY(-50%)}
+.ckp.min .lgd{display:none;position:absolute;left:12px;right:12px;top:100%;margin-top:6px;z-index:30;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh);padding:10px}.ckp.min:hover .lgd,.ckp.min:focus-within .lgd{display:flex}
+.fnd-bar{gap:8px}.fnd-nv{display:inline-flex;gap:2px}.fnd-nv button{min-width:32px;font-size:18px;line-height:1;padding:3px 8px}.fnd-tit{min-width:0;display:flex;flex-direction:column}.fnd-tit h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fnd-mig{display:flex;gap:4px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--mut)}.fnd-mig:empty{display:none}.fnd-mig i{font-style:normal;opacity:.6}.fnd-mig .lnk{font-size:12px}
+.fnd-s summary{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}.fnd-ls{display:flex;flex-direction:column;gap:1px;margin-top:6px}
+.fnd-li{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:0;box-shadow:none;border-radius:8px;padding:6px 8px;font:inherit;font-size:13.5px;color:var(--tx);cursor:pointer}
+.fnd-li:hover{background:var(--panel2)}.fnd-li.on{background:var(--panel2);font-weight:650;box-shadow:inset 3px 0 0 var(--azul)}.fnd-li .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fnd-li small{color:var(--mut);font-variant-numeric:tabular-nums;font-size:11.5px}.fnd-li .ic{width:18px;text-align:center;flex:none}
+.fnd-eti .gpill{width:18px;justify-content:center;flex:none}.fnd-dh{display:flex;align-items:center;justify-content:space-between;padding:10px 0 8px;border-bottom:1px solid var(--line)}
+.fnd-seta{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:none;border:0;background:none;box-shadow:none;color:var(--mut);cursor:pointer;padding:0;font-size:11px;margin-right:-4px}.fnd-ind{display:inline-block;flex:none}.fnd-seta svg{transition:transform .12s}.fnd-seta[aria-expanded=true] svg{transform:rotate(90deg)}.fnd-seta:hover{color:var(--tx)}
+#dgbody tr.fnd-foco>td{background:color-mix(in srgb,var(--azul) 13%,transparent)}.fnd-fim td{padding:6px 10px;font-size:12.5px}
+.fnd-grade{padding:4px 16px 12px}.fnd-gt{margin:12px 0 8px;font-size:13px}.fnd-gr{display:grid;grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:10px}
+.fnd-ic{position:relative;border:1px solid transparent;border-radius:12px;padding:10px 8px 8px;text-align:center;min-width:0}.fnd-ic:hover{background:var(--panel2)}.fnd-ic.sel{border-color:var(--azul);background:color-mix(in srgb,var(--azul) 9%,transparent)}.fnd-ic.fnd-foco{outline:2px solid var(--azul);outline-offset:-1px}
+.fnd-ck{position:absolute;top:6px;left:6px;margin:0;font-size:12px}.fnd-mi{height:84px;display:flex;align-items:center;justify-content:center;font-size:46px;line-height:1}.fnd-mi img{max-width:100%;max-height:84px;border-radius:6px;object-fit:cover}
+.fnd-ic .fnd-nm{justify-content:center;margin-top:6px}.fnd-ic .fnd-nm b{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}.fnd-ic>small{display:block;font-size:11.5px;margin-top:2px}
 .painel .lsth .seg button.on{background:var(--panel);box-shadow:var(--sh);font-weight:650}
 #dcorpo .corpo{margin-bottom:24px}
 @media (max-width:1000px){.corpo,.corpo.gav-fechada{grid-template-columns:1fr}.fac{display:none;position:static;max-height:none}.corpo.fopen .fac{display:block}.corpo.fopen .fac>*{display:revert}.gav-cab{display:none}.lstfb{display:inline-flex}}
@@ -1590,7 +1604,7 @@ async function dgAtualizar(primeira){
     if(!x)return;await api("/api/dados/reset",{});DS.init=false;DS.sel=new Set();DG.sel.clear();DG.pasta=0;return drawDados();
   }
   if(!r)return;
-  lsSet("dd_varrer",JSON.stringify({idle:v.idle,mb:v.mb}));DS.init=false;DS.sel=new Set();DG.sel.clear();DG.pasta=0;
+  lsSet("dd_varrer",JSON.stringify({idle:v.idle,mb:v.mb}));DS.init=false;DS.sel=new Set();DG.sel.clear();DG.pasta=0;DG.loc=null;DG.ab.clear();DG.hist=[0];DG.hi=0;
   await api("/api/dados/varrer",{idle_dias:v.idle,min_mb:v.mb});drawDados();
 }
 function dgIdade(q){
@@ -1610,10 +1624,10 @@ function dadosVarrendo(){
 /* ---------- Gerenciamento de dados: o cockpit no topo é o filtro; abaixo, Sugestão de varredura e Gerenciamento completo ---------- */
 const DG_FK=["faixa","grupo","sug","tipo","uso","tam","usuario"];  // filtros da gaveta do Gerenciamento (várias opções em cada um)
 const dgFVazio=()=>Object.fromEntries(DG_FK.map(k=>[k,[]]));
-const DG=Object.assign({aba:"geral",visao:"arquivos",ordem:"maior",fechados:[],fechF:[]},(()=>{try{const x=JSON.parse(lsGet("dd_dados","{}"))||{};delete x.bloco;delete x.cat;delete x.usr;return x}catch(e){return {}}})(),
-  {pasta:0,q:"",sel:new Map(),rows:[],pastas:[],r:null,busca:{},mais:{}});
+const DG=Object.assign({aba:"geral",visao:"arquivos",ordem:"maior",modo:"lista",ckMin:false,fechados:[],fechF:[]},(()=>{try{const x=JSON.parse(lsGet("dd_dados","{}"))||{};delete x.bloco;delete x.cat;delete x.usr;return x}catch(e){return {}}})(),
+  {pasta:0,q:"",sel:new Map(),rows:[],pastas:[],r:null,busca:{},mais:{},hist:[0],hi:0,ab:new Map(),loc:null,filDet:false,foco:0});
 DG.f=Object.assign(dgFVazio(),DG.f||{});
-const dgSalva=()=>lsSet("dd_dados",JSON.stringify({aba:DG.aba,visao:DG.visao,ordem:DG.ordem,fechados:DG.fechados,f:DG.f,fechF:DG.fechF}));
+const dgSalva=()=>lsSet("dd_dados",JSON.stringify({aba:DG.aba,visao:DG.visao,ordem:DG.ordem,modo:DG.modo,ckMin:DG.ckMin,fechados:DG.fechados,f:DG.f,fechF:DG.fechF}));
 const dgLimpaF=()=>{DG.f=dgFVazio()};
 const dgNAtivos=()=>DG_FK.reduce((a,k)=>a+DG.f[k].length,0);
 const dgQS=o=>new URLSearchParams(Object.assign(Object.fromEntries(DG_FK.map(k=>[k,DG.f[k].join("|")])),{pasta:DG.pasta||"",q:DG.q,ordem:DG.ordem,visao:DG.visao},o||{}));
@@ -1655,6 +1669,9 @@ function dgCockpit(e,ID){
       aoClicar:k=>{const so=DG.aba==="ger"&&DG.f.faixa.length===1&&DG.f.faixa[0]===k;DG.aba="ger";dgLimpaF();if(!so)DG.f.faixa=[k];DG.pasta=0;DG.q="";DG.rows=[];dgSalva();dadosResultado(DS.e)}});
     if(ck.medindo)DGCK=setTimeout(async()=>{if(view!=="dados"||!$("#dgcock"))return;try{const n=await api("/api/dados/estado");DS.e=n;dgCockpit(n,ID)}catch(x){}},2500);
   }
+  if(ck){el.classList.toggle("min",!!DG.ckMin);
+    el.insertAdjacentHTML("beforeend",`<button class="sm gh ckp-tg" id="dgckt" aria-expanded="${!DG.ckMin}" title="${DG.ckMin?"Mostrar o cockpit inteiro":"Minimizar o cockpit (fica só a barra)"}">${DG.ckMin?"Expandir":"Minimizar"}</button>`);
+    $("#dgckt",el).onclick=()=>{DG.ckMin=!DG.ckMin;dgSalva();dgCockpit(DS.e||e,ID)}}
   $("#dre",el).onclick=()=>safe(()=>dgAtualizar(!ck));
   $("#dexp",el).onclick=()=>{if(ix.existe){DG.aba="ger";DG.visao="pastas";DG.pasta=0;DG.q="";dgSalva();dadosResultado(e)}else safe(()=>dadosExplorar(0))};
 }
@@ -1720,7 +1737,7 @@ const dataDe=t=>t?new Date(t*1000).toLocaleDateString("pt-BR"):"—";
 function dgLinha(x,cls){
   return `<tr class="${x.marc?"":"off"}" data-row="${x.no}">
    <td class="ck">${x.trava?(x.tt==="protegido"?`<button class="dg-lock" data-desb="${x.no}" title="${esc((x.motivo||"Bloqueado")+": clique para ver o risco e destravar")}" aria-label="Destravar ${esc(x.nome)}">🔒</button>`:`<span class="dg-lock" title="${esc((x.motivo||"Bloqueado: só para ver")+(x.tt==="nucleo_so"?" (não destrava)":""))}" aria-label="Bloqueado">🔒</span>`):`<input type="checkbox" class="${cls}" data-k="${x.k}" ${x.marc?"checked":""} aria-label="Marcar ${esc(x.nome)}">`}</td>
-   <td><div class="sg-nome"><span class="ic">${dgIco(x)}</span><div style="min-width:0"><b class="${x.entrar?"dg-ent":""}" ${x.entrar?`data-entra="${x.no}" role="button" tabindex="0"`:""} title="${esc(x.nome)}">${esc(x.nome)}</b>${x.sug?` <span class="sugb s-${x.sug}" title="${esc(SUG_DICA[x.sug]||"")}">${SUG_NOME[x.sug]}</span>`:""}${x.trava?`<small class="dg-mot" title="${esc(x.path)}">🔒 ${esc(x.motivo||"Bloqueado: só para ver")}${x.ajuda?` <button class="dg-lk" data-ajuda="${x.ajuda}" title="Abre a pasta do OneDrive no Finder: clique com o botão direito no arquivo e escolha Liberar espaço">Abrir pasta do OneDrive</button>`:""}</small>`:x.lib?`<small class="dg-libt">🔓 Liberado por você <button class="dg-lk" data-trav="${x.no}">Travar de novo</button></small>`:x.tipo==="pasta"?`<small>${esc(x.sub||"")}</small>`:""}${x.usuario?`<small class="mut">${esc(x.usuario)}</small>`:""}</div></div></td>
+   <td><div class="sg-nome">${x.arv?`<span class="fnd-ind" style="width:${(x.nv||0)*18}px"></span>${x.tipo==="pasta"&&x.entrar?`<button class="fnd-seta" data-abre="${x.no}" aria-expanded="${DG.ab.has(x.no)}" aria-label="${DG.ab.has(x.no)?"Fechar":"Abrir"} ${esc(x.nome)} aqui">${FND_SETA}</button>`:'<span class="fnd-seta"></span>'}`:""}<span class="ic">${dgIco(x)}</span><div style="min-width:0"><b class="${x.entrar?"dg-ent":""}" ${x.entrar?`data-entra="${x.no}" role="button" tabindex="0"`:""} title="${esc(x.nome)}">${esc(x.nome)}</b>${x.sug?` <span class="sugb s-${x.sug}" title="${esc(SUG_DICA[x.sug]||"")}">${SUG_NOME[x.sug]}</span>`:""}${x.trava?`<small class="dg-mot" title="${esc(x.path)}">🔒 ${esc(x.motivo||"Bloqueado: só para ver")}${x.ajuda?` <button class="dg-lk" data-ajuda="${x.ajuda}" title="Abre a pasta do OneDrive no Finder: clique com o botão direito no arquivo e escolha Liberar espaço">Abrir pasta do OneDrive</button>`:""}</small>`:x.lib?`<small class="dg-libt">🔓 Liberado por você <button class="dg-lk" data-trav="${x.no}">Travar de novo</button></small>`:x.tipo==="pasta"?`<small>${esc(x.sub||"")}</small>`:""}${x.usuario?`<small class="mut">${esc(x.usuario)}</small>`:""}</div></div></td>
    <td>${esc(x.tipo==="pasta"?"Pasta":x.tipo_rot||"")}</td><td>${esc(x.cat?dgCat(x.cat):"")}</td><td>${grupoPill(x.grupo)}</td><td class="sit">${dgSit(x)}</td>
    <td class="r mut">${x.dias!=null?nf(x.dias)+" d":""}</td><td class="mut">${x.tipo==="pasta"?"":dataDe(x.criado)}</td>
    <td class="r"><b>${x.bytes==null?"…":fmt(x.bytes)}</b></td><td class="cam mut" title="${esc(x.path)}">${esc(x.tipo==="pasta"?"":x.sub||"")}</td>
@@ -1761,7 +1778,7 @@ function dgMenuFecha(){if(DGM.el){DGM.el.remove();DGM.el=null}}
 document.addEventListener("click",ev=>{if(DGM.el&&!ev.target.closest(".dmenu"))dgMenuFecha()});
 document.addEventListener("keydown",ev=>{if(ev.key==="Escape")dgMenuFecha()});
 window.addEventListener("scroll",()=>dgMenuFecha(),{passive:true});
-function dgMenu(btn,x){
+function dgMenu(btn,x,pos){
   dgMenuFecha();
   const op=[x.previa?["👁 Ver",()=>verArquivo(x.no,x.previa,x.nome)]:0,x.pode_abrir&&x.tipo!=="pasta"?["Abrir no programa",()=>abrirNo(x.no,"abrir")]:0,["Mostrar na pasta",()=>abrirNo(x.no,"pasta")],
     x.tipo==="pasta"?["Entrar",()=>x.gerir?dgEntrar(x.no):safe(()=>dadosExplorar(x.no))]:0,x.ajuda?["Abrir pasta do OneDrive",()=>dgAjuda(x.ajuda)]:0,
@@ -1769,17 +1786,62 @@ function dgMenu(btn,x){
   const m=document.createElement("div");m.className="dmenu";m.setAttribute("role","menu");
   m.innerHTML=op.map((o,i)=>o==="-"?"<hr>":`<button role="menuitem" data-i="${i}">${esc(o[0])}</button>`).join("");
   document.body.appendChild(m);const r=btn.getBoundingClientRect();
-  m.style.top=(window.scrollY+r.bottom+4)+"px";m.style.left=Math.max(8,window.scrollX+r.right-m.offsetWidth)+"px";
+  if(pos){m.style.top=(window.scrollY+pos.y)+"px";m.style.left=Math.max(8,Math.min(window.scrollX+pos.x,window.scrollX+innerWidth-m.offsetWidth-8))+"px"}
+  else{m.style.top=(window.scrollY+r.bottom+4)+"px";m.style.left=Math.max(8,window.scrollX+r.right-m.offsetWidth)+"px"}
   $$("button",m).forEach(b=>b.onclick=ev=>{ev.stopPropagation();dgMenuFecha();op[+b.dataset.i][1]()});
   m.onkeydown=ev=>{const bs=$$("button",m),i=bs.indexOf(document.activeElement);if(ev.key==="ArrowDown"){ev.preventDefault();(bs[i+1]||bs[0]).focus()}if(ev.key==="ArrowUp"){ev.preventDefault();(bs[i-1]||bs[bs.length-1]).focus()}};
   DGM.el=m;const f=$("button",m);if(f)f.focus();
 }
 /* ---- aba Gerenciamento completo: todos os arquivos das pastas dos usuários, pelo índice da varredura ---- */
 function dgEntrar(no){DG.visao="pastas";DG.pasta=no;DG.q="";dgSalva();safe(()=>dgGerenciar())}
+function dgHist(d){const i=DG.hi+d;if(i<0||i>=DG.hist.length)return;DG.hi=i;DG.pasta=DG.hist[i];DG.visao="pastas";DG.q="";dgSalva();safe(()=>dgGerenciar())}
+/* abre uma pasta no lugar (seta ▸): os filhos vêm do índice e ficam guardados enquanto o programa estiver aberto */
+async function dgAbre(no,forca){
+  if(DG.ab.has(no)&&!forca){DG.ab.delete(no);return dgCorpo()}
+  const r=await api("/api/dados/indice?"+dgQS({pasta:no,visao:"pastas",offset:0,limit:300,facetas:""}));
+  DG.ab.set(no,{pastas:r.pastas,rows:r.rows,mais:Math.max(0,r.total-r.rows.length)});if(!forca)dgCorpo();
+}
+/* abrir um item como no Finder: pasta entra, arquivo mostra a prévia ou abre no programa padrão */
+function dgAbrirItem(x){
+  if(!x)return;
+  if(x.tipo==="pasta")return x.entrar?dgEntrar(x.no):safe(()=>dadosExplorar(x.no));
+  if(x.previa)return verArquivo(x.no,x.previa,x.nome);
+  if(x.pode_abrir)abrirNo(x.no,"abrir");
+}
+const FND_SETA='<svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><path d="M3.5 1.5 7 5l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const FND_ICO={mesa:"🖥️",docs:"📄",down:"⬇️",img:"🖼️",vid:"🎬",mus:"🎵",conta:"👤",disco:"💽",apps:"🧩",lixeira:"🗑️",externo:"💾"};
+/* barra lateral do Finder: Favoritos, Locais, Etiquetas (= Grupos) e Filtros; os filtros detalhados ocupam a barra toda até "Concluir" */
+function dgLateral(r,tr){
+  const el=$("#dgfac");if(!el)return;
+  if(DG.filDet)return dgFacetas(r,tr);
+  const n=dgNAtivos(),L=DG.loc||{favoritos:[],locais:[],externos:[]},q=(r.facetas||{}).grupo||{};
+  const item=(x,at)=>`<button class="fnd-li ${at==="data-loc"&&DG.pasta===x.no&&DG.visao==="pastas"?"on":""}" ${at}="${x.no}" title="${esc(x.path)}"><span class="ic">${FND_ICO[x.ico]||"📁"}</span><span class="t">${esc(x.nome)}</span>${x.bytes!=null?`<small>${fmt(x.bytes)}</small>`:""}</button>`;
+  const sec=(k,t,corpo)=>corpo?`<details class="fc-g fnd-s" data-g="${k}" ${DG.fechF.includes(k)?"":"open"}><summary>${t}</summary><div class="fnd-ls">${corpo}</div></details>`:"";
+  el.innerHTML=gavCab("dados",n)
+   +sec("fav","Favoritos",L.favoritos.map(x=>item(x,"data-loc")).join(""))
+   +sec("loc","Locais",L.locais.map(x=>item(x,"data-loc")).join("")+L.externos.map(x=>item(x,"data-ext")).join(""))
+   +sec("eti","Etiquetas",((TIPOS&&TIPOS.grupos)||[]).map(g=>{const on=DG.f.grupo.includes(g.nome);
+     return `<button class="fnd-li fnd-eti ${on?"on":""}" data-eti="${esc(g.nome)}" aria-pressed="${on}" title="${esc(g.explica||"")}"><span class="gpill g-${GRUPO_K[g.nome]||"x"}"></span><span class="t">${esc(g.nome)}</span>${q[g.nome]!=null?`<small>${nf(q[g.nome])}</small>`:""}</button>`}).join(""))
+   +sec("fil","Filtros",`<p class="mut fc-dica">${n?`${n} filtro(s) ativo(s), mostrados acima da lista.`:"Categoria, tipo, último uso, tamanho e sugestão de varredura."}</p>
+     <div class="row" style="gap:6px"><button class="sm" id="dgfdet">Filtrar…</button>${n||DG.q?'<button class="sm gh" id="dgflimpa">Limpar filtros</button>':""}</div>`);
+  $$("details.fnd-s",el).forEach(d=>d.ontoggle=()=>{const k=d.dataset.g,i=DG.fechF.indexOf(k);if(d.open&&i>=0)DG.fechF.splice(i,1);else if(!d.open&&i<0)DG.fechF.push(k);dgSalva()});
+  $$("[data-loc]",el).forEach(b=>b.onclick=()=>{$("#dgcorpo").classList.remove("fopen");dgEntrar(+b.dataset.loc)});
+  $$("[data-ext]",el).forEach(b=>b.onclick=()=>safe(()=>dadosExplorar(+b.dataset.ext)));
+  $$("[data-eti]",el).forEach(b=>b.onclick=()=>{const g=b.dataset.eti,a=DG.f.grupo,i=a.indexOf(g);if(i>=0)a.splice(i,1);else a.push(g);dgSalva();safe(()=>dgGerenciar())});
+  $("#dgfdet",el).onclick=()=>{DG.filDet=true;dgFacetas(r,tr);const c=$("#dgfac [data-fk]");if(c)c.focus()};
+  const lp=$("#dgflimpa",el);if(lp)lp.onclick=()=>{const fx=DG.f.faixa.length;dgLimpaF();DG.q="";dgSalva();if(fx)dadosResultado(DS.e||{});else safe(()=>dgGerenciar())};
+}
 async function dgGerenciar(mais){
   const el=$("#dcorpo");if(!el)return;
-  let r;
-  try{r=await api("/api/dados/indice?"+dgQS({offset:mais?DG.rows.length:0,limit:200,facetas:mais?"":"1"}))}catch(err){if(DG.pasta&&!mais){DG.pasta=0;return dgGerenciar()}throw err}
+  let r;const g=DG.gen=(DG.gen||0)+1;  // cliques rápidos (voltar, avançar, filtros): só a última resposta desenha
+  try{r=await api("/api/dados/indice?"+dgQS({offset:mais?DG.rows.length:0,limit:200,facetas:mais?"":"1"}))}catch(err){if(DG.pasta&&!mais&&g===DG.gen){DG.pasta=0;return dgGerenciar()}throw err}
+  if(g!==DG.gen)return;
+  if(!mais){
+    if(!DG.loc)DG.loc=await api("/api/dados/locais").catch(()=>null);
+    if(DG.visao==="pastas"&&!DG.q&&!dgNAtivos()&&DG.ab.size)await Promise.all([...DG.ab.keys()].map(no=>dgAbre(no,true).catch(()=>DG.ab.delete(no))));
+    if(g!==DG.gen)return;
+    if(DG.hist[DG.hi]!==DG.pasta){DG.hist=DG.hist.slice(0,DG.hi+1);DG.hist.push(DG.pasta);DG.hi=DG.hist.length-1}
+  }
   if(view!=="dados"||DG.aba!=="ger"||!$("#dcorpo"))return;
   if(mais){DG.rows=DG.rows.concat(r.rows);dgCorpo();return}
   DG.r=r;DG.rows=r.rows;DG.pastas=r.pastas;
@@ -1793,21 +1855,28 @@ async function dgGerenciar(mais){
   const tr=[{t:"Disco",f:()=>{DG.pasta=0;DG.q=""}}];
   r.migalhas.forEach(m=>tr.push({t:m.nome,f:()=>{DG.pasta=m.no}}));
   // o mesmo molde da Seleção do backup: gaveta de filtros à esquerda, a lista ao centro; as ações na faixa fixa no topo da lista
-  el.innerHTML=`<div class="corpo" id="dgcorpo" data-tela="dados"><aside class="fac" id="dgfac" aria-label="Filtros"></aside>
+  const mig=tr.slice(0,-1).map((x,i)=>`<button class="lnk" data-mg="${i}">${esc(x.t)}</button><i>›</i>`).join("");
+  el.innerHTML=`<div class="corpo fnd" id="dgcorpo" data-tela="dados"><aside class="fac" id="dgfac" aria-label="Barra lateral: locais e filtros"></aside>
    <section class="painel">
-    <div class="lsth"><button class="sm lstfb" id="dgfil">Filtros</button><h2 class="grow">${esc(tr[tr.length-1].t)}</h2>
-     <div class="seg" role="group" aria-label="Ver por">${[["arquivos","Arquivos"],["pastas","Pastas"]].map(([k,t])=>`<button class="sm ${DG.visao===k?"on":""}" aria-pressed="${DG.visao===k}" data-dgv="${k}">${t}</button>`).join("")}</div>
+    <div class="lsth fnd-bar"><button class="sm lstfb" id="dgfil">Locais e filtros</button>
+     <div class="fnd-nv"><button class="sm gh" id="dgvolta" aria-label="Voltar" title="Voltar (Alt+←)" ${DG.hi>0?"":"disabled"}>‹</button><button class="sm gh" id="dgavan" aria-label="Avançar" title="Avançar (Alt+→)" ${DG.hi<DG.hist.length-1?"":"disabled"}>›</button></div>
+     <div class="fnd-tit grow"><nav class="fnd-mig" aria-label="Caminho">${mig}</nav><h2>${esc(tr[tr.length-1].t)}</h2></div>
+     <div class="seg" role="group" aria-label="Ver por">${[["pastas","Pastas"],["arquivos","Todos os arquivos"]].map(([k,t])=>`<button class="sm ${DG.visao===k?"on":""}" aria-pressed="${DG.visao===k}" data-dgv="${k}">${t}</button>`).join("")}</div>
+     <div class="seg" role="group" aria-label="Mostrar como">${[["lista","☰ Lista"],["icones","▦ Ícones"]].map(([k,t])=>`<button class="sm ${DG.modo===k?"on":""}" aria-pressed="${DG.modo===k}" data-dgm="${k}">${t}</button>`).join("")}</div>
      <select id="dgo" aria-label="Ordenar" style="width:auto;margin:0">${[["maior","Maior primeiro"],["menor","Menor primeiro"],["parado","Mais tempo parado"],["nome","Nome (A–Z)"]].map(([k,t])=>`<option value="${k}" ${DG.ordem===k?"selected":""}>${t}</option>`).join("")}</select>
      ${DG.visao==="pastas"&&DG.pasta?`<button class="sm" id="dgnp">＋ Nova pasta</button>`:""}</div>
     <div class="lstbar"><input type="search" id="dgq" placeholder="Buscar pelo nome ou caminho" aria-label="Buscar pelo nome ou caminho" value="${esc(DG.q)}" autocomplete="off">
      <b>${DG.visao==="pastas"&&!DG.q&&!dgNAtivos()?`${nf(r.pastas.length)} pasta(s) · ${nf(r.total)} arquivo(s) aqui`:`${nf(r.total)} ${r.total===1?"item":"itens"} · ${fmt(r.bytes)}`}</b><span class="lstchips" id="dgchips"></span></div>
     ${r.estado.parcial?'<div class="warnbox" style="margin:10px 16px 0">A última varredura foi cancelada: a lista está incompleta. Varra de novo para ver tudo.</div>':""}
     ${dgBarraHtml({id:"dgbar",cont:"dgsel",def:"dgdef",del:"dgdel",botoes:'<button class="sm gh" id="dglimp" title="Marca, dentro do filtro atual, tudo o que a varredura achou que dá para limpar sem prejudicar o sistema">Marcar tudo que é Limpável</button><button class="sm gh" id="dgclr">Desmarcar</button><button class="sm" id="dgmov">Mover para…</button><button class="sm" id="dgcop">Copiar para…</button><button class="sm" id="dgext" title="Copia, confere (SHA-256) e só então tira do computador">Disco externo…</button>'})}
-    ${dgTabela(dgCabeca(true,true),"","dgbody")}<div id="dgmais" class="sg-pe"></div></section></div>`;
+    ${DG.modo==="icones"?'<div class="fnd-grade" id="dgbody"></div>':dgTabela(dgCabeca(true,true),"","dgbody")}<div id="dgmais" class="sg-pe"></div></section></div>`;
   gavAplica($("#dgcorpo"),"dados");
-  dgFacetas(r,tr);dgChips();
+  dgLateral(r,tr);dgChips();
   const recarrega=()=>{dgSalva();safe(()=>dgGerenciar())};
   $$("[data-dgv]",el).forEach(b=>b.onclick=()=>{DG.visao=b.dataset.dgv;recarrega()});
+  $$("[data-dgm]",el).forEach(b=>b.onclick=()=>{DG.modo=b.dataset.dgm;recarrega()});
+  $$("[data-mg]",el).forEach(b=>b.onclick=()=>{tr[+b.dataset.mg].f();DG.visao="pastas";recarrega()});
+  $("#dgvolta",el).onclick=()=>dgHist(-1);$("#dgavan",el).onclick=()=>dgHist(1);
   $("#dgfil",el).onclick=()=>$("#dgcorpo").classList.toggle("fopen");
   $$("[data-so]",el).forEach(b=>b.onclick=()=>{DG.ordem=b.dataset.so===DG.ordem&&b.dataset.so==="maior"?"menor":b.dataset.so;recarrega()});
   let tq;$("#dgq",el).oninput=ev=>{clearTimeout(tq);tq=setTimeout(()=>{DG.q=ev.target.value;recarrega()},300)};
@@ -1846,7 +1915,7 @@ function dgFacetas(r,tr){
       ${filt.length>6?`<button class="sm gh fc-m" data-fm="${k}">${DG.mais[k]?"Ver menos":"Ver mais ("+(filt.length-6)+")"}</button>`:""}`,F[k].length,DG.fechF.includes(k));
   };
   const n=dgNAtivos();
-  el.innerHTML=gavCab("dados",n)
+  el.innerHTML=gavCab("dados",n)+`<div class="fnd-dh"><b>Filtros</b><button class="sm pri" id="dgfok">Concluir</button></div>`
    +fcGrupo("pasta","Onde você está",`<nav class="fc-tr" aria-label="Onde você está">${tr.map((x,i)=>i===tr.length-1?`<b aria-current="location">${esc(x.t)}</b>`:`<button class="lnk" data-tr="${i}">${esc(x.t)}</button>`).join("<i>›</i>")}</nav>${n||DG.pasta||DG.q?'<button class="sm gh" data-tr="limpa">Limpar filtros</button>':""}`,DG.pasta?1:0,DG.fechF.includes("pasta"))
    +lista("faixa","Categoria",["fotos","videos","audios","documentos","outros","apps","caches","dados"],k=>faixaNome(k),{cor:faixaCor,semZero:true})
    +lista("grupo","Grupo",((TIPOS&&TIPOS.grupos)||[]).map(g=>g.nome),v=>v,{semZero:true,title:v=>((TIPOS.grupos||[]).find(g=>g.nome===v)||{}).explica})
@@ -1860,6 +1929,7 @@ function dgFacetas(r,tr){
     if(k==="faixa")dadosResultado(DS.e||{});else safe(()=>dgGerenciar())});  // a faixa também acende no cockpit
   $$("[data-tr]",el).forEach(b=>b.onclick=()=>{const fx=DG.f.faixa.length;if(b.dataset.tr==="limpa"){dgLimpaF();DG.pasta=0;DG.q=""}else tr[+b.dataset.tr].f();dgSalva();if(fx!==DG.f.faixa.length)dadosResultado(DS.e||{});else safe(()=>dgGerenciar())});
   $$("[data-fm]",el).forEach(b=>b.onclick=()=>{DG.mais[b.dataset.fm]=!DG.mais[b.dataset.fm];dgFacetas(r,tr)});
+  $("#dgfok",el).onclick=()=>{DG.filDet=false;dgLateral(r,tr);const b=$("#dgfdet");if(b)b.focus()};
   $$("[data-fq]",el).forEach(i=>i.oninput=()=>{const k=i.dataset.fq,pos=i.selectionStart;DG.busca[k]=i.value;dgFacetas(r,tr);const x=$(`[data-fq="${k}"]`,el);if(x){x.focus();x.setSelectionRange(pos,pos)}});
 }
 /* filtros ativos como etiquetas acima da lista (aparecem mesmo com a gaveta recolhida) */
@@ -1874,28 +1944,55 @@ function dgChips(){
 const DG_CASA=/^(\/Users\/[^/]+|\/home\/[^/]+|\/root|[A-Za-z]:\\Users\\[^\\]+)/;
 const dgArq=(x,varios)=>({k:x.no,no:x.no,nome:x.nome,sub:x.path.slice(0,Math.max(0,x.path.length-x.nome.length-1)).replace(DG_CASA,"~")||"~",path:x.path,usuario:varios?x.usuario:"",dias:x.dias,bytes:x.bytes,tipo:x.tipo,cat:x.cat,
   tipo_rot:x.tipo_rot,grupo:x.grupo,sug:x.sug,criado:x.criado,previa:x.previa,pode_abrir:x.pode_abrir,trava:!x.pode_marcar,tt:x.trava||"",lib:!!x.liberado,motivo:x.motivo,ajuda:x.ajuda_no,gerir:x.tipo!=="atalho",entrar:false,marc:DG.sel.has(x.no)});
+const dgPasta=(p,varios)=>({k:p.no,no:p.no,nome:p.nome,sub:p.raiz?(p.usuario==="Sistema"?"O disco fora das pastas dos usuários":"Pasta do usuário"):`${nf(p.arquivos)} arquivo(s)`,path:p.path,usuario:varios&&!p.raiz?p.usuario:"",dias:p.dias,bytes:p.bytes,tipo:"pasta",
+  pode_abrir:true,trava:!!p.motivo,tt:p.raiz?"fixo":p.trava||"",lib:!!p.liberado,motivo:p.motivo,gerir:!p.raiz,entrar:true,marc:DG.sel.has(p.no),n:p.arquivos});
+/* filhos das pastas abertas pela seta, logo abaixo delas, um nível mais para dentro */
+function dgFilhos(x,nv,varios){
+  if(x.tipo!=="pasta"||!DG.ab.has(x.no))return [];
+  const c=DG.ab.get(x.no),out=[];
+  c.pastas.map(p=>dgPasta(p,varios)).concat(c.rows.map(y=>dgArq(y,varios))).forEach(y=>{y.arv=true;y.nv=nv;out.push(y,...dgFilhos(y,nv+1,varios))});
+  if(c.mais)out.push({fim:true,nv,no:x.no,mais:c.mais});
+  return out;
+}
+const dgIcone=x=>`<div class="fnd-ic ${x.marc?"sel":""}" data-row="${x.no}" title="${esc(x.path||x.nome)}">
+  ${x.trava?`<span class="fnd-ck" title="${esc(x.motivo||"Bloqueado")}">🔒</span>`:`<input type="checkbox" class="dgk fnd-ck" data-k="${x.k}" ${x.marc?"checked":""} aria-label="Marcar ${esc(x.nome)}">`}
+  <div class="fnd-mi">${x.previa==="imagem"?`<img loading="lazy" src="/api/dados/ver?no=${x.no}&t=${encodeURIComponent(TOKEN)}" alt="" onerror="this.outerHTML='<span>🖼️</span>'">`:`<span>${dgIco(x)}</span>`}</div>
+  <div class="sg-nome fnd-nm"><b class="${x.entrar?"dg-ent":""}" ${x.entrar?`data-entra="${x.no}" role="button" tabindex="0"`:""}>${esc(x.nome)}</b></div>
+  <small class="mut">${x.tipo==="pasta"?(x.n!=null?nf(x.n)+" arquivo(s) · ":"")+fmt(x.bytes):fmt(x.bytes)}</small></div>`;
 function dgCorpo(){
   const el=$("#dgbody");if(!el||!DG.r)return;
-  const varios=(DG.r.usuarios||[]).length>1;
+  const varios=(DG.r.usuarios||[]).length>1,arv=DG.visao==="pastas"&&!DG.q&&!dgNAtivos(),ico=DG.modo==="icones";
   DGX={};DGG={};
   const grupos=[];
-  if(DG.visao==="pastas"&&!DG.q&&!dgNAtivos()){
-    const ps=DG.pastas.map(p=>({k:p.no,no:p.no,nome:p.nome,sub:p.raiz?(p.usuario==="Sistema"?"O disco fora das pastas dos usuários":"Pasta do usuário"):`${nf(p.arquivos)} arquivo(s)`,path:p.path,usuario:varios&&!p.raiz?p.usuario:"",dias:p.dias,bytes:p.bytes,tipo:"pasta",
-      pode_abrir:true,trava:!!p.motivo,tt:p.raiz?"fixo":p.trava||"",lib:!!p.liberado,motivo:p.motivo,gerir:!p.raiz,entrar:true,marc:DG.sel.has(p.no)}));
+  if(arv){
+    const ps=DG.pastas.map(p=>Object.assign(dgPasta(p,varios),{arv:!ico,nv:0}));
     if(ps.length)grupos.push(["p:pastas","Pastas",ps]);
-    if(DG.rows.length)grupos.push(["p:arquivos","Arquivos nesta pasta",DG.rows.map(x=>dgArq(x,varios))]);
+    if(DG.rows.length)grupos.push(["p:arquivos","Arquivos nesta pasta",DG.rows.map(x=>Object.assign(dgArq(x,varios),{arv:!ico,nv:0}))]);
   }else{
     const g={},ordem=[];DG.rows.forEach(x=>{if(!g[x.cat]){g[x.cat]=[];ordem.push(x.cat)}g[x.cat].push(dgArq(x,varios))});
     ordem.forEach(c=>grupos.push(["c:"+c,dgCat(c),g[c]]));
   }
+  const vazio=`<p class="mut" style="margin:0 0 10px">${DG.q?"Nada com essa busca.":dgNAtivos()?"Nada com esses filtros. Tire algum filtro na barra lateral ou acima da lista.":DG.pasta?"Nada indexado aqui.":"Nada neste filtro."}</p>${DG.pasta&&!DG.q?'<button class="sm" id="dgvivo">Ver esta pasta ao vivo (explorador)</button>':""}`;
+  if(ico){
+    el.innerHTML=grupos.map(([k,t,rs])=>{const b=rs.reduce((a,x)=>a+(x.bytes||0),0);rs.forEach(x=>DGX[x.no]=x);DGG[k]=rs.filter(x=>!x.trava&&x.gerir!==false).map(x=>x.no);
+      return `<h4 class="fnd-gt">${esc(t)} <span class="mut">${nf(rs.length)} ${rs.length===1?"item":"itens"} · ${fmt(b)}</span></h4><div class="fnd-gr">${rs.map(dgIcone).join("")}</div>`}).join("")||`<div style="padding:4px 0">${vazio}</div>`;
+  }else{
   const leg=grupos.some(g=>g[2].some(x=>x.trava))?`<tr class="dg-leg"><td colspan="${DG_NCOL}">🔒 = travado, com o motivo embaixo do nome. Clique no cadeado para ver o risco e destravar; o núcleo do sistema só se vê.</td></tr>`:"";
   el.innerHTML=leg+grupos.map(([k,t,rs])=>{const fe=DG.fechados.includes(k),b=rs.reduce((a,x)=>a+(x.bytes||0),0);
-    rs.forEach(x=>DGX[x.no]=x);DGG[k]=rs.filter(x=>!x.trava&&x.gerir!==false).map(x=>x.no);
-    return dgGrupo(k,t,`${nf(rs.length)} ${rs.length===1?"item":"itens"} · ${fmt(b)}`,"usuario",fe,DGG[k].length>0)+(fe?"":rs.map(x=>dgLinha(x,"dgk")).join(""))}).join("")
-    ||`<tr><td colspan="${DG_NCOL}" style="padding:16px"><p class="mut" style="margin:0 0 10px">${DG.q?"Nada com essa busca.":dgNAtivos()?"Nada com esses filtros. Tire algum filtro na gaveta ou acima da lista.":DG.pasta?"Nada indexado aqui.":"Nada neste filtro."}</p>${DG.pasta&&!DG.q?'<button class="sm" id="dgvivo">Ver esta pasta ao vivo (explorador)</button>':""}</td></tr>`;
+    DGG[k]=rs.filter(x=>!x.trava&&x.gerir!==false).map(x=>x.no);
+    const todas=arv?rs.flatMap(x=>[x,...dgFilhos(x,1,varios)]):rs;todas.forEach(x=>{if(!x.fim)DGX[x.no]=x});
+    return dgGrupo(k,t,`${nf(rs.length)} ${rs.length===1?"item":"itens"} · ${fmt(b)}`,"usuario",fe,DGG[k].length>0)+(fe?"":todas.map(x=>x.fim?`<tr class="fnd-fim"><td></td><td colspan="${DG_NCOL-1}"><span class="fnd-ind" style="width:${x.nv*18+18}px"></span><span class="mut">… e mais ${nf(x.mais)} arquivo(s).</span> <button class="dg-lk" data-entra="${x.no}">Abrir a pasta</button></td></tr>`:dgLinha(x,"dgk")).join(""))}).join("")
+    ||`<tr><td colspan="${DG_NCOL}" style="padding:16px">${vazio}</td></tr>`;
+  }
   const vivo=$("#dgvivo");if(vivo)vivo.onclick=()=>safe(()=>dadosExplorar(DG.pasta));
-  $$(".dgk",el).forEach(c=>c.onchange=()=>{const k=+c.dataset.k,x=DGX[k];c.checked?DG.sel.set(k,x):DG.sel.delete(k);x.marc=c.checked;const tr=c.closest("tr");tr.classList.toggle("off",!c.checked);
+  $$(".dgk",el).forEach(c=>c.onchange=()=>{const k=+c.dataset.k,x=DGX[k];c.checked?DG.sel.set(k,x):DG.sel.delete(k);x.marc=c.checked;const tr=c.closest("[data-row]");tr.classList.toggle(ico?"sel":"off",ico?c.checked:!c.checked);
     const sit=$(".sit",tr);if(sit)sit.innerHTML=dgSit(x);dgGruposSync(DG.sel);dgBarra()});
+  $$("[data-abre]",el).forEach(b=>b.onclick=ev=>{ev.stopPropagation();safe(()=>dgAbre(+b.dataset.abre))});
+  $$("[data-row]",el).forEach(row=>{const x=DGX[row.dataset.row];if(!x)return;
+    row.onclick=ev=>{if(ev.target.closest("input,button,a,.dg-ent"))return;dgFoco(+row.dataset.row)};
+    row.ondblclick=ev=>{if(ev.target.closest("input,button"))return;dgAbrirItem(x)};
+    row.oncontextmenu=ev=>{ev.preventDefault();dgFoco(+row.dataset.row);dgMenu(row,x,{x:ev.clientX,y:ev.clientY})}});
+  if(DG.foco&&!$(`#dgbody [data-row="${DG.foco}"]`))DG.foco=0;if(DG.foco)dgFoco(DG.foco,true);
   $$("[data-gk]",el).forEach(c=>{c.onclick=ev=>ev.stopPropagation();c.onchange=()=>{(DGG[c.dataset.gk]||[]).forEach(k=>c.checked?DG.sel.set(k,DGX[k]):DG.sel.delete(k));dgCorpo()}});
   dgLigarLinhas(el,dgCorpo);
   const falta=DG.r.total-DG.rows.length,mais=$("#dgmais");
@@ -1903,6 +2000,32 @@ function dgCorpo(){
   dgGruposSync(DG.sel);dgBarra();
   if(DG.realce){const r=$(`#dgbody [data-row="${DG.realce}"]`);DG.realce=0;if(r){r.classList.add("dg-realce");r.scrollIntoView({block:"center"})}}
 }
+/* foco do teclado na lista/grade (o item "da vez", diferente de marcado) */
+function dgFoco(no,quieto){
+  $$("#dgbody .fnd-foco").forEach(r=>r.classList.remove("fnd-foco"));
+  const r=$(`#dgbody [data-row="${no}"]`);DG.foco=r?no:0;if(!r)return;r.classList.add("fnd-foco");if(!quieto)r.scrollIntoView({block:"nearest"});
+}
+/* teclado como no Finder: setas andam, → abre a pasta no lugar e ← fecha, Enter abre, espaço mostra a prévia, Alt+←/→ voltam e avançam, Cmd/Ctrl+↑ sobe */
+document.addEventListener("keydown",ev=>{
+  if(view!=="dados"||DG.aba!=="ger"||!$("#dgbody")||$("#layer").children.length||DGM.el)return;
+  if(ev.target.closest&&ev.target.closest("input,select,textarea,[contenteditable]"))return;
+  if(ev.altKey&&(ev.key==="ArrowLeft"||ev.key==="ArrowRight")){ev.preventDefault();dgHist(ev.key==="ArrowLeft"?-1:1);return}
+  if((ev.metaKey||ev.ctrlKey)&&ev.key==="ArrowUp"){const b=$$("[data-mg]");if(b.length){ev.preventDefault();b[b.length-1].click()}return}
+  if(ev.metaKey||ev.ctrlKey||ev.altKey)return;
+  const rows=$$("#dgbody [data-row]");if(!rows.length)return;
+  const i=rows.findIndex(r=>+r.dataset.row===DG.foco),x=DGX[DG.foco],ico=DG.modo==="icones";
+  const cols=ico?Math.max(1,rows.filter(r=>r.offsetTop===rows[0].offsetTop).length):1;
+  const vai=j=>{ev.preventDefault();dgFoco(+rows[Math.max(0,Math.min(rows.length-1,j))].dataset.row)};
+  if(ev.key==="ArrowDown")return vai(i<0?0:i+cols);
+  if(ev.key==="ArrowUp")return vai(i<0?0:i-cols);
+  if(ico&&ev.key==="ArrowRight")return vai(i+1);
+  if(ico&&ev.key==="ArrowLeft")return vai(i-1);
+  if(!x||(ev.target.closest&&ev.target.closest("button,a,[role=button]")&&(ev.key==="Enter"||ev.key===" ")))return;
+  if(ev.key==="ArrowRight"&&x.tipo==="pasta"&&x.entrar&&!DG.ab.has(x.no)){ev.preventDefault();safe(()=>dgAbre(x.no))}
+  else if(ev.key==="ArrowLeft"&&DG.ab.has(x.no)){ev.preventDefault();safe(()=>dgAbre(x.no))}
+  else if(ev.key==="Enter"){ev.preventDefault();dgAbrirItem(x)}
+  else if(ev.key===" "){ev.preventDefault();if(x.previa)verArquivo(x.no,x.previa,x.nome);else{const c=$(`#dgbody [data-row="${x.no}"] .dgk`);if(c){c.checked=!c.checked;c.dispatchEvent(new Event("change"))}}}
+});
 /* faixa de ações no cabeçalho da lista (as duas abas): contador curto e os botões; as explicações ficam no title */
 function dgBarraHtml(o){
   return `<div class="dg-bar" id="${o.id}" role="toolbar" aria-label="Ações com o que está marcado"><b class="dg-cont" id="${o.cont}" aria-live="polite"></b><span class="sp1"></span>${o.botoes}

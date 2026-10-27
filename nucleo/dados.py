@@ -2095,6 +2095,82 @@ def indice_consulta(faixa="", cat="", pasta=None, usuario="", q="", ordem="maior
         c.close()
 
 
+# barra lateral do Finder: Favoritos (as pastas de sempre da conta), Locais (contas, disco, programas, Lixeira) e discos externos
+FAVORITOS = (("Mesa", ("Desktop",), "mesa"), ("Documentos", ("Documents",), "docs"), ("Downloads", ("Downloads",), "down"),
+             ("Imagens", ("Pictures",), "img"), ("Filmes", ("Movies", "Videos"), "vid"), ("Músicas", ("Music",), "mus"))
+
+
+def _externos():
+    """Discos montados além do disco do sistema (só para abrir ao vivo: não entram no índice)."""
+    out = []
+    try:
+        if IS_WIN:
+            import ctypes
+            m = ctypes.windll.kernel32.GetLogicalDrives()
+            sd = os.path.splitdrive(os.environ.get("SystemDrive", "C:"))[0].upper() or "C:"
+            for i in range(26):
+                r = "%s:\\" % chr(65 + i)
+                if m & (1 << i) and r[:2].upper() != sd and ctypes.windll.kernel32.GetDriveTypeW(r) in (2, 3):
+                    out.append((r[:2], r))
+        elif IS_MAC:
+            raiz = os.stat("/").st_dev
+            for n in sorted(os.listdir("/Volumes")):
+                v = os.path.join("/Volumes", n)
+                if os.path.ismount(v) and not os.path.islink(v) and os.stat(v).st_dev != raiz:
+                    out.append((n, v))
+        else:
+            for b in ("/media", "/run/media", "/mnt"):
+                for d, subs, _ in os.walk(b):
+                    for n in subs:
+                        v = os.path.join(d, n)
+                        if os.path.ismount(v):
+                            out.append((n, v))
+                    if d.count(os.sep) - b.count(os.sep) >= 1:
+                        subs[:] = []
+    except Exception:
+        pass
+    return out
+
+
+def indice_locais():
+    """O que a barra lateral mostra. Cada item com o nó (para navegar) e o tamanho pelo índice, quando houver."""
+    est = indice_estado()
+    c = _idx_con() if est["existe"] else None
+
+    def it(path, nome, ico, usuario=None, raiz=False):
+        if not path or not os.path.isdir(path):
+            return None
+        r = c.execute("SELECT bytes,n FROM pasta WHERE chave=?", (_kk(path),)).fetchone() if c else None
+        return {"no": no_de(path, usuario), "nome": nome, "ico": ico, "path": path, "bytes": int(r[0]) if r else None, "raiz": raiz}
+
+    try:
+        hs = list(homes())
+        eu = os.path.basename(os.path.normpath(home()))
+        h0 = next((h for u, h in hs if u == eu), hs[0][1] if hs else None)
+        fav = []
+        if h0:
+            for nome, cand, ico in FAVORITOS:
+                p = next((os.path.join(h0, x) for x in cand if os.path.isdir(os.path.join(h0, x))), None)
+                fav.append(it(p, nome, ico))
+        loc = [it(h, u, "conta", u, True) for u, h in hs]
+        sr = _sis_raiz()
+        if sr:
+            loc.append(it(sr, "Disco do sistema", "disco", SIS, True))
+            if IS_MAC:
+                loc.append(it(os.path.join(sr, "Applications"), "Aplicativos", "apps", SIS))
+            elif IS_WIN:
+                loc += [it(os.path.join(sr, "Program Files"), "Programas", "apps", SIS), it(os.path.join(sr, "Program Files (x86)"), "Programas (x86)", "apps", SIS)]
+            else:
+                loc.append(it(os.path.join(sr, "usr", "share", "applications"), "Aplicativos", "apps", SIS))
+        lix = os.path.join(h0, ".Trash") if IS_MAC and h0 else os.path.join(h0, ".local", "share", "Trash", "files") if h0 and not IS_WIN else None
+        loc.append(it(lix, "Lixeira", "lixeira"))
+        ext = [it(v, n, "externo") for n, v in _externos()] if sr else []
+    finally:
+        if c:
+            c.close()
+    return {"favoritos": [x for x in fav if x], "locais": [x for x in loc if x], "externos": [x for x in ext if x]}
+
+
 def indice_panorama(usuario="", n=5):
     """Painel inicial: onde está o peso (maiores pastas, descendo até onde ele se concentra), maiores arquivos e os
     arquivos grandes parados há mais tempo. Tudo do índice, sem tocar no disco."""

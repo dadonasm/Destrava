@@ -47,6 +47,15 @@ class ComIndice(unittest.TestCase):
         shutil.rmtree(self.h, ignore_errors=True)
         shutil.rmtree(self.idx, ignore_errors=True)
 
+    def test_locais_da_barra_lateral(self):
+        r = dados.indice_locais()
+        fav = {x["nome"]: x for x in r["favoritos"]}
+        self.assertNotIn("Mesa", fav)  # só as que existem
+        self.assertTrue(fav["Filmes"]["bytes"] > 0)
+        self.assertEqual(dados.caminho_no(fav["Documentos"]["no"]), self.j("Documents"))
+        self.assertEqual([x["nome"] for x in r["locais"] if x["ico"] != "lixeira"], ["teste"])  # sem raiz de sistema no teste: nem disco nem externos
+        self.assertEqual(r["externos"], [])
+
     def consulta(self, **kw):
         return dados.indice_consulta(**kw)
 

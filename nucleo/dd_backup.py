@@ -3452,6 +3452,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/dados/resultado":
             g = lambda k: (q.get(k) or [""])[0]
             return DADOS.resultado(g("zona"), g("cat"), g("q"), int(g("offset") or 0), int(g("limit") or 200), g("usuario"))
+        if path == "/api/dados/locais":
+            self.exigir(None)
+            return DADOS.indice_locais()
         if path == "/api/dados/panorama":
             self.exigir(None)
             return DADOS.indice_panorama((q.get("usuario") or [""])[0])

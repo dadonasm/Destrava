@@ -153,6 +153,20 @@ Pedidos do Marlos depois de ver a v3.6, todos no mesmo padrão para Gerenciament
   quando é esvaziada; copiar não conta; mover e apagar de vez contam. Eventos antigos entram pelo texto do resumo. Vem em `/api/dados/estado`.
 - Não conferido no navegador.
 
+## Finder no Gerenciamento (D1–D3 do plano da 3.8)
+- **Barra lateral** (`dgLateral`): Favoritos (Mesa, Documentos, Downloads, Imagens, Filmes, Músicas da conta em uso), Locais (cada conta,
+  Disco do sistema, Aplicativos/Programas, Lixeira, discos externos — estes abrem no explorador ao vivo), Etiquetas (= Grupos, com
+  contagem; clique filtra) e Filtros (resumo + "Filtrar…" abre o modo detalhado, que ocupa a barra toda até "Concluir"). Seções
+  recolhíveis, lembradas em `DG.fechF`. Rota nova `GET /api/dados/locais` (`dados.indice_locais`, tamanhos pelo índice).
+- **Navegação**: voltar/avançar (`DG.hist`/`dgHist`, Alt+←/→), migalhas acima do título (Cmd/Ctrl+↑ sobe), "Pastas | Todos os arquivos".
+  `dgGerenciar` tem contador de geração: cliques rápidos não desenham resposta velha.
+- **Lista**: seta (SVG) abre a pasta no lugar (`dgAbre`, filhos do índice guardados em `DG.ab` e recarregados a cada redesenho; até 300
+  arquivos por pasta, depois "… e mais N"). Clique seleciona o foco, clique duplo/Enter abre (pasta entra, arquivo mostra a prévia ou
+  abre), espaço = prévia (sem prévia, marca), →/← abrem e fecham, clique direito abre o menu onde está o mouse.
+- **Ícones** (`DG.modo`): grade com miniatura das imagens (cai no ícone se a imagem não abre), pasta com nº de arquivos, caixa de marcar.
+- **Cockpit minimizável** (`DG.ckMin`): só a barra de 14px; passar o mouse mostra a legenda com os GB; "Expandir" volta.
+- `tests/test_dados.py` usava o índice real do TMPDIR (falhava com uma varredura de verdade na máquina): agora usa pasta temporária.
+
 ## Não feito ainda
 - Editar o histórico/registro da máquina (só o certificado e o Mapa).
 - Telas abertas fora de ordem não mostram aviso próprio de "sem dados"; algumas podem ficar vazias.
