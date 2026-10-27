@@ -86,3 +86,19 @@ class Juncao(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EspacoLiberado(unittest.TestCase):
+    def test_soma_so_o_que_voltou_ao_disco(self):
+        evs = [{"tipo": "limpeza", "resumo": "Limpeza de dados: 2 item(ns), 1 GB enviados para a Lixeira", "extra": {"bytes": 10, "liberado": 0}, "quando": "a"},
+               {"tipo": "limpeza", "resumo": "Lixeira esvaziada (1 GB liberados)", "extra": {"bytes": 10, "liberado": 10}, "quando": "b"},
+               {"tipo": "limpeza", "resumo": "Arquivos copiados: 1 item(ns)", "extra": {"bytes": 5, "liberado": 0}, "quando": "c"},
+               {"tipo": "limpeza", "resumo": "Limpeza de dados: 1 item(ns), 4 B removidos de vez", "extra": {"bytes": 4}, "quando": "d"},
+               {"tipo": "backup", "resumo": "x", "extra": {}, "quando": "e"}]
+        antigo = dd_backup.FICHA.hist_get
+        dd_backup.FICHA.hist_get = lambda mid: evs
+        try:
+            r = dd_backup.dados_liberado("m")
+        finally:
+            dd_backup.FICHA.hist_get = antigo
+        self.assertEqual(r, {"bytes": 14, "n": 2, "ultima": "d"})

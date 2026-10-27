@@ -3164,6 +3164,22 @@ def su_certificado_salvar(b):
     return {"ok": True, "mudou": len(mudou)}
 
 
+def dados_liberado(mid):
+    """Espaço que as limpezas desta máquina já devolveram ao disco, a partir do histórico (eventos antigos sem o campo `liberado` entram pelo resumo)."""
+    tot, n, ultima = 0, 0, ""
+    for e in FICHA.hist_get(mid):
+        if e.get("tipo") != "limpeza":
+            continue
+        x, r = e.get("extra") or {}, e.get("resumo", "")
+        if "liberado" in x:
+            lib = int(x["liberado"] or 0)
+        else:
+            lib = int(x.get("bytes") or 0) if ("removidos de vez" in r or "Lixeira esvaziada" in r or r.startswith("Arquivos movidos")) else 0
+        if lib > 0:
+            tot, n, ultima = tot + lib, n + 1, e.get("quando", "")
+    return {"bytes": tot, "n": n, "ultima": ultima}
+
+
 def dados_depois(tipo):
     """Callback chamado quando uma ação de Dados termina: registra no histórico da máquina e no log."""
     def cb(res):
@@ -3178,7 +3194,8 @@ def dados_depois(tipo):
                 resumo = "%s: %d item(ns), %s para %s" % ("Arquivos movidos" if tipo == "mover" else "Arquivos copiados", res["itens"], fmt_bytes(moved), res.get("destino", ""))
             else:
                 resumo = "Offload: %d item(ns), %s copiados e conferidos para %s" % (res["itens"], fmt_bytes(moved), res.get("destino", ""))
-            FICHA.hist_add(mid, "limpeza", resumo, {"bytes": moved, "modo": res["modo"], "falhas": res["falhas"]})
+            lib = 0 if tipo == "copiar" or (tipo != "mover" and res["modo"] != "definitivo") else moved  # Lixeira só libera quando é esvaziada
+            FICHA.hist_add(mid, "limpeza", resumo, {"bytes": moved, "modo": res["modo"], "falhas": res["falhas"], "liberado": lib})
             TERMO.log_add("dados_" + tipo, mid, itens=res["itens"], bytes=moved, modo=res["modo"], falhas=res["falhas"])
         except Exception:
             pass
@@ -3426,7 +3443,12 @@ class Handler(BaseHTTPRequestHandler):
             return {"mac": mac, "win": IS_WIN, "linux": (not mac and not IS_WIN), "root": FICHA.is_root() if FICHA else False, "admin": adm,
                     "acesso_total": DADOS.acesso_total_mac() if DADOS else True}
         if path == "/api/dados/estado":
-            return DADOS.estado()
+            est = DADOS.estado()
+            try:
+                est["liberado"] = dados_liberado(FICHA.machine_id_cache())
+            except Exception:
+                est["liberado"] = {"bytes": 0, "n": 0, "ultima": ""}
+            return est
         if path == "/api/dados/resultado":
             g = lambda k: (q.get(k) or [""])[0]
             return DADOS.resultado(g("zona"), g("cat"), g("q"), int(g("offset") or 0), int(g("limit") or 200), g("usuario"))
@@ -3820,7 +3842,7 @@ class Handler(BaseHTTPRequestHandler):
             self.exigir("limpeza")
             r = DADOS.esvaziar_lixeira()
             REC["bytes"] += int(r.get("bytes") or 0)
-            FICHA.hist_add(FICHA.machine_id_cache(), "limpeza", "Lixeira esvaziada (%s liberados)" % fmt_bytes(r.get("bytes") or 0), {"bytes": r.get("bytes") or 0})
+            FICHA.hist_add(FICHA.machine_id_cache(), "limpeza", "Lixeira esvaziada (%s liberados)" % fmt_bytes(r.get("bytes") or 0), {"bytes": r.get("bytes") or 0, "liberado": r.get("bytes") or 0})
             return r
         if path == "/api/atualizar/aplicar":
             cam = b.get("caminho", "")

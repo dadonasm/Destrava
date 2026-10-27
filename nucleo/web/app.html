@@ -365,7 +365,7 @@ button.dg-lock{border:0;background:transparent;box-shadow:none;padding:2px 4px;b
 .dg-bar .dg-cont{white-space:nowrap;font-size:14px}.dg-bar .sm{padding:6px 12px}.dg-bar.perigo{background:color-mix(in srgb,var(--err) 7%,var(--panel))}
 .dg-def{display:flex;gap:6px;align-items:center;margin:0 2px;color:var(--tx);font-size:13px;white-space:nowrap;cursor:pointer}
 .dg-idade{font-size:12.5px;margin:-6px 0 12px}
-.dg-velha{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0 0 14px}
+.dg-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:0 0 16px}.dg-4 .card{margin:0;padding:16px;display:flex;flex-direction:column;gap:6px}.dg-4 h3{margin:0;font-size:13px;color:var(--mut);font-weight:600}.dg-4 .gr{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}.dg-4 .mut{font-size:12.5px;line-height:1.4}.dg-4 .bar{height:8px}.dg-4 .bar i{background:var(--ok)}.dg-4 .bar.baixo i{background:var(--warn)}.dg-4 .bar.crit i{background:var(--err)}.dg-4 .bar.pes i{background:var(--azul)}.dg-ra{display:flex;flex-direction:column;gap:6px}.dg-ra button{text-align:left}.dg-velha{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0 0 14px}
 .dg-pan{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.dg-pc{margin:0;padding:16px}.dg-pc h3{margin:0}.dg-pc>p.mut{font-size:12.5px;margin:2px 0 8px}
 .dg-pi{display:flex;gap:10px;align-items:center;padding:8px 6px;border-top:1px solid var(--line);cursor:pointer;border-radius:8px;min-width:0}.dg-pi:hover,.dg-pi:focus{background:var(--panel2);outline:none}
 .dg-pi .ic{font-size:18px;flex:none}.dg-pi .t{flex:1;min-width:0}.dg-pi .t b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1662,13 +1662,31 @@ function dgCockpit(e,ID){
 function dgGeral(e){
   const ix=e.indice||{},sg=(e.cockpit||{}).sugestao||{},dias=ix.quando?(Date.now()/1000-ix.quando)/86400:0;
   const velha=ix.quando&&dias>7?`Varredura de ${Math.floor(dias)} dias atrás: os números podem ter mudado.`:ix.mexidas>=10?`Você mexeu em ${nf(ix.mexidas)} itens desde a varredura: atualize para os números certos.`:"";
+  const ck=(e.cockpit||{}),lv=ck.livre,tot=ck.total,pl=tot?lv/tot:null,ra=sg.ressalva||{bytes:0},li=sg.limpavel||{bytes:0},lb=e.liberado||{bytes:0,n:0};
+  const c4=`<div class="dg-4" id="dg4">
+   <div class="card"><h3>Espaço livre</h3>${tot?`<span class="gr">${fmt(lv)}</span><span class="mut">de ${fmt(tot)} no disco · ${Math.round(pl*100)}% livre</span><div class="bar ${pl<0.1?"crit":pl<0.2?"baixo":""}"><i style="width:${Math.round(pl*100)}%"></i></div>
+     ${li.bytes+ra.bytes>0?`<span class="mut">Dá para liberar até <b>${fmt(li.bytes+ra.bytes)}</b>. <a href="#" data-zt="limpavel">Ver</a></span>`:""}`:'<span class="mut">Sem medida do disco ainda. Atualize a varredura.</span>'}</div>
+   <div class="card"><h3>Pessoal</h3><span class="gr" id="dgpes">…</span><span class="mut" id="dgpesn">Fotos, documentos e o que é seu.</span><div class="bar pes"><i id="dgpesb" style="width:0"></i></div><span class="mut"><a href="#" id="dgpesv">Ver o que é pessoal</a></span></div>
+   <div class="card"><h3>Espaço já liberado</h3>${lb.n?`<span class="gr">${fmt(lb.bytes)}</span><span class="mut">${nf(lb.n)} ação(ões) nesta máquina · a última em ${esc(lb.ultima)}</span>`:'<span class="gr">0 B</span><span class="mut">Nada limpo ou movido ainda por aqui.</span>'}</div>
+   <div class="card dg-ra"><h3>Ações rápidas</h3><button class="sm pri" id="dgrl">Limpar o que é Limpável</button><button class="sm" id="dgrb">Fazer backup</button><button class="sm" id="dgre">Esvaziar a Lixeira</button><button class="sm gh" id="dgrv">Atualizar a varredura</button></div></div>`;
   const card=(k,cls,txt,bt)=>{const x=sg[k]||{n:0,bytes:0};return `<div class="zc ${cls}"><b style="font-size:20px">${fmt(x.bytes)}</b><b>${SUG_NOME[k]}</b><span>${nf(x.n)} arquivo(s). ${txt}</span><button class="sm ${k==="limpavel"?"pri":k==="nao_recomendado"?"gh":""}" style="margin-top:8px" data-zt="${k}">${bt}</button></div>`};
   $("#dcorpo").innerHTML=`${velha?`<div class="warnbox dg-velha"><span>${velha}</span><button class="sm pri" id="dgatu">Atualizar</button></div>`:""}
    ${ix.antigo?'<div class="warnbox">O índice de arquivos é de uma versão anterior do programa. Clique em Atualizar para ver as categorias, os grupos e a sugestão de varredura.</div>':""}
+   ${c4}
    <div class="zn" style="margin-bottom:16px">${card("limpavel","z-v",SUG_DICA.limpavel,"Ver e limpar")}${card("ressalva","z-a",SUG_DICA.ressalva,"Ver")}${card("nao_recomendado","z-r",SUG_DICA.nao_recomendado,"Ver")}</div>
    <div class="dg-pan" id="dgpan"><div class="card"><p class="mut" style="margin:0">Procurando onde está o peso…</p></div></div>`;
   const a=$("#dgatu");if(a)a.onclick=()=>safe(()=>dgAtualizar());
-  $$("[data-zt]").forEach(b=>b.onclick=()=>{DG.aba="ger";dgLimpaF();DG.f.sug=[b.dataset.zt];DG.visao="arquivos";DG.pasta=0;DG.q="";dgSalva();dadosResultado(e)});
+  $$("[data-zt]").forEach(b=>b.onclick=ev=>{ev.preventDefault();DG.aba="ger";dgLimpaF();DG.f.sug=[b.dataset.zt];DG.visao="arquivos";DG.pasta=0;DG.q="";dgSalva();dadosResultado(e)});
+  const rl=$("#dgrl");if(rl){
+    rl.onclick=()=>{DG.aba="ger";dgLimpaF();DG.f.sug=["limpavel"];DG.visao="arquivos";DG.pasta=0;DG.q="";DG.autoLimp=true;dgSalva();dadosResultado(e)};
+    $("#dgrb").onclick=()=>nav("backup");
+    $("#dgrv").onclick=()=>safe(()=>dgAtualizar());
+    $("#dgre").onclick=()=>safe(async()=>{const x=await dialog({titulo:"Esvaziar a Lixeira?",html:"<p>Tudo que está na Lixeira do usuário é apagado de vez, inclusive o que já estava lá antes. Não tem volta.</p>",ok:"Esvaziar a Lixeira",perigo:true});if(!x)return;const q=await api("/api/dados/esvaziar_lixeira",{confirmo:true});toast("Lixeira esvaziada"+(q.bytes?": "+fmt(q.bytes)+" liberados.":"."),"ok");DS.e=await api("/api/dados/estado");dgGeral(DS.e)});
+    $("#dgpesv").onclick=ev=>{ev.preventDefault();DG.aba="ger";dgLimpaF();DG.f.grupo=["Pessoal"];DG.visao="arquivos";DG.pasta=0;DG.q="";dgSalva();dadosResultado(e)};
+    if(ix.existe)safe(async()=>{const r=await api("/api/dados/indice?grupo=Pessoal&limit=0");const a=$("#dgpes");if(!a||view!=="dados"||DG.aba!=="geral")return;
+      a.textContent=fmt(r.bytes||0);$("#dgpesn").textContent=nf(r.total||0)+" arquivo(s)"+((e.cockpit||{}).usado?" · "+Math.round((r.bytes||0)/e.cockpit.usado*100)+"% do espaço usado":"");$("#dgpesb").style.width=Math.min(100,Math.round((r.bytes||0)/((e.cockpit||{}).usado||1)*100))+"%"});
+    else{$("#dgpes").textContent="—"}
+  }
   safe(async()=>{
     const r=await api("/api/dados/panorama");const el=$("#dgpan");if(!el||view!=="dados"||DG.aba!=="geral")return;
     if(!r.estado.existe){el.innerHTML=`<div class="card"><h3>Onde está o peso</h3><p class="mut">Falta a lista de arquivos desta máquina (varredura antiga ou apagada).</p><button class="pri" id="dgpv">Atualizar</button></div>`;$("#dgpv").onclick=()=>safe(()=>dgAtualizar());return}
@@ -1802,6 +1820,7 @@ async function dgGerenciar(mais){
     for(;;){const q=await api("/api/dados/indice?"+dgQS({sug:"limpavel",visao:"arquivos",offset:off,limit:1000}));
       q.rows.forEach(x=>{if(x.pode_marcar&&!DG.sel.has(x.no)){DG.sel.set(x.no,dgArq(x,varios));n++}});off+=q.rows.length;if(!q.rows.length||off>=q.total||off>=20000)break}
     toast(n?`${nf(n)} ${n===1?"item limpável marcado":"itens limpáveis marcados"}. Confira e escolha a ação na faixa.`:"Nada limpável neste filtro.","ok");dgCorpo()});
+  if(DG.autoLimp){DG.autoLimp=false;$("#dglimp").click()}  // vindo do card "Limpar o que é Limpável": já marca, a confirmação fica na faixa
   $("#dgmov").onclick=()=>dgDestino("mover",lista());$("#dgcop").onclick=()=>dgDestino("copiar",lista());
   const marcados=async()=>(await api("/api/dados/marcar_nos",{nos:lista().map(x=>x.no)})).ids;
   const itens=()=>lista().map(x=>({titulo:x.nome,bytes:x.bytes||0,usuario:x.usuario}));

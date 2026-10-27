@@ -145,6 +145,14 @@ Pedidos do Marlos depois de ver a v3.6, todos no mesmo padrão para Gerenciament
 - O painel inicial (maiores pastas/arquivos) deixa o Sistema de fora, a não ser que o filtro de usuário peça.
 - O Backup não muda (`plan_roots`/`walk_plan`): continua levando só o do cliente.
 
+## 4 cards da Visão geral (parte C do plano da 3.8)
+- `dgGeral` ganhou 4 cards acima dos cartões de Sugestão: **Espaço livre** (com "dá para liberar até X"), **Pessoal** (tamanho/arquivos
+  do grupo, pela consulta do índice) , **Espaço já liberado** e **Ações rápidas** (Limpar o que é Limpável = abre o filtro e já marca, a
+  confirmação continua na faixa; Fazer backup; Esvaziar a Lixeira; Atualizar a varredura).
+- **Liberado** (`dd_backup.dados_liberado`): soma do histórico da máquina. Eventos de limpeza gravam `extra.liberado`: Lixeira só conta
+  quando é esvaziada; copiar não conta; mover e apagar de vez contam. Eventos antigos entram pelo texto do resumo. Vem em `/api/dados/estado`.
+- Não conferido no navegador.
+
 ## Não feito ainda
 - Editar o histórico/registro da máquina (só o certificado e o Mapa).
 - Telas abertas fora de ordem não mostram aviso próprio de "sem dados"; algumas podem ficar vazias.
