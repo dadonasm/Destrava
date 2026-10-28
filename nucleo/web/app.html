@@ -483,6 +483,8 @@ textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);b
 .fnd-ic .fnd-nm{justify-content:center;margin-top:6px}.fnd-ic .fnd-nm b{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}.fnd-ic>small{display:block;font-size:11.5px;margin-top:2px}
 .painel .lsth .seg button.on{background:var(--panel);box-shadow:var(--sh);font-weight:650}
 #dcorpo .corpo{margin-bottom:24px}
+.fc-ico{display:inline-flex;flex:none;width:16px;height:16px;color:var(--mut)}.fc-ico svg{width:16px;height:16px}.fnd-li .ic svg{width:17px;height:17px;vertical-align:-3px}
+.fac{padding-top:0;scrollbar-gutter:stable;overscroll-behavior:contain}.fac>.gav-cab:first-child{top:0;margin-top:0}.fnd-dh{position:sticky;top:37px;z-index:1;background:var(--panel)}
 @media (max-width:1000px){.corpo,.corpo.gav-fechada{grid-template-columns:1fr}.fac{display:none;position:static;max-height:none}.corpo.fopen .fac{display:block}.corpo.fopen .fac>*{display:revert}.gav-cab{display:none}.lstfb{display:inline-flex}}
 @media (prefers-reduced-motion:reduce){.corpo{transition:none}.ck-med{animation:none}}
 @media (max-width:720px){.acao{position:static;transform:none;width:auto;margin:0 0 16px}.corpo{margin-bottom:16px}.acao .prev{min-width:100%}.acao .tot{text-align:left}}
@@ -610,6 +612,28 @@ function onErr(e){
 
 /* ---------- ícones, gauges e troféus ---------- */
 const IC={
+ down:'<circle cx="12" cy="12" r="9"/><path d="M12 7.5v8M8.5 12.5l3.5 3.5 3.5-3.5"/>',
+ pasta:'<path d="M3 6.5A1.5 1.5 0 014.5 5H9l2 2.5h8.5A1.5 1.5 0 0121 9v9.5a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 18.5z"/>',
+ code:'<path d="M8.5 7L3.5 12l5 5M15.5 7l5 5-5 5M13.5 5l-3 14"/>',
+ img:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M3 17l5-4.5 4 3.5 3-2.5 6 5"/>',
+ video:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.2v5.6l4.8-2.8z"/>',
+ musica:'<path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
+ planilha:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 9v12"/>',
+ zip:'<path d="M7 3h10l2 2v16H5V5z"/><path d="M12 3v3M12 8v2M12 12v2"/><rect x="10" y="15" width="4" height="4" rx="1"/>',
+ disco:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3a9 9 0 00-6.4 2.6"/>',
+ pacote:'<path d="M12 2.5l8.5 4.5v10L12 21.5 3.5 17V7z"/><path d="M3.5 7L12 11.5 20.5 7M12 11.5v10"/>',
+ nuvem:'<path d="M7 18a4.5 4.5 0 01-.6-8.96A6 6 0 0118 10.5a3.8 3.8 0 01-.5 7.5z"/>',
+ relogio:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+ barras:'<path d="M5 20v-5M10 20v-9M15 20V7M20 20V4"/>',
+ pessoa:'<circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6"/>',
+ ok:'<circle cx="12" cy="12" r="9"/><path d="M8 12.3l2.8 2.8L16.2 9.5"/>',
+ aviso:'<path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.3v.2"/>',
+ proibido:'<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
+ etiqueta:'<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/>',
+ calendario:'<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+ copia:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/>',
+ vassoura:'<path d="M14 4l6 6M12.5 9.5l-9 9 2.5 2.5 9-9M9 21l3-3M5.5 17.5L9 21"/>',
+ alvo:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".6"/>',
  mapa:'<path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/>',
  home:'<path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/>',
  backup:'<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-6h8v6"/>',
@@ -1869,13 +1893,14 @@ function dgAbrirItem(x){
   if(x.pode_abrir)abrirNo(x.no,"abrir");
 }
 const FND_SETA='<svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><path d="M3.5 1.5 7 5l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const FND_ICO={mesa:"🖥️",docs:"📄",down:"⬇️",img:"🖼️",vid:"🎬",mus:"🎵",conta:"👤",disco:"💽",apps:"🧩",lixeira:"🗑️",externo:"💾"};
+const FND_SVG={mesa:"maq",docs:"doc",down:"down",img:"img",vid:"video",mus:"musica",conta:"pessoa",disco:"disk",apps:"pacote",lixeira:"trash",externo:"disk"};
+const fndIco=k=>ic(FND_SVG[k]||"pasta");
 /* barra lateral do Finder: Favoritos, Locais, Etiquetas (= Grupos) e Filtros; os filtros detalhados ocupam a barra toda até "Concluir" */
 function dgLateral(r,tr){
   const el=$("#dgfac");if(!el)return;
   if(DG.filDet)return dgFacetas(r,tr);
   const n=dgNAtivos(),L=DG.loc||{favoritos:[],locais:[],externos:[]},q=(r.facetas||{}).grupo||{};
-  const item=(x,at)=>`<button class="fnd-li ${at==="data-loc"&&DG.pasta===x.no&&DG.visao==="pastas"?"on":""}" ${at}="${x.no}" title="${esc(x.path)}"><span class="ic">${FND_ICO[x.ico]||"📁"}</span><span class="t">${esc(x.nome)}</span>${x.bytes!=null?`<small>${fmt(x.bytes)}</small>`:""}</button>`;
+  const item=(x,at)=>`<button class="fnd-li ${at==="data-loc"&&DG.pasta===x.no&&DG.visao==="pastas"?"on":""}" ${at}="${x.no}" title="${esc(x.path)}"><span class="ic">${fndIco(x.ico)}</span><span class="t">${esc(x.nome)}</span>${x.bytes!=null?`<small>${fmt(x.bytes)}</small>`:""}</button>`;
   const sec=(k,t,corpo)=>corpo?`<details class="fc-g fnd-s" data-g="${k}" ${DG.fechF.includes(k)?"":"open"}><summary>${t}</summary><div class="fnd-ls">${corpo}</div></details>`:"";
   el.innerHTML=gavCab("dados",n)
    +sec("fav","Favoritos",L.favoritos.map(x=>item(x,"data-loc")).join(""))
@@ -2002,7 +2027,7 @@ function dgFacetas(r,tr){
     if(!vals.length)return "";
     const busca=(DG.busca[k]||"").toLowerCase(),filt=vals.filter(([v])=>!busca||rot(v).toLowerCase().includes(busca)),vis=DG.mais[k]||filt.length<=6?filt:filt.slice(0,6);
     return fcGrupo(k,titulo,`${o.dica?`<p class="mut fc-dica">${o.dica}</p>`:""}${vals.length>8?`<input type="text" class="fc-q" data-fq="${k}" value="${esc(DG.busca[k]||"")}" placeholder="Buscar" aria-label="Buscar em ${esc(titulo)}" autocomplete="off">`:""}
-      ${vis.map(([v,n])=>fcOpt(k,v,n,rot(v),F[k].includes(v),o.cor?`<i class="fc-cor" style="background:${o.cor(v)}"></i>`:"").replace("<label ",`<label title="${esc((o.title&&o.title(v))||(fb[k]&&fb[k][v]!=null?fmt(fb[k][v]):""))}" `)).join("")}
+      ${vis.map(([v,n])=>fcOpt(k,v,n,rot(v),F[k].includes(v),o.cor?`<i class="fc-cor" style="background:${o.cor(v)}"></i>${fcIco(k,v)}`:null).replace("<label ",`<label title="${esc((o.title&&o.title(v))||(fb[k]&&fb[k][v]!=null?fmt(fb[k][v]):""))}" `)).join("")}
       ${filt.length>6?`<button class="sm gh fc-m" data-fm="${k}">${DG.mais[k]?"Ver menos":"Ver mais ("+(filt.length-6)+")"}</button>`:""}`,F[k].length,DG.fechF.includes(k));
   };
   const n=dgNAtivos();
@@ -2326,7 +2351,25 @@ document.addEventListener("keydown",e=>{
   if(e.target.closest&&e.target.closest("input,select,textarea,[contenteditable]"))return;
   const c=$(".corpo[data-tela]");if(c){e.preventDefault();gavTroca(c.dataset.tela)}});
 /* opções da gaveta (o mesmo desenho nas duas telas) */
-const fcOpt=(k,v,n,lab,on,antes)=>{const z=!n&&!on;return `<label class="fc-o ${z?"zero":""}"><input type="checkbox" data-fk="${k}" data-fv="${esc(v)}" ${on?"checked":""} ${z?"disabled":""}>${antes||""}<span class="grow">${esc(lab)}</span><small>${nf(n||0)}</small></label>`};
+/* símbolo de cada opção de filtro (como os ícones do Finder do macOS): pelo tipo de filtro e pelo valor */
+const FC_EXT={code:"py pyi pyc h hpp c cc cpp m mm js mjs ts jsx tsx html htm css scss json xml yml yaml toml sh bash zsh swift java kt go rs rb php sql ipynb lua",
+  img:"png jpg jpeg gif heic heif webp bmp tif tiff svg raw cr2 nef arw dng ico psd ai eps imagem foto fotos",video:"mp4 mov avi mkv m4v wmv webm mts mpg mpeg flv video videos",
+  musica:"mp3 wav aac m4a flac ogg aiff wma mid audio audios",doc:"pdf doc docx txt rtf odt pages md key ppt pptx documento documentos arquivo",planilha:"xls xlsx csv numbers ods tsv",
+  zip:"zip rar 7z tar gz tgz bz2 xz",disco:"iso img dmg vmdk vdi vhd vhdx ova qcow2",pacote:"exe app pkg msi apk deb rpm jar dll so dylib bin",
+  gear:"log ini cfg conf plist reg lnk url desktop env",dados:"db sqlite sqlite3 mdb sql3 dat",nuvem:"icloud",pasta:"pasta"};
+const FC_MAPA=(()=>{const m={};for(const [ic,ls] of Object.entries(FC_EXT))ls.split(" ").forEach(e=>m[e]=ic);return m})();
+const FC_VAL={grupo:{"Pessoal":"pessoa","Dados de programas":"dados","Sistema":"cpu","Só na nuvem":"nuvem","Cache temporário":"relogio","Instaladores":"pacote","Bloqueado":"lock"},
+  faixa:{fotos:"img",videos:"video",audios:"musica",documentos:"doc",outros:"pasta",apps:"pacote",caches:"vassoura",dados:"dados"},
+  cat:{Fotos:"img",Videos:"video",Audios:"musica",Documentos:"doc",Projetos:"code",Email_Contatos:"doc",Contas_Senhas:"lock",Programas:"pacote",Configuracoes:"gear",Sistemas:"dados",Outros:"pasta"},
+  sug:{limpavel:"ok",ressalva:"aviso",nao_recomendado:"proibido"},status:{ok:"ok",falha:"aviso",pendente:"relogio"},copia:{espelho:"copia",ordenar:"pasta"}};
+const FC_CHAVE={uso:"relogio",data:"calendario",tam:"barras",usuario:"pessoa",local:"pasta",tag:"etiqueta",grupo:"etiqueta",faixa:"pasta",cat:"pasta",tipo:"doc",sug:"vassoura",copia:"copia",status:"alvo"};
+function fcIco(k,v){
+  let n=(FC_VAL[k]||{})[v];
+  if(!n&&k==="tipo"){const t=String(v).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/^\./,"");n=FC_MAPA[t]}
+  if(!n)n=FC_CHAVE[k];
+  return n?`<span class="fc-ico" aria-hidden="true">${ic(n)}</span>`:"";
+}
+const fcOpt=(k,v,n,lab,on,antes)=>{const z=!n&&!on;return `<label class="fc-o ${z?"zero":""}"><input type="checkbox" data-fk="${k}" data-fv="${esc(v)}" ${on?"checked":""} ${z?"disabled":""}>${antes==null?fcIco(k,v):antes}<span class="grow">${esc(lab)}</span><small>${nf(n||0)}</small></label>`};
 const fcGrupo=(k,titulo,corpo,n,fechado)=>`<details class="fc-g" data-g="${k}" ${fechado?"":"open"}><summary>${titulo}${n?` <span class="fc-n">${n}</span>`:""}</summary>${corpo}</details>`;
 
 /* ================= Backup (jornada) ================= */
@@ -3040,8 +3083,8 @@ function lstSide(){
   let h=gavCab("sel",fChips().length)+selDestLado()
     +`<details class="fc-g fnd-s fnd-guia" data-g="guia" ${LST.fechado.has("guia")?"":"open"}><summary>Vai no backup</summary><div id="selguia" aria-label="O que vai no backup"></div></details>`
     +(L?`<details class="fc-g fnd-s" data-g="loc" ${LST.fechado.has("loc")?"":"open"}><summary>Locais</summary><div class="fnd-ls">
-    <button class="fnd-li ${BF.pasta?"":"on"}" data-pc=""><span class="ic">🖥️</span><span class="t">Esta máquina</span></button>
-    ${L.pastas.map(x=>`<button class="fnd-li ${BF.pasta===x.chave||BF.pasta.startsWith(x.chave+"/")?"on":""}" data-pc="${esc(x.chave)}" title="${esc(x.chave)}"><span class="ic">${bfIco(x.chave)}</span><span class="t">${esc(bfNome(x.chave))}</span><small>${fmt(x.bytes)}</small></button>`).join("")}</div></details>`:"");
+    <button class="fnd-li ${BF.pasta?"":"on"}" data-pc=""><span class="ic">${ic("maq")}</span><span class="t">Esta máquina</span></button>
+    ${L.pastas.map(x=>`<button class="fnd-li ${BF.pasta===x.chave||BF.pasta.startsWith(x.chave+"/")?"on":""}" data-pc="${esc(x.chave)}" title="${esc(x.chave)}"><span class="ic">${ic(FC_VAL.cat[x.chave.split("/")[0]]||"pasta")}</span><span class="t">${esc(bfNome(x.chave))}</span><small>${fmt(x.bytes)}</small></button>`).join("")}</div></details>`:"");
   h+=grupo("inc","Marcados",[["","Todos",n1+n0],["1","Marcados",n1],["0","Não marcados",n0]].map(([v,t,n])=>`<label class="fc-o"><input type="radio" name="fc-inc" data-fi="${v}" ${(LST.f.inc||"")===v?"checked":""}><span class="grow">${t}</span><small>${nf(n)}</small></label>`).join(""),LST.f.inc?1:0);
   for(const [k,t] of FX_GRUPOS){
     if(k==="copia"&&LAY.modo!=="misto")continue;
