@@ -1041,6 +1041,11 @@ def _varrer(idle_dias, min_mb):
         ST["atual"] = ""
         if not CANCEL.is_set() and not completa:
             _medir_fora_inicia()
+        if ST["fase"] == "pronto" and H.get("varredura_ok"):  # o backup aproveita: a Seleção deste computador sai junto
+            try:
+                H["varredura_ok"]()
+            except Exception:
+                pass
     except Exception as e:
         if _IB[0]:
             _IB[0].descartar()

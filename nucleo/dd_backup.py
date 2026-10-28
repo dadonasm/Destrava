@@ -17,6 +17,7 @@ import collections
 import csv
 import datetime
 import errno
+import gzip
 import hashlib
 import json
 import os
@@ -28,6 +29,7 @@ import socket
 import struct
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import traceback
@@ -616,6 +618,12 @@ def roots_for_browse():
 # ----------------------------------------------------------------------------------------------
 # Item
 # ----------------------------------------------------------------------------------------------
+# a varredura da Seleção fica guardada (fora do pendrive, como o índice do Gerenciamento): trocar de modo ou reabrir o programa não varre de novo
+SNAP_VERSAO = 1
+SNAP_CAMPOS = ("raiz", "ctx", "local0", "rel0", "src", "disp", "size", "mtime", "local", "cat", "act", "motivo", "date", "tags", "inc", "rel",
+               "nuvem", "inc0", "quem", "pk", "eleg", "lay")  # status, sha e o resto da cópia não: a cópia sempre recomeça
+
+
 class Item(object):
     __slots__ = ("raiz", "ctx", "local0", "rel0", "src", "disp", "size", "mtime", "local", "cat", "act", "motivo", "date", "tags", "inc", "rel",
                  "status", "err", "cause", "sha", "ver", "nuvem", "inc0", "quem", "pk", "eleg", "lay")
@@ -905,6 +913,8 @@ class App(object):
         self.lock = threading.RLock()
         self.rules = load_tag_rules(os.path.join(HERE, "etiquetas.txt"))
         self.logs = collections.deque(maxlen=500)
+        self.persistir = False  # só o programa de verdade (APP) guarda a varredura em disco; os testes ligam quando precisam
+        self._snap_timer = None
         self.reset()
 
     # ------------------------------------------------------------------ estado
@@ -927,6 +937,8 @@ class App(object):
         self.incl = {}
         self.layout_modo = ""  # escolhido a cada backup, na Seleção
         self.checagens = []
+        self.scan_quando = 0  # quando a lista da Seleção foi varrida (reaproveitada: a hora da varredura original)
+        self.encadeado = False  # varredura puxada pelo Gerenciamento: no fim não puxa o Gerenciamento de volta
         self.items = []
         self.ign_dirs = []
         self.ign_reais = []
@@ -1302,7 +1314,9 @@ class App(object):
         return None
 
     # ------------------------------------------------------------------ varredura
-    def start_scan(self):
+    def start_scan(self, reaproveitar=False):
+        """reaproveitar: se a varredura guardada é destas mesmas origens, volta com ela em vez de varrer ("restaurado")."""
+        restaurado = False
         with self.lock:
             if self.busy():
                 raise Busy("Já existe um processo em andamento.")
@@ -1323,8 +1337,168 @@ class App(object):
             self.cancel.clear()
             self.run_ev.set()
             self.scan_info = {"files": 0, "dirs": 0, "bytes": 0, "current": ""}
-            self.phase = "scanning"
+            if reaproveitar and self.restaurar_varredura():
+                self.phase = "scanned"
+                restaurado = True
+            else:
+                self.scan_quando = time.time()
+                self.phase = "scanning"
+        if restaurado:
+            try:
+                self.iniciar_medicao()
+            except Exception:
+                pass
+            return "restaurado"
         threading.Thread(target=self._scan_thread, daemon=True).start()
+        return "varrendo"
+
+    # ------------------------------------------------------------------ varredura guardada e varredura única (Gerenciamento + Seleção)
+    @staticmethod
+    def snap_arquivo():
+        d = os.path.dirname(DADOS._idx_arquivo()) if DADOS else tempfile.gettempdir()
+        return os.path.join(d, "destrava_selecao_%s.json.gz" % getattr(os, "getuid", lambda: 0)())
+
+    @staticmethod
+    def _fontes_chave(srcs):
+        return [[s.get("path") or "", s.get("kind") or "", s.get("letter") or ""] for s in srcs or []]
+
+    def salvar_varredura(self, pronta=False):
+        """Grava a lista da Seleção (com o que está marcado e o espelhar/ordenar de cada pasta). Só depois da varredura e antes da cópia.
+        pronta: a varredura acabou de montar a lista e ainda vai anunciar "scanned"."""
+        if not self.persistir:
+            return False
+        with self.lock:
+            if (self.phase != "scanned" and not pronta) or not self.items or not self.cfg or any(it.status for it in self.items):
+                return False
+            d = {"v": SNAP_VERSAO, "build": BUILD, "quando": self.scan_quando or time.time(), "fontes": self._fontes_chave(self.cfg.get("sources")),
+                 "campos": SNAP_CAMPOS, "itens": [[getattr(it, k, None) for k in SNAP_CAMPOS] for it in self.items],
+                 "ign_dirs": self.ign_dirs, "ign_reais": self.ign_reais, "ign_dirs_total": self.ign_dirs_total,
+                 "extras": self.extras, "extras_planos": self.extras_planos, "layout_modo": self.layout_modo, "scan_info": self.scan_info}
+        arq = self.snap_arquivo()
+        tmp = arq + ".novo"
+        try:
+            with gzip.open(tmp, "wt", encoding="utf-8", compresslevel=3) as fh:
+                json.dump(d, fh, separators=(",", ":"))  # ASCII: nome de arquivo com bytes inválidos (Windows) não quebra a gravação
+            try:
+                os.chmod(tmp, 0o600)  # nomes de arquivos do cliente: só o usuário lê
+            except OSError:
+                pass
+            os.replace(tmp, arq)
+            return True
+        except (OSError, TypeError, ValueError):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            registrar_erro("guardar a varredura")
+            return False
+
+    def agendar_salvar(self, atraso=2.0):
+        """Depois de marcar, desmarcar ou escolher espelhar/ordenar: grava uma vez só quando o técnico para de clicar."""
+        if not self.persistir:
+            return
+        if self._snap_timer:
+            self._snap_timer.cancel()
+        self._snap_timer = threading.Timer(atraso, self.salvar_varredura)
+        self._snap_timer.daemon = True
+        self._snap_timer.start()
+
+    def apagar_varredura(self):
+        if self._snap_timer:
+            self._snap_timer.cancel()
+        try:
+            os.remove(self.snap_arquivo())
+        except OSError:
+            pass
+
+    def restaurar_varredura(self):
+        """Volta com a varredura guardada se for das mesmas origens e da mesma versão do programa. Chamada com self.lock."""
+        if not self.persistir or not self.cfg:
+            return False
+        try:
+            with gzip.open(self.snap_arquivo(), "rt", encoding="utf-8") as fh:
+                d = json.load(fh)
+        except (OSError, ValueError, EOFError):
+            return False
+        if d.get("v") != SNAP_VERSAO or d.get("build") != BUILD or d.get("fontes") != self._fontes_chave(self.cfg.get("sources")) \
+                or tuple(d.get("campos") or ()) != SNAP_CAMPOS:
+            return False
+        items = []
+        for row in d.get("itens") or []:
+            it = Item()
+            for k, v in zip(SNAP_CAMPOS, row):
+                setattr(it, k, tuple(v) if k == "date" and isinstance(v, list) else v)
+            items.append(it)
+        if self.dest_root:  # destino escolhido depois e dentro da origem: o backup não entra nele mesmo
+            items = [it for it in items if not _dentro(it.src or "", self.dest_root)]
+        self.items = items
+        self.ign_dirs = [tuple(x) for x in d.get("ign_dirs") or []]
+        self.ign_reais = [tuple(x) for x in d.get("ign_reais") or []]
+        self.ign_dirs_total = int(d.get("ign_dirs_total") or 0)
+        self.extras = list(d.get("extras") or [])
+        self.extras_planos = [tuple(x) for x in d.get("extras_planos") or []]
+        self.layout_modo = d.get("layout_modo") or self.layout_modo
+        self.scan_info = d.get("scan_info") or self.scan_info
+        self.scan_quando = float(d.get("quando") or 0)
+        self.log("Varredura de %s reaproveitada: %d arquivos (nada foi lido de novo)." % (time.strftime("%d/%m %H:%M", time.localtime(self.scan_quando)), len(items)))
+        return True
+
+    def _fontes_locais(self):
+        """Alguma origem é o disco deste computador (onde o Gerenciamento varre)?"""
+        casa = os.path.realpath(os.path.expanduser("~"))
+        raiz = os.path.realpath(DADOS.raiz_local()) if DADOS else ""
+        for s in (self.cfg or {}).get("sources") or []:
+            p = os.path.realpath(s.get("path") or "")
+            if p == raiz or _dentro(casa, p) or _dentro(p, casa):
+                return True
+        return False
+
+    def encadear_selecao(self):
+        """O Gerenciamento terminou de varrer: a Seleção deste computador sai junto (uma varredura vale para os dois modos).
+        Não mexe em backup já em cópia; sem origem escolhida, usa os sistemas encontrados, como a Seleção faria."""
+        if not self.persistir:
+            return False
+        try:
+            if TERMO and FICHA:
+                TERMO.exigir(FICHA.machine_id_cache(), "backup")
+        except Exception:
+            return False
+        try:
+            with self.lock:
+                if self.phase not in ("idle", "scanned", "error") or self.busy() or any(it.status for it in self.items):
+                    return False
+                if not (self.cfg or {}).get("sources"):
+                    fontes = [s for s in list_sources() if s["kind"] in ("windows", "linux", "mac")]
+                    if not fontes:
+                        return False
+                    self.set_config({"sources": [{"path": s["path"], "kind": s["kind"], "letter": s.get("letter") or "C", "label": s.get("label", "")} for s in fontes],
+                                     "dest": "", "folder": ""})
+                elif not self._fontes_locais():
+                    return False  # o backup é de outro disco: a varredura deste computador não diz nada sobre ele
+                self.encadeado = True
+                self.start_scan()
+            return True
+        except Exception:
+            self.encadeado = False
+            registrar_erro("varrer a Seleção depois do Gerenciamento")
+            return False
+
+    def encadear_gerenciamento(self):
+        """A Seleção terminou de varrer este computador: o Gerenciamento sai junto, se o índice dele é mais velho que esta varredura."""
+        if not self.persistir or not DADOS or not self._fontes_locais():
+            return False
+        try:
+            if DADOS.ST.get("fase") == "varrendo":
+                return False
+            ie = DADOS.indice_estado()
+            if ie.get("existe") and not ie.get("parcial") and ie.get("quando", 0) >= self.scan_quando - 1800:
+                return False  # varrido há menos de meia hora antes desta: ainda vale
+            ENCADEADO["dados"] = True
+            DADOS.iniciar_varredura(int(ie.get("idle_dias") or 90), int(ie.get("min_mb") or 100))
+            return True
+        except Exception:
+            ENCADEADO["dados"] = False
+            return False
 
     def make_item(self, real, disp, name, st, local, ctx="", marca=None, raiz=""):
         nuvem = bool(getattr(st, "st_file_attributes", 0) & CLOUD_ATTRS) if IS_WIN else bool(getattr(st, "st_flags", 0) & 0x40000000)
@@ -1661,6 +1835,7 @@ class App(object):
                 self.extras.extend(pl[0] for pl in planos)
                 self.extras_planos.extend(planos)
             self.log("Incluídas no backup: %s (%d arquivos, %s)." % (", ".join(inc["pastas"]), len(novos), fmt_bytes(inc["bytes"])))
+            self.salvar_varredura()  # com as pastas incluídas, antes de a tela saber que acabou
         except Cancelled:
             inc["erro"] = "cancelado"
         except Exception as e:
@@ -1676,6 +1851,7 @@ class App(object):
             self.items = [it for it in self.items if not (it.ctx == "extra" and _dentro(it.src, p))]
             self.extras = [q for q in self.extras if not _dentro(q, p)]
             self.extras_planos = [pl for pl in self.extras_planos if not _dentro(pl[0], p)]
+        self.agendar_salvar()
         return {"ok": True}
 
     # ------------------------------------------------------------------ onde está o resto do disco
@@ -1812,12 +1988,16 @@ class App(object):
             self.items = items
             for it in items:  # varrer de novo no mesmo backup mantém o modo escolhido (as escolhas pasta a pasta recomeçam)
                 self._aplicar_copia(it)
+            self.salvar_varredura(pronta=True)  # guardada antes de a tela saber que acabou
             self.phase = "scanned"
             self.log("Escaneamento concluído: %d arquivos, %d pastas ignoradas." % (len(items), self.ign_dirs_total))
             try:
                 self.iniciar_medicao()
             except Exception:
                 pass
+            encadeado, self.encadeado = self.encadeado, False
+            if not encadeado:
+                self.encadear_gerenciamento()
         except Cancelled:
             self.phase = "idle"
             self.log("Escaneamento cancelado.")
@@ -3086,6 +3266,14 @@ def ficha_aplicar(ids):
 # Servidor HTTP local
 # ----------------------------------------------------------------------------------------------
 APP = App()
+ENCADEADO = {"dados": False}  # varredura do Gerenciamento puxada pela Seleção: no fim não puxa a Seleção de volta
+
+
+def _gerenciamento_varreu():
+    if ENCADEADO["dados"]:
+        ENCADEADO["dados"] = False
+        return
+    APP.encadear_selecao()
 # Modo Superusuário (ligado na engrenagem): abre qualquer etapa e pula travas do fluxo. Tudo o que ele faz vai para o registro.
 SU = {"ligado": False}
 SU_CAMPOS_CERT = (("cliente", "Cliente"), ("tecnico", "Técnico"), ("equipamento", "Equipamento"), ("data", "Data"), ("hora", "Hora"), ("status", "Situação"))
@@ -3248,6 +3436,13 @@ def dados_depois(tipo):
 
 if DADOS and FICHA:
     DADOS.set_helpers(physical_id=physical_id, fs_type=fs_type, user_home=FICHA.user_home)
+
+
+def ligar_varredura_unica():
+    """Só no programa de verdade (main): a varredura da Seleção fica guardada e cada modo, ao terminar de varrer, puxa o outro."""
+    APP.persistir = True
+    if DADOS:
+        DADOS.set_helpers(varredura_ok=_gerenciamento_varreu)
 MIME = {".html": "text/html; charset=utf-8", ".js": "application/javascript; charset=utf-8", ".svg": "image/svg+xml", ".csv": "text/csv; charset=utf-8",
         ".json": "application/json", ".png": "image/png", ".txt": "text/plain; charset=utf-8", ".log": "text/plain; charset=utf-8"}
 
@@ -3629,10 +3824,11 @@ class Handler(BaseHTTPRequestHandler):
             return {"checks": APP.preflight()}
         if path == "/api/scan":
             self.exigir("backup")
-            APP.start_scan()
-            return {"ok": True}
+            return {"ok": True, "restaurado": APP.start_scan(bool(b.get("reaproveitar"))) == "restaurado"}
         if path == "/api/select":
-            return {"n": APP.select(b)}
+            n = APP.select(b)
+            APP.agendar_salvar()
+            return {"n": n}
         if path == "/api/su":
             SU["ligado"] = bool(b.get("ligado"))
             APP.log("Modo Superusuário %s." % ("ligado" if SU["ligado"] else "desligado"))
@@ -3815,11 +4011,15 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError("O sistema não conseguiu abrir.")
             return {"ok": True}
         if path == "/api/layout":
-            return APP.set_modo(b.get("modo", ""))
+            r = APP.set_modo(b.get("modo", ""))
+            APP.agendar_salvar()
+            return r
         if path == "/api/pasta/ponte":
             return APP.ponte_pasta(b)
         if path == "/api/layout/copia":
-            return APP.copia(b)
+            r = APP.copia(b)
+            APP.agendar_salvar()
+            return r
         if path == "/api/bitlocker":
             self.exigir("backup")
             return destravar_bitlocker(str(b.get("onde", "")), str(b.get("chave", "")))
@@ -3935,6 +4135,7 @@ class Handler(BaseHTTPRequestHandler):
             if APP.busy():
                 raise Busy("Aguarde o processo atual terminar.")
             APP.reset()
+            APP.apagar_varredura()  # "Novo backup": começa do zero, sem as marcações do anterior
             return {"ok": True}
         raise ValueError("rota desconhecida")
 
@@ -4274,6 +4475,8 @@ def main():
     if a.coleta_salva:
         FICHA.carregar_coleta(a.coleta_salva)
         print("SIMULAÇÃO: reproduzindo a coleta de %s (%s). Nada é alterado neste computador." % (FICHA.REPLAY.get("host", "?"), FICHA.familia_atual()), flush=True)
+    else:
+        ligar_varredura_unica()
     serve(a.port, not a.no_browser, a.host, a.token_na_pagina)
 
 

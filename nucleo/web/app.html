@@ -456,16 +456,15 @@ textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);b
 .bkpsw[aria-checked=true] .bkpsw-k{transform:translateX(24px)}
 @media (prefers-reduced-motion:reduce){.bkpsw-tr,.bkpsw-k{transition:none}}
 /* guia "Vai no backup": uma etiqueta por categoria (caixa = levar; nome = filtrar o Finder) */
-.guia{padding:12px 16px}.guia-cab{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}.guia-cab h3{margin:0;font-size:15px}.guia-cab .mut{font-size:12.5px}
-.guia-ls{display:flex;flex-direction:column;gap:6px}.guia-bl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding-left:10px}.guia-t{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);min-width:110px}
-.gchip{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--panel2);padding:0 4px 0 8px}
-.gchip input{margin:0}.gchip button{border:0;background:none;box-shadow:none;font:inherit;font-size:12.5px;color:var(--tx);padding:4px 8px;cursor:pointer;border-radius:var(--r-pill)}
-.gchip button small{color:var(--mut);font-variant-numeric:tabular-nums}.gchip.zero{opacity:.62}.gchip.zero:hover{opacity:1}
-.gchip.on{border-color:var(--azul);box-shadow:inset 0 0 0 1px var(--azul);background:color-mix(in srgb,var(--azul) 10%,var(--panel2))}
+.guia{padding:12px 16px}.guia-cab{display:flex;flex-direction:column;gap:1px;margin:2px 8px 6px;font-size:13px}.guia-cab .mut{font-size:12px}
+.guia-ls{display:flex;flex-direction:column;gap:8px}.guia-bl{display:flex;flex-direction:column;gap:2px;padding-left:8px}.guia-t{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);padding:0 0 2px}
+.gchip{display:flex;align-items:center;gap:4px;width:100%;border:0;border-radius:8px;padding:0 0 0 6px;cursor:pointer}.gchip:hover{background:var(--panel2)}
+.gchip input{margin:0;flex:none}.gchip button{flex:1;min-width:0;border:0;background:none;box-shadow:none;font:inherit;font-size:13px;color:var(--tx);padding:4px 6px;cursor:pointer;border-radius:8px;text-align:left;line-height:1.3}
+.gchip button small{display:block;color:var(--mut);font-variant-numeric:tabular-nums;font-size:11.5px}.gchip.zero{opacity:.62}.gchip.zero:hover{opacity:1}
+.gchip.on{background:var(--panel2);box-shadow:inset 3px 0 0 var(--azul)}.gchip.on button b{font-weight:650}
 .gchip:focus-within{outline:2px solid var(--azul);outline-offset:1px}
 .bf-cp{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.bf-cp .seg2 button{font-size:12px;padding:3px 8px}.fnd-cp{margin-top:6px;display:flex;justify-content:center}.fnd-cp .seg2 button{padding:2px 7px}
 #bfbody tr.fnd-foco>td{background:color-mix(in srgb,var(--azul) 13%,transparent)}
-@media (max-width:700px){.guia-t{min-width:100%}}
 .corpo[data-modo=bkp]{--panel:#23252c;--panel2:#2b2d33;--line:#4a4d57;--acc:#6aa3e0;--azul:#4a86cc;--trilho:#3a3d46;
  --btnpri:linear-gradient(180deg,#4a86cc,#2f6fb5);--btnpri-tx:#fff;--btnpri-bd:#2f6fb5;--ok:#4cae66;--warn:#e0b432;--err:#d9524a}
 :root[data-theme=light] .corpo[data-modo=bkp]{--panel:#ebe8e0;--panel2:#f4efe2;--line:#c9ccd1;--acc:#2f6fb5;--azul:#2f6fb5;--trilho:#d6d3ca;--ok:#3f9b57;--warn:#b98a14;--err:#c8433a}
@@ -2614,7 +2613,8 @@ async function sel3Escanear(){
       if(!sources.length){($("#dcorpo")||$("#main")).innerHTML=`<div class="card"><h2>Escolha de onde copiar</h2><p class="h">Não achei um sistema (Windows, macOS ou Linux) nos discos desta máquina. Escolha a origem; depois a Seleção escaneia sozinha.</p><button class="pri" id="s3o">Ir para Origem e destino</button></div>`;$("#s3o").onclick=()=>go(1);return true}
       await api("/api/config",{sources,dest:S.dest,folder:S.folder});
     }
-    await api("/api/scan",{});
+    const r=await api("/api/scan",{reaproveitar:1});  // a varredura guardada destas origens volta na hora, sem ler o disco de novo
+    if(r.restaurado)return view!=="backup"||step!==0;
   }
   ($("#dcorpo")||$("#main")).innerHTML=`<div class="card"><h2>Escaneando a máquina…</h2><p class="h">A Seleção abre sozinha quando terminar.</p>
    <div class="grid"><div class="kpi"><div class="mut">Arquivos</div><div class="big" id="s3f">0</div></div><div class="kpi"><div class="mut">Pastas</div><div class="big" id="s3d">0</div></div><div class="kpi"><div class="mut">Tamanho</div><div class="big" id="s3z">0</div></div></div>
@@ -2637,7 +2637,7 @@ async function selHost(){
   if(L.modo!=="misto"&&L.editavel!==false)L=await api("/api/layout",{modo:"misto"});  // espelhar ou ordenar se escolhe em cada pasta
   LAY=L;st=s;SELG=g;Object.assign(SB,{t,cfg:s.cfg||{},foco:null,hover:"",ident:ID});BF.raiz=null;BF.ab.clear();
   $("#dcorpo").innerHTML=`<section class="card fluxo fx-mini" id="selfx" aria-label="De onde para onde"></section>
-   <section class="card guia" id="selguia" aria-label="O que vai no backup"></section><section class="card guia hide" id="selfora" aria-label="O que a varredura não leu"></section>
+   <section class="card guia hide" id="selfora" aria-label="O que a varredura não leu"></section>
    <div class="corpo fnd" id="selcorpo" data-tela="sel" data-modo="bkp"><aside class="fac" id="lsts" aria-label="Barra lateral: destino, locais e filtros"></aside><section class="painel" id="selp"><p class="mut" style="padding:16px;margin:0">Abrindo as pastas…</p></section></div>
    <div class="acao" id="selacao" role="region" aria-label="Destino e seguir"></div>`;
   gavAplica($("#selcorpo"),"sel");selFluxo();selGuia();selFora(MD);selBarra();
@@ -2686,7 +2686,7 @@ async function layAplica(filter,copia){
   toast(`${nf(x.n)} arquivo${x.n===1?" vai":"s vão"} ${copia==="ordenar"?"ordenado"+(x.n===1?"":"s")+" por tipo e data":"espelhado"+(x.n===1?"":"s")+", como estava"+(x.n===1?"":"m")}.`,"ok");
   return x;
 }
-/* ---- Seleção = o Finder em modo backup: as pastas da varredura, a caixa Levar em cada linha e o guia "Vai no backup" no topo ---- */
+/* ---- Seleção = o Finder em modo backup: as pastas da varredura, a caixa Levar em cada linha e o guia "Vai no backup" na barra lateral ---- */
 let SELG=null;
 const selTog=(lista,k)=>{const i=lista.indexOf(k);if(i>=0)lista.splice(i,1);else lista.push(k)};
 const BF=Object.assign({pasta:"",hist:[""],hi:0,visao:"pastas",modo:"lista",ordem:"maior",ab:new Map(),foco:"",rows:[],pastas:[],r:null,tot:0,gen:0,raiz:null},
@@ -2915,8 +2915,8 @@ function selGuia(){
   const chip=x=>{const all=x.sn===x.n;return `<span class="gchip ${x.sn?"":"zero"} ${on(x)?"on":""}"><input type="checkbox" data-gvk="${esc(x.k)}" ${all?"checked":""} data-ind="${x.sn&&!all?1:0}" aria-label="Levar ${esc(x.nome)}" title="${x.sn?"Tirar do backup":"Incluir no backup"}">
     <button data-gvf="${esc(x.k)}" aria-pressed="${on(x)}" title="${esc(x.dica+"\n\nClique para ver só isso no Finder.")}"><span aria-hidden="true">${x.ico}</span> <b>${esc(x.nome)}</b> <small>${x.sn?`${nf(x.sn)} · ${fmt(x.sb)}`:`não vai · ${fmt(x.b)}`}</small></button></span>`};
   const pct=t.free?Math.min(100,(t.sel_bytes||0)/t.free*100):0;
-  el.innerHTML=`<div class="guia-cab"><h3>Vai no backup</h3><span class="grow"></span><b>${nf(t.sel_n||0)} ${t.sel_n===1?"arquivo":"arquivos"} · ${fmt(t.sel_bytes||0)}</b>
-    <span class="mut">${cfg.dest?`de ${fmt(t.free)} livres no destino${t.cabe===false?' · <b style="color:var(--err)">não cabe</b>':` · ${pct.toFixed(pct<10?1:0).replace(".",",")}%`}`:"· destino ainda não escolhido"}</span></div>
+  el.innerHTML=`<div class="guia-cab"><b>${nf(t.sel_n||0)} ${t.sel_n===1?"arquivo":"arquivos"} · ${fmt(t.sel_bytes||0)}</b>
+    ${cfg.dest?`<span class="mut">de ${fmt(t.free)} livres no destino${t.cabe===false?' · <b style="color:var(--err)">não cabe</b>':` · ${pct.toFixed(pct<10?1:0).replace(".",",")}%`}</span>`:""}</div>
    <div class="guia-ls">${blocos.map(([b,tit])=>{const xs=it.filter(x=>x.bl===b).sort((a,c)=>c.sb-a.sb||c.b-a.b);return xs.length?`<div class="guia-bl sg-g-${b}"><span class="guia-t">${esc(tit)}</span>${xs.map(chip).join("")}</div>`:""}).join("")}</div>`;
   $$("[data-ind]",el).forEach(c=>{if(c.dataset.ind==="1")c.indeterminate=true});
   const acha=k=>it.find(x=>x.k===k);
@@ -3037,7 +3037,9 @@ function lstSide(){
   const grupo=(k,titulo,corpo,n)=>fcGrupo(k,titulo,corpo,n,LST.fechado.has(k));
   const fi=fac.inc||{},n1=fi["1"]||0,n0=fi["0"]||0;
   const L=BF.raiz;
-  let h=gavCab("sel",fChips().length)+selDestLado()+(L?`<details class="fc-g fnd-s" data-g="loc" ${LST.fechado.has("loc")?"":"open"}><summary>Locais</summary><div class="fnd-ls">
+  let h=gavCab("sel",fChips().length)+selDestLado()
+    +`<details class="fc-g fnd-s fnd-guia" data-g="guia" ${LST.fechado.has("guia")?"":"open"}><summary>Vai no backup</summary><div id="selguia" aria-label="O que vai no backup"></div></details>`
+    +(L?`<details class="fc-g fnd-s" data-g="loc" ${LST.fechado.has("loc")?"":"open"}><summary>Locais</summary><div class="fnd-ls">
     <button class="fnd-li ${BF.pasta?"":"on"}" data-pc=""><span class="ic">🖥️</span><span class="t">Esta máquina</span></button>
     ${L.pastas.map(x=>`<button class="fnd-li ${BF.pasta===x.chave||BF.pasta.startsWith(x.chave+"/")?"on":""}" data-pc="${esc(x.chave)}" title="${esc(x.chave)}"><span class="ic">${bfIco(x.chave)}</span><span class="t">${esc(bfNome(x.chave))}</span><small>${fmt(x.bytes)}</small></button>`).join("")}</div></details>`:"");
   h+=grupo("inc","Marcados",[["","Todos",n1+n0],["1","Marcados",n1],["0","Não marcados",n0]].map(([v,t,n])=>`<label class="fc-o"><input type="radio" name="fc-inc" data-fi="${v}" ${(LST.f.inc||"")===v?"checked":""}><span class="grow">${t}</span><small>${nf(n)}</small></label>`).join(""),LST.f.inc?1:0);
@@ -3055,7 +3057,7 @@ function lstSide(){
       ${k==="tam"?`<div class="fc-r"><input type="text" inputmode="decimal" id="fc-s1" value="${LST.f.smin?mbTxt(LST.f.smin):""}" placeholder="mín. MB" aria-label="Tamanho mínimo em MB"><span>a</span><input type="text" inputmode="decimal" id="fc-s2" value="${LST.f.smax?mbTxt(LST.f.smax):""}" placeholder="máx. MB" aria-label="Tamanho máximo em MB"><button class="sm" id="fc-sok" aria-label="Aplicar faixa de tamanho">OK</button></div>`:""}`,
       fVals(k).length+(k==="data"&&(LST.f.dmin||LST.f.dmax)?1:0)+(k==="tam"&&(LST.f.smin||LST.f.smax)?1:0));
   }
-  el.innerHTML=h;
+  el.innerHTML=h;selGuia();
   $$("[data-dst]",el).forEach(b=>b.onclick=()=>destinoEscolher(()=>selHost()));
   $$("details.fc-g",el).forEach(d=>d.ontoggle=()=>{if(d.open)LST.fechado.delete(d.dataset.g);else LST.fechado.add(d.dataset.g)});
   $$("[data-fk]",el).forEach(c=>c.onchange=()=>fTroca(c.dataset.fk,c.dataset.fv));

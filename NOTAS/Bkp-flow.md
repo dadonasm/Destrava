@@ -198,9 +198,18 @@ Pedidos do Marlos depois de ver a v3.6, todos no mesmo padrão para Gerenciament
 
 ## D4b — a Seleção virou o Finder (v3.9, BUILD 2026-10-27.3, branch `Finder-Bkp`)
 - E0/E0b (commit b9cb253): interruptor **BKP Mode** (disquete, paleta `[data-modo=bkp]`), seção Destino na lateral e cartão origem → destino.
-- **Guia "Vai no backup"** (`selGuia`, alimentado por `/api/groups`): uma etiqueta por categoria, agrupada pelos Grupos. A caixa leva ou
-  tira a categoria inteira; o nome filtra o Finder (o `title` traz o `CAT_INFO` e os exemplos reais). Apagada = não vai. Total à direita
-  (arquivos · tamanho · livres no destino). "Tipo desconhecido" e "Do sistema" entram como etiquetas de situação (`act`).
+- **Uma varredura vale para os dois modos** (`salvar_varredura`, `restaurar_varredura`, `encadear_selecao`, `encadear_gerenciamento`):
+  a lista da Seleção fica guardada em `destrava_selecao_<uid>.json.gz`, na pasta do índice do Gerenciamento (nunca no pendrive), com as
+  marcações e o espelhar/ordenar (gravada no fim da varredura e 2 s depois de cada mudança). Ao abrir a Seleção sem lista na memória,
+  `/api/scan {reaproveitar:1}` volta com ela se as origens e o BUILD forem os mesmos. "Novo backup" apaga. O Gerenciamento, ao terminar,
+  varre a Seleção deste computador (sem origem escolhida: os sistemas encontrados); a Seleção de um disco deste computador puxa o
+  Gerenciamento se o índice tiver mais de meia hora. Um puxado não puxa o outro de volta. Nunca mexe em backup com cópia começada.
+  Por que não montar a Seleção do índice: o índice resume numa linha a Fototeca, projetos do CapCut, `.git`, `node_modules` e backups
+  de iPhone, e o backup precisa de cada arquivo deles.
+- **Guia "Vai no backup"** (`selGuia`, alimentado por `/api/groups`): seção da barra lateral do Finder, logo abaixo de Destino
+  (antes era um cartão acima do Finder). Uma linha por categoria, agrupada pelos Grupos. A caixa leva ou tira a categoria inteira; o
+  nome filtra o Finder (o `title` traz o `CAT_INFO` e os exemplos reais). Apagada = não vai. Total no alto da seção (arquivos · tamanho
+  e, com destino, livres no destino). "Tipo desconhecido" e "Do sistema" entram como etiquetas de situação (`act`).
 - **Finder do backup** (`bfCarrega`, `bfDesenha`, `bfCorpo`, `bfLinha`, `bfIcone`, `bfAbre`, `bfMenu`, `bfFoco`, teclado): começa em
   "Esta máquina" (usuários, WhatsApp, Pastas de origem, Disco C) e desce; voltar/avançar, migalhas, seta que abre no lugar, Pastas |
   Todos os arquivos, Lista | Ícones, ordem. Caixa da pasta = Levar tudo o que é pessoal dentro dela (com os filtros); caixa do arquivo =
