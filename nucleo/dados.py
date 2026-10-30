@@ -1594,7 +1594,8 @@ IDX_VERSAO = 3  # índice de antes (v2: só as pastas dos usuários) é descarta
 _FB, _SB = {}, {}  # da varredura em curso: bytes por faixa (cockpit) e [n, bytes] por sugestão
 _IB = [None]  # construtor do índice durante a varredura
 IDX_LOCK = threading.Lock()
-_ORDEM_SQL = {"maior": "bytes DESC", "menor": "bytes ASC", "parado": "uso ASC", "nome": "nome COLLATE NOCASE ASC"}
+_ORDEM_SQL = {"maior": "bytes DESC", "menor": "bytes ASC", "parado": "uso ASC", "nome": "nome COLLATE NOCASE ASC",
+              "nome_z": "nome COLLATE NOCASE DESC", "recente": "uso DESC", "novo": "criado DESC", "antigo": "criado ASC"}
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS arq(id INTEGER PRIMARY KEY, usuario TEXT, pasta TEXT, dir TEXT, nome TEXT, busca TEXT, tipo TEXT, cat TEXT, faixa TEXT,
   grupo TEXT, sug TEXT, trot TEXT, bytes INTEGER, narq INTEGER, uso REAL, criado REAL, zona TEXT);

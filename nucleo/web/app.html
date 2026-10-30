@@ -444,10 +444,10 @@ textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);b
 .painel .dg-bar{border-radius:0}.painel .lstbar>b{font-size:13px;font-weight:600;color:var(--mut)}.painel .lstbar #dgq{flex:1;min-width:200px;margin:0;border-radius:var(--r-pill)}
 .ckp{position:relative}.ckp-tg{position:absolute;right:12px;bottom:12px;padding:3px 10px;font-size:12px}.ckp.min{padding:10px 96px 10px 16px}@media(max-width:700px){.ckp:not(.min) .ckp-tg{position:static;display:block;margin:8px 0 0 auto}}.ckp.min>:not(.cock):not(.lgd):not(.ckp-tg){display:none}.ckp.min .cock{margin:0}.ckp.min .ckp-tg{top:50%;bottom:auto;transform:translateY(-50%)}
 .ckp.min .lgd{display:none;position:absolute;left:12px;right:12px;top:100%;margin-top:6px;z-index:30;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh);padding:10px}.ckp.min:hover .lgd,.ckp.min:focus-within .lgd{display:flex}
-.fnd-bar{gap:8px}.fnd-nv{display:inline-flex;gap:2px}.fnd-nv button{min-width:32px;font-size:18px;line-height:1;padding:3px 8px}.fnd-tit{min-width:0;display:flex;flex-direction:column}.fnd-tit h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fnd-bar{gap:8px}.fnd-nv{display:inline-flex;gap:2px}.fnd-nv button{min-width:32px;font-size:18px;line-height:1;padding:3px 8px}.fnd-tit{flex:1 1 240px;min-width:0;display:flex;flex-direction:column}.lsth .seg{flex-shrink:0}.fnd-tit h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* BKP Mode: interruptor com botão de disquete 3,5" e a paleta do modo backup (disquetes clássicos: corpo grafite, janela prata, etiqueta creme, azul-disquete) */
-.bkpsw{display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:2px 4px;cursor:pointer;color:var(--tx);font:inherit;font-weight:700;font-size:12.5px;letter-spacing:.04em;border-radius:var(--r-pill)}
+.bkpsw{white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:2px 4px;cursor:pointer;color:var(--tx);font:inherit;font-weight:700;font-size:12.5px;letter-spacing:.04em;border-radius:var(--r-pill)}
 .bkpsw:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
 .bkpsw-tr{position:relative;width:52px;height:28px;border-radius:var(--r-pill);background:var(--trilho);border:1px solid var(--line);transition:background .18s,border-color .18s}
 .bkpsw-k{position:absolute;top:1px;left:1px;width:24px;height:24px;display:block;transition:transform .18s;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.35))}
@@ -470,7 +470,7 @@ textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);b
 :root[data-theme=light] .corpo[data-modo=bkp]{--panel:#ebe8e0;--panel2:#f4efe2;--line:#c9ccd1;--acc:#2f6fb5;--azul:#2f6fb5;--trilho:#d6d3ca;--ok:#3f9b57;--warn:#b98a14;--err:#c8433a}
 .corpo[data-modo=bkp] .fac,.corpo[data-modo=bkp] .painel{border-color:#c9ccd1}
 .corpo[data-modo=bkp] .fac summary,.corpo[data-modo=bkp] .fnd-s summary{background:#f4efe2;color:#2b2d33;border-radius:var(--r-sm);padding:3px 8px}
-.fnd-mig{display:flex;gap:4px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--mut)}.fnd-mig:empty{display:none}.fnd-mig i{font-style:normal;opacity:.6}.fnd-mig .lnk{font-size:12px}
+.fnd-mig{display:flex;gap:4px;align-items:center;flex-wrap:nowrap;overflow:hidden;white-space:nowrap;font-size:12px;color:var(--mut)}.fnd-mig:empty{display:none}.fnd-mig i{font-style:normal;opacity:.6}.fnd-mig .lnk{font-size:12px;flex-shrink:0}.fnd-mig b{overflow:hidden;text-overflow:ellipsis}
 .fnd-s summary{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}.fnd-ls{display:flex;flex-direction:column;gap:1px;margin-top:6px}
 .fnd-li{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:0;box-shadow:none;border-radius:8px;padding:6px 8px;font:inherit;font-size:13.5px;color:var(--tx);cursor:pointer}
 .fnd-li:hover{background:var(--panel2)}.fnd-li.on{background:var(--panel2);font-weight:650;box-shadow:inset 3px 0 0 var(--azul)}.fnd-li .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fnd-li small{color:var(--mut);font-variant-numeric:tabular-nums;font-size:11.5px}.fnd-li .ic{width:18px;text-align:center;flex:none}
@@ -485,6 +485,32 @@ textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);b
 #dcorpo .corpo{margin-bottom:24px}
 .fc-ico{display:inline-flex;flex:none;width:16px;height:16px;color:var(--mut)}.fc-ico svg{width:16px;height:16px}.fnd-li .ic svg{width:17px;height:17px;vertical-align:-3px}
 .fac{padding-top:0;scrollbar-gutter:stable;overscroll-behavior:contain}.fac>.gav-cab:first-child{top:0;margin-top:0}.fnd-dh{position:sticky;top:37px;z-index:1;background:var(--panel)}
+
+/* o Finder é uma janela só (como no macOS): a lateral é a coluna esquerda do mesmo cartão, sem borda nem sombra própria */
+.corpo.fnd{gap:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh);overflow:clip;align-items:stretch}
+.corpo.fnd>.fac{position:sticky;top:72px;align-self:start;background:color-mix(in srgb,var(--panel2) 70%,var(--panel));border:0;border-right:1px solid var(--line);border-radius:0;box-shadow:none}
+.corpo.fnd>.fac .gav-cab,.corpo.fnd>.fac .fnd-dh{background:transparent}
+.corpo.fnd>.painel{border:0;border-radius:0;box-shadow:none;background:transparent}
+.corpo[data-modo=bkp].fnd{border-color:#c9ccd1}.corpo[data-modo=bkp].fnd>.fac{border-right-color:#c9ccd1}
+@media (max-width:1000px){.corpo.fnd>.fac{border-right:0}}
+/* barra de ferramentas do Finder */
+.fnd-top{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);min-width:0}
+.fnd-pill{display:inline-flex;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--panel);flex:none}
+.fnd-pill button{border:0;background:none;box-shadow:none;padding:5px 12px;font-size:19px;line-height:1;color:var(--tx);border-radius:var(--r-pill)}.fnd-pill button:disabled{color:var(--mut);opacity:.5}
+.fnd-pill button+button{border-left:1px solid var(--line);border-radius:0 var(--r-pill) var(--r-pill) 0}
+.fnd-ttl{display:flex;align-items:center;gap:8px;flex:1 1 120px;min-width:0}.fnd-ti{display:inline-flex;flex:none}.fnd-ti svg{width:22px;height:22px;color:var(--azul)}
+.fnd-ttl h2{margin:0;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fnd-tools{display:flex;align-items:center;gap:8px;flex:none}
+.fnd-bt{display:inline-flex;align-items:center;gap:4px;height:34px;min-width:38px;justify-content:center;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--panel);box-shadow:none;padding:0 11px;color:var(--tx);cursor:pointer;font-size:16px}
+.fnd-bt.lstfb{display:none}@media (max-width:1000px){.fnd-bt.lstfb{display:inline-flex}}
+.fnd-bt svg{width:19px;height:19px}.fnd-bt:hover{background:var(--panel2)}.fnd-cv{font-style:normal;font-size:10px;color:var(--mut)}
+.fnd-bq{display:none;align-items:center;gap:8px;flex:1 1 220px;min-width:0;border:2px solid var(--azul);border-radius:var(--r-pill);background:var(--panel);padding:0 6px 0 12px;height:36px}
+.fnd-bq>svg{width:17px;height:17px;flex:none;color:var(--mut)}.fnd-bq input{flex:1;min-width:0;border:0;background:none;box-shadow:none;outline:0;margin:0;padding:0;font:inherit;border-radius:0}
+.fnd-bq .fnd-bt{height:26px;min-width:26px;padding:0;border:0}.fnd-bq .fnd-bt svg{width:15px;height:15px}
+.fnd-top.busca .fnd-tools{display:none}.fnd-top.busca .fnd-bq{display:flex}.fnd-top.busca .fnd-ttl{flex:0 1 auto;max-width:34%}
+.fnd-sub{padding:8px 16px 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap}.fnd-sub .fnd-mig{flex:1 1 200px;min-width:0}
+.corpo[data-modo=bkp] .fnd-ti svg{color:#2b2d33}
+
 @media (max-width:1000px){.corpo,.corpo.gav-fechada{grid-template-columns:1fr}.fac{display:none;position:static;max-height:none}.corpo.fopen .fac{display:block}.corpo.fopen .fac>*{display:revert}.gav-cab{display:none}.lstfb{display:inline-flex}}
 @media (prefers-reduced-motion:reduce){.corpo{transition:none}.ck-med{animation:none}}
 @media (max-width:720px){.acao{position:static;transform:none;width:auto;margin:0 0 16px}.corpo{margin-bottom:16px}.acao .prev{min-width:100%}.acao .tot{text-align:left}}
@@ -659,6 +685,7 @@ const IC={
  filtro:'<path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/>',
  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>'
 };
+Object.assign(IC,{lupa:'<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/>',lista:'<path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.8" cy="6.5" r=".9"/><circle cx="4.8" cy="12" r=".9"/><circle cx="4.8" cy="17.5" r=".9"/>',grade:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',ordem:'<path d="M8 4v16M4.5 7.5L8 4l3.5 3.5M16 20V4M12.5 16.5L16 20l3.5-3.5"/>',fechar:'<path d="M6 6l12 12M18 6L6 18"/>'});
 const ic=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||""}</svg>`;
 const FX=[[25,"#e5534b","Crítica"],[50,"#ff8a3d","Fraca"],[75,"#e5a23a","Regular"],[95,"#8bc34a","Muito boa"],[100,"#3fb27f","Excelente"]];
 const nivel=n=>n<=25?1:n<=50?2:n<=75?3:n<=95?4:5;
@@ -1906,7 +1933,7 @@ function dgLateral(r,tr){
    +sec("fav","Favoritos",L.favoritos.map(x=>item(x,"data-loc")).join(""))
    +sec("loc","Locais",L.locais.map(x=>item(x,"data-loc")).join("")+L.externos.map(x=>item(x,"data-ext")).join(""))
    +sec("eti","Etiquetas",((TIPOS&&TIPOS.grupos)||[]).map(g=>{const on=DG.f.grupo.includes(g.nome);
-     return `<button class="fnd-li fnd-eti ${on?"on":""}" data-eti="${esc(g.nome)}" aria-pressed="${on}" title="${esc(g.explica||"")}"><span class="gpill g-${GRUPO_K[g.nome]||"x"}"></span><span class="t">${esc(g.nome)}</span>${q[g.nome]!=null?`<small>${nf(q[g.nome])}</small>`:""}</button>`}).join(""))
+     return `<button class="fnd-li fnd-eti ${on?"on":""}" data-eti="${esc(g.nome)}" aria-pressed="${on}" title="${esc(g.explica||"")}"><span class="gpill g-${GRUPO_K[g.nome]||"x"}"></span><span class="t">${esc(g.nome)}</span>${q[g.nome]!=null?`<small title="${nf(q[g.nome])} arquivos">${fmt(((r.facetas_bytes||{}).grupo||{})[g.nome]||0)}</small>`:""}</button>`}).join(""))
    +sec("fil","Filtros",`<p class="mut fc-dica">${n?`${n} filtro(s) ativo(s), mostrados acima da lista.`:"Categoria, tipo, último uso, tamanho e sugestão de varredura."}</p>
      <div class="row" style="gap:6px"><button class="sm" id="dgfdet">Filtrar…</button>${n||DG.q?'<button class="sm gh" id="dgflimpa">Limpar filtros</button>':""}</div>`);
   $$("details.fnd-s",el).forEach(d=>d.ontoggle=()=>{const k=d.dataset.g,i=DG.fechF.indexOf(k);if(d.open&&i>=0)DG.fechF.splice(i,1);else if(!d.open&&i<0)DG.fechF.push(k);dgSalva()});
@@ -1945,8 +1972,39 @@ async function bkpModo(on){
   const a1=ancora();if(a0!=null&&a1!=null)window.scrollBy(0,a1-a0);  // o Finder fica no mesmo lugar da tela
 }
 function bkpSai(){view="dados";clearInterval(timer);clearTimeout(MEDT);$("#steps").classList.add("hide");markNav();renderSteps()}
+/* barra de ferramentas do Finder (como a do macOS): voltar/avançar, ícone e nome da pasta, ordenar, modo de exibição, BKP Mode e a lupa que ocupa o lugar dos botões */
+const DG_ORDENS=[["maior","Maior primeiro"],["menor","Menor primeiro"],["parado","Mais tempo parado"],["nome","Nome (A–Z)"]];
+function fndIcoPasta(){
+  const L=DG.loc||{},todos=[...(L.favoritos||[]),...(L.locais||[]),...(L.externos||[])],x=todos.find(y=>y.no===DG.pasta);
+  return x?fndIco(x.ico):fndIco(DG.pasta?"pasta":"disco");
+}
+function fndTopo(r,tr){
+  const bt=(id,ico,tit,extra)=>`<button class="fnd-bt" id="${id}" title="${tit}" aria-label="${tit}">${ic(ico)}${extra||""}</button>`;
+  return `<div class="fnd-top ${DG.q?"busca":""}" id="fndtop">
+   <button class="fnd-bt lstfb" id="dgfil" title="Locais e filtros" aria-label="Locais e filtros">${ic("filtro")}</button>
+   <div class="fnd-pill fnd-nv"><button id="dgvolta" aria-label="Voltar" title="Voltar (Alt+←)" ${DG.hi>0?"":"disabled"}>‹</button><button id="dgavan" aria-label="Avançar" title="Avançar (Alt+→)" ${DG.hi<DG.hist.length-1?"":"disabled"}>›</button></div>
+   <div class="fnd-ttl"><span class="fnd-ti">${fndIcoPasta()}</span><h2 title="${esc(tr[tr.length-1].t)}">${esc(tr[tr.length-1].t)}</h2></div>
+   <div class="fnd-tools">
+    ${bt("fndord","ordem","Ordenar por")}${bt("fndmod",DG.modo==="icones"?"grade":"lista","Ver como lista ou ícones",'<i class="fnd-cv">▾</i>')}
+    ${DG.visao==="pastas"&&DG.pasta?`<button class="fnd-bt" id="dgnp" title="Nova pasta aqui" aria-label="Nova pasta aqui">＋</button>`:""}
+    ${bkpSwitch(false)}${bt("fndlupa","lupa","Buscar")}
+   </div>
+   <div class="fnd-bq">${ic("lupa")}<input type="search" id="dgq" placeholder="Buscar pelo nome ou caminho" aria-label="Buscar pelo nome ou caminho" value="${esc(DG.q)}" autocomplete="off"><button class="fnd-bt" id="fndqx" title="Fechar a busca" aria-label="Fechar a busca">${ic("fechar")}</button></div>
+  </div>`;
+}
+function fndTopoLiga(el,r,recarrega){
+  const top=$("#fndtop",el),q=$("#dgq",el),ck=(on,t)=>(on?"✓ ":"　")+t;
+  $("#fndord",el).onclick=ev=>menuAbre(ev.currentTarget,DG_ORDENS.map(([k,t])=>[ck(DG.ordem===k,t),()=>{DG.ordem=k;recarrega()}]));
+  $("#fndmod",el).onclick=ev=>menuAbre(ev.currentTarget,[["lista","Como lista"],["icones","Como ícones"]].map(([k,t])=>[ck(DG.modo===k,t),()=>{DG.modo=k;recarrega()}]));
+  const fecha=()=>{if(q.value){DG.q="";q.value="";recarrega()}top.classList.remove("busca")};
+  $("#fndlupa",el).onclick=()=>{top.classList.add("busca");q.focus()};
+  $("#fndqx",el).onclick=fecha;
+  q.onkeydown=ev=>{if(ev.key==="Escape"){ev.preventDefault();fecha()}};
+  q.onblur=()=>{if(!q.value)top.classList.remove("busca")};
+}
 async function dgGerenciar(mais){
   const el=$("#dcorpo");if(!el)return;
+  if(!DG.q&&!dgNAtivos())DG.visao="pastas";  // sem busca nem filtro o Finder só navega por pastas; a lista plana é o resultado de buscar ou filtrar
   let r;const g=DG.gen=(DG.gen||0)+1;  // cliques rápidos (voltar, avançar, filtros): só a última resposta desenha
   try{r=await api("/api/dados/indice?"+dgQS({offset:mais?DG.rows.length:0,limit:200,facetas:mais?"":"1"}))}catch(err){if(DG.pasta&&!mais&&g===DG.gen){DG.pasta=0;return dgGerenciar()}throw err}
   if(g!==DG.gen)return;
@@ -1972,15 +2030,8 @@ async function dgGerenciar(mais){
   const mig=tr.slice(0,-1).map((x,i)=>`<button class="lnk" data-mg="${i}">${esc(x.t)}</button><i>›</i>`).join("");
   el.innerHTML=`<div class="corpo fnd" id="dgcorpo" data-tela="dados"><aside class="fac" id="dgfac" aria-label="Barra lateral: locais e filtros"></aside>
    <section class="painel">
-    <div class="lsth fnd-bar"><button class="sm lstfb" id="dgfil">Locais e filtros</button>
-     <div class="fnd-nv"><button class="sm gh" id="dgvolta" aria-label="Voltar" title="Voltar (Alt+←)" ${DG.hi>0?"":"disabled"}>‹</button><button class="sm gh" id="dgavan" aria-label="Avançar" title="Avançar (Alt+→)" ${DG.hi<DG.hist.length-1?"":"disabled"}>›</button></div>
-     <div class="fnd-tit grow"><nav class="fnd-mig" aria-label="Caminho">${mig}</nav><h2>${esc(tr[tr.length-1].t)}</h2></div>
-     ${bkpSwitch(false)}
-     <div class="seg" role="group" aria-label="Ver por">${[["pastas","Pastas"],["arquivos","Todos os arquivos"]].map(([k,t])=>`<button class="sm ${DG.visao===k?"on":""}" aria-pressed="${DG.visao===k}" data-dgv="${k}">${t}</button>`).join("")}</div>
-     <div class="seg" role="group" aria-label="Mostrar como">${[["lista","☰ Lista"],["icones","▦ Ícones"]].map(([k,t])=>`<button class="sm ${DG.modo===k?"on":""}" aria-pressed="${DG.modo===k}" data-dgm="${k}">${t}</button>`).join("")}</div>
-     <select id="dgo" aria-label="Ordenar" style="width:auto;margin:0">${[["maior","Maior primeiro"],["menor","Menor primeiro"],["parado","Mais tempo parado"],["nome","Nome (A–Z)"]].map(([k,t])=>`<option value="${k}" ${DG.ordem===k?"selected":""}>${t}</option>`).join("")}</select>
-     ${DG.visao==="pastas"&&DG.pasta?`<button class="sm" id="dgnp">＋ Nova pasta</button>`:""}</div>
-    <div class="lstbar"><input type="search" id="dgq" placeholder="Buscar pelo nome ou caminho" aria-label="Buscar pelo nome ou caminho" value="${esc(DG.q)}" autocomplete="off">
+    ${fndTopo(r,tr)}
+    <div class="lstbar fnd-sub"><nav class="fnd-mig" aria-label="Caminho">${mig}</nav>
      <b>${DG.visao==="pastas"&&!DG.q&&!dgNAtivos()?`${nf(r.pastas.length)} pasta(s) · ${nf(r.total)} arquivo(s) aqui`:`${nf(r.total)} ${r.total===1?"item":"itens"} · ${fmt(r.bytes)}`}</b><span class="lstchips" id="dgchips"></span></div>
     ${r.estado.parcial?'<div class="warnbox" style="margin:10px 16px 0">A última varredura foi cancelada: a lista está incompleta. Varra de novo para ver tudo.</div>':""}
     ${dgBarraHtml({id:"dgbar",cont:"dgsel",def:"dgdef",del:"dgdel",botoes:'<button class="sm gh" id="dglimp" title="Marca, dentro do filtro atual, tudo o que a varredura achou que dá para limpar sem prejudicar o sistema">Marcar tudo que é Limpável</button><button class="sm gh" id="dgclr">Desmarcar</button><button class="sm" id="dgmov">Mover para…</button><button class="sm" id="dgcop">Copiar para…</button><button class="sm" id="dgext" title="Copia, confere (SHA-256) e só então tira do computador">Disco externo…</button>'})}
@@ -1989,14 +2040,12 @@ async function dgGerenciar(mais){
   dgLateral(r,tr);dgChips();
   const recarrega=()=>{dgSalva();safe(()=>dgGerenciar())};
   bkpSwitchLiga(el,false);
-  $$("[data-dgv]",el).forEach(b=>b.onclick=()=>{DG.visao=b.dataset.dgv;recarrega()});
-  $$("[data-dgm]",el).forEach(b=>b.onclick=()=>{DG.modo=b.dataset.dgm;recarrega()});
   $$("[data-mg]",el).forEach(b=>b.onclick=()=>{tr[+b.dataset.mg].f();DG.visao="pastas";recarrega()});
   $("#dgvolta",el).onclick=()=>dgHist(-1);$("#dgavan",el).onclick=()=>dgHist(1);
   $("#dgfil",el).onclick=()=>$("#dgcorpo").classList.toggle("fopen");
+  fndTopoLiga(el,r,recarrega);
   $$("[data-so]",el).forEach(b=>b.onclick=()=>{DG.ordem=b.dataset.so===DG.ordem&&b.dataset.so==="maior"?"menor":b.dataset.so;recarrega()});
   let tq;$("#dgq",el).oninput=ev=>{clearTimeout(tq);tq=setTimeout(()=>{DG.q=ev.target.value;recarrega()},300)};
-  $("#dgo",el).onchange=ev=>{DG.ordem=ev.target.value;recarrega()};
   const np=$("#dgnp",el);if(np)np.onclick=()=>safe(async()=>{const x=await dialog({titulo:"Nova pasta",html:'<p class="mut" style="margin:0">Criada dentro da pasta em que você está.</p>',texto:"Nome da pasta",livre:true,ok:"Criar"});if(!x)return;await api("/api/dados/nova_pasta",{no:DG.pasta,nome:x.texto.trim()});toast("Pasta criada.","ok");dgGerenciar()});
   const lista=()=>[...DG.sel.values()];
   $("#dgclr").onclick=()=>{DG.sel.clear();dgCorpo()};
