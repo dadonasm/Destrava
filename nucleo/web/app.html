@@ -131,7 +131,7 @@ td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top;word-b
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:12px;padding:12px 18px;z-index:80;box-shadow:0 12px 40px rgba(0,0,0,.4);max-width:min(560px,92vw)}
 .toast.err{border-left-color:var(--err)}.toast.ok{border-left-color:var(--ok)}
 
-.shell{min-height:calc(100vh - 58px)}
+.shell{display:flex;min-height:100vh}
 #gaveta{width:200px;flex:none;background:var(--panel);border-right:1px solid var(--line);padding:12px 8px;display:flex;flex-direction:column;gap:4px;position:sticky;top:58px;height:calc(100vh - 58px);transition:width .2s;z-index:6}
 #gaveta .sp{flex:1}
 .gv{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:transparent;padding:11px 12px;border-radius:12px;color:var(--mut)}
@@ -142,7 +142,7 @@ button>svg,button>span>svg{width:16px;height:16px;vertical-align:-3px}
 .gv .ic svg{width:21px;height:21px}
 .gv .bd{margin-left:auto;font-size:10px;padding:1px 7px;border-radius:99px;background:var(--warn);color:#1b1400;font-weight:700}
 .gvfoot{font-size:12px;color:var(--mut);padding:8px 10px;word-break:break-word;line-height:1.3}.gvfoot b{display:block;color:var(--tx);font-size:12.5px}.gvfoot small{opacity:.55;font-size:10.5px;letter-spacing:.5px}
-body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{display:none}
+
 .hero{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
 .ring{width:158px;height:158px;flex:none;position:relative}.ring svg{width:100%;height:100%}
 .ring .n{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}.ring .n b{font-size:44px;line-height:1;letter-spacing:-1px}.ring .n span{font-size:12px;color:var(--mut)}
@@ -254,7 +254,7 @@ body.min #gaveta{width:62px}body.min .gv .lb,body.min .gvfoot,body.min .gv .bd{d
 #ilha.ok .sinal{background:#1f7a4d;color:#fff}#ilha.erro .sinal{background:#b3261e;color:#fff}
 #ilha.aberta{border-radius:26px;width:min(440px,calc(100vw - 24px))}
 /* vidro do iPhone/Mac: o que sobe para o cabeçalho vai desfocando e esmaecendo; o logo, o menu e a ilha ficam nítidos por cima */
-#vidro,#vidrob{position:fixed;left:0;right:0;z-index:14;pointer-events:none;-webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6)}
+#vidro,#vidrob{position:fixed;left:var(--lw);right:0;z-index:14;pointer-events:none;-webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6)}
 #vidro{top:0;height:96px;-webkit-mask-image:linear-gradient(#000 45%,transparent);mask-image:linear-gradient(#000 45%,transparent);
  background:linear-gradient(color-mix(in srgb,var(--bg) 80%,transparent),color-mix(in srgb,var(--bg) 45%,transparent) 55%,transparent)}
 #vidrob{bottom:0;height:150px;display:none;-webkit-mask-image:linear-gradient(transparent,#000 55%);mask-image:linear-gradient(transparent,#000 55%);
@@ -436,6 +436,17 @@ textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);b
 .dgt tr.dgg td{background:var(--panel2);cursor:pointer;font-size:var(--fs-md)}.dgt tr.dgg:hover td{background:color-mix(in srgb,var(--azul) 6%,var(--panel2))}
 .dgt tr.sg-g-pessoal td:first-child{box-shadow:inset 4px 0 0 var(--ok)}.dgt tr.sg-g-decide td:first-child{box-shadow:inset 4px 0 0 var(--warn)}.dgt tr.sg-g-sistema td:first-child{box-shadow:inset 4px 0 0 var(--mut)}.dgt tr.sg-g-usuario td:first-child{box-shadow:inset 4px 0 0 var(--azul)}
 .dgt tr.dg-realce td{background:color-mix(in srgb,var(--azul) 12%,transparent)}.dgt td.acs{width:1%}.lstt th{white-space:nowrap}.dgt .dg-u{max-width:140px;overflow:hidden;text-overflow:ellipsis}
+/* tabela do Finder: colunas de largura fixa (arrastáveis); com pouca largura somem Caminho, Criado em, Grupo e Categoria, nessa ordem */
+.lstc{container-type:inline-size}
+.dgt.fnd-fixa{table-layout:fixed;width:100%;min-width:0}
+.dgt.fnd-fixa :is(th,td){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dgt.fnd-fixa td:nth-child(2){white-space:nowrap;min-width:0}
+.dgt.fnd-fixa thead th{overflow:visible;position:sticky}
+.dgt .sg-nome b,.dgt .sg-nome small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rz{position:absolute;top:0;right:-4px;width:9px;height:100%;cursor:col-resize;z-index:2;touch-action:none}
+.rz::after{content:"";position:absolute;left:4px;top:25%;bottom:25%;width:1px;background:var(--line)}.rz:hover::after,.rz.on::after{background:var(--azul);width:2px;left:3px;top:15%;bottom:15%}
+@container (max-width:1180px){.fnd-fixa col.c-caminho{visibility:collapse}}
+@container (max-width:1020px){.fnd-fixa col.c-criado,.fnd-fixa col.c-grupo{visibility:collapse}}
+@container (max-width:860px){.fnd-fixa col.c-cat{visibility:collapse}}
 .dgt tr.dg-leg td{font-size:12.5px;color:var(--mut)}.dgt .sg-nome small{max-width:460px}
 .fc-o .grow{min-width:0}.fc-o small{white-space:nowrap;flex:none}.sugb{display:inline-block;font-size:11px;font-weight:700;padding:0 7px;border-radius:var(--r-pill);border:1px solid;vertical-align:1px;white-space:nowrap}
 .sugb.s-limpavel{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 50%,transparent)}.sugb.s-ressalva{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,transparent)}.sugb.s-nao_recomendado{color:var(--err);border-color:color-mix(in srgb,var(--err) 45%,transparent)}
@@ -446,15 +457,7 @@ textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);b
 .ckp.min .lgd{display:none;position:absolute;left:12px;right:12px;top:100%;margin-top:6px;z-index:30;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh);padding:10px}.ckp.min:hover .lgd,.ckp.min:focus-within .lgd{display:flex}
 .fnd-bar{gap:8px}.fnd-nv{display:inline-flex;gap:2px}.fnd-nv button{min-width:32px;font-size:18px;line-height:1;padding:3px 8px}.fnd-tit{flex:1 1 240px;min-width:0;display:flex;flex-direction:column}.lsth .seg{flex-shrink:0}.fnd-tit h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* BKP Mode: interruptor com botão de disquete 3,5" e a paleta do modo backup (disquetes clássicos: corpo grafite, janela prata, etiqueta creme, azul-disquete) */
-.bkpsw{white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:2px 4px;cursor:pointer;color:var(--tx);font:inherit;font-weight:700;font-size:12.5px;letter-spacing:.04em;border-radius:var(--r-pill)}
-.bkpsw:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
-.bkpsw-tr{position:relative;width:52px;height:28px;border-radius:var(--r-pill);background:var(--trilho);border:1px solid var(--line);transition:background .18s,border-color .18s}
-.bkpsw-k{position:absolute;top:1px;left:1px;width:24px;height:24px;display:block;transition:transform .18s;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.35))}
-.bkpsw-k svg{width:24px;height:24px;display:block}
-.bkpsw[aria-checked=true] .bkpsw-tr{background:#2f6fb5;border-color:#c9ccd1}
-.bkpsw[aria-checked=true] .bkpsw-k{transform:translateX(24px)}
-@media (prefers-reduced-motion:reduce){.bkpsw-tr,.bkpsw-k{transition:none}}
+/* BKP Mode: a paleta do modo backup (disquetes clássicos: corpo grafite, janela prata, etiqueta creme, azul-disquete) */
 /* guia "Vai no backup": uma etiqueta por categoria (caixa = levar; nome = filtrar o Finder) */
 .guia{padding:12px 16px}.guia-cab{display:flex;flex-direction:column;gap:1px;margin:2px 8px 6px;font-size:13px}.guia-cab .mut{font-size:12px}
 .guia-ls{display:flex;flex-direction:column;gap:8px}.guia-bl{display:flex;flex-direction:column;gap:2px;padding-left:8px}.guia-t{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);padding:0 0 2px}
@@ -524,12 +527,12 @@ textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);b
 .rc{display:flex;gap:12px;border-radius:14px;padding:14px;border:1px solid;margin-bottom:10px}
 .rc.g{border-color:var(--ok);background:rgba(63,178,127,.09)}.rc.y{border-color:var(--warn);background:rgba(229,162,58,.09)}.rc.r{border-color:var(--err);background:rgba(229,83,75,.09)}
 .rc .ic2{font-size:22px}
-@media (max-width:760px){#gaveta{width:60px}#gaveta .gv .lb,#gaveta .gvfoot,#gaveta .gv .bd{display:none}}
+
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .mA{display:inline-block}.mB{display:none}
 :root[data-theme=light] .mA{display:none}:root[data-theme=light] .mB{display:inline-block}
 /* ---------- layout "painel" (claro com degradê, navegação em pílulas no topo, medidores em arco) ---------- */
-#topo{position:fixed;top:9px;left:0;right:0;display:flex;justify-content:center;align-items:flex-start;gap:8px;z-index:30;pointer-events:none}#topo>*{pointer-events:auto}
+#topo{position:fixed;top:9px;left:var(--lw);right:0;display:flex;justify-content:center;align-items:flex-start;gap:8px;z-index:30;pointer-events:none}#topo>*{pointer-events:auto}
 #gaveta{position:relative!important;top:auto!important;width:auto!important;height:auto!important;flex-direction:row!important;align-items:flex-start;gap:6px!important;padding:6px!important;border-radius:999px;background:var(--pill)!important;border:1px solid var(--line)!important;box-shadow:var(--sh);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 #gaveta .gv[data-view]{flex:none;transition:width .12s ease-out,height .12s ease-out,background .2s,opacity .3s,transform .42s cubic-bezier(.2,.9,.3,1.12),margin .42s}
 #gaveta.anim .gv[data-view]{transition:width .42s cubic-bezier(.2,.9,.3,1),height .2s,background .2s,opacity .3s,transform .42s cubic-bezier(.2,.9,.3,1.12),margin .42s}
@@ -538,12 +541,51 @@ textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);b
 #gaveta .gv.atras{width:0!important;height:44px!important;margin-right:-6px;opacity:0;transform:translateX(var(--dx,0)) scale(.4);pointer-events:none;z-index:1}
 #gaveta .gv.perto .lb{display:block!important;position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);background:rgba(16,18,24,.92);color:#fff;font-size:12px;font-weight:600;padding:3px 10px;border-radius:8px;white-space:nowrap;pointer-events:none}
 #gaveta.fechado.tem-bd::after{content:"";position:absolute;top:5px;right:5px;width:9px;height:9px;border-radius:50%;background:var(--err)}
-#gaveta .sp,#gaveta .gvfoot,#gvtoggle{display:none!important}
+#gaveta .sp,#gaveta .gvfoot{display:none!important}
 #gaveta .gv{width:44px;height:44px;padding:0;justify-content:center;border-radius:999px;position:relative}
 #gaveta .gv .lb{display:none}
 #gaveta .gv.on{background:var(--azul)!important;color:#fff!important;box-shadow:0 6px 16px rgba(59,124,244,.35)}
 #gaveta .gv .bd{position:absolute;top:2px;right:2px;font-size:0;width:9px;height:9px;padding:0;border-radius:50%;background:var(--err)}
-.content{flex:1;min-width:0;max-width:1280px;margin:0 auto;padding:14px 20px 40px}
+.content{flex:1;min-width:0;max-width:1280px;margin:0 auto;padding:4px 20px 40px}
+/* o Finder é uma janela fixa: a página não rola, só a lista (e a lateral de filtros) */
+body.finder-fixo{overflow:hidden}
+body.finder-fixo .shell{height:100vh}
+body.finder-fixo .content{display:flex;flex-direction:column;height:100vh;overflow:auto;padding-bottom:12px}
+body.finder-fixo main{flex:1;min-height:0;width:100%;padding-bottom:0;display:flex;flex-direction:column}
+#dcorpo.dcorpo-fixo{display:flex;flex-direction:column;flex:1;min-height:360px}
+#dcorpo.dcorpo-fixo:has(#selacao){padding-bottom:112px}
+#dcorpo.dcorpo-fixo>.card{flex:none}
+#dcorpo.dcorpo-fixo>.corpo.fnd{flex:1;min-height:0;margin-bottom:0;grid-template-rows:minmax(0,1fr)}
+.corpo.fnd>.fac{position:static;height:100%;max-height:none;overflow:auto}
+.corpo.fnd>.painel{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.corpo.fnd>.painel>*{flex:none}
+.corpo.fnd>.painel>.lstc,.corpo.fnd>.painel>.fnd-grade{flex:1 1 auto;min-height:0;overflow:auto;margin-top:0}
+.corpo.fnd>.painel>.sg-pe{padding:7px 16px;border-top:1px solid var(--line);background:var(--panel)}
+.corpo.fnd .dg-bar{position:static}
+.fnd-bt.pri{background:var(--azul);border-color:var(--azul);color:#fff}.fnd-bt.pri:hover{background:var(--azul);filter:brightness(1.08)}
+@media (max-width:1000px){#dcorpo.dcorpo-fixo>.corpo.fnd{display:flex;flex-direction:column}.corpo.fnd>.fac{height:auto;max-height:40%;flex:none}.corpo.fnd>.painel{flex:1}}
+/* ---------- barra lateral (ferramentas), no molde do Reparo Pro ---------- */
+body{--lw:260px}body.min{--lw:76px}
+#lateral{position:sticky;top:0;align-self:flex-start;flex:none;width:var(--lw);height:100vh;display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--line);z-index:32;transition:width .2s}
+.lat-top{display:flex;align-items:center;gap:12px;padding:18px 16px;border-bottom:1px solid var(--line);min-height:92px}
+.lat-nome{display:flex;flex-direction:column;gap:4px;min-width:0;align-items:flex-start}.lat-nome b{font-size:22px;letter-spacing:-.3px;line-height:1.1}.lat-nome small{color:var(--mut);font-size:11.5px}.lat-nome .chip{padding:1px 9px;font-size:11px}
+.lat-nav{flex:1;overflow:auto;padding:6px 10px 12px}
+.lat-sec{display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--mut);padding:18px 12px 6px}.lat-sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.lv{display:flex;align-items:center;gap:14px;width:100%;text-align:left;border:0;background:transparent;padding:11px 12px;border-radius:14px;color:var(--mut);font-size:15px;position:relative;margin:2px 0}
+.lv:hover{background:var(--panel2);color:var(--tx)}
+.lv.on{background:color-mix(in srgb,var(--azul) 12%,transparent);color:var(--azul);font-weight:700}
+.lv.on::before{content:"";position:absolute;left:-10px;top:8px;bottom:8px;width:4px;border-radius:0 4px 4px 0;background:var(--azul)}
+.lv .ic{flex:none;display:inline-flex}.lv .ic svg{width:22px;height:22px}
+.lat-foot{border-top:1px solid var(--line);padding:8px 10px 10px;background:var(--panel2)}.lat-foot .gvfoot{padding:6px 10px}
+.lat-rec{position:absolute;top:34px;right:-14px;width:28px;height:28px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--panel);border:1px solid var(--line);box-shadow:var(--sh);color:var(--mut)}.lat-rec svg{width:14px;height:14px}
+body.min .lat-rec svg{transform:rotate(180deg)}
+body.min .lat-nome,body.min .lv .lb,body.min .lat-foot .gvfoot{display:none}
+body.min .lat-top{justify-content:center;padding:18px 8px}
+body.min .lv{justify-content:center;padding:11px 0}body.min .lv.on::before{left:-10px}
+body.min .lat-sec{font-size:0;padding:14px 14px 6px}
+#faixa{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-height:50px;padding:6px 0}
+@media (max-width:720px){body,body.min{--lw:64px}#lateral{width:64px}.lat-nome,.lv .lb,.lat-foot .gvfoot,.lat-rec{display:none}.lat-top{justify-content:center;padding:14px 6px}.lv{justify-content:center;padding:11px 0}.lat-sec{font-size:0;padding:14px 14px 6px}}
+
 .ptitle{margin:6px 4px 18px}.ptitle h1{font-size:28px;font-weight:700;letter-spacing:-.2px}.ptitle p{margin:4px 0 0;color:var(--mut)}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-bottom:18px}
 .kpi2{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px 20px;box-shadow:var(--sh)}
@@ -566,22 +608,15 @@ textarea{width:100%;min-height:84px;padding:10px 12px;background:var(--panel2);b
 .grp{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.grp .gq{flex:none;width:96px;text-align:right;font-weight:700}
 @media (max-width:720px){#gaveta{position:fixed!important;top:auto!important;bottom:10px;left:50%;transform:translateX(-50%);max-width:calc(100vw - 20px);overflow-x:auto}.content{padding-bottom:150px}
  #topo{top:auto;bottom:80px}#ilha{flex-direction:column-reverse}#ilha2{display:none!important}}  /* celular: a ilha fica logo acima do menu, abre para cima */
-@media print{#gaveta,header,.noprint{display:none!important}.card{box-shadow:none;border:1px solid #ccc}body{background:#fff!important}}
+@media print{#gaveta,#lateral,header,.noprint{display:none!important}.card{box-shadow:none;border:1px solid #ccc}body{background:#fff!important}}
 
 </style>
 </head>
 <body>
-<header>
-  <span id="mono"></span><h1>Destrava!</h1><small>by D&amp;D Technology</small>
-  <span class="sp"></span>
-  <span id="hown"></span><span id="hsrv"></span>
-  <button class="chip upd" id="hver" title="Ver atualizações">v–</button>
-  <button class="sm" id="theme" aria-label="Alternar tema claro e escuro">Claro / Escuro</button>
-  <button class="sm" id="hperf" title="Configurações" aria-label="Configurações"></button>
-</header>
 <div class="shell">
+<aside id="lateral" aria-label="Ferramentas"></aside>
 <div id="vidro" aria-hidden="true"></div><div id="vidrob" aria-hidden="true"></div><div id="topo"><aside id="gaveta" aria-label="Menu"></aside><div id="ilha" class="hide"><button id="ilhab" aria-expanded="false" aria-controls="ilhad"></button><div id="ilhad" class="hide"></div></div><button id="ilha2" class="hide" aria-label="Mais atividades rodando"></button></div><span id="ilhavivo" class="sr" aria-live="polite"></span>
-<div class="content"><div id="suband" class="hide" role="status"></div><div class="journey hide" id="steps"></div>
+<div class="content"><div id="faixa"><span id="hown"></span><span id="hsrv"></span></div><div id="suband" class="hide" role="status"></div><div class="journey hide" id="steps"></div>
 <main id="main"></main></div>
 </div>
 <div id="layer"></div>
@@ -619,7 +654,7 @@ async function api(path,body){
 let toastT=null;
 function toast(m,kind){let t=$(".toast");if(t)t.remove();t=document.createElement("div");t.className="toast "+(kind||"");t.setAttribute("role","status");t.textContent=m;const fx=$(".acao");if(fx&&getComputedStyle(fx).position==="fixed")t.style.bottom=(fx.offsetHeight+28)+"px";document.body.appendChild(t);clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),kind==="err"?9000:5000)}
 async function safe(fn){try{return await fn()}catch(e){onErr(e)}}
-const BUILD="2026-10-27.4";  // igual ao BUILD do dd_backup.py
+const BUILD="2026-10-30.2";  // igual ao BUILD do dd_backup.py
 const erroTela=(m,p)=>{try{fetch("/api/erro_tela",{method:"POST",headers:{"X-DD-Token":TOKEN},body:JSON.stringify({mensagem:String(m),pilha:String(p||""),tela:(typeof view!=="undefined"?view:"")+(typeof step!=="undefined"&&view==="backup"?":"+step:"")})}).catch(()=>{})}catch(e){}};
 addEventListener("unhandledrejection",e=>{const r=e.reason,m=(r&&r.message)||String(r);if(m==="ORFAOS"||REDE.test(m))return;erroTela(m,r&&r.stack);toast("Erro: "+m,"err")});
 /* contato com o programa: só avisa depois de 3 falhas seguidas; some sozinho quando volta */
@@ -747,19 +782,42 @@ function modalHtml(t,h,w){const d=document.createElement("div");d.className="mod
 let CTX={t:null},view="home",info={};
 async function loadCtx(){try{CTX.t=await api("/api/termo")}catch(e){CTX.t=null}renderChrome()}
 const ownT=()=>CTX.t&&CTX.t.status&&CTX.t.status.dono==="terceiros";
+const LAT=[["Início",[["home","Home","home"],["perfil:perfil","Meu perfil","pessoa"]]],
+ ["Cópia e dados",[["dados","Gerenciamento de dados","dados"],["mapas","Mapas","mapa"]]],
+ ["Máquinas e serviços",[["maq","Máquinas","maq"],["os","OS","os"]]],
+ ["Sistema",[["perfil","Configurações","gear"]]]];
+const latAtivo=k=>{const v=ABA_DE[view]||view;return k==="perfil:perfil"?v==="perfil"&&PERF_ALVO==="perfil":k==="perfil"?v==="perfil"&&PERF_ALVO!=="perfil":k===v};
+let PERF_ALVO="";
 function renderChrome(){
   const t=CTX.t,st=t&&t.status;
-  const items=[["home","Home","home"],["backup","Backup","backup"],["mapas","Mapas","mapa"],["dados","Gerenciamento de dados","dados"],["maq","Máquinas","maq"],["os","OS","os"]];
-  $("#gaveta").innerHTML=items.map(i=>`<button class="gv ${(ABA_DE[view]||view)===i[0]?"on":""}" data-view="${i[0]}" title="${i[1]}"><span class="ic">${ic(i[2])}</span><span class="lb">${i[1]}</span></button>`).join("")+
-   `<span class="sp"></span><div class="gvfoot"><b>${esc(t?t.nome:info.host||"")}</b><button class="mid" id="midc" title="Copiar o código da máquina">${esc(t?t.mid:"")}</button></div><button class="gv" id="gvtoggle" title="Recolher"><span class="ic">☰</span><span class="lb">Recolher</span></button>`;
-  $$("#gaveta [data-view]").forEach(b=>b.onclick=()=>nav(b.dataset.view));
-  $("#gvtoggle").onclick=()=>document.body.classList.toggle("min");
+  $("#lateral").innerHTML=`<div class="lat-top"><span id="mono"></span><div class="lat-nome"><b>Destrava!</b><small>by D&amp;D Technology</small><button class="chip upd" id="hver" title="Ver atualizações">v–</button></div></div>
+   <nav class="lat-nav" aria-label="Ferramentas">${LAT.map(([sec,its])=>`<div class="lat-sec">${sec}</div>`+its.map(([k,tt,i])=>`<button class="lv ${latAtivo(k)?"on":""}" data-lv="${k}" title="${tt}" ${latAtivo(k)?'aria-current="page"':""}><span class="ic">${ic(i)}</span><span class="lb">${tt}</span></button>`).join("")).join("")}</nav>
+   <div class="lat-foot"><div class="gvfoot"><b>${esc(t?t.nome:info.host||"")}</b><button class="mid" id="midc" title="Copiar o código da máquina">${esc(t?t.mid:"")}</button></div>
+    <div class="lat-ac"><button class="lv" id="theme" title="Alternar tema claro e escuro"><span class="ic">${ic("eye")}</span><span class="lb">Claro / Escuro</span></button></div></div>
+   <button class="lat-rec" id="gvtoggle" title="Recolher ou expandir" aria-label="Recolher ou expandir a barra lateral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>`;
+  try{$("#mono").innerHTML='<span class="mA">'+DD.mono({variant:"ouro",size:44,bg:true})+'</span><span class="mB">'+DD.mono({variant:"claro",size:44,bg:false})+'</span>'}catch(e){}
+  $$("#lateral [data-lv]").forEach(b=>b.onclick=()=>{const k=b.dataset.lv;if(k==="perfil:perfil")nav("perfil","perfil");else nav(k)});
+  $("#gvtoggle").onclick=()=>{document.body.classList.toggle("min");lsSet("dd_lat",document.body.classList.contains("min")?"min":"")};
+  $("#theme").onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==="light"?"dark":"light";lsSet("dd_tema",r.dataset.theme)};
+  $("#hver").onclick=()=>{if(info.servidor){toast("No modo servidor o programa já vem na versão do servidor.");return}safe(openUpdate)};
   const mc=$("#midc");if(mc)mc.onclick=()=>{try{navigator.clipboard.writeText(t.mid);toast("Código copiado: "+t.mid,"ok")}catch(e){}};
   $("#hown").innerHTML=st&&st.aceito?(st.dono==="terceiros"?`<span class="chip own-t" title="Máquina de terceiros"><i class="d"></i>Terceiros${st.terceiro_nome?": "+esc(st.terceiro_nome):""}</span>`:`<span class="chip own-p" title="Máquina particular"><i class="d"></i>Particular</span>`):"";
   if(info.simulacao)$("#hown").innerHTML+=`<span class="chip own-t" title="Reproduzindo uma coleta salva: as ações são só simuladas, nada muda neste computador"><i class="d"></i>SIMULAÇÃO</span>`;
   $("#hver").textContent="v"+(info.versao||"–");
   srvChip();
-  dockLigar();dockFechar(false);
+  renderAbas();
+}
+/* pílula do topo: as funções da ferramenta aberta (cada ferramenta chama setAbas); sem abas, ela some */
+let ABAS=[];
+/* o Finder é uma janela de altura da tela: a página não rola, só a lista */
+function finderFixo(on){document.body.classList.toggle("finder-fixo",!!on);if(on)window.scrollTo(0,0)}
+function setAbas(l){ABAS=l||[];renderAbas()}
+function renderAbas(){
+  const g=$("#gaveta");if(!g)return;
+  g.classList.toggle("hide",!ABAS.length);
+  g.innerHTML=ABAS.map(a=>`<button class="gv ${a.on()?"on":""}" data-aba="${a.k}" title="${esc(a.t)}" aria-label="${esc(a.t)}" ${a.on()?'aria-current="page"':""}><span class="ic">${ic(a.i)}</span><span class="lb">${esc(a.t)}</span></button>`).join("");
+  $$("#gaveta [data-aba]").forEach(b=>b.onclick=()=>{const a=ABAS.find(x=>x.k===b.dataset.aba);if(a)a.fn()});
+  g.classList.remove("fechado","tem-bd");dockLigar();dockFechar(false);
 }
 /* modo servidor: quem está conectado, o que falta enviar e o botão de encerrar (apaga tudo deste computador) */
 function srvChip(){
@@ -779,8 +837,8 @@ async function encerrar(descartar){
   document.body.innerHTML='<p style="padding:30px;font:16px system-ui">Destrava! encerrado. Os arquivos temporários foram apagados deste computador. Pode fechar esta aba.</p>';
 }
 setInterval(async()=>{if(!info.servidor)return;try{const i=await api("/api/info");if(i.servidor){info.servidor=i.servidor;srvChip()}}catch(e){}},20000);
-const ABA_DE={manter:"maq"};
-function markNav(){$$("#gaveta [data-view]").forEach(b=>b.classList.toggle("on",b.dataset.view===(ABA_DE[view]||view)))}
+const ABA_DE={manter:"maq",backup:"dados"};
+function markNav(){$$("#lateral [data-lv]").forEach(b=>{const on=latAtivo(b.dataset.lv);b.classList.toggle("on",on);if(on)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});renderAbas()}
 function setWide(b){$("#main").classList.toggle("wide",!!b)}
 
 /* ---------- termo de responsabilidade (1ª vez em cada máquina) ---------- */
@@ -933,7 +991,7 @@ async function drawPerfil(){
     <label style="display:flex;gap:8px;align-items:center;margin:0;color:var(--tx)"><input type="checkbox" id="cfsu" ${SU?"checked":""}> Ligar o modo Superusuário</label>
     <div class="row" style="margin-top:10px"><button class="sm" id="cfsup" ${SU?"":"disabled"}>Abrir o painel</button></div></div>
    <div class="card" id="cfdiag"><h2>Diagnóstico do programa</h2><div id="cfdiagc" class="mut">Verificando…</div></div>
-   <div class="card"><h2>Seus dados (técnico)</h2><p class="mut" style="margin-top:0">Marque o que aparece no certificado entregue ao cliente. Redes sociais são opcionais.</p>
+   <div class="card" id="pfperfil"><h2>Seus dados (técnico)</h2><p class="mut" style="margin-top:0">Marque o que aparece no certificado entregue ao cliente. Redes sociais são opcionais.</p>
    ${r.campos.map(([c,rot])=>`<div class="pfl"><div class="grow"><label for="pf_${c}">${esc(rot)}</label><input type="text" id="pf_${c}" data-c="${c}" value="${esc(p[c]||"")}" maxlength="120" ${IM[c]||""}></div><label class="pfc"><input type="checkbox" data-cert="${c}" ${marc.has(c)?"checked":""}> no certificado</label></div>`).join("")}
    <div id="pferr"></div><div class="row" style="justify-content:flex-end;margin-top:14px"><button class="pri" id="pfsave">Salvar perfil</button></div></div>
    <div class="card"><h2>Como sai no certificado</h2><div id="pfprev"></div></div>`;
@@ -941,6 +999,7 @@ async function drawPerfil(){
   const prev=()=>{const d=coletar(),tp={};if((d.nome||"").trim())d.no_certificado.forEach(c=>{if((d[c]||"").trim())tp[c]=d[c].trim()});
     $("#pfprev").innerHTML=blocoTecnico(tp)||'<p class="mut">Sem nome preenchido ou sem nada marcado, o certificado não mostra o bloco "Técnico responsável".</p>'};
   $$("#main input").forEach(i=>{i.addEventListener("input",prev);i.addEventListener("change",prev)});prev();
+  if(PERF_ALVO==="perfil")$("#pfperfil").scrollIntoView({block:"start"});
   $("#pfsave").onclick=()=>safe(async()=>{$("#pferr").innerHTML="";
     try{const x=await api("/api/perfil",coletar());PERFIL=x.perfil;toast("Perfil salvo.","ok")}catch(e){$("#pferr").innerHTML=`<div class="errbox" style="margin-top:10px">${esc(e.message)}</div>`}});
   $("#cfsu").onchange=ev=>safe(async()=>{const cb=ev.target;
@@ -986,7 +1045,7 @@ async function cfgPerm(){
 /* ================= Home / ficha ================= */
 let hp=null;
 function nav(v,arg){
-  view=v;HOMEP=false;markNav();renderChrome();clearInterval(hp);
+  view=v;HOMEP=false;if(v==="perfil")PERF_ALVO=arg||"";ABAS=[];finderFixo(false);markNav();renderChrome();clearInterval(hp);
   $("#steps").classList.toggle("hide",v!=="backup");
   if(v==="home")drawHome();else if(v==="perfil")drawPerfil();else if(v==="maq")drawMaq(arg);else if(v==="manter")drawManter(arg,false);else if(v==="dados"){DG.aba=arg==="ger"?"ger":"geral";drawDados()}else if(v==="mapas")drawMapas();else if(v==="os")drawOS();else{setWide(false);renderSteps();draw()}
 }
@@ -1417,7 +1476,7 @@ async function drawMaq(mid){
      <select id="mqord" aria-label="Ordenar por">${opt([["recentes","Mais recentes"],["antigas","Mais antigas"],["nota","Maior nota"],["espaco","Espaço recuperado"]],MQ.ord)}<option value="col" hidden ${MQ.ord==="col"?"selected":""}>Pela coluna da tabela</option></select>
     </div><div id="mqx"></div><div class="tabs" role="tablist" id="mqtabs"></div><div id="mqtab"></div></div>`
    :`<div class="card empty"><h2>Nenhuma máquina atendida ainda</h2><p>Quando você aceitar o termo e analisar uma máquina na Home, ela aparece aqui com a etapa do serviço.</p><button class="pri" id="mqhome">Ir para a Home</button></div>`}`;
-  $("#mqperf").onclick=()=>nav("perfil");
+  $("#mqperf").onclick=()=>nav("perfil","perfil");
   $("#mqexp").onclick=()=>safe(mqExporta);
   if(!n){$("#mqhome").onclick=()=>nav("home");return}
   const re=()=>{MQ.pag=0;mqTabela()};
@@ -1639,7 +1698,7 @@ function ilhaLigar(){
    e as outras deslizam para trás dela. Toque e tela estreita: barra completa, como antes ---------- */
 const DOCK={base:44,max:68,alcance:150,t:null,ta:null,inicio:true};
 const dockMouse=()=>matchMedia("(hover: hover) and (min-width: 721px)").matches;
-const dockBts=()=>$$("#gaveta .gv[data-view]");
+const dockBts=()=>$$("#gaveta .gv[data-aba]");
 function dockLigar(){
   const g=$("#gaveta");if(!g||g.dataset.dock)return;g.dataset.dock="1";
   let raf=0,mx=null;
@@ -1748,11 +1807,14 @@ async function dadosResultado(e){
   const [ID]=await Promise.all([api("/api/identidade?para=dados").catch(()=>({})),tiposPronto()]);
   if(view!=="dados"&&!naSelecao())return;
   if(naSelecao())DG.aba="ger";else if(DG.aba!=="ger")DG.aba="geral";
-  $("#main").innerHTML=`<section class="card ckp" id="dgcock"></section>
-  <div class="sg-abas dg-abas" role="tablist">${[["geral","Visão geral"],["ger","Gerenciamento completo"]].map(([k,t])=>`<button role="tab" aria-selected="${DG.aba===k}" class="${DG.aba===k?"on":""}" data-dga="${k}">${t}</button>`).join("")}</div>
-  <div id="dcorpo"></div>`;
+  $("#main").innerHTML=`${DG.aba==="geral"?'<section class="card ckp" id="dgcock"></section>':""}
+  <div id="dcorpo" class="${DG.aba==="ger"?"dcorpo-fixo":""}"></div>`;
+  setAbas([["geral","Visão geral","barras",()=>DG.aba==="geral"&&!naSelecao()],["ger","Gerenciamento completo","pasta",()=>DG.aba==="ger"&&!naSelecao()],["bkp","BKP Mode","backup",()=>naSelecao()]].map(([k,t,i,on])=>({k,t,i,on,fn:()=>safe(async()=>{
+    if(k==="bkp"){if(!naSelecao())await bkpModo(true);return}
+    if(naSelecao()){if(k==="ger"){await bkpModo(false);return}bkpSai()}
+    DG.aba=k;dgSalva();dadosResultado(DS.e||e)})})));
+  finderFixo(DG.aba==="ger");
   dgCockpit(e,ID);
-  $$("[data-dga]").forEach(b=>b.onclick=()=>{DG.aba=b.dataset.dga;dgSalva();if(DG.aba==="geral"&&naSelecao())bkpSai();dadosResultado(DS.e||e)});
   if(DG.aba==="ger")return safe(()=>naSelecao()?selHost():dgGerenciar());
   dgGeral(e);
 }
@@ -1826,10 +1888,30 @@ function dgGeral(e){
 }
 /* ---- peças da tabela: as mesmas colunas da lista do backup (Tipo, Categoria, Grupo, Situação, Parado, Criado, Tamanho, Caminho) ---- */
 const DG_NCOL=11;
-const dgTabela=(cab,corpo,id)=>`<div class="lstc"><table class="lstt dgt"><thead>${cab}</thead><tbody id="${id}">${corpo}</tbody></table></div>`;
+/* ---- colunas do Finder: ordenar nos dois sentidos clicando no título e largura arrastável (alça na borda do título) ---- */
+const FND_COL={nome:["nome","nome_z"],tipo:["tipo","tipo_z"],cat:["cat","cat_z"],grupo:["grupo","grupo_z"],parado:["recente","parado"],criado:["antigo","novo"],tamanho:["menor","maior"],caminho:["caminho","caminho_z"]};
+const FND_DESC1=["parado","criado","tamanho"];  // na 1ª vez que se clica nelas: o maior, o mais parado, o mais novo primeiro
+const FND_W={ck:36,nome:340,cp:130,tipo:110,cat:130,grupo:110,sit:110,parado:90,criado:110,tamanho:100,caminho:220,acs:96};
+let FND_WS={};try{FND_WS=JSON.parse(lsGet("dd_cols","{}"))||{}}catch(e){}
+const fndColsSalva=()=>lsSet("dd_cols",JSON.stringify(FND_WS));
+const fndColgroup=ks=>`<colgroup>${ks.map(k=>`<col class="c-${k}" data-k="${k}" style="width:${FND_WS[k]||FND_W[k]}px">`).join("")}</colgroup>`;
+const fndTh=(k,t,ordem,ordena,cls)=>{const o=FND_COL[k],i=o?o.indexOf(ordem):-1,pode=ordena&&o;
+  return `<th class="${cls||""}" data-k="${k}" ${pode?`aria-sort="${i<0?"none":i?"descending":"ascending"}"`:""}>${pode?`<button data-so="${k}" class="${i>=0?"on":""}">${t}${i>=0?(i?" ▼":" ▲"):""}</button>`:t}<span class="rz" aria-hidden="true"></span></th>`};
+function fndOrdenaLiga(el,atual,seta){$$("[data-so]",el).forEach(b=>b.onclick=()=>{const k=b.dataset.so,o=FND_COL[k],i=o.indexOf(atual());seta(i>=0?o[1-i]:FND_DESC1.includes(k)?o[1]:o[0])})}
+function fndColsLiga(el){
+  const tb=$("table.fnd-fixa",el);if(!tb)return;
+  $$(".rz",tb).forEach(rz=>{const th=rz.parentElement,k=th.dataset.k,col=$(`col[data-k="${k}"]`,tb);if(!col)return;
+    rz.onclick=ev=>ev.stopPropagation();
+    rz.ondblclick=ev=>{ev.stopPropagation();delete FND_WS[k];col.style.width=FND_W[k]+"px";fndColsSalva()};
+    rz.onpointerdown=ev=>{ev.preventDefault();ev.stopPropagation();rz.setPointerCapture(ev.pointerId);const x0=ev.clientX,w0=th.getBoundingClientRect().width;rz.classList.add("on");
+      rz.onpointermove=e=>{col.style.width=Math.max(48,Math.round(w0+e.clientX-x0))+"px"};
+      rz.onpointerup=rz.onpointercancel=()=>{rz.onpointermove=rz.onpointerup=rz.onpointercancel=null;rz.classList.remove("on");FND_WS[k]=Math.round(th.getBoundingClientRect().width);fndColsSalva()}}});
+}
+const DG_KS=["ck","nome","tipo","cat","grupo","sit","parado","criado","tamanho","caminho","acs"];
+const dgTabela=(cab,corpo,id,ks)=>`<div class="lstc"><table class="lstt dgt fnd-fixa">${fndColgroup(ks)}<thead>${cab}</thead><tbody id="${id}">${corpo}</tbody></table></div>`;
 function dgCabeca(caixa,ordena){
-  const b=(k,t,c)=>`<th class="${c||""}">${ordena?`<button data-so="${k}" class="${DG.ordem===k?"on":""}">${t}${DG.ordem===k?" ▾":""}</button>`:t}</th>`;
-  return `<tr><th class="ck">${caixa&&ordena?'<input type="checkbox" id="dgall" title="Marcar tudo o que está na lista" aria-label="Marcar tudo o que está na lista">':""}</th>${b("nome","Nome do arquivo")}<th>Tipo</th><th>Categoria</th><th>Grupo</th><th>Situação</th>${b("parado","Parado","r")}<th>Criado em</th>${b("maior","Tamanho","r")}<th>Caminho</th><th></th></tr>`;
+  const t=(k,x,c)=>fndTh(k,x,DG.ordem,ordena,c);
+  return `<tr><th class="ck">${caixa&&ordena?'<input type="checkbox" id="dgall" title="Marcar tudo o que está na lista" aria-label="Marcar tudo o que está na lista">':""}</th>${t("nome","Nome do arquivo")}${t("tipo","Tipo")}${t("cat","Categoria")}${t("grupo","Grupo")}${t("sit","Situação")}${t("parado","Parado","r")}${t("criado","Criado em")}${t("tamanho","Tamanho","r")}${t("caminho","Caminho")}<th></th></tr>`;
 }
 function dgGrupo(k,tit,info,cor,fe,caixa){
   return `<tr class="dgg sg-g-${cor}" data-dgg="${esc(k)}" tabindex="0" aria-expanded="${!fe}"><td class="ck">${caixa?`<input type="checkbox" data-gk="${esc(k)}" aria-label="Marcar todos de ${esc(tit)}">`:""}</td>
@@ -1945,8 +2027,6 @@ function dgLateral(r,tr){
 }
 /* interruptor BKP Mode: o botão é um disquete 3,5"; ligado = modo backup (pipeline, caixas Levar, paleta de disquete) */
 const BKP_DISQUETE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 1.5h16l4 4v17h-20z" fill="#2b2d33" stroke="#c9ccd1" stroke-width="1"/><rect x="6.5" y="1.5" width="10" height="6.5" fill="#c9ccd1"/><rect x="12.5" y="2.8" width="2.5" height="4" fill="#2b2d33"/><rect x="5" y="12" width="14" height="10.5" rx="1" fill="#f4efe2"/><path d="M7.5 15.5h9M7.5 18h9" stroke="#c8433a" stroke-width="1" stroke-linecap="round"/></svg>';
-const bkpSwitch=on=>`<button class="bkpsw" id="bkpsw" role="switch" aria-checked="${!!on}" title="${on?"Voltar ao Gerenciamento de dados":"Ligar o modo backup: escolher o que levar e onde gravar"}"><span>BKP Mode</span><span class="bkpsw-tr"><span class="bkpsw-k">${BKP_DISQUETE}</span></span></button>`;
-function bkpSwitchLiga(el,on){const b=$("#bkpsw",el||document);if(b)b.onclick=()=>safe(()=>bkpModo(!on))}
 /* BKP Mode ligado = a Seleção do backup (etapa 0) dentro do Finder do Gerenciamento: a tela é a mesma, só o Finder e as faixas em volta mudam */
 const naSelecao=()=>view==="backup"&&step===0;
 let BKPV=null;  // a última troca de modo: a pasta de cada lado
@@ -1978,6 +2058,23 @@ function fndIcoPasta(){
   const L=DG.loc||{},todos=[...(L.favoritos||[]),...(L.locais||[]),...(L.externos||[])],x=todos.find(y=>y.no===DG.pasta);
   return x?fndIco(x.ico):fndIco(DG.pasta?"pasta":"disco");
 }
+/* rolagem infinita: ao chegar perto do fim da lista pede a próxima página (uma de cada vez) e, se a lista ainda não enche a janela, pede de novo */
+let FND_CARREGANDO=false;
+function fndInfinito(cont,falta,carrega){
+  if(!cont)return;
+  const pede=()=>{if(FND_CARREGANDO||falta<=0)return;FND_CARREGANDO=true;Promise.resolve().then(carrega).catch(()=>{}).finally(()=>{FND_CARREGANDO=false})};
+  cont.onscroll=()=>{if(cont.scrollTop+cont.clientHeight>=cont.scrollHeight-400)pede()};
+  setTimeout(()=>{if(cont.isConnected&&cont.scrollHeight<=cont.clientHeight+400)pede()},0);
+}
+/* Explorar pastas e Atualizar a varredura: moram na barra do Finder (nos dois modos) */
+const fndAcoes=()=>{const tem=DS.e&&DS.e.cockpit,t=tem?"Atualizar a varredura":"Varrer esta máquina";
+  return `<button class="fnd-bt" id="dexp" title="Explorar pastas: volta à raiz" aria-label="Explorar pastas">${ic("pasta")}</button><button class="fnd-bt pri" id="dre" title="${t}" aria-label="${t}">${ic("refresh")}</button>`};
+function fndAcoesLiga(el){
+  const e=()=>DS.e||{},ix=()=>e().indice||{};
+  const dre=$("#dre",el),dexp=$("#dexp",el);
+  if(dre)dre.onclick=()=>{if(naSelecao())bkpSai();safe(()=>dgAtualizar(!e().cockpit))};
+  if(dexp)dexp.onclick=()=>{if(naSelecao()){bfIr("");return}if(ix().existe){DG.aba="ger";DG.visao="pastas";DG.pasta=0;DG.q="";dgSalva();dadosResultado(e())}else safe(()=>dadosExplorar(0))};
+}
 function fndTopo(r,tr){
   const bt=(id,ico,tit,extra)=>`<button class="fnd-bt" id="${id}" title="${tit}" aria-label="${tit}">${ic(ico)}${extra||""}</button>`;
   return `<div class="fnd-top ${DG.q?"busca":""}" id="fndtop">
@@ -1987,7 +2084,7 @@ function fndTopo(r,tr){
    <div class="fnd-tools">
     ${bt("fndord","ordem","Ordenar por")}${bt("fndmod",DG.modo==="icones"?"grade":"lista","Ver como lista ou ícones",'<i class="fnd-cv">▾</i>')}
     ${DG.visao==="pastas"&&DG.pasta?`<button class="fnd-bt" id="dgnp" title="Nova pasta aqui" aria-label="Nova pasta aqui">＋</button>`:""}
-    ${bkpSwitch(false)}${bt("fndlupa","lupa","Buscar")}
+    ${fndAcoes()}${bt("fndlupa","lupa","Buscar")}
    </div>
    <div class="fnd-bq">${ic("lupa")}<input type="search" id="dgq" placeholder="Buscar pelo nome ou caminho" aria-label="Buscar pelo nome ou caminho" value="${esc(DG.q)}" autocomplete="off"><button class="fnd-bt" id="fndqx" title="Fechar a busca" aria-label="Fechar a busca">${ic("fechar")}</button></div>
   </div>`;
@@ -2035,16 +2132,15 @@ async function dgGerenciar(mais){
      <b>${DG.visao==="pastas"&&!DG.q&&!dgNAtivos()?`${nf(r.pastas.length)} pasta(s) · ${nf(r.total)} arquivo(s) aqui`:`${nf(r.total)} ${r.total===1?"item":"itens"} · ${fmt(r.bytes)}`}</b><span class="lstchips" id="dgchips"></span></div>
     ${r.estado.parcial?'<div class="warnbox" style="margin:10px 16px 0">A última varredura foi cancelada: a lista está incompleta. Varra de novo para ver tudo.</div>':""}
     ${dgBarraHtml({id:"dgbar",cont:"dgsel",def:"dgdef",del:"dgdel",botoes:'<button class="sm gh" id="dglimp" title="Marca, dentro do filtro atual, tudo o que a varredura achou que dá para limpar sem prejudicar o sistema">Marcar tudo que é Limpável</button><button class="sm gh" id="dgclr">Desmarcar</button><button class="sm" id="dgmov">Mover para…</button><button class="sm" id="dgcop">Copiar para…</button><button class="sm" id="dgext" title="Copia, confere (SHA-256) e só então tira do computador">Disco externo…</button>'})}
-    ${DG.modo==="icones"?'<div class="fnd-grade" id="dgbody"></div>':dgTabela(dgCabeca(true,true),"","dgbody")}<div id="dgmais" class="sg-pe"></div></section></div>`;
+    ${DG.modo==="icones"?'<div class="fnd-grade" id="dgbody"></div>':dgTabela(dgCabeca(true,true),"","dgbody",DG_KS)}<div id="dgmais" class="sg-pe"></div></section></div>`;
   gavAplica($("#dgcorpo"),"dados");
   dgLateral(r,tr);dgChips();
   const recarrega=()=>{dgSalva();safe(()=>dgGerenciar())};
-  bkpSwitchLiga(el,false);
   $$("[data-mg]",el).forEach(b=>b.onclick=()=>{tr[+b.dataset.mg].f();DG.visao="pastas";recarrega()});
   $("#dgvolta",el).onclick=()=>dgHist(-1);$("#dgavan",el).onclick=()=>dgHist(1);
   $("#dgfil",el).onclick=()=>$("#dgcorpo").classList.toggle("fopen");
-  fndTopoLiga(el,r,recarrega);
-  $$("[data-so]",el).forEach(b=>b.onclick=()=>{DG.ordem=b.dataset.so===DG.ordem&&b.dataset.so==="maior"?"menor":b.dataset.so;recarrega()});
+  fndTopoLiga(el,r,recarrega);fndAcoesLiga(el);
+  fndOrdenaLiga(el,()=>DG.ordem,k=>{DG.ordem=k;recarrega()});fndColsLiga(el);
   let tq;$("#dgq",el).oninput=ev=>{clearTimeout(tq);tq=setTimeout(()=>{DG.q=ev.target.value;recarrega()},300)};
   const np=$("#dgnp",el);if(np)np.onclick=()=>safe(async()=>{const x=await dialog({titulo:"Nova pasta",html:'<p class="mut" style="margin:0">Criada dentro da pasta em que você está.</p>',texto:"Nome da pasta",livre:true,ok:"Criar"});if(!x)return;await api("/api/dados/nova_pasta",{no:DG.pasta,nome:x.texto.trim()});toast("Pasta criada.","ok");dgGerenciar()});
   const lista=()=>[...DG.sel.values()];
@@ -2161,7 +2257,8 @@ function dgCorpo(){
   $$("[data-gk]",el).forEach(c=>{c.onclick=ev=>ev.stopPropagation();c.onchange=()=>{(DGG[c.dataset.gk]||[]).forEach(k=>c.checked?DG.sel.set(k,DGX[k]):DG.sel.delete(k));dgCorpo()}});
   dgLigarLinhas(el,dgCorpo);
   const falta=DG.r.total-DG.rows.length,mais=$("#dgmais");
-  if(mais){mais.innerHTML=falta>0?`<span class="mut">Mostrando ${nf(DG.rows.length)} de ${nf(DG.r.total)}.</span><button class="sm" id="dgmore">Carregar mais ${nf(Math.min(200,falta))}</button>`:"";const m=$("#dgmore");if(m)m.onclick=()=>safe(()=>dgGerenciar(true))}
+  if(mais){mais.innerHTML=`<span class="mut">${nf(DG.rows.length)} de ${nf(DG.r.total)} ${DG.r.total===1?"item":"itens"}${falta>0?" · role para carregar mais":""}</span>`}
+  fndInfinito($("#dgbody").closest(".lstc,.fnd-grade"),falta,()=>dgGerenciar(true));
   dgGruposSync(DG.sel);dgBarra();
   if(DG.realce){const r=$(`#dgbody [data-row="${DG.realce}"]`);DG.realce=0;if(r){r.classList.add("dg-realce");r.scrollIntoView({block:"center"})}}
 }
@@ -2432,7 +2529,7 @@ function renderSteps(){
     return i!==step&&(i<=maxStep||SU)?`<button type="button" class="${cls}" data-st="${i}" title="Abrir ${esc(t)}${i>maxStep?" (Superusuário)":""}">${c}</button>`:`<div class="${cls}" ${i===step?'aria-current="step"':""}>${c}</div>`}).join("");
   $$("[data-st]",el).forEach(b=>b.onclick=()=>{const n=+b.dataset.st;if(n>maxStep)toast("Etapa aberta pelo Superusuário: pode faltar o que as anteriores preparam.");go(n)});
 }
-function go(n){step=n;if(!SU||n<=maxStep+1)maxStep=Math.max(maxStep,n);view="backup";markNav();$("#steps").classList.remove("hide");renderSteps();draw();window.scrollTo(0,0)}
+function go(n){ABAS=[];finderFixo(false);renderAbas();step=n;if(!SU||n<=maxStep+1)maxStep=Math.max(maxStep,n);view="backup";markNav();$("#steps").classList.remove("hide");renderSteps();draw();window.scrollTo(0,0)}
 
 /* ---- modo Superusuário: ligado na engrenagem, fica numa faixa visível enquanto estiver ativo ---- */
 let SU=lsGet("dd_su","0")==="1";
@@ -2555,7 +2652,7 @@ async function identBackup(){
   const campo=(t,v,vazio)=>`<div><span class="mut" style="font-size:12px">${t}</span><b style="display:block;color:${v?"var(--tx)":"var(--warn)"}">${v?esc(v):"⚠ "+vazio}</b></div>`;
   el.innerHTML=`<div class="idn">${campo("Cliente (dono da máquina)",r.cliente,"Sem dono cadastrado")}${campo("Técnico",r.tecnico,"Sem nome no seu perfil")}${campo("Equipamento",r.equip,"Sem nome")}</div>
    <div class="row" style="margin-top:10px"><button class="sm gh" id="idmq">Editar no cadastro da máquina</button><button class="sm gh" id="idpf">Editar meu perfil</button></div>`;
-  $("#idmq").onclick=()=>nav("maq",CTX.t&&CTX.t.mid);$("#idpf").onclick=()=>nav("perfil");
+  $("#idmq").onclick=()=>nav("maq",CTX.t&&CTX.t.mid);$("#idpf").onclick=()=>nav("perfil","perfil");
 }
 /* origem dentro de outra origem marcada: os arquivos iriam duas vezes */
 const srcNorm=p=>{let x=String(p).replace(/\\/g,"/");if(/^[a-z]:/i.test(x))x=x.toLowerCase();return x.endsWith("/")?x:x+"/"};
@@ -2784,7 +2881,7 @@ const selTog=(lista,k)=>{const i=lista.indexOf(k);if(i>=0)lista.splice(i,1);else
 const BF=Object.assign({pasta:"",hist:[""],hi:0,visao:"pastas",modo:"lista",ordem:"maior",ab:new Map(),foco:"",rows:[],pastas:[],r:null,tot:0,gen:0,raiz:null},
   (()=>{try{const x=JSON.parse(lsGet("dd_bf","{}"))||{};return {visao:x.visao==="arquivos"?"arquivos":"pastas",modo:x.modo==="icones"?"icones":"lista",ordem:["maior","menor","nome","data"].includes(x.ordem)?x.ordem:"maior"}}catch(e){return {}}})());
 const bfSalva=()=>lsSet("dd_bf",JSON.stringify({visao:BF.visao,modo:BF.modo,ordem:BF.ordem}));
-const BF_ORD={maior:["tamanho","desc"],menor:["tamanho","asc"],nome:["nome","asc"],data:["data","desc"]};
+const BF_ORD={maior:["tamanho","desc"],menor:["tamanho","asc"],nome:["nome","asc"],nome_z:["nome","desc"],data:["data","desc"],novo:["data","desc"],antigo:["data","asc"],tipo:["tipo","asc"],tipo_z:["tipo","desc"],cat:["categoria","asc"],cat_z:["categoria","desc"],grupo:["grupo","asc"],grupo_z:["grupo","desc"],parado:["parado","asc"],recente:["parado","desc"],caminho:["caminho","asc"],caminho_z:["caminho","desc"]};
 let BFX={};  // o que está na tela, pela chave da linha (p:<pasta> ou f:<índice>)
 /* o filtro da barra lateral e da busca, mais a pasta (o servidor só liga/desliga em massa o que é pessoal, como antes) */
 const bfFiltro=extra=>Object.assign({},LST.f,LST.q?{q:LST.q}:{},extra||{});
@@ -2795,7 +2892,7 @@ const bfPasta=(p,nv)=>({pasta:true,k:p.chave,nome:bfNome(p.chave),ico:bfIco(p.ch
 const bfArq=(x,nv)=>Object.assign(lstLinha(x),{k:"f:"+x[0],arv:nv!=null,nv:nv||0});
 const bfChave=x=>x.pasta?"p:"+x.k:x.k;
 function bfOrdena(ps){
-  const o={maior:(a,b)=>b.bytes-a.bytes,menor:(a,b)=>a.bytes-b.bytes,nome:(a,b)=>a.nome.localeCompare(b.nome,"pt-BR")}[BF.ordem];
+  const o={maior:(a,b)=>b.bytes-a.bytes,menor:(a,b)=>a.bytes-b.bytes,nome:(a,b)=>a.nome.localeCompare(b.nome,"pt-BR"),nome_z:(a,b)=>b.nome.localeCompare(a.nome,"pt-BR")}[BF.ordem];
   return o?ps.slice().sort(o):ps;
 }
 function bfIr(pasta,semHist){
@@ -2840,6 +2937,11 @@ function bfFilhos(x,nv){
   return out;
 }
 const BF_NCOL=()=>11+(LAY.modo?1:0);
+const bfKs=()=>["ck","nome",...(LAY.modo?["cp"]:[]),"tipo","cat","grupo","sit","parado","criado","tamanho","caminho","acs"];
+function bfCabeca(){
+  const t=(k,x,c)=>fndTh(k,x,BF.ordem,true,c);
+  return `<tr><th class="ck"></th>${t("nome","Nome")}${LAY.modo?'<th data-k="cp">Como copiar<span class="rz" aria-hidden="true"></span></th>':""}${t("tipo","Tipo")}${t("cat","Categoria")}${t("grupo","Grupo")}${t("sit","Situação")}${t("parado","Parado","r")}${t("criado","Criado em")}${t("tamanho","Tamanho","r")}${t("caminho","Caminho")}<th></th></tr>`;
+}
 const bfSitP=x=>!x.sn?'<span class="pill p-desmarcado">Não vai</span>':x.sn===x.n?'<span class="pill p-ok">Vai inteira</span>':`<span class="pill p-revisar" title="${nf(x.sn)} de ${nf(x.n)} arquivos">Vai em parte</span>`;
 /* espelhar ou ordenar: a escolha fica na própria pasta (ou arquivo) que vai para o backup */
 const BF_CP=[["espelhar","🪞","Espelhar","Espelhar: fica como estava na máquina"],["ordenar","🗂️","Ordenar","Ordenar: por tipo e data (Fotos › 2024 › Maio)"]];
@@ -2882,10 +2984,10 @@ function bfDesenha(){
   el.innerHTML=`<div class="lsth fnd-bar"><button class="sm lstfb" id="lstfb">Filtros${ch.length?` (${ch.length})`:""}</button>
     <div class="fnd-nv"><button class="sm gh" id="bfvolta" aria-label="Voltar" title="Voltar (Alt+←)" ${BF.hi>0?"":"disabled"}>‹</button><button class="sm gh" id="bfavan" aria-label="Avançar" title="Avançar (Alt+→)" ${BF.hi<BF.hist.length-1?"":"disabled"}>›</button></div>
     <div class="fnd-tit grow"><nav class="fnd-mig" aria-label="Caminho">${mig}</nav><h2>${esc(tr[tr.length-1].t)}</h2></div>
-    ${bkpSwitch(true)}
+    ${fndAcoes()}
     <div class="seg" role="group" aria-label="Ver por">${[["pastas","Pastas"],["arquivos","Todos os arquivos"]].map(([k,t])=>`<button class="sm ${BF.visao===k?"on":""}" aria-pressed="${BF.visao===k}" data-bv2="${k}">${t}</button>`).join("")}</div>
     <div class="seg" role="group" aria-label="Mostrar como">${[["lista","☰ Lista"],["icones","▦ Ícones"]].map(([k,t])=>`<button class="sm ${BF.modo===k?"on":""}" aria-pressed="${BF.modo===k}" data-bmo="${k}">${t}</button>`).join("")}</div>
-    <select id="bfo" aria-label="Ordenar" style="width:auto;margin:0">${[["maior","Maior primeiro"],["menor","Menor primeiro"],["nome","Nome (A–Z)"],["data","Mais recentes"]].map(([k,t])=>`<option value="${k}" ${BF.ordem===k?"selected":""}>${t}</option>`).join("")}</select></div>
+    <select id="bfo" aria-label="Ordenar" style="width:auto;margin:0">${[["maior","Maior primeiro"],["menor","Menor primeiro"],["nome","Nome (A–Z)"],["nome_z","Nome (Z–A)"],["novo","Mais recentes"],["antigo","Mais antigos"]].map(([k,t])=>`<option value="${k}" ${BF.ordem===k?"selected":""}>${t}</option>`).join("")}</select></div>
    <div class="lstbar"><input type="search" id="lstq" placeholder="Buscar: nome, tipo ou caminho" aria-label="Buscar por nome, tipo ou caminho" value="${esc(LST.q)}" autocomplete="off">
     <b>${BF.visao==="pastas"&&!ch.length?`${nf(BF.pastas.length)} pasta(s) · ${nf(BF.tot)} arquivo(s) aqui`:`${nf(r.total)} ${r.total===1?"arquivo":"arquivos"} · ${fmt(r.bytes)}`}</b>
     <span class="lstchips" id="lstchips">${ch.map((x,i)=>`<span class="chip lchip">${esc(x[0])} <button data-ch="${i}" aria-label="Tirar o filtro ${esc(x[0])}">✕</button></span>`).join("")}${ch.length>1?'<button class="sm gh" id="lstlimpa">Limpar tudo</button>':""}</span></div>
@@ -2893,10 +2995,9 @@ function bfDesenha(){
     <button class="sm" id="bfmt" title="Marca tudo o que é pessoal ${BF.pasta?"nesta pasta":"na máquina"}${ch.length?", dentro dos filtros":""}" ${r.total?"":"disabled"}>Levar tudo daqui</button><button class="sm gh" id="bfdt" ${r.sel_n?"":"disabled"}>Não levar nada daqui</button>
     <button class="sm gh" id="mpad" title="Volta ao que a varredura marcou: só o pessoal">Voltar ao padrão</button><button class="sm gh" id="vdirs" title="Sistema, caches e lixeira, que a varredura não lê">Pastas puladas…</button></div>
    <div class="lst-cp hide" id="lstcp" role="group" aria-label="Como copiar o que está aqui"></div>
-   ${BF.modo==="icones"?'<div class="fnd-grade" id="bfbody"></div>':dgTabela(`<tr><th class="ck"></th><th>Nome</th>${LAY.modo?"<th>Como copiar</th>":""}<th>Tipo</th><th>Categoria</th><th>Grupo</th><th>Situação</th><th class="r">Parado</th><th>Criado em</th><th class="r">Tamanho</th><th>Caminho</th><th></th></tr>`,"","bfbody")}<div id="bfmais" class="sg-pe"></div>`;
-  bkpSwitchLiga(el,true);
+   ${BF.modo==="icones"?'<div class="fnd-grade" id="bfbody"></div>':dgTabela(bfCabeca(),"","bfbody",bfKs())}<div id="bfmais" class="sg-pe"></div>`;
   $("#lstfb",el).onclick=()=>$("#selcorpo").classList.toggle("fopen");
-  $("#bfvolta",el).onclick=()=>bfHist(-1);$("#bfavan",el).onclick=()=>bfHist(1);
+  fndAcoesLiga(el);fndOrdenaLiga(el,()=>BF.ordem,k=>{BF.ordem=k;bfSalva();lstIr()});fndColsLiga(el);$("#bfvolta",el).onclick=()=>bfHist(-1);$("#bfavan",el).onclick=()=>bfHist(1);
   $$("[data-mg]",el).forEach(b=>b.onclick=()=>bfIr(tr[+b.dataset.mg].k));
   $$("[data-bv2]",el).forEach(b=>b.onclick=()=>{BF.visao=b.dataset.bv2;bfSalva();lstIr()});
   $$("[data-bmo]",el).forEach(b=>b.onclick=()=>{BF.modo=b.dataset.bmo;bfSalva();lstIr()});
@@ -2944,7 +3045,8 @@ function bfCorpo(){
     row.oncontextmenu=ev=>{ev.preventDefault();bfFoco(row.dataset.row);bfMenu(row,x,{x:ev.clientX,y:ev.clientY})}});
   if(BF.foco&&!BFX[BF.foco])BF.foco="";if(BF.foco)bfFoco(BF.foco,true);
   const falta=BF.tot-BF.rows.length,mais=$("#bfmais");
-  if(mais){mais.innerHTML=falta>0?`<span class="mut">Mostrando ${nf(BF.rows.length)} de ${nf(BF.tot)} arquivos.</span><button class="sm" id="bfmore">Carregar mais ${nf(Math.min(200,falta))}</button>`:"";const m=$("#bfmore");if(m)m.onclick=()=>safe(()=>bfCarrega(true))}
+  if(mais){mais.innerHTML=`<span class="mut">${nf(BF.rows.length)} de ${nf(BF.tot)} arquivos${falta>0?" · role para carregar mais":""}</span>`}
+  fndInfinito($("#bfbody").closest(".lstc,.fnd-grade"),falta,()=>bfCarrega(true));
 }
 /* Levar: pasta = tudo o que é pessoal dentro dela (com os filtros ativos); arquivo = só ele, de qualquer situação */
 async function bfMarca(c){
@@ -3311,14 +3413,11 @@ async function draw6(){
 /* ================= início ================= */
 (async()=>{
   const th=lsGet("dd_tema","light");if(th)document.documentElement.dataset.theme=th;
-  $("#theme").onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==="light"?"dark":"light";lsSet("dd_tema",r.dataset.theme)};
-  try{$("#mono").innerHTML='<span class="mA">'+DD.mono({variant:"ouro",size:44,bg:true})+'</span><span class="mB">'+DD.mono({variant:"claro",size:44,bg:false})+'</span>'}catch(e){}
+  if(lsGet("dd_lat",""))document.body.classList.add("min");
   try{info=await api("/api/info")}catch(e){document.body.innerHTML='<p style="padding:30px">Sessão inválida. Feche e abra o Destrava! de novo.</p>';return}
-  $("#hperf").innerHTML=ic("gear");$("#hperf").onclick=()=>nav("perfil");
   try{PERFIL=(await api("/api/perfil")).perfil}catch(e){}
   api("/api/classes").then(r=>{TIPOS=r}).catch(()=>{});
   FB=/darwin|mac/i.test(info.os||"")?1000:1024;
-  $("#hver").onclick=()=>{if(info.servidor){toast("No modo servidor o programa já vem na versão do servidor.");return}safe(openUpdate)};
   await loadCtx();setTimeout(autotestePagina,1500);
   let s;try{s=await api("/api/status")}catch(e){s={phase:"idle"}}
   st=s;

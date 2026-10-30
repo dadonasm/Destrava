@@ -44,7 +44,7 @@ if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 VERSION = "3.9"
-BUILD = "2026-10-27.4"  # igual ao BUILD do app.html: se forem diferentes, o pendrive tem arquivos de versões misturadas
+BUILD = "2026-10-30.2"  # igual ao BUILD do app.html: se forem diferentes, o pendrive tem arquivos de versões misturadas
 import classe as CLS  # noqa: E402  (tipos de arquivo: a mesma tabela do Gerenciamento)
 import disco  # noqa: E402  (conferência lendo do disco, não da memória)
 import mapa as MAPA  # noqa: E402
@@ -2211,7 +2211,8 @@ class App(object):
 
     ORDEM = {"nome": lambda it: nome_de(it.disp).lower(), "tipo": lambda it: (tipo_de(nome_de(it.disp)), nome_de(it.disp).lower()),
              "data": lambda it: it.date or (0, 0, 0), "tamanho": lambda it: it.size, "caminho": lambda it: it.disp.lower(),
-             "categoria": lambda it: PRIORIDADE.index(it.cat) if it.cat in PRIORIDADE else len(PRIORIDADE)}
+             "categoria": lambda it: PRIORIDADE.index(it.cat) if it.cat in PRIORIDADE else len(PRIORIDADE),
+             "grupo": lambda it: (CLS.grupo_backup(it.cat, it.act), nome_de(it.disp).lower()), "parado": lambda it: it.mtime or 0}
 
     def files(self, q):
         """Lista do backup: filtro, busca (caminho ou tipo), ordem (ord/dir), página e os totais do filtro. limit=0: só os totais."""

@@ -137,6 +137,16 @@ class Lista(unittest.TestCase):
         self.assertGreater(n, 0)
         self.assertFalse(self.itens["b_relatorio.docx"].inc)
 
+    def test_ordem_pelo_titulo_nos_dois_sentidos(self):
+        """Clicar no título ordena e clicar de novo inverte: cada coluna tem a ordem crescente e a decrescente."""
+        for col in ("nome", "tipo", "categoria", "grupo", "caminho", "tamanho", "parado", "data"):
+            asc = [x[0] for x in self.lista(ord=col, dir="asc")["rows"]]
+            desc = [x[0] for x in self.lista(ord=col, dir="desc")["rows"]]
+            self.assertEqual(sorted(asc), sorted(desc), col)
+            self.assertEqual(len(asc), len(self.app.items), col)
+        nomes = [x[10].lower() for x in self.lista(ord="nome", dir="desc")["rows"]]
+        self.assertEqual(nomes, sorted(nomes, reverse=True))
+
     def test_ponte_de_pasta_entre_os_modos(self):
         """BKP Mode liga e desliga no mesmo Finder: a pasta do Gerenciamento (nó) vira a chave da Seleção e volta."""
         D = dd_backup.DADOS

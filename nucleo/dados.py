@@ -1595,7 +1595,11 @@ _FB, _SB = {}, {}  # da varredura em curso: bytes por faixa (cockpit) e [n, byte
 _IB = [None]  # construtor do índice durante a varredura
 IDX_LOCK = threading.Lock()
 _ORDEM_SQL = {"maior": "bytes DESC", "menor": "bytes ASC", "parado": "uso ASC", "nome": "nome COLLATE NOCASE ASC",
-              "nome_z": "nome COLLATE NOCASE DESC", "recente": "uso DESC", "novo": "criado DESC", "antigo": "criado ASC"}
+              "nome_z": "nome COLLATE NOCASE DESC", "recente": "uso DESC", "novo": "criado DESC", "antigo": "criado ASC",
+              "tipo": "trot COLLATE NOCASE ASC, nome COLLATE NOCASE ASC", "tipo_z": "trot COLLATE NOCASE DESC, nome COLLATE NOCASE ASC",
+              "cat": "cat COLLATE NOCASE ASC, nome COLLATE NOCASE ASC", "cat_z": "cat COLLATE NOCASE DESC, nome COLLATE NOCASE ASC",
+              "grupo": "grupo COLLATE NOCASE ASC, nome COLLATE NOCASE ASC", "grupo_z": "grupo COLLATE NOCASE DESC, nome COLLATE NOCASE ASC",
+              "caminho": "dir COLLATE NOCASE ASC, nome COLLATE NOCASE ASC", "caminho_z": "dir COLLATE NOCASE DESC, nome COLLATE NOCASE ASC"}
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS arq(id INTEGER PRIMARY KEY, usuario TEXT, pasta TEXT, dir TEXT, nome TEXT, busca TEXT, tipo TEXT, cat TEXT, faixa TEXT,
   grupo TEXT, sug TEXT, trot TEXT, bytes INTEGER, narq INTEGER, uso REAL, criado REAL, zona TEXT);
@@ -2092,7 +2096,8 @@ def indice_consulta(faixa="", cat="", pasta=None, usuario="", q="", ordem="maior
                 pastas.append({"no": no_de(r["path"], r["usuario"]), "nome": os.path.basename(r["path"]) if pp else r["usuario"], "path": r["path"], "tipo": "pasta",
                                "bytes": b, "arquivos": n, "dias": int((agora - r["uso"]) / 86400) if r["uso"] else None, "usuario": r["usuario"],
                                "motivo": trava, "pode_renomear": not trava, "raiz": not pp, "trava": tipo_t if m else "", "liberado": bool(m) and not trava})
-            pastas.sort(key=lambda x: (-(x["bytes"] or 0), x["nome"].lower()) if ordem != "nome" else x["nome"].lower())
+            pastas.sort(key=lambda x: x["nome"].lower(), reverse=ordem == "nome_z") if ordem in ("nome", "nome_z") else \
+                    pastas.sort(key=lambda x: ((x["bytes"] or 0), x["nome"].lower()), reverse=ordem != "menor")
         return {"estado": est, "rows": rows, "total": int(tot[0] or 0), "bytes": int(tot[1] or 0),
                 "faixas": {k: {"n": v, "bytes": facb["faixa"][k]} for k, v in fac["faixa"].items()},
                 "cats": sorted(({"cat": k, "n": v, "bytes": facb["cat"][k]} for k, v in fac["cat"].items()), key=lambda x: -x["bytes"]),
