@@ -584,6 +584,10 @@ def gerar(caminho, meta, f, programas=None, limite_apendice=2500):
     cats = sorted(cats.items(), key=lambda kv: -kv[1][1])
     cor_cat = {c: PALETA[i % len(PALETA)] for i, (c, _) in enumerate(cats)}
     nome = cert.get("maquina_nome") or cert.get("equipamento") or meta.get("pc") or "Esta máquina"
+    if nome == cert.get("maquina_id") and (cert.get("host") or cert.get("modelo")):  # sem apelido: o id não serve de título
+        nome = cert.get("host") or cert.get("modelo")
+    modelo = cert.get("modelo") if cert.get("modelo") != nome else ""
+    disco = cert.get("disco") or {}
     codigo = cert.get("codigo", "")
     data = cert.get("data") or meta.get("data") or datetime.date.today().isoformat()
     try:
@@ -603,20 +607,26 @@ def gerar(caminho, meta, f, programas=None, limite_apendice=2500):
     d.texto(MX, 80, "Destrava!", 14, True, BRANCO)
     d.texto(MX, 150, "Relatório do backup", 32, True, BRANCO)
     d.texto(MX, 182, corta(nome, 330, 20, False), 20, False, (0.88, 0.92, 1))
-    d.texto(MX, 210, "%s às %s" % (data_br, cert.get("hora", "")), 12, False, (0.88, 0.92, 1))
+    if modelo:
+        d.texto(MX, 206, corta(modelo, 330, 13, False), 13, False, (0.88, 0.92, 1))
+    d.texto(MX, 232 if modelo else 210, "%s às %s" % (data_br, cert.get("hora", "")), 12, False, (0.88, 0.92, 1))
     cor_selo = VERDE if sem_falhas else AMBAR
     d.circulo(W - 120, 330, 62, fill=BRANCO)
     d.circulo(W - 120, 330, 55, fill=cor_selo)
     icone(d, "ok" if sem_falhas else "alerta", W - 140, 290, 40, BRANCO, cor_selo)
     d.texto(W - 120, 352, "VERIFICADO" if sem_falhas else "COM RESSALVAS", 9 if sem_falhas else 7.5, True, BRANCO, "c")
-    y = 420
-    for rot, val in (("Cliente", cert.get("dono_nome") or cert.get("cliente") or "—"), ("Técnico", cert.get("tecnico") or "—"),
-                     ("Equipamento", cert.get("equipamento") or meta.get("pc") or "—"), ("Sistema", cert.get("sistema") or "—"),
-                     ("Destino do backup", meta.get("raiz") or "—"), ("Conferência", cert.get("metodo") or meta.get("verificacao") or "—"),
-                     ("Código do certificado", codigo or "—")):
+    y = 390
+    campos = [("Cliente", cert.get("dono_nome") or cert.get("cliente") or "—"), ("Técnico", cert.get("tecnico") or "—"),
+              ("Equipamento", cert.get("equipamento") or meta.get("pc") or "—"), ("Modelo", cert.get("modelo") or "—"), ("Sistema", cert.get("sistema") or "—")]
+    if disco.get("total"):
+        campos.append(("Disco da máquina", "%s no total · %s usados · %s livres" % (fmt(disco["total"]), fmt(disco.get("usado")), fmt(disco.get("livre")))))
+    campos += [("Destino do backup", meta.get("raiz") or "—"), ("Conferência", cert.get("metodo") or meta.get("verificacao") or "—"),
+               ("Código do certificado", codigo or "—")]
+    passo = min(40, 300 // len(campos))  # os cartões de baixo ainda cabem na capa
+    for rot, val in campos:
         d.texto(MX, y, rot.upper(), 8, True, MUT)
         d.texto(MX, y + 16, corta(val, W - 2 * MX, 12), 12, rot == "Código do certificado")
-        y += 40
+        y += passo
     doc.y = y + 10
     doc.kpis([("MANTIDOS", nf(len(ok)), fmt(b_ok), VERDE, "ok"), ("FICARAM DE FORA", nf(len(fora)), fmt(b_fora), MUT, "caixa"),
               ("FALHAS", nf(len(falhas)), "nenhuma" if not falhas else "veja a seção de erros", VERMELHO if falhas else VERDE, "x" if falhas else "ok")])
@@ -630,8 +640,10 @@ def gerar(caminho, meta, f, programas=None, limite_apendice=2500):
     doc.y += 36
     frase = ("Foram copiados e conferidos %s arquivos (%s). %s ficaram de fora de propósito (sistema, programas, temporários ou "
              "desmarcados por você)%s." % (nf(len(ok)), fmt(b_ok), nf(len(fora)), (" e %s tiveram falha na cópia" % nf(len(falhas))) if falhas else ", sem nenhuma falha"))
+    if disco.get("total"):
+        frase += " O disco tinha %s no total (%s usados)." % (fmt(disco["total"]), fmt(disco.get("usado", 0)))
     doc.paragrafo(frase, 11)
-    doc.kpis([("ARQUIVOS MANTIDOS", nf(len(ok)), fmt(b_ok), VERDE, "ok"), ("DE FORA", nf(len(fora)), fmt(b_fora), MUT, "caixa"),
+    doc.kpis([("MANTIDOS", nf(len(ok)), fmt(b_ok), VERDE, "ok"), ("DE FORA", nf(len(fora)), fmt(b_fora), MUT, "caixa"),
               ("FALHAS", nf(len(falhas)), "", VERMELHO if falhas else VERDE, "x" if falhas else "ok"),
               ("PROGRAMAS", nf(len(programas)), "para reinstalar", AZUL, "apps")])
     y0 = doc.y
@@ -647,6 +659,17 @@ def gerar(caminho, meta, f, programas=None, limite_apendice=2500):
         d.texto(MX + 218, ly + 14, v, 9.5, False, MUT)
         ly += 38
     doc.y = y0 + 185
+    if disco.get("total"):  # o disco inteiro, para não confundir "pessoal" com tudo o que a máquina tinha
+        tot, usado, pessoal = disco["total"], disco.get("usado", 0), disco.get("pessoal", 0)
+        doc.titulo("O disco da máquina")
+        doc.paragrafo("O disco tinha %s no total, com %s usados. Desse uso, %s eram arquivos pessoais (o que o backup procura); "
+                      "o resto é o sistema, os programas e arquivos temporários." % (fmt(tot), fmt(usado), fmt(pessoal)), 10)
+        doc.barras([("disco", "Capacidade total", tot, fmt(tot), AZUL),
+                    ("disco", "Usado", usado, fmt(usado), (0.45, 0.48, 0.55)),
+                    ("disco", "Livre", disco.get("livre", 0), fmt(disco.get("livre", 0)), (0.75, 0.77, 0.82)),
+                    ("pasta", "Arquivos pessoais", pessoal, fmt(pessoal), AMBAR),
+                    ("ok", "Mantidos e conferidos", b_ok, fmt(b_ok), VERDE),
+                    ("engrenagem", "Sistema e programas", max(0, usado - pessoal), fmt(max(0, usado - pessoal)), MUT)], tot)
     doc.titulo("O que foi mantido, por tipo")
     topo = cats[:10]
     doc.barras([(CAT_ICO.get(c, "caixa"), CAT_NOME.get(c, c), v[1], "%s · %s" % (nf(v[0]), fmt(v[1])), cor_cat[c]) for c, v in topo], max([v[1] for _, v in topo] or [1]))

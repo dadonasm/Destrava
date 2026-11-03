@@ -1911,6 +1911,17 @@ class App(object):
         return {"ok": True}
 
     # ------------------------------------------------------------------ onde está o resto do disco
+    def discos_origem(self):
+        """[(total, usado)] de cada disco das origens, sem contar o mesmo disco duas vezes."""
+        discos, vistos = [], set()
+        for src in (self.cfg or {}).get("sources", []):
+            if src["kind"] in ("windows", "linux", "mac") or os.path.ismount(src["path"]):
+                total, livre = disk_usage(src["path"])
+                if total and (total, livre) not in vistos:
+                    vistos.add((total, livre))
+                    discos.append((total, total - livre))
+        return discos
+
     def iniciar_medicao(self):
         """Depois da varredura: mede em segundo plano o que ficou de fora, para explicar o espaço usado do disco."""
         self.parar_medicao()
@@ -1930,13 +1941,7 @@ class App(object):
         for a in alvos:  # pasta dentro de outra já medida não conta duas vezes
             if not any(_dentro(a[0], u[0]) for u in unicos):
                 unicos.append(a)
-        discos, vistos = [], set()
-        for src in (self.cfg or {}).get("sources", []):
-            if src["kind"] in ("windows", "linux", "mac") or os.path.ismount(src["path"]):
-                total, livre = disk_usage(src["path"])
-                if total and (total, livre) not in vistos:
-                    vistos.add((total, livre))
-                    discos.append((total, total - livre))
+        discos = self.discos_origem()
         achado = sum(it.size for it in self.items if it.act != "ignorar")
         sis_lidos = sum(it.size for it in self.items if it.act == "ignorar")  # lidos, mas do sistema (pagefile, thumbs.db…): não contam como pessoais
         dentro_sis = sum(it.size for it in self.items if it.cat == "Sistemas")  # bancos de sistema estão dentro de Program Files, já medido
@@ -2972,6 +2977,18 @@ class App(object):
                 osr = TERMO.os_atual(mid) or {}
                 cert.update({"maquina_id": mid, "maquina_nome": FICHA.nome_exibicao(mid), "dono": st.get("dono", ""), "dono_nome": st.get("terceiro_nome", ""),
                              "os": osr.get("os", ""), "autorizou": osr.get("cliente", ""), "recuperado_bytes": REC["bytes"]})
+        except Exception:
+            pass
+        try:  # modelo e disco da máquina para a capa e o resumo do relatório
+            ident = identidade("backup", self)
+            cert.update({"modelo": ident.get("modelo", ""), "host": ident.get("host", "")})
+            m = self.medicao or {}
+            discos = self.discos_origem() if not m.get("total") else None
+            total = m.get("total") or sum(d[0] for d in discos)
+            usado = m.get("usado") or sum(d[1] for d in discos or [])
+            if total:
+                cert["disco"] = {"total": total, "usado": usado, "livre": max(0, total - usado),
+                                 "pessoal": m.get("achado") or sum(it.size for it in self.items if it.act != "ignorar")}
         except Exception:
             pass
         meta["cert"] = cert

@@ -58,6 +58,22 @@ class Relatorio(unittest.TestCase):
         self.assertIn(b"a00049.txt", txt)
         self.assertNotIn(b"a00399.txt", txt.split(b"Ap\xeandice A")[-1].split(b"Ap\xeandice B")[0], "passou do limite do apêndice")
 
+    def test_modelo_e_disco(self):
+        import copy
+        global META
+        antigo = META
+        META = copy.deepcopy(antigo)
+        META["cert"].update({"maquina_id": "DD-879Y-RR29", "maquina_nome": "DD-879Y-RR29", "host": "MacBook de Ana", "modelo": "MacBook Air (M2, 2022)",
+                             "disco": {"total": 500e9, "usado": 320e9, "livre": 180e9, "pessoal": 40e9}})
+        try:
+            txt = b"".join(zlib.decompress(m) for m in re.findall(rb"stream\n(.*?)\nendstream", self.gera(), re.S))
+        finally:
+            META = antigo
+        self.assertIn(b"MacBook Air \\(M2, 2022\\)", txt)
+        self.assertIn(b"MacBook de Ana", txt, "sem apelido, o título é o nome do computador, não o id")
+        self.assertIn("O disco da máquina".encode("cp1252"), txt)
+        self.assertIn(b"500,0 GB no total", txt)
+
     def test_largura_e_corte(self):
         self.assertAlmostEqual(R.largura("a", 10), 5.56)
         self.assertEqual(R.largura("á", 10), R.largura("a", 10), "acento usa a largura da letra-base")
