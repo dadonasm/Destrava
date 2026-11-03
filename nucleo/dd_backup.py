@@ -45,6 +45,7 @@ if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
 
 VERSION = "3.9"
 BUILD = "2026-10-30.2"  # igual ao BUILD do app.html: se forem diferentes, o pendrive tem arquivos de versões misturadas
+RELATORIO_PDF = "Relatorio-backup.pdf"  # relatório do fim do backup, na pasta Mapa
 import classe as CLS  # noqa: E402  (tipos de arquivo: a mesma tabela do Gerenciamento)
 import disco  # noqa: E402  (conferência lendo do disco, não da memória)
 import mapa as MAPA  # noqa: E402
@@ -233,6 +234,69 @@ def eh_admin():
         return hasattr(os, "geteuid") and os.geteuid() == 0
     except Exception:
         return False
+
+
+def cfg_local():
+    """Preferências desta instalação (pasta de dados): hoje só "abrir sempre como administrador"."""
+    try:
+        with open(os.path.join(DADOS_DIR[0], "config_local.json"), encoding="utf-8") as fh:
+            return json.load(fh) or {}
+    except (OSError, ValueError):
+        return {}
+
+
+def cfg_local_set(**kw):
+    c = cfg_local()
+    c.update(kw)
+    p = os.path.join(DADOS_DIR[0], "config_local.json")
+    with open(p + ".tmp", "w", encoding="utf-8") as fh:
+        json.dump(c, fh, ensure_ascii=False, indent=1)
+    os.replace(p + ".tmp", p)
+    return c
+
+
+class Negado(Exception):
+    """O técnico cancelou o pedido de senha/UAC do sistema."""
+
+
+def reabrir_como_admin(argv=None):
+    """Abre outra instância do Destrava! como administrador, pedindo a senha (Mac/Linux) ou o UAC (Windows) do próprio
+    sistema. Devolve True se a nova instância foi lançada (a chamadora encerra esta); levanta Negado se o técnico cancelou."""
+    argv = [a for a in (sys.argv[1:] if argv is None else argv) if a != "--elevado"] + ["--elevado"]
+    if "--dados" not in argv:
+        argv += ["--dados", DADOS_DIR[0]]
+    script = os.path.abspath(__file__)
+    if IS_WIN:
+        import ctypes
+        rc = ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, subprocess.list2cmdline([script] + argv), os.getcwd(), 1)
+        if rc <= 32:
+            raise Negado("Permissão não concedida.") if rc == 5 else ValueError("O Windows não abriu como administrador (código %d)." % rc)
+        return True
+    import getpass
+    import shlex
+    usuario = os.environ.get("SUDO_USER") or getpass.getuser()
+    cmd = " ".join(shlex.quote(x) for x in [sys.executable, script] + argv)
+    if sys.platform == "darwin":
+        sh = "cd %s && env SUDO_USER=%s %s >/dev/null 2>&1 &" % (shlex.quote(os.getcwd()), shlex.quote(usuario), cmd)
+        r = subprocess.run(["osascript", "-e", 'do shell script "%s" with administrator privileges' % sh.replace("\\", "\\\\").replace('"', '\\"')],
+                           capture_output=True, timeout=600)
+        if r.returncode:
+            if b"-128" in (r.stderr or b""):
+                raise Negado("Permissão não concedida.")
+            raise ValueError("Não deu para abrir como administrador: %s" % (r.stderr or b"").decode("utf-8", "replace").strip()[-200:])
+        return True
+    if not shutil.which("pkexec"):
+        raise ValueError("Este Linux não tem o pedido de senha gráfico (pkexec). Feche e abra com: sudo sh Iniciar-Linux.sh")
+    env = ["%s=%s" % (k, os.environ[k]) for k in ("DISPLAY", "XAUTHORITY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR") if os.environ.get(k)]
+    pr = subprocess.Popen(["pkexec", "env", "SUDO_USER=" + usuario] + env + [sys.executable, script] + argv, cwd=os.getcwd(),
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        rc = pr.wait(timeout=120)  # pkexec só volta na hora se a senha foi recusada; aceito, ele fica rodando o programa
+    except subprocess.TimeoutExpired:
+        return True
+    if rc in (126, 127):
+        raise Negado("Permissão não concedida.")
+    return True
 
 
 PROGRAMAS_PASTA = (("/microsoft/edge/", "Edge (navegador)"), ("/google/chrome/", "Chrome (navegador)"), ("/bravesoftware/", "Brave (navegador)"),
@@ -1022,28 +1086,20 @@ class App(object):
         """Confere ORIGEM e DESTINO. Cada problema diz o que é e como resolver; 'erro' bloqueia a cópia."""
         res = []
 
-        def add(n, t, d, solucao=""):
-            res.append({"nivel": n, "titulo": t, "detalhe": d, "solucao": solucao})
+        def add(n, t, d, solucao="", acao=""):
+            res.append({"nivel": n, "titulo": t, "detalhe": d, "solucao": solucao, "acao": acao})
 
         cfg = self.cfg
         if not cfg:
             return [{"nivel": "erro", "titulo": "Configuração incompleta", "detalhe": "Escolha origens e destino.", "solucao": "Volte à etapa Origem e destino."}]
         if not cfg.get("dest"):
             return [{"nivel": "erro", "titulo": "Falta o destino", "detalhe": "Escolha para onde vai o backup.", "solucao": "Volte à etapa Origem e destino."}]
-        # permissões
-        adm = (hasattr(os, "geteuid") and os.geteuid() == 0)
-        if IS_WIN:
-            try:
-                import ctypes
-                adm = bool(ctypes.windll.shell32.IsUserAnAdmin())
-            except Exception:
-                adm = False
-        if not adm:
-            add("aviso", "Sem permissão de administrador", "Pastas de outros usuários e arquivos do sistema podem ficar sem leitura.",
-                "Feche e abra o Destrava! como administrador (Windows: Iniciar-Windows.bat; Mac/Linux: com sudo).")
+        # permissões: só avisa quando faz diferença (pastas que não deu para ler), com o botão que resolve
+        sem_ler = sum(1 for _d, m in self.ign_dirs if str(m).startswith("Sem acesso"))
+        if not eh_admin() and sem_ler:
+            add("aviso", "%d pasta(s) sem leitura" % sem_ler, "Sem permissão de administrador algumas pastas ficaram de fora.", "", "elevar")
         if sys.platform == "darwin" and DADOS and not DADOS.acesso_total_mac():
-            add("aviso", "Mac sem Acesso Total ao Disco", "Mail, Mensagens, Safari e backups do iPhone ficam invisíveis.",
-                "Ajustes do Sistema > Privacidade e Segurança > Acesso Total ao Disco: ligue o Terminal e abra o Destrava! de novo.")
+            add("aviso", "Mac sem Acesso Total ao Disco", "Mail, Mensagens, Safari e backups do iPhone ficam invisíveis.", "", "ajustes")
         # origem
         for src in cfg["sources"]:
             p = src["path"]
@@ -2120,7 +2176,7 @@ class App(object):
         f = f if "facets" in f else parse_filtro(f)
         return all(teste(it) for _, ativo, teste, _v in self._grupos(f) if ativo)
 
-    def filtrar(self, f, facetas=False):
+    def filtrar(self, f, facetas=False, fbytes=None):
         """Índices que passam no filtro e, se pedido, as facetas: cada opção contada com os OUTROS filtros ativos (marcar PDF não zera Imagem)."""
         G = self._grupos(f)
         ativos = [g for g in G if g[1]]
@@ -2139,6 +2195,9 @@ class App(object):
                 d = fac[g[0]]
                 for v in g[3](it):
                     d[v] = d.get(v, 0) + 1
+                    if fbytes is not None:
+                        b = fbytes.setdefault(g[0], {})
+                        b[v] = b.get(v, 0) + it.size
         return idx, fac
 
     def select(self, d):
@@ -2220,7 +2279,8 @@ class App(object):
         f = {k: (v[0] if isinstance(v, list) else v) for k, v in q.items()}
         off = max(0, int(f.get("offset") or 0))
         lim = max(0, min(int(f.get("limit", 200)), 500))
-        idx, fac = self.filtrar(flt, flt["facets"])
+        fb = {}
+        idx, fac = self.filtrar(flt, flt["facets"], fb)
         sel = [self.items[i] for i in idx if self.items[i].inc]
         chave = (lambda it: self.final_status(it)) if f.get("ord") == "situacao" else self.ORDEM.get(f.get("ord") or "")
         if chave and lim:
@@ -2238,6 +2298,7 @@ class App(object):
             r["pastas"] = self.subpastas(idx, (flt["pasta"] or [""])[0])
         if fac is not None:
             r["facets"] = fac
+            r["facets_bytes"] = fb
         return r
 
     def subpastas(self, idx, base=""):
@@ -2751,6 +2812,7 @@ class App(object):
             self.phase = "finishing"
         try:
             self._write_mapa()
+            self._relatorio_pdf()
             self.phase = "done"
             self.finished = True
             try:
@@ -2758,7 +2820,7 @@ class App(object):
                     c = self.cert
                     guardado = self._guardar_mapa(c["codigo"])
                     FICHA.hist_add(FICHA.machine_id_cache(), "backup", "Backup %s: %d arquivos (%s) · código %s" % ("sem falhas" if c["status"] == "sem_falhas" else "com ressalvas", c["copiados"], fmt_bytes(c["bytes"]), c["codigo"]),
-                                   {"destino": self.dest_root, "codigo": c["codigo"], "cliente": c.get("cliente", ""), "status": c["status"], "bytes": c["bytes"],
+                                   {"destino": self.dest_root, "codigo": c["codigo"], "cliente": c.get("cliente", ""), "status": c["status"], "bytes": c["bytes"], "copiados": c["copiados"],
                                     "tecnico": c.get("tecnico", ""), "tecnico_perfil": c.get("tecnico_perfil") or {}, "mapa_registro": guardado})
             except Exception:
                 pass
@@ -2768,15 +2830,37 @@ class App(object):
             self.phase = "error"
             raise
 
+    def _relatorio_pdf(self):
+        """Relatório em PDF ao lado do Mapa (Mapa/Relatorio-backup.pdf), feito das mesmas linhas de dados.js e da escolha
+        de programas. Um erro aqui não atrapalha o fim do backup: fica no registro."""
+        try:
+            import relatorio_pdf as RPDF
+            with open(os.path.join(self.mapa_dir, "dados.js"), encoding="utf-8") as fh:
+                txt = fh.read()
+            d = json.loads(txt[txt.index("=") + 1:].rstrip().rstrip(";"))
+            progs = []
+            if FICHA:
+                mid = FICHA.machine_id_cache()
+                rec = FICHA.receita_valida(mid) or {}
+                por = {g.get("nome"): g for g in (FICHA.programas_de(mid) or {}).get("itens") or []}
+                for i in rec.get("itens") or []:
+                    g = por.get(i.get("nome"), {})
+                    ic = os.path.join(FICHA.pasta(mid), "icones", PROG.nome_icone(i.get("nome", "")) + ".png")
+                    progs.append({"nome": i.get("nome", ""), "nota": i.get("nota", ""), "fabricante": g.get("fabricante", ""), "auto": bool(g.get("ids")),
+                                  "icone": ic if os.path.isfile(ic) else ""})
+            self.cert["relatorio_pdf"] = RPDF.gerar(os.path.join(self.mapa_dir, RELATORIO_PDF), d["meta"], d["f"], progs)
+            self.log("Relatório em PDF gerado: %s" % self.cert["relatorio_pdf"])
+        except Exception:
+            self.log("Não deu para gerar o relatório em PDF: " + traceback.format_exc().strip().splitlines()[-1])
+
     def retomar(self, mid):
         """Volta ao backup que ficou parado (programa fechado depois da verificação): recarrega o certificado do Mapa e
         só segue se o disco do backup está conectado e os arquivos continuam lá, com o mesmo tamanho."""
         if not FICHA or mid != FICHA.machine_id_cache():
             raise ValueError("Só dá para retomar o backup da máquina em que o Destrava! está aberto.")
-        rec = lambda: 6 if FICHA.receita_valida(mid) else 5
         with self.lock:
             if self.phase in ("verified", "done") and self.cert and self.cert.get("maquina_id") == mid:
-                return {"ok": True, "passo": rec() if self.phase == "done" else 5, "codigo": self.cert.get("codigo", "")}
+                return {"ok": True, "passo": 2 if self.phase == "done" else 1, "codigo": self.cert.get("codigo", "")}  # passos: 0 Selecionar, 1 Copiar, 2 Concluído
             if self.busy():
                 raise Busy("Já existe um processo em andamento.")
             ultimo = next((h for h in reversed(FICHA.hist_get(mid)) if h.get("tipo") == "backup"), None)
@@ -2804,13 +2888,15 @@ class App(object):
                 raise ValueError("%d arquivo(s) do backup sumiram ou mudaram (ex.: %s). Não é seguro formatar: encerre como incompleto e refaça o backup." % (len(ruins), ruins[0]))
             self.reset()
             self.dest_root, self.mapa_dir, self.cert = raiz, mp, cert
+            if os.path.isfile(os.path.join(mp, RELATORIO_PDF)):
+                cert["relatorio_pdf"] = os.path.join(mp, RELATORIO_PDF)
             self.checagens = meta.get("checagens") or []
             self.layout_modo = (meta.get("layout") or {}).get("modo") or self.layout_modo
             self.verified_mode = "completa" if str(meta.get("verificacao", "")).startswith("SHA-256") else "rapida"
             self.same_disk = any(str(c.get("titulo", "")).startswith("Destino no MESMO disco") for c in self.checagens)
             self.phase, self.finished = "done", True
             self.log("Backup retomado do Mapa guardado (código %s): %d arquivos conferidos." % (cert.get("codigo", ""), sum(1 for e in d.get("f") or [] if e[5] == "ok")))
-        return {"ok": True, "passo": rec(), "codigo": cert.get("codigo", "")}
+        return {"ok": True, "passo": 2, "codigo": cert.get("codigo", "")}
 
     def _guardar_mapa(self, codigo):
         """Cópia do Mapa no registro da máquina (pendrive), para abrir mesmo sem o disco do backup."""
@@ -3154,6 +3240,7 @@ Somos únicos. Somos diferentes. Somos D&D.
 # Ficha da máquina (Destrava!)
 # ----------------------------------------------------------------------------------------------
 FT = {"rodando": False, "etapa": "", "pct": 0, "erro": "", "o_que": "", "resultado": None}
+ICONES_BUSCANDO = {}  # máquina -> buscando os ícones dos programas por trás
 FT_LOCK = threading.Lock()
 
 
@@ -3191,7 +3278,7 @@ def atividades():
     fim: como cada fonte terminou da última vez (a tela usa na hora em que uma atividade some, para dizer se deu certo)."""
     out = []
     if FT["rodando"]:
-        out.append({"id": "ficha", "titulo": "Aplicando melhorias" if FT["o_que"] == "aplicar" else "Analisando a máquina", "detalhe": FT["etapa"],
+        out.append({"id": "ficha", "titulo": {"aplicar": "Aplicando melhorias", "programas": "Lendo os programas instalados"}.get(FT["o_que"], "Analisando a máquina"), "detalhe": FT["etapa"],
                     "pct": FT["pct"], "tela": "home"})
     bk = APP.andamento()
     if bk:
@@ -3216,7 +3303,10 @@ def atividades():
     md = APP.medicao or {}
     if md.get("rodando"):
         feito = sum(md.get("grupos", {}).values()) + (md.get("medido_sis") or 0)
-        out.append({"id": "medicao", "titulo": "Medindo o restante do disco", "pct": md.get("pct", 0),
+        alvo = (md.get("usado") or 0) - (md.get("achado") or 0)  # o que a medição existe para explicar
+        pct = max(md.get("pct", 0), min(95, int(feito * 100 / alvo)) if alvo > 0 else 0, md.get("pct_max", 0))  # por bytes: não fica em 0% numa pasta enorme
+        md["pct_max"] = pct
+        out.append({"id": "medicao", "titulo": "Medindo o restante do disco", "pct": pct,
                     "detalhe": ("Lendo %s…" % md["atual"]) if md.get("atual") else "Sistema, programas e caches: só para explicar o espaço usado",
                     "info": "%s medidos" % fmt_bytes(feito), "tela": "backup"})
     elif DADOS and DADOS.FORA["rodando"]:
@@ -3579,6 +3669,11 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError as e:
                 return self._json({"erro": str(e)}, 400)
             return self._arquivo(arq, mime, limite, pagina=(tipo == "pdf"))
+        if path == "/api/programas/icone":  # <img>: o token vem em ?t=
+            p = os.path.join(FICHA.pasta(FICHA.machine_id_cache()), "icones", PROG.nome_icone((q.get("nome") or [""])[0]) + ".png")
+            if not os.path.isfile(p):
+                return self._json({"erro": "sem ícone"}, 404)
+            return self._arquivo(p, "image/png")
         if path == "/api/dados/ver":  # <img>/<video> não mandam cabeçalho: o token vem em ?t=
             try:
                 arq, mime, tipo, limite = DADOS.previa((q.get("no") or [""])[0])
@@ -3680,8 +3775,9 @@ class Handler(BaseHTTPRequestHandler):
                     adm = bool(ctypes.windll.shell32.IsUserAnAdmin())
                 except Exception:
                     adm = False
-            return {"mac": mac, "win": IS_WIN, "linux": (not mac and not IS_WIN), "root": FICHA.is_root() if FICHA else False, "admin": adm,
-                    "acesso_total": DADOS.acesso_total_mac() if DADOS else True}
+            return {"mac": mac, "win": IS_WIN, "linux": (not mac and not IS_WIN), "root": FICHA.is_root() if FICHA else False, "admin": adm or eh_admin(),
+                    "acesso_total": DADOS.acesso_total_mac() if DADOS else True, "sempre_admin": bool(cfg_local().get("sempre_admin")),
+                    "elevar": IS_WIN or mac or bool(shutil.which("pkexec"))}
         if path == "/api/dados/estado":
             est = DADOS.estado()
             try:
@@ -3791,11 +3887,23 @@ class Handler(BaseHTTPRequestHandler):
                 if reg:
                     rec = FICHA.receita_de(mid)
                     out["registro"] = dict(reg, etapas=FICHA.ETAPAS, receita=rec and {"n": len(rec.get("itens") or []), "automaticos": sum(1 for i in rec.get("itens") or [] if i.get("automatico")),
-                                                                                     "quando": rec.get("quando", ""), "tecnico": rec.get("tecnico", ""), "valida": bool(FICHA.receita_valida(mid))}, historico=[dict(e, etapa=FICHA.etapa_do_evento(e) or "") for e in FICHA.hist_get(mid)])
+                                                                                     "quando": rec.get("quando", ""), "tecnico": rec.get("tecnico", ""), "valida": bool(FICHA.receita_valida(mid))}, historico=[dict(e, etapa=FICHA.etapa_do_evento(e) or "") for e in FICHA.hist_get(mid)], backups=FICHA.backups_de(mid))
             return out
         if path == "/api/programas":
             mid = (q.get("mid") or [""])[0] or FICHA.machine_id_cache()
-            return {"mid": mid, "programas": PROG.com_sugestao(FICHA.programas_de(mid)), "receita": FICHA.receita_de(mid), "receita_valida": bool(FICHA.receita_valida(mid))}
+            doc = PROG.com_sugestao(FICHA.programas_de(mid))
+            pic = os.path.join(FICHA.pasta(mid), "icones")
+            if doc and not FICHA.simulando() and not (FT["rodando"] and FT["o_que"] == "programas"):  # lista de antes dos ícones: busca os que faltam por trás
+                faltam = [g["nome"] for g in doc.get("itens") or [] if not os.path.isfile(os.path.join(pic, PROG.nome_icone(g["nome"]) + ".png"))]
+                if faltam and not ICONES_BUSCANDO.get(mid):
+                    ICONES_BUSCANDO[mid] = True
+                    threading.Thread(target=lambda: (PROG.icones(faltam, pic), ICONES_BUSCANDO.pop(mid, None)), daemon=True).start()
+            ics = set(PROG.icones_existentes(pic))
+            for g in (doc or {}).get("itens") or []:
+                g["icone"] = PROG.nome_icone(g["nome"]) in ics
+            return {"mid": mid, "programas": doc, "receita": FICHA.receita_de(mid), "receita_valida": bool(FICHA.receita_valida(mid)),
+                    "icones": PROG.icones_existentes(pic), "buscando_icones": bool(ICONES_BUSCANDO.get(mid)),
+                    "coletando": bool(FT["rodando"] and FT["o_que"] == "programas"), "erro": FT["erro"] if FT["o_que"] == "programas" else ""}
         if path == "/api/atividades":
             return atividades()
         if path == "/api/painel":
@@ -3870,6 +3978,15 @@ class Handler(BaseHTTPRequestHandler):
             if not os.path.isfile(p):
                 raise ValueError("O mapa ainda não foi gerado.")
             open_in_browser("file://" + p.replace("\\", "/") if IS_WIN is False else "file:///" + p.replace("\\", "/"))
+            return {"ok": True}
+        if path == "/api/relatorio/abrir":
+            if b.get("codigo"):  # um backup antigo da máquina: a cópia guardada no registro
+                p = os.path.join(FICHA.pasta(b.get("mid") or FICHA.machine_id_cache()), "mapas", safe_seg(b["codigo"]), "Mapa", RELATORIO_PDF)
+            else:
+                p = os.path.join(APP.mapa_dir or "", RELATORIO_PDF)
+            if not os.path.isfile(p):
+                raise ValueError("O relatório em PDF ainda não foi gerado.")
+            abrir_no_sistema(p)
             return {"ok": True}
         if path == "/api/firmware_gate":
             ok, why = APP.firmware_gate()
@@ -3991,6 +4108,23 @@ class Handler(BaseHTTPRequestHandler):
             TERMO.log_add("dados_apagados", mid, motivo="pedido do técnico")
             FICHA.apagar_maquina(mid)
             return {"ok": True}
+        if path == "/api/programas/coletar":
+            ficha_iniciar("programas", FICHA.coletar_programas)
+            return {"ok": True}
+        if path == "/api/permissoes/elevar":
+            if eh_admin():
+                return {"ok": True, "ja": True}
+            if APP.busy():
+                raise Busy("Aguarde a cópia, a conferência ou a varredura terminar antes de reabrir.")
+            try:
+                reabrir_como_admin()
+            except Negado as e:
+                return {"ok": False, "negado": True, "erro": str(e)}
+            APP.log("Reaberto como administrador a pedido do técnico.")
+            threading.Timer(2.0, lambda: os._exit(0)).start()  # a instância nova já abriu o navegador
+            return {"ok": True, "saindo": True}
+        if path == "/api/permissoes/sempre":
+            return {"ok": True, "sempre_admin": bool(cfg_local_set(sempre_admin=bool(b.get("ligado"))).get("sempre_admin"))}
         if path == "/api/permissoes/abrir":
             if sys.platform == "darwin":
                 subprocess.Popen(["open", "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"])
@@ -4460,6 +4594,7 @@ def main():
     ap.add_argument("--coleta-salva", metavar="ARQUIVO", help="reproduz uma coleta exportada; as ações só são simuladas")
     ap.add_argument("--servidor", metavar="URL", help="roda pelo servidor da loja: fichas, históricos e termos ficam lá")
     ap.add_argument("--chave-arquivo", metavar="ARQUIVO", help=argparse.SUPPRESS)
+    ap.add_argument("--elevado", action="store_true", help=argparse.SUPPRESS)  # já reaberto como administrador: não pede de novo
     a = ap.parse_args()
     if a.verificar:
         sys.exit(cli_verificar(a.verificar))
@@ -4473,6 +4608,12 @@ def main():
         return
     if a.servidor:
         conectar_servidor(a.servidor, a.chave_arquivo, a.dados)
+    if cfg_local().get("sempre_admin") and not eh_admin() and not a.elevado and not a.coleta_salva and not a.servidor:
+        try:  # "Abrir sempre como administrador" (Configurações): pede a senha/UAC do sistema e a instância nova segue
+            if reabrir_como_admin():
+                return
+        except Exception as e:
+            print("Seguindo sem administrador: %s" % e, flush=True)
     if a.coleta_salva:
         FICHA.carregar_coleta(a.coleta_salva)
         print("SIMULAÇÃO: reproduzindo a coleta de %s (%s). Nada é alterado neste computador." % (FICHA.REPLAY.get("host", "?"), FICHA.familia_atual()), flush=True)

@@ -29,7 +29,7 @@ class PaginaInteira(unittest.TestCase):
         self.assertEqual(sorted(chamadas - self.definidos), [], "tela chamada pelo menu sem função definida")
 
     def test_globais_das_telas_existem(self):
-        self.assertEqual(sorted({"DS", "DT", "DG_FK", "SUG_NOME", "LST", "MP", "STNOME", "CATORD", "CATNAME", "IC", "GAV"} - self.definidos), [])
+        self.assertEqual(sorted({"DS", "DT", "DG_FK", "SUG_NOME", "LST", "MP", "STNOME", "CATORD", "CATNAME", "IC", "PG", "STEPS"} - self.definidos), [])
 
     def test_toda_categoria_se_explica(self):
         ordem = re.search(r'^const CATORD=\[(.*?)\];', self.js, re.M).group(1)

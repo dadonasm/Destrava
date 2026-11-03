@@ -25,6 +25,7 @@
     "n": 0
    },
    "pastas_ign": 12,
+   "relatorio_pdf": "<TMP>/HD_externo/Backup_Ana/Mapa/Relatorio-backup.pdf",
    "status": "sem_falhas",
    "sweep": {
     "n_alterados": 0,
@@ -139,6 +140,66 @@
      "Texto": 1,
      "Word": 1,
      "XYZ": 1
+    }
+   },
+   "facets_bytes": {
+    "cat": {
+     "Configuracoes": 3,
+     "Dados_de_apps": 316,
+     "Documentos": 53,
+     "Fotos": 4318,
+     "Ocultos": 6,
+     "Outros": 31,
+     "Programas": 100,
+     "Sistemas": 140000
+    },
+    "copia": {
+     "fixo": 140322,
+     "ordenar": 4505
+    },
+    "grupo": {
+     "Dados de programas": 140325,
+     "Instaladores": 100,
+     "Pessoal": 4402
+    },
+    "inc": {
+     "0": 112,
+     "1": 144715
+    },
+    "local": {
+     "Ana": 3821,
+     "Disco_C": 140000,
+     "WhatsApp (Ana)": 1006
+    },
+    "status": {
+     "desmarcado": 112,
+     "pendente": 144715
+    },
+    "tag": {
+     "Clientes": 20,
+     "Contratos": 23,
+     "Financeiro": 10,
+     "Fiscal": 10,
+     "Propostas": 10,
+     "WhatsApp": 1006
+    },
+    "tam": {
+     "p": 144827
+    },
+    "tipo": {
+     "Arquivo": 13,
+     "DAT": 3,
+     "DBF": 70000,
+     "E-mail": 300,
+     "EXE": 100,
+     "FDB": 70000,
+     "INI": 3,
+     "Imagem": 4318,
+     "PDF": 33,
+     "Planilha": 10,
+     "Texto": 6,
+     "Word": 10,
+     "XYZ": 31
     }
    },
    "rows": [],
@@ -1795,7 +1856,33 @@
   },
   "pastas": {
    "bytes": 0,
-   "cats": [],
+   "cats": [
+    {
+     "bytes": 60000,
+     "cat": "Vídeos",
+     "n": 2
+    },
+    {
+     "bytes": 15008,
+     "cat": "Documentos e projetos",
+     "n": 3
+    },
+    {
+     "bytes": 9000,
+     "cat": "Fotos",
+     "n": 1
+    },
+    {
+     "bytes": 8000,
+     "cat": "Instaladores e imagens de disco",
+     "n": 1
+    },
+    {
+     "bytes": 19,
+     "cat": "Protegidos",
+     "n": 1
+    }
+   ],
    "estado": {
     "construindo": false,
     "existe": true,
@@ -1806,7 +1893,24 @@
    },
    "facetas": {},
    "facetas_bytes": {},
-   "faixas": {},
+   "faixas": {
+    "documentos": {
+     "bytes": 15008,
+     "n": 3
+    },
+    "fotos": {
+     "bytes": 9000,
+     "n": 1
+    },
+    "outros": {
+     "bytes": 8019,
+     "n": 2
+    },
+    "videos": {
+     "bytes": 60000,
+     "n": 2
+    }
+   },
    "migalhas": [],
    "pastas": [
     {

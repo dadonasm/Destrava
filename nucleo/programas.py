@@ -166,7 +166,7 @@ def resumo(doc):
 # Windows: chaves de desinstalação (lidas no PowerShell da ficha) + winget list, se existir
 # ----------------------------------------------------------------------------------------------
 PS_PROGS = r"""
-$r.progs=@(Get-ItemProperty 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*','HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue | Where-Object {$_.DisplayName} | ForEach-Object { @{n=$_.DisplayName;v=$_.DisplayVersion;p=$_.Publisher;k=$_.PSChildName;s=[int]$_.SystemComponent;pk=$_.ParentKeyName;w=[bool]($_.PSPath -match 'WOW6432Node');u=[bool]($_.PSPath -match 'HKEY_CURRENT_USER')} })
+$r.progs=@(Get-ItemProperty 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*','HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue | Where-Object {$_.DisplayName} | ForEach-Object { @{n=$_.DisplayName;v=$_.DisplayVersion;p=$_.Publisher;k=$_.PSChildName;s=[int]$_.SystemComponent;pk=$_.ParentKeyName;w=[bool]($_.PSPath -match 'WOW6432Node');u=[bool]($_.PSPath -match 'HKEY_CURRENT_USER');i=$_.DisplayIcon} })
 $r.appx=@(Get-AppxPackage -ErrorAction SilentlyContinue | Where-Object {-not $_.IsFramework -and $_.SignatureKind -eq 'Store' -and -not $_.NonRemovable} | ForEach-Object { @{n=$_.Name;v=$_.Version.ToString();p=$_.Publisher} })
 """
 
@@ -483,3 +483,143 @@ def ler(pasta):
             return json.load(fh)
     except (OSError, ValueError):
         return None
+
+
+# ----------------------------------------------------------------------------------------------
+# ícones: o ícone de verdade de cada programa, só para mostrar (PNG 64x64 na pasta da máquina; não entram em programas.json)
+# ----------------------------------------------------------------------------------------------
+def nome_icone(nome):
+    return re.sub(r"[^a-z0-9+#]", "", chave(nome)) or "x"
+
+
+_JXA_ICONES = r"""ObjC.import("AppKit");
+function run(a){var ws=$.NSWorkspace.sharedWorkspace,n=0;
+ for(var i=0;i+1<a.length;i+=2){try{var img=ws.iconForFile(a[i]);
+  var rep=$.NSBitmapImageRep.alloc.initWithBitmapDataPlanesPixelsWidePixelsHighBitsPerSampleSamplesPerPixelHasAlphaIsPlanarColorSpaceNameBytesPerRowBitsPerPixel(null,64,64,8,4,true,false,$.NSDeviceRGBColorSpace,0,0);
+  $.NSGraphicsContext.saveGraphicsState;$.NSGraphicsContext.setCurrentContext($.NSGraphicsContext.graphicsContextWithBitmapImageRep(rep));
+  img.drawInRectFromRectOperationFraction($.NSMakeRect(0,0,64,64),$.NSZeroRect,$.NSCompositingOperationSourceOver,1);
+  $.NSGraphicsContext.restoreGraphicsState;
+  if(rep.representationUsingTypeProperties($.NSBitmapImageFileTypePNG,$()).writeToFileAtomically(a[i+1],true))n++}catch(e){}}
+ return String(n)}"""
+
+_PS_ICONES = r"""Add-Type -AssemblyName System.Drawing
+$l = ConvertFrom-Json @'
+%s
+'@
+foreach($x in $l){try{$i=[System.Drawing.Icon]::ExtractAssociatedIcon($x.e);$b=New-Object System.Drawing.Bitmap 64,64;$g=[System.Drawing.Graphics]::FromImage($b);
+$g.InterpolationMode='HighQualityBicubic';$g.DrawImage($i.ToBitmap(),0,0,64,64);$b.Save($x.p,[System.Drawing.Imaging.ImageFormat]::Png)}catch{}}"""
+
+
+def exe_do_icone(display_icon):
+    """DisplayIcon do Windows ("C:\\...\\app.exe",0) -> caminho do arquivo."""
+    s = str(display_icon or "").strip().strip('"')
+    s = re.sub(r'",?-?\d*$', "", s)
+    s = re.sub(r",\s*-?\d+$", "", s).strip().strip('"')
+    return s if s.lower().endswith((".exe", ".ico", ".dll")) else ""
+
+
+def _apps_mac_por_nome():
+    h = _home()
+    out = {}
+    for base in ("/Applications", "/Applications/Utilities", os.path.join(h, "Applications"), "/System/Applications", "/System/Applications/Utilities"):
+        for app in _apps_em(base):
+            out.setdefault(nome_icone(os.path.basename(app)[:-4]), app)
+    return out
+
+
+def _desktop_icones():
+    """Linux: nome do atalho .desktop -> Icon=."""
+    h = _home()
+    out = {}
+    for base in ("/usr/share/applications", os.path.join(h, ".local/share/applications"), "/var/lib/flatpak/exports/share/applications",
+                 os.path.join(h, ".local/share/flatpak/exports/share/applications"), "/var/lib/snapd/desktop/applications"):
+        for f in glob.glob(os.path.join(base, "*.desktop")):
+            nome = icon = ""
+            try:
+                with open(f, encoding="utf-8", errors="replace") as fh:
+                    sec = ""
+                    for ln in fh:
+                        ln = ln.strip()
+                        if ln.startswith("["):
+                            sec = ln
+                        elif sec == "[Desktop Entry]":
+                            if ln.startswith("Name=") and not nome:
+                                nome = ln[5:].strip()
+                            elif ln.startswith("Icon=") and not icon:
+                                icon = ln[5:].strip()
+            except OSError:
+                continue
+            for k in (nome, os.path.basename(f)[:-8]):
+                if k and icon:
+                    out.setdefault(nome_icone(k), icon)
+    return out
+
+
+def _png_linux(icon):
+    if os.path.isabs(icon):
+        return icon if icon.endswith(".png") and os.path.isfile(icon) else ""
+    h = _home()
+    for tam in ("64x64", "48x48", "128x128", "96x96", "256x256", "32x32"):
+        for base in ("/usr/share/icons/hicolor", os.path.join(h, ".local/share/icons/hicolor"), "/var/lib/flatpak/exports/share/icons/hicolor"):
+            p = os.path.join(base, tam, "apps", icon + ".png")
+            if os.path.isfile(p):
+                return p
+    p = os.path.join("/usr/share/pixmaps", icon + ".png")
+    return p if os.path.isfile(p) else ""
+
+
+def icones(nomes, pasta, exes=None):
+    """Gera em pasta/<nome_icone>.png os ícones que ainda faltam. Mac: NSWorkspace (osascript, um processo para todos, cobre
+    também ícone só em Assets.car); Windows: ícone do executável (exes: {nome: DisplayIcon}); Linux: Icon= do .desktop.
+    Sem ícone (fórmulas do Homebrew, apps sem atalho), a tela desenha a inicial. Devolve quantos gerou."""
+    try:
+        os.makedirs(pasta, exist_ok=True)
+    except OSError:
+        return 0
+    falta = [n for n in dict.fromkeys(nomes or []) if n and not os.path.isfile(os.path.join(pasta, nome_icone(n) + ".png"))]
+    if not falta:
+        return 0
+    if IS_MAC:
+        apps = _apps_mac_por_nome()
+        args = []
+        for n in falta:
+            a = apps.get(nome_icone(n))
+            if a:
+                args += [a, os.path.join(pasta, nome_icone(n) + ".png")]
+        if not args:
+            return 0
+        js = os.path.join(pasta, ".icones.js")
+        with open(js, "w", encoding="utf-8") as fh:
+            fh.write(_JXA_ICONES)
+        try:
+            out = _rodar(["osascript", "-l", "JavaScript", js] + args, 180).strip()
+        finally:
+            try:
+                os.remove(js)
+            except OSError:
+                pass
+        return int(out) if out.isdigit() else 0
+    if IS_WIN:
+        por = {nome_icone(k): exe_do_icone(v) for k, v in (exes or {}).items()}
+        lst = [{"e": por[nome_icone(n)], "p": os.path.join(pasta, nome_icone(n) + ".png")} for n in falta if por.get(nome_icone(n)) and os.path.isfile(por[nome_icone(n)])]
+        if lst:
+            _rodar(["powershell", "-NoProfile", "-NonInteractive", "-Command", _PS_ICONES % json.dumps(lst)], 180)
+        return sum(1 for x in lst if os.path.isfile(x["p"]))
+    dsk = _desktop_icones()
+    n_ok = 0
+    for n in falta:
+        src = _png_linux(dsk.get(nome_icone(n), ""))
+        if src:
+            try:
+                shutil.copyfile(src, os.path.join(pasta, nome_icone(n) + ".png"))
+                n_ok += 1
+            except OSError:
+                pass
+    return n_ok
+
+
+def icones_existentes(pasta):
+    try:
+        return sorted(n[:-4] for n in os.listdir(pasta) if n.endswith(".png"))
+    except OSError:
+        return []

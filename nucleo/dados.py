@@ -2038,24 +2038,29 @@ def indice_consulta(faixa="", cat="", pasta=None, usuario="", q="", ordem="maior
          "uso": multi(uso), "usuario": multi(usuario)}
     expr = {"faixa": "faixa", "grupo": "grupo", "sug": "sug", "tipo": "trot", "cat": "cat", "tam": _SQL_TAM, "uso": _sql_uso(agora), "usuario": "usuario"}
     base, args = [], []
+    fbase, fargs = [], []  # base das facetas (barra lateral): sempre a árvore inteira, mesmo em Pastas, onde a lista só mostra o que está direto na pasta
     if pp:
         ch = _kk(pp)
+        f, w = _faixa("pasta", ch)
+        fbase.append(f)
+        fargs += w
         if visao == "pastas":
             base.append("pasta=?")
             args.append(ch)
         else:
-            f, w = _faixa("pasta", ch)
             base.append(f)
             args += w
     termos = _sem_acento(q).split()
     for i, t in enumerate(termos):
         base.append("(instr(busca, ?) > 0 OR pasta IN (SELECT chave FROM hit%d))" % i)  # no nome do arquivo ou no caminho da pasta
         args.append(t)
+        fbase.append(base[-1])
+        fargs.append(t)
     if visao == "pastas" and not pp:
         base.append("0")  # na raiz (usuários) só há pastas
 
-    def onde(sem=None):
-        w, a = list(base), list(args)
+    def onde(sem=None, arvore=False):
+        w, a = (list(fbase), list(fargs)) if arvore else (list(base), list(args))
         for k, vals in F.items():
             if k != sem and vals:
                 w.append("%s IN (%s)" % (expr[k], ",".join("?" * len(vals))))
@@ -2067,7 +2072,7 @@ def indice_consulta(faixa="", cat="", pasta=None, usuario="", q="", ordem="maior
         _busca_pastas(c, termos)
         fac, facb = {}, {}
         for k in (FACETAS_IDX if facetas else ("faixa", "cat")):
-            w, a = onde(k)
+            w, a = onde(k, True)
             fac[k], facb[k] = {}, {}
             for r in c.execute("SELECT %s, SUM(narq), SUM(bytes) FROM arq%s GROUP BY 1" % (expr[k], w), a):
                 if r[0] is None or (k == "sug" and not r[0]):

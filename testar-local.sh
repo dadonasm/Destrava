@@ -6,5 +6,7 @@ cd "$(dirname "$0")" || exit 1
 PY=""
 for c in python3 python; do command -v "$c" >/dev/null 2>&1 && PY="$c" && break; done
 [ -z "$PY" ] && { echo "Python 3 nao encontrado."; exit 1; }
+# DESTRAVA_ADM=1 sh testar-local.sh: abre como administrador (sudo), como no pendrive
+if [ -n "$DESTRAVA_ADM" ] && [ "$(id -u)" != "0" ]; then exec sudo DESTRAVA_ADM=1 sh "$0" "$@"; fi
 [ -f nucleo/dd_backup.py ] && exec "$PY" nucleo/dd_backup.py --dados ./_dev "$@"
 exec "$PY" dd_backup.py --dados ./_dev "$@"

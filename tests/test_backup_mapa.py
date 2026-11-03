@@ -213,10 +213,10 @@ class BackupCompleto(unittest.TestCase):
         self.assertEqual(novo.phase, "idle")
         r = novo.retomar(mid)
         self.assertEqual((novo.phase, novo.finished, novo.cert["codigo"], novo.verified_mode), ("done", True, cert["codigo"], "completa"))
-        self.assertEqual((r["ok"], r["passo"]), (True, 5), "falta o O que manter: volta nesse passo")
+        self.assertEqual((r["ok"], r["passo"]), (True, 2), "backup concluído: volta ao recibo final (passo Concluído)")
         self.assertEqual(novo.same_disk, self.app.same_disk, "o mesmo disco continua bloqueando a formatação")
         self.assertEqual(novo.dest_root, self.app.dest_root)
-        self.assertEqual(novo.retomar(mid)["passo"], 5, "já aberto: não recarrega")
+        self.assertEqual(novo.retomar(mid)["passo"], 2, "já aberto: não recarrega")
         with self.assertRaises(ValueError):
             novo.retomar("DD-OUTRA-0000")
 
