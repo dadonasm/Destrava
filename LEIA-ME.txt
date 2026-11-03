@@ -26,7 +26,8 @@ USAR
   B) Backup seguro: inicie o PC pelo pendrive no Zorin ("Experimentar"), monte os discos (clique neles no
      gerenciador de arquivos) e rode  sudo sh Iniciar-Linux.sh  dentro da pasta Destrava.
      Na Home dá para rodar a ficha também (hardware e disco; boot e inicialização do Windows não são medidos no Live).
-  O mesmo botão "Backup" (gaveta lateral) leva aos 6 passos: origem/destino, checagens, seleção, cópia, verificação, certificado.
+  O mesmo botão "Backup" (gaveta lateral) leva aos 7 passos: origem/destino, checagens, seleção, cópia, verificação, o que manter, conclusão.
+  Clique numa etapa do topo para voltar a ela. Com o modo Superusuário (engrenagem › Configurações) todas abrem.
 
 RODAR SEM PENDRIVE (servidor da loja)
   Um computador da loja roda o servidor (Django em Docker, porta 8080) e entrega o programa a qualquer computador, na bancada ou no cliente.

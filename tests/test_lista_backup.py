@@ -121,6 +121,49 @@ class Lista(unittest.TestCase):
         self.assertIn("contrato.pdf", self.nomes(self.lista(local="TEMP")))
         self.assertNotIn("contrato.pdf", self.nomes(self.lista(local="TEM")))
 
+    def test_finder_pasta_direto_so_o_que_esta_nela(self):
+        """O Finder da Seleção: pasta=X traz tudo dentro; direto=1 só o que está na própria pasta; subpastas soma os filhos."""
+        docs = self.itens["b_relatorio.docx"].pk
+        self.assertTrue(docs, "o arquivo tem chave de pasta")
+        tudo = self.lista(pasta=docs.split("/")[0])
+        self.assertIn("b_relatorio.docx", self.nomes(tudo))
+        self.assertNotIn("b_relatorio.docx", self.nomes(self.lista(pasta=docs.split("/")[0], direto=1)))
+        direto = self.lista(pasta=docs, direto=1)
+        self.assertIn("b_relatorio.docx", self.nomes(direto))
+        self.assertTrue(all(self.app.items[x[0]].pk == docs for x in direto["rows"]))
+        raiz = self.lista(limit=0, pastas=1)["pastas"]
+        self.assertEqual(sum(p["n"] for p in raiz["pastas"]), len(self.app.items))
+        n = self.app.select({"filter": {"pasta": docs, "direto": "1"}, "on": False})
+        self.assertGreater(n, 0)
+        self.assertFalse(self.itens["b_relatorio.docx"].inc)
+
+    def test_ordem_pelo_titulo_nos_dois_sentidos(self):
+        """Clicar no título ordena e clicar de novo inverte: cada coluna tem a ordem crescente e a decrescente."""
+        for col in ("nome", "tipo", "categoria", "grupo", "caminho", "tamanho", "parado", "data"):
+            asc = [x[0] for x in self.lista(ord=col, dir="asc")["rows"]]
+            desc = [x[0] for x in self.lista(ord=col, dir="desc")["rows"]]
+            self.assertEqual(sorted(asc), sorted(desc), col)
+            self.assertEqual(len(asc), len(self.app.items), col)
+        nomes = [x[10].lower() for x in self.lista(ord="nome", dir="desc")["rows"]]
+        self.assertEqual(nomes, sorted(nomes, reverse=True))
+
+    def test_ponte_de_pasta_entre_os_modos(self):
+        """BKP Mode liga e desliga no mesmo Finder: a pasta do Gerenciamento (nó) vira a chave da Seleção e volta."""
+        D = dd_backup.DADOS
+        if D is None:
+            self.skipTest("sem o módulo dados")
+        it = self.itens["b_relatorio.docx"]
+        docs = os.path.dirname(it.src)
+        self.assertEqual(self.app.ponte_pasta({"de": "dados", "no": D.no_de(docs)})["chave"], it.pk)
+        self.assertEqual(self.app.ponte_pasta({"de": "dados", "no": D.no_de(os.path.dirname(docs))})["chave"], it.pk.rsplit("/", 1)[0])
+        volta = self.app.ponte_pasta({"de": "bkp", "chave": it.pk})["no"]
+        self.assertEqual(os.path.normpath(D.NOS[volta]["path"]), os.path.normpath(docs))
+        volta = self.app.ponte_pasta({"de": "bkp", "chave": it.pk.rsplit("/", 1)[0]})["no"]
+        self.assertEqual(os.path.normpath(D.NOS[volta]["path"]), os.path.normpath(os.path.dirname(docs)))
+        self.assertEqual(self.app.ponte_pasta({"de": "dados", "no": 0}), {"chave": ""})
+        self.assertEqual(self.app.ponte_pasta({"de": "dados", "no": "x"}), {"chave": ""})
+        self.assertEqual(self.app.ponte_pasta({"de": "bkp", "chave": "Ninguem/Nada"}), {"no": 0})
+
     def test_previa_so_pelo_indice(self):
         i = self.app.items.index(self.itens["foto.jpg"])
         arq, mime, tipo, limite = self.app.previa(str(i))
@@ -133,6 +176,19 @@ class Lista(unittest.TestCase):
         self.itens["foto.jpg"].nuvem = True
         with self.assertRaises(ValueError, msg="só na nuvem: abrir baixaria"):
             self.app.previa(str(i))
+
+
+    def test_destino_de_um_arquivo_nos_jeitos_de_guardar(self):
+        """A prévia da faixa de baixo: onde o arquivo fica no Espelho e no Ordenado, e qual vale agora."""
+        i = self.app.items.index(self.itens["b_relatorio.docx"])
+        d = self.app.destino(i)
+        self.assertEqual(d["espelho"], "Pastas_origem/Ana/Documents/b_relatorio.docx")
+        self.assertTrue(d["ordenado"].startswith("Ana/Documentos/") and d["ordenado"].endswith("/b_relatorio.docx"), d["ordenado"])
+        self.assertEqual((d["atual"], d["copia"]), (d["ordenado"], "ordenar"), "sem modo escolhido vale o ordenado")
+        self.app.set_modo("misto")
+        self.assertEqual((self.app.destino(i)["atual"], self.app.destino(i)["copia"]), (d["espelho"], "espelhar"), "no Misto começa espelhado")
+        with self.assertRaises(ValueError):
+            self.app.destino(len(self.app.items))
 
 
 if __name__ == "__main__":

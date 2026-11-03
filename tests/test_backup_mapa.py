@@ -94,6 +94,19 @@ class BackupCompleto(unittest.TestCase):
         self.assertTrue(self.app.med_parar.is_set(), "a cópia para a medição")
         espera(self.app, ("copied", "error"))
 
+    def test_faixas_do_disco_iguais_as_do_gerenciamento(self):
+        it = self.escanear()
+        m, t = self.app.medicao, time.time()
+        while m["rodando"] and time.time() - t < 20:
+            time.sleep(0.05)
+        d = self.app.faixas_disco()
+        self.assertFalse(d["medindo"])
+        self.assertEqual(d["faixas"]["fotos"], sum(x.size for x in self.app.items if x.cat == "Fotos"))
+        self.assertGreaterEqual(d["faixas"]["caches"], 9, "cache do Thunderbird e Temp, medidos fora da varredura")
+        self.assertEqual(sum(d["faixas"].values()), m["usado"], "as faixas somam o espaço usado do disco")
+        ident = dd_backup.identidade("backup", self.app)
+        self.assertEqual([c["nome"] for c in ident["contas"]], ["Ana"], "as contas são as do disco do backup")
+
     def test_backup_mapa_e_conferencia(self):
         self.escanear()
         self.app.start_copy()
@@ -200,10 +213,10 @@ class BackupCompleto(unittest.TestCase):
         self.assertEqual(novo.phase, "idle")
         r = novo.retomar(mid)
         self.assertEqual((novo.phase, novo.finished, novo.cert["codigo"], novo.verified_mode), ("done", True, cert["codigo"], "completa"))
-        self.assertEqual((r["ok"], r["passo"]), (True, 5), "falta o O que manter: volta nesse passo")
+        self.assertEqual((r["ok"], r["passo"]), (True, 2), "backup concluído: volta ao recibo final (passo Concluído)")
         self.assertEqual(novo.same_disk, self.app.same_disk, "o mesmo disco continua bloqueando a formatação")
         self.assertEqual(novo.dest_root, self.app.dest_root)
-        self.assertEqual(novo.retomar(mid)["passo"], 5, "já aberto: não recarrega")
+        self.assertEqual(novo.retomar(mid)["passo"], 2, "já aberto: não recarrega")
         with self.assertRaises(ValueError):
             novo.retomar("DD-OUTRA-0000")
 

@@ -32,15 +32,17 @@ class ComCasa(unittest.TestCase):
         escreve(j(".ssh", "id_rsa"), b"-----BEGIN KEY-----")
         escreve(j("Library", "Keychains", "login.keychain-db"), b"k")
         escreve(j("Projetos", "grande", "a.bin"), b"0" * 20000)
-        dados.set_helpers(user_home=lambda: self.h)
+        self.idx = tempfile.mkdtemp(prefix="destrava_idx_")  # nunca o índice de verdade desta máquina (fica no TMPDIR)
+        dados.set_helpers(user_home=lambda: self.h, indice_dir=self.idx)
         dados._HOMES[:] = [("teste", self.h)]  # só esta "pessoa": não varre os usuários reais do computador
         self.j = j
 
     def tearDown(self):
         dados.MEDIR["cancel"].set()
-        dados.set_helpers(user_home=None)
+        dados.set_helpers(user_home=None, indice_dir=None)
         dados.ITENS.clear()
         shutil.rmtree(self.h, ignore_errors=True)
+        shutil.rmtree(self.idx, ignore_errors=True)
 
     def espera_medir(self):
         for _ in range(100):

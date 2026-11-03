@@ -634,6 +634,36 @@ def coletar(cb=None, programas=True):
     return f
 
 
+def coletar_programas(cb=None):
+    """Só a lista de programas instalados, para o "O que manter" do backup, sem a análise completa (sem medir a máquina,
+    sem ficha nem histórico): grava programas.json da máquina e os ícones de cada programa."""
+    cb = cb or (lambda e, p: None)
+    cb("Listando os programas instalados", 10)
+    exes = {}
+    if REPLAY:
+        progs = _coletar_replay(cb).get("programas") or []
+    elif IS_WIN:
+        raw = ps_json("$r=@{}\n" + PROG.PS_PROGS + "\n$r | ConvertTo-Json -Depth 4 -Compress", timeout=180) or {}
+        cb("Procurando os programas no winget", 45)
+        progs = PROG.de_windows(aslist(raw.get("progs")), aslist(raw.get("appx")), PROG.winget_list())
+        exes = {p.get("n"): p.get("i") for p in aslist(raw.get("progs")) if p.get("n") and p.get("i")}
+    else:
+        progs = PROG.coletar()
+    mid = machine_id_cache()
+    d = pasta(mid)
+    os.makedirs(d, exist_ok=True)
+    doc = PROG.documento(progs, familia_atual())
+    _json_atomico(os.path.join(d, "programas.json"), doc)
+    if not REPLAY:
+        cb("Buscando o ícone de cada programa", 80)
+        try:
+            PROG.icones([g["nome"] for g in doc["itens"]], os.path.join(d, "icones"), exes)
+        except Exception:
+            pass
+    cb("Pronto", 100)
+    return {"mid": mid, "n": doc["visiveis"]}
+
+
 # ----------------------------------------------------------------------------------------------
 # coleta salva: exportar daqui, reproduzir em outra máquina (desenvolvimento e suporte)
 # ----------------------------------------------------------------------------------------------
@@ -1472,6 +1502,31 @@ def hist_add(mid, tipo, resumo, extra=None):
     _registrar_etapa(mid, h[:-1], ev)
 
 
+def hist_corrigir(mid, idx, resumo, por=""):
+    """Corrige o texto de um evento do histórico sem apagar nada: o original e quem corrigiu ficam em extra.corrigido."""
+    resumo = (resumo or "").strip()
+    if not resumo:
+        raise ValueError("Escreva o texto corrigido.")
+    p = os.path.join(pasta(mid), "historico.json")
+    h = hist_get(mid)
+    try:
+        idx = int(idx)
+        ev = h[idx]
+    except (ValueError, TypeError, IndexError):
+        raise ValueError("Evento não encontrado; abra a máquina de novo.")
+    if idx < 0 or resumo == ev.get("resumo"):
+        raise ValueError("Nada para corrigir.")
+    ex = ev.setdefault("extra", {})
+    ex.setdefault("corrigido", []).append({"original": ev.get("resumo", ""), "por": por or tecnico_atual(mid) or "", "quando": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")})
+    ev["resumo"] = resumo[:300]
+    tmp = p + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(h, fh, ensure_ascii=False, indent=1)
+    os.replace(tmp, p)
+    _gravou(p)
+    return ev
+
+
 def hist_get(mid):
     _garantir(mid)
     try:
@@ -1698,9 +1753,33 @@ def salvar_receita(mid, escolhas, nenhum=False):
     rec = {"versao": 1, "quando": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "tecnico": tecnico_atual(mid), "nenhum": not itens, "itens": itens}
     _json_atomico(os.path.join(pasta(mid), "receita.json"), rec)
     auto = sum(1 for i in itens if i["automatico"])
-    hist_add(mid, "receita", "O que manter: " + ("nenhum programa (confirmado)" if not itens else "%d programa(s), %d reinstala(m) sozinho(s)" % (len(itens), auto)),
-             {"n": len(itens), "automaticos": auto})
+    resumo = "O que manter: " + ("nenhum programa (confirmado)" if not itens else "%d programa(s), %d reinstala(m) sozinho(s)" % (len(itens), auto))
+    h = hist_get(mid)
+    ult = _data(h[-1].get("quando")) if h and h[-1].get("tipo") == "receita" else None
+    if ult and datetime.datetime.now() - ult < datetime.timedelta(minutes=10):  # marcando um por um: atualiza o último registro em vez de empilhar
+        h[-1].update({"quando": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "resumo": resumo, "extra": dict(h[-1].get("extra") or {}, n=len(itens), automaticos=auto)})
+        _json_atomico(os.path.join(pasta(mid), "historico.json"), h)
+    else:
+        hist_add(mid, "receita", resumo, {"n": len(itens), "automaticos": auto})
     return rec
+
+
+def backups_de(mid, hist=None):
+    """Os backups desta máquina (eventos "backup" do histórico), do mais novo ao mais antigo, com o relatório em PDF e o
+    Mapa guardados no registro da máquina (abrem mesmo sem o disco do backup)."""
+    out = []
+    for e in hist_get(mid) if hist is None else hist:
+        if e.get("tipo") != "backup":
+            continue
+        x = e.get("extra") or {}
+        cod = x.get("codigo", "")
+        mp = next((m for m in (os.path.join(pasta(mid), "mapas", cod, "Mapa") if cod else "", os.path.join(x.get("mapa_registro") or "", "Mapa") if x.get("mapa_registro") else "")
+                   if m and os.path.isdir(m)), "")
+        n = re.search(r"(\d[\d.]*) arquivos", e.get("resumo", ""))
+        out.append({"quando": e.get("quando", ""), "codigo": cod, "status": x.get("status") or ("sem_falhas" if "sem falhas" in e.get("resumo", "") else "ressalvas"), "bytes": x.get("bytes"), "destino": x.get("destino", ""),
+                    "copiados": x.get("copiados") if x.get("copiados") is not None else (int(n.group(1).replace(".", "")) if n else None),
+                    "tecnico": x.get("tecnico", ""), "mapa": mp, "pdf": bool(mp) and os.path.isfile(os.path.join(mp, "Relatorio-backup.pdf"))})
+    return out[::-1]
 
 
 def existe_maquina(mid):

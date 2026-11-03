@@ -17,6 +17,7 @@ import collections
 import csv
 import datetime
 import errno
+import gzip
 import hashlib
 import json
 import os
@@ -28,6 +29,7 @@ import socket
 import struct
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import traceback
@@ -41,8 +43,10 @@ from urllib.parse import parse_qs, urlparse
 if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-VERSION = "3.3"
-BUILD = "2026-10-26.2"  # igual ao BUILD do app.html: se forem diferentes, o pendrive tem arquivos de versões misturadas
+VERSION = "3.9"
+BUILD = "2026-10-30.2"  # igual ao BUILD do app.html: se forem diferentes, o pendrive tem arquivos de versões misturadas
+RELATORIO_PDF = "Relatorio-backup.pdf"  # relatório do fim do backup, na pasta Mapa
+import classe as CLS  # noqa: E402  (tipos de arquivo: a mesma tabela do Gerenciamento)
 import disco  # noqa: E402  (conferência lendo do disco, não da memória)
 import mapa as MAPA  # noqa: E402
 import perfil as PERFIL  # noqa: E402
@@ -75,40 +79,21 @@ MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "A
 # ----------------------------------------------------------------------------------------------
 # Regras de classificação
 # ----------------------------------------------------------------------------------------------
-CATS = {
-    "Fotos": ".jpg .jpeg .png .heic .heif .gif .bmp .tif .tiff .webp .raw .cr2 .nef .arw .dng",
-    "Videos": ".mp4 .mov .avi .mkv .wmv .3gp .mpg .mpeg .m4v .flv",
-    "Audios": ".mp3 .wav .m4a .aac .flac .ogg .opus .wma .amr",
-    "Documentos": ".pdf .doc .docx .docm .dotx .xls .xlsx .xlsm .xlsb .ppt .pptx .pps .ppsx .txt .odt .ods .odp .csv .rtf .one",
-    "Projetos": ".psd .ai .cdr .indd .dwg .dxf .skp .xcf .svg .prproj .aep",
-    "Email_Contatos": ".pst .eml .msg .mbox .vcf",
-    "Contas_Senhas": ".kdbx .kdb .pfx .p12",
-}
-EXT2CAT = {}
-for _c, _e in CATS.items():
-    for _x in _e.split():
-        EXT2CAT[_x] = _c
-ARCH = set(".zip .rar .7z .tar .gz .tgz .bz2".split())
-# coluna "Tipo" da lista do backup (e a busca por tipo): o que a pessoa reconhece, não a extensão
-TIPO_EXT = {}
-for _t, _e in (("PDF", ".pdf"), ("Word", ".doc .docx .docm .dotx"), ("Documento", ".odt .rtf"), ("Planilha", ".xls .xlsx .xlsm .xlsb .ods .csv"),
-               ("Apresentação", ".ppt .pptx .pps .ppsx .odp"), ("Texto", ".txt .md"), ("OneNote", ".one"), ("E-mail", ".pst .eml .msg .mbox"),
-               ("Contato", ".vcf"), ("Compactado", " ".join(sorted(ARCH)))):
-    for _x in _e.split():
-        TIPO_EXT[_x] = _t
-TIPO_CAT = {"Fotos": "Imagem", "Videos": "Vídeo", "Audios": "Áudio"}
+# a tabela de tipos é a mesma do Gerenciamento de dados (classe.py); aqui só as categorias pessoais do backup
+CATS_PESSOAIS = ("Fotos", "Videos", "Audios", "Documentos", "Projetos", "Email_Contatos", "Contas_Senhas")
+EXT2CAT = {x: CLS.CLASSES[CLS.POR_EXT[x]]["backup"] for x in CLS.POR_EXT if CLS.CLASSES[CLS.POR_EXT[x]]["backup"] in CATS_PESSOAIS}
+ARCH = set(CLS.COMPACTADOS)
+TIPO_EXT = CLS.TIPO_EXT  # coluna "Tipo" da lista (a mesma tabela do Gerenciamento)
 
 
 def nome_de(disp):
     return re.split(r"[\\/]", disp)[-1]
 
 
-def tipo_de(nome):
-    ext = os.path.splitext(nome.lower())[1]
-    return TIPO_EXT.get(ext) or TIPO_CAT.get(EXT2CAT.get(ext, "")) or (ext[1:].upper() if ext else "Arquivo")
+tipo_de = CLS.tipo_de
 IGN_EXT = set(".exe .dll .sys .tmp .temp .log .ini .lnk .url .msi .msp .cab .cat .mui .drv .ocx .cpl .scr .bin .obj .pyc .class "
               ".etl .dmp .cache .ost .crdownload .part .ddpart .so .lock .swp .desktop".split())
-IGN_NAME_RE = re.compile(r"^(ntuser.*|desktop\.ini|thumbs\.db|iconcache\.db|pagefile\.sys|hiberfil\.sys|swapfile\.sys|\.ds_store|\.directory)$", re.I)
+IGN_NAME_RE = CLS.SISTEMA_NOME
 WA_RE = re.compile(r"(^msgstore.*\.db(\.crypt\d+)?$)|(\.crypt\d+$)", re.I)
 
 IGN_ANY = {"__pycache__", "$recycle.bin", "system volume information", ".trash", "lost+found"}
@@ -133,12 +118,10 @@ SIS_PULAR = {"microsoft", "windows", "common files", "google", "mozilla", "mozil
              "msbuild", "dotnet", "uninstall information", "installshield installation information", "realtek", "java", "docker", "packages", "ssh",
              "usoshared", "usoprivate", "softwaredistribution", "regid.1991-06.com.microsoft"}
 # o que antes era "ignorado" agora é listado em categorias próprias, desmarcadas: o técnico decide
-PROG_EXT = {".exe", ".msi", ".msp", ".appimage", ".deb", ".rpm", ".dmg", ".pkg", ".apk", ".jar", ".bat", ".cmd", ".ps1", ".vbs"}
-CONF_EXT = {".ini", ".log", ".lnk", ".url", ".desktop", ".cfg", ".conf", ".reg"}
+PROG_EXT = CLS.exts("backup", "Programas")
+CONF_EXT = CLS.exts("backup", "Configuracoes")
 # pastas que se recriam sozinhas: listadas como puladas, nunca copiadas
-CACHE_DIRS = {"cache", "cache2", "code cache", "gpucache", "grshadercache", "shadercache", "temp", "tmp", "inetcache", "crashdumps",
-              "d3dscache", "webcache", "service worker", "cachestorage", "startupcache", "minidumps", "node_modules", ".cache", ".thumbnails",
-              ".npm", ".nvm", ".cargo", ".rustup", ".gradle", ".m2", ".steam", "snap", ".snap"}
+CACHE_DIRS = set(CLS.CACHE_DIRS)
 WA_PASTA = re.compile(r"(^|[\\/])whatsapp( (images|video|audio|documents|animated gifs|voice notes|stickers|profile photos))?([\\/]|$)", re.I)
 WA_NOME = re.compile(r"^whatsapp (image|video|audio|ptt|document)|^(img|vid|aud|ptt|doc|stk)-\d{8}-wa\d{3,5}", re.I)
 # ordem de cópia: o mais importante primeiro (se o disco de origem estiver morrendo, o essencial já foi)
@@ -251,6 +234,69 @@ def eh_admin():
         return hasattr(os, "geteuid") and os.geteuid() == 0
     except Exception:
         return False
+
+
+def cfg_local():
+    """Preferências desta instalação (pasta de dados): hoje só "abrir sempre como administrador"."""
+    try:
+        with open(os.path.join(DADOS_DIR[0], "config_local.json"), encoding="utf-8") as fh:
+            return json.load(fh) or {}
+    except (OSError, ValueError):
+        return {}
+
+
+def cfg_local_set(**kw):
+    c = cfg_local()
+    c.update(kw)
+    p = os.path.join(DADOS_DIR[0], "config_local.json")
+    with open(p + ".tmp", "w", encoding="utf-8") as fh:
+        json.dump(c, fh, ensure_ascii=False, indent=1)
+    os.replace(p + ".tmp", p)
+    return c
+
+
+class Negado(Exception):
+    """O técnico cancelou o pedido de senha/UAC do sistema."""
+
+
+def reabrir_como_admin(argv=None):
+    """Abre outra instância do Destrava! como administrador, pedindo a senha (Mac/Linux) ou o UAC (Windows) do próprio
+    sistema. Devolve True se a nova instância foi lançada (a chamadora encerra esta); levanta Negado se o técnico cancelou."""
+    argv = [a for a in (sys.argv[1:] if argv is None else argv) if a != "--elevado"] + ["--elevado"]
+    if "--dados" not in argv:
+        argv += ["--dados", DADOS_DIR[0]]
+    script = os.path.abspath(__file__)
+    if IS_WIN:
+        import ctypes
+        rc = ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, subprocess.list2cmdline([script] + argv), os.getcwd(), 1)
+        if rc <= 32:
+            raise Negado("Permissão não concedida.") if rc == 5 else ValueError("O Windows não abriu como administrador (código %d)." % rc)
+        return True
+    import getpass
+    import shlex
+    usuario = os.environ.get("SUDO_USER") or getpass.getuser()
+    cmd = " ".join(shlex.quote(x) for x in [sys.executable, script] + argv)
+    if sys.platform == "darwin":
+        sh = "cd %s && env SUDO_USER=%s %s >/dev/null 2>&1 &" % (shlex.quote(os.getcwd()), shlex.quote(usuario), cmd)
+        r = subprocess.run(["osascript", "-e", 'do shell script "%s" with administrator privileges' % sh.replace("\\", "\\\\").replace('"', '\\"')],
+                           capture_output=True, timeout=600)
+        if r.returncode:
+            if b"-128" in (r.stderr or b""):
+                raise Negado("Permissão não concedida.")
+            raise ValueError("Não deu para abrir como administrador: %s" % (r.stderr or b"").decode("utf-8", "replace").strip()[-200:])
+        return True
+    if not shutil.which("pkexec"):
+        raise ValueError("Este Linux não tem o pedido de senha gráfico (pkexec). Feche e abra com: sudo sh Iniciar-Linux.sh")
+    env = ["%s=%s" % (k, os.environ[k]) for k in ("DISPLAY", "XAUTHORITY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR") if os.environ.get(k)]
+    pr = subprocess.Popen(["pkexec", "env", "SUDO_USER=" + usuario] + env + [sys.executable, script] + argv, cwd=os.getcwd(),
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        rc = pr.wait(timeout=120)  # pkexec só volta na hora se a senha foi recusada; aceito, ele fica rodando o programa
+    except subprocess.TimeoutExpired:
+        return True
+    if rc in (126, 127):
+        raise Negado("Permissão não concedida.")
+    return True
 
 
 PROGRAMAS_PASTA = (("/microsoft/edge/", "Edge (navegador)"), ("/google/chrome/", "Chrome (navegador)"), ("/bravesoftware/", "Brave (navegador)"),
@@ -520,6 +566,17 @@ def disk_usage(path):
         return 0, 0
 
 
+IGN_MAC_USERS = {"shared", "guest", "deleted users"}
+
+
+def mac_usuarios(ud):
+    try:
+        return sorted(n for n in os.listdir(ud) if not n.startswith(".") and n.lower() not in IGN_MAC_USERS
+                      and os.path.isdir(os.path.join(ud, n)) and not e_link(os.path.join(ud, n)))
+    except OSError:
+        return []
+
+
 def detect_kind(p):
     try:
         names = {n.lower(): n for n in os.listdir(p)}
@@ -535,6 +592,8 @@ def detect_kind(p):
         except OSError:
             pass
         return "windows", users
+    if "users" in names and ("system" in names or "library" in names):  # volume do macOS: os usuários ficam em /Users (antes do teste de Linux, que também tem etc e usr)
+        return "mac", mac_usuarios(os.path.join(p, names["users"]))
     if "home" in names and "etc" in names and "usr" in names:
         try:
             hp = os.path.join(p, names["home"])
@@ -597,7 +656,7 @@ def list_sources(para_origem=True):
     if not (para_origem and any(_dentro(home, s["path"]) for s in out)):
         add(home, "Pasta pessoal (%s)" % os.path.basename(home))
     if para_origem:
-        out = [s for s in out if not (_dentro(HERE, s["path"]) and os.path.ismount(s["path"])) or s["kind"] in ("windows", "linux")]  # o pendrive do programa
+        out = [s for s in out if not (_dentro(HERE, s["path"]) and os.path.ismount(s["path"])) or s["kind"] in ("windows", "linux", "mac")]  # o pendrive do programa
     # Windows: sugere letras
     letters = iter("CDEFGHIJ")
     for s in out:
@@ -623,6 +682,12 @@ def roots_for_browse():
 # ----------------------------------------------------------------------------------------------
 # Item
 # ----------------------------------------------------------------------------------------------
+# a varredura da Seleção fica guardada (fora do pendrive, como o índice do Gerenciamento): trocar de modo ou reabrir o programa não varre de novo
+SNAP_VERSAO = 1
+SNAP_CAMPOS = ("raiz", "ctx", "local0", "rel0", "src", "disp", "size", "mtime", "local", "cat", "act", "motivo", "date", "tags", "inc", "rel",
+               "nuvem", "inc0", "quem", "pk", "eleg", "lay")  # status, sha e o resto da cópia não: a cópia sempre recomeça
+
+
 class Item(object):
     __slots__ = ("raiz", "ctx", "local0", "rel0", "src", "disp", "size", "mtime", "local", "cat", "act", "motivo", "date", "tags", "inc", "rel",
                  "status", "err", "cause", "sha", "ver", "nuvem", "inc0", "quem", "pk", "eleg", "lay")
@@ -841,6 +906,21 @@ CAUSA_NOME_SRV = {"permissao": "sem permissão de leitura", "em_uso": "em uso po
 GRUPO_FORA = (("Sistema operacional", "Windows e programas"), ("Sistema Linux", "Sistema e programas"), ("Cache", "Caches e temporários"),
               ("Lixeira", "Lixeira e sistema"))
 LINUX_RAIZ_FORA = {"usr", "var", "opt", "snap", "lib", "lib32", "lib64", "libx32", "bin", "sbin", "boot", "etc", "srv"}
+_FX_OS = {"windows", "usr", "lib", "lib32", "lib64", "libx32", "bin", "sbin", "boot", "etc", "system"}
+_FX_APPS = {"windowsapps", "opt", "snap", "applications"}
+
+
+def faixa_fora(disp, motivo):
+    """Faixa do cockpit de uma pasta que a varredura do backup pulou (medida em segundo plano)."""
+    n = re.split(r"[\\/]", disp.rstrip("\\/"))[-1].lower()
+    ml = (motivo or "").lower()
+    if "cache" in ml or "lixeira" in ml or "temporár" in ml:
+        return "caches"
+    if n in _FX_OS:
+        return "os"
+    if n.startswith("program files") or n in _FX_APPS:
+        return "apps"
+    return "dados"
 
 
 # ---------------------------- filtros da lista (estilo e-commerce: facetas com contagem) ----------------------------
@@ -880,13 +960,13 @@ def parse_filtro(q):
     f = {k: (v[0] if isinstance(v, list) else v) for k, v in (q or {}).items()}
     lst = lambda k: [x for x in str(f.get(k) if f.get(k) is not None else "").split("|") if x != ""]
     inc = f.get("inc")
-    return {"cat": set(lst("cat")), "tipo": set(lst("tipo")), "status": set(lst("status")), "local": lst("local"), "tag": set(lst("tag")),
+    return {"cat": set(lst("cat")), "grupo": set(lst("grupo")), "tipo": set(lst("tipo")), "status": set(lst("status")), "local": lst("local"), "tag": set(lst("tag")),
             "data": set(lst("data")), "tam": set(lst("tam")), "act": f.get("act") or "",
             "inc": None if inc in (None, "", "todos") else str(inc) in ("1", "True", "true"),
             "dmin": _data_iso(f.get("dmin")), "dmax": _data_iso(f.get("dmax")),
             "smin": int(f["smin"]) if str(f.get("smin") or "").isdigit() else None, "smax": int(f["smax"]) if str(f.get("smax") or "").isdigit() else None,
             "q": str(f.get("q") or "").lower(), "facets": str(f.get("facets") or "") in ("1", "true"),
-            "pasta": lst("pasta"), "copia": f.get("copia") if f.get("copia") in ("espelhar", "ordenar") else ""}
+            "pasta": lst("pasta"), "direto": str(f.get("direto") or "") in ("1", "true"), "copia": f.get("copia") if f.get("copia") in ("espelhar", "ordenar") else ""}
 
 
 class App(object):
@@ -897,6 +977,8 @@ class App(object):
         self.lock = threading.RLock()
         self.rules = load_tag_rules(os.path.join(HERE, "etiquetas.txt"))
         self.logs = collections.deque(maxlen=500)
+        self.persistir = False  # só o programa de verdade (APP) guarda a varredura em disco; os testes ligam quando precisam
+        self._snap_timer = None
         self.reset()
 
     # ------------------------------------------------------------------ estado
@@ -919,6 +1001,8 @@ class App(object):
         self.incl = {}
         self.layout_modo = ""  # escolhido a cada backup, na Seleção
         self.checagens = []
+        self.scan_quando = 0  # quando a lista da Seleção foi varrida (reaproveitada: a hora da varredura original)
+        self.encadeado = False  # varredura puxada pelo Gerenciamento: no fim não puxa o Gerenciamento de volta
         self.items = []
         self.ign_dirs = []
         self.ign_reais = []
@@ -980,8 +1064,9 @@ class App(object):
         if not srcs:
             raise ValueError("Escolha pelo menos uma origem.")
         srcs = [s for s in srcs if not any(o is not s and _dentro(s["path"], o["path"]) and s["path"] != o["path"] for o in srcs)]  # pasta dentro de outra origem: já vai junto
-        dest = os.path.abspath(os.path.expanduser(d.get("dest", "")))
-        if not d.get("dest") or not os.path.isdir(dest):
+        # o destino pode vir depois: a Seleção escaneia só com a origem; Checagens e cópia exigem o destino
+        dest = os.path.abspath(os.path.expanduser(d["dest"])) if (d.get("dest") or "").strip() else ""
+        if dest and not os.path.isdir(dest):
             raise ValueError("Escolha uma pasta de destino que exista.")
         folder = safe_seg((d.get("folder") or "").strip() or ("Backup_" + socket.gethostname()))
         ident = self.identificacao()
@@ -990,8 +1075,10 @@ class App(object):
             "cliente": ident["cliente"] or (d.get("cliente") or "").strip(), "tecnico": ident["tecnico"] or (d.get("tecnico") or "").strip(),
             "equip": ident["equip"] or (d.get("equip") or "").strip() or socket.gethostname(),
         }
-        self.dest_root = os.path.join(dest, folder)
-        self.mapa_dir = os.path.join(self.dest_root, "Mapa")
+        self.dest_root = os.path.join(dest, folder) if dest else ""
+        self.mapa_dir = os.path.join(self.dest_root, "Mapa") if dest else ""
+        if self.dest_root and self.items:  # destino escolhido depois do escaneamento e dentro da origem: o backup não entra nele mesmo
+            self.items = [it for it in self.items if not _dentro(getattr(it, "src", "") or "", self.dest_root)]
         return self.cfg
 
     # ------------------------------------------------------------------ checagens iniciais
@@ -999,26 +1086,20 @@ class App(object):
         """Confere ORIGEM e DESTINO. Cada problema diz o que é e como resolver; 'erro' bloqueia a cópia."""
         res = []
 
-        def add(n, t, d, solucao=""):
-            res.append({"nivel": n, "titulo": t, "detalhe": d, "solucao": solucao})
+        def add(n, t, d, solucao="", acao=""):
+            res.append({"nivel": n, "titulo": t, "detalhe": d, "solucao": solucao, "acao": acao})
 
         cfg = self.cfg
         if not cfg:
-            return [{"nivel": "erro", "titulo": "Configuração incompleta", "detalhe": "Escolha origens e destino.", "solucao": "Volte ao passo 1."}]
-        # permissões
-        adm = (hasattr(os, "geteuid") and os.geteuid() == 0)
-        if IS_WIN:
-            try:
-                import ctypes
-                adm = bool(ctypes.windll.shell32.IsUserAnAdmin())
-            except Exception:
-                adm = False
-        if not adm:
-            add("aviso", "Sem permissão de administrador", "Pastas de outros usuários e arquivos do sistema podem ficar sem leitura.",
-                "Feche e abra o Destrava! como administrador (Windows: Iniciar-Windows.bat; Mac/Linux: com sudo).")
+            return [{"nivel": "erro", "titulo": "Configuração incompleta", "detalhe": "Escolha origens e destino.", "solucao": "Volte à etapa Origem e destino."}]
+        if not cfg.get("dest"):
+            return [{"nivel": "erro", "titulo": "Falta o destino", "detalhe": "Escolha para onde vai o backup.", "solucao": "Volte à etapa Origem e destino."}]
+        # permissões: só avisa quando faz diferença (pastas que não deu para ler), com o botão que resolve
+        sem_ler = sum(1 for _d, m in self.ign_dirs if str(m).startswith("Sem acesso"))
+        if not eh_admin() and sem_ler:
+            add("aviso", "%d pasta(s) sem leitura" % sem_ler, "Sem permissão de administrador algumas pastas ficaram de fora.", "", "elevar")
         if sys.platform == "darwin" and DADOS and not DADOS.acesso_total_mac():
-            add("aviso", "Mac sem Acesso Total ao Disco", "Mail, Mensagens, Safari e backups do iPhone ficam invisíveis.",
-                "Ajustes do Sistema > Privacidade e Segurança > Acesso Total ao Disco: ligue o Terminal e abra o Destrava! de novo.")
+            add("aviso", "Mac sem Acesso Total ao Disco", "Mail, Mensagens, Safari e backups do iPhone ficam invisíveis.", "", "ajustes")
         # origem
         for src in cfg["sources"]:
             p = src["path"]
@@ -1120,6 +1201,10 @@ class App(object):
             for pf in ("program files", "program files (x86)", "programdata"):
                 if names.get(pf):
                     plans.append((os.path.join(root, names[pf]), "Disco_%s/Sistemas" % letter, "%s:\\%s" % (letter, names[pf]), "\\", "sistemas"))
+        elif kind == "mac":
+            ud = os.path.join(root, "Users")
+            for u in mac_usuarios(ud):
+                plans.append((os.path.join(ud, u), u, "/Users/" + u, "/", "macuser"))
         elif kind == "linux":
             hp = os.path.join(root, "home")
             for u in sorted(safe_listdir(hp)):
@@ -1132,7 +1217,9 @@ class App(object):
         else:
             base = os.path.basename(root.rstrip("/\\")) or root
             home = os.path.abspath(os.path.expanduser("~"))
-            if os.path.abspath(root) == home or os.path.dirname(os.path.abspath(root)) == "/home":
+            if sys.platform == "darwin" and (os.path.abspath(root) == home or os.path.dirname(os.path.abspath(root)) == "/Users"):
+                plans.append((root, base, root, os.sep, "macuser"))
+            elif os.path.abspath(root) == home or os.path.dirname(os.path.abspath(root)) == "/home":
                 plans.append((root, base, root, os.sep, "linuxuser"))
             else:
                 plans.append((root, ("Disco_" if os.path.ismount(root) else "Pasta_") + base, root, os.sep, "plain"))
@@ -1153,6 +1240,8 @@ class App(object):
             return "Cache/temporário (recriado sozinho)"
         if low == "windowsapps":
             return "Atalhos de aplicativos do Windows (não são arquivos de verdade)"
+        if ctx == "macuser" and parent_is_root and low == "library":
+            return "Dados do macOS e dos apps (não são arquivos pessoais)"
         return None
 
     def walk_plan(self, plan):
@@ -1232,6 +1321,10 @@ class App(object):
             chrome = [("Chrome", ".config/google-chrome"), ("Chromium", ".config/chromium"), ("Edge", ".config/microsoft-edge"),
                       ("Brave", ".config/BraveSoftware/Brave-Browser"), ("ChromeSnap", "snap/chromium/common/chromium")]
             ff = ".mozilla/firefox"
+        elif ctx == "macuser":
+            chrome = [("Chrome", "Library/Application Support/Google/Chrome"), ("Edge", "Library/Application Support/Microsoft Edge"),
+                      ("Brave", "Library/Application Support/BraveSoftware/Brave-Browser")]
+            ff = "Library/Application Support/Firefox/Profiles"
         else:
             return found
         for nome, rel in chrome:
@@ -1277,7 +1370,9 @@ class App(object):
         return None
 
     # ------------------------------------------------------------------ varredura
-    def start_scan(self):
+    def start_scan(self, reaproveitar=False):
+        """reaproveitar: se a varredura guardada é destas mesmas origens, volta com ela em vez de varrer ("restaurado")."""
+        restaurado = False
         with self.lock:
             if self.busy():
                 raise Busy("Já existe um processo em andamento.")
@@ -1298,8 +1393,168 @@ class App(object):
             self.cancel.clear()
             self.run_ev.set()
             self.scan_info = {"files": 0, "dirs": 0, "bytes": 0, "current": ""}
-            self.phase = "scanning"
+            if reaproveitar and self.restaurar_varredura():
+                self.phase = "scanned"
+                restaurado = True
+            else:
+                self.scan_quando = time.time()
+                self.phase = "scanning"
+        if restaurado:
+            try:
+                self.iniciar_medicao()
+            except Exception:
+                pass
+            return "restaurado"
         threading.Thread(target=self._scan_thread, daemon=True).start()
+        return "varrendo"
+
+    # ------------------------------------------------------------------ varredura guardada e varredura única (Gerenciamento + Seleção)
+    @staticmethod
+    def snap_arquivo():
+        d = os.path.dirname(DADOS._idx_arquivo()) if DADOS else tempfile.gettempdir()
+        return os.path.join(d, "destrava_selecao_%s.json.gz" % getattr(os, "getuid", lambda: 0)())
+
+    @staticmethod
+    def _fontes_chave(srcs):
+        return [[s.get("path") or "", s.get("kind") or "", s.get("letter") or ""] for s in srcs or []]
+
+    def salvar_varredura(self, pronta=False):
+        """Grava a lista da Seleção (com o que está marcado e o espelhar/ordenar de cada pasta). Só depois da varredura e antes da cópia.
+        pronta: a varredura acabou de montar a lista e ainda vai anunciar "scanned"."""
+        if not self.persistir:
+            return False
+        with self.lock:
+            if (self.phase != "scanned" and not pronta) or not self.items or not self.cfg or any(it.status for it in self.items):
+                return False
+            d = {"v": SNAP_VERSAO, "build": BUILD, "quando": self.scan_quando or time.time(), "fontes": self._fontes_chave(self.cfg.get("sources")),
+                 "campos": SNAP_CAMPOS, "itens": [[getattr(it, k, None) for k in SNAP_CAMPOS] for it in self.items],
+                 "ign_dirs": self.ign_dirs, "ign_reais": self.ign_reais, "ign_dirs_total": self.ign_dirs_total,
+                 "extras": self.extras, "extras_planos": self.extras_planos, "layout_modo": self.layout_modo, "scan_info": self.scan_info}
+        arq = self.snap_arquivo()
+        tmp = arq + ".novo"
+        try:
+            with gzip.open(tmp, "wt", encoding="utf-8", compresslevel=3) as fh:
+                json.dump(d, fh, separators=(",", ":"))  # ASCII: nome de arquivo com bytes inválidos (Windows) não quebra a gravação
+            try:
+                os.chmod(tmp, 0o600)  # nomes de arquivos do cliente: só o usuário lê
+            except OSError:
+                pass
+            os.replace(tmp, arq)
+            return True
+        except (OSError, TypeError, ValueError):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            registrar_erro("guardar a varredura")
+            return False
+
+    def agendar_salvar(self, atraso=2.0):
+        """Depois de marcar, desmarcar ou escolher espelhar/ordenar: grava uma vez só quando o técnico para de clicar."""
+        if not self.persistir:
+            return
+        if self._snap_timer:
+            self._snap_timer.cancel()
+        self._snap_timer = threading.Timer(atraso, self.salvar_varredura)
+        self._snap_timer.daemon = True
+        self._snap_timer.start()
+
+    def apagar_varredura(self):
+        if self._snap_timer:
+            self._snap_timer.cancel()
+        try:
+            os.remove(self.snap_arquivo())
+        except OSError:
+            pass
+
+    def restaurar_varredura(self):
+        """Volta com a varredura guardada se for das mesmas origens e da mesma versão do programa. Chamada com self.lock."""
+        if not self.persistir or not self.cfg:
+            return False
+        try:
+            with gzip.open(self.snap_arquivo(), "rt", encoding="utf-8") as fh:
+                d = json.load(fh)
+        except (OSError, ValueError, EOFError):
+            return False
+        if d.get("v") != SNAP_VERSAO or d.get("build") != BUILD or d.get("fontes") != self._fontes_chave(self.cfg.get("sources")) \
+                or tuple(d.get("campos") or ()) != SNAP_CAMPOS:
+            return False
+        items = []
+        for row in d.get("itens") or []:
+            it = Item()
+            for k, v in zip(SNAP_CAMPOS, row):
+                setattr(it, k, tuple(v) if k == "date" and isinstance(v, list) else v)
+            items.append(it)
+        if self.dest_root:  # destino escolhido depois e dentro da origem: o backup não entra nele mesmo
+            items = [it for it in items if not _dentro(it.src or "", self.dest_root)]
+        self.items = items
+        self.ign_dirs = [tuple(x) for x in d.get("ign_dirs") or []]
+        self.ign_reais = [tuple(x) for x in d.get("ign_reais") or []]
+        self.ign_dirs_total = int(d.get("ign_dirs_total") or 0)
+        self.extras = list(d.get("extras") or [])
+        self.extras_planos = [tuple(x) for x in d.get("extras_planos") or []]
+        self.layout_modo = d.get("layout_modo") or self.layout_modo
+        self.scan_info = d.get("scan_info") or self.scan_info
+        self.scan_quando = float(d.get("quando") or 0)
+        self.log("Varredura de %s reaproveitada: %d arquivos (nada foi lido de novo)." % (time.strftime("%d/%m %H:%M", time.localtime(self.scan_quando)), len(items)))
+        return True
+
+    def _fontes_locais(self):
+        """Alguma origem é o disco deste computador (onde o Gerenciamento varre)?"""
+        casa = os.path.realpath(os.path.expanduser("~"))
+        raiz = os.path.realpath(DADOS.raiz_local()) if DADOS else ""
+        for s in (self.cfg or {}).get("sources") or []:
+            p = os.path.realpath(s.get("path") or "")
+            if p == raiz or _dentro(casa, p) or _dentro(p, casa):
+                return True
+        return False
+
+    def encadear_selecao(self):
+        """O Gerenciamento terminou de varrer: a Seleção deste computador sai junto (uma varredura vale para os dois modos).
+        Não mexe em backup já em cópia; sem origem escolhida, usa os sistemas encontrados, como a Seleção faria."""
+        if not self.persistir:
+            return False
+        try:
+            if TERMO and FICHA:
+                TERMO.exigir(FICHA.machine_id_cache(), "backup")
+        except Exception:
+            return False
+        try:
+            with self.lock:
+                if self.phase not in ("idle", "scanned", "error") or self.busy() or any(it.status for it in self.items):
+                    return False
+                if not (self.cfg or {}).get("sources"):
+                    fontes = [s for s in list_sources() if s["kind"] in ("windows", "linux", "mac")]
+                    if not fontes:
+                        return False
+                    self.set_config({"sources": [{"path": s["path"], "kind": s["kind"], "letter": s.get("letter") or "C", "label": s.get("label", "")} for s in fontes],
+                                     "dest": "", "folder": ""})
+                elif not self._fontes_locais():
+                    return False  # o backup é de outro disco: a varredura deste computador não diz nada sobre ele
+                self.encadeado = True
+                self.start_scan()
+            return True
+        except Exception:
+            self.encadeado = False
+            registrar_erro("varrer a Seleção depois do Gerenciamento")
+            return False
+
+    def encadear_gerenciamento(self):
+        """A Seleção terminou de varrer este computador: o Gerenciamento sai junto, se o índice dele é mais velho que esta varredura."""
+        if not self.persistir or not DADOS or not self._fontes_locais():
+            return False
+        try:
+            if DADOS.ST.get("fase") == "varrendo":
+                return False
+            ie = DADOS.indice_estado()
+            if ie.get("existe") and not ie.get("parcial") and ie.get("quando", 0) >= self.scan_quando - 1800:
+                return False  # varrido há menos de meia hora antes desta: ainda vale
+            ENCADEADO["dados"] = True
+            DADOS.iniciar_varredura(int(ie.get("idle_dias") or 90), int(ie.get("min_mb") or 100))
+            return True
+        except Exception:
+            ENCADEADO["dados"] = False
+            return False
 
     def make_item(self, real, disp, name, st, local, ctx="", marca=None, raiz=""):
         nuvem = bool(getattr(st, "st_file_attributes", 0) & CLOUD_ATTRS) if IS_WIN else bool(getattr(st, "st_flags", 0) & 0x40000000)
@@ -1338,7 +1593,7 @@ class App(object):
         dentro_n = dentro.replace("\\", "/")
         it.quem, it.pk = local, pasta_chave(local, dentro_n)
         segs = lambda t: "/".join(safe_seg(x) for x in t.split("/") if x)
-        app = self._app_conhecido(dentro_n, ctx) if ctx in ("winuser", "linuxuser") else None
+        app = self._app_conhecido(dentro_n, ctx) if ctx in ("winuser", "linuxuser", "macuser") else None
         if app and act != "ignorar":
             cat, act, mot, marcado = "Dados_de_apps", "copiar", "Dados do %s (e-mail, contatos, notas)" % app[0].replace("_", " "), True
             it.rel = "%s/Dados_de_apps/%s/%s" % (loc, app[0], segs(app[1]))
@@ -1350,7 +1605,7 @@ class App(object):
             cat, mot, marcado = "Ocultos", "Arquivo oculto (%s)" % cat, False
             it.rel = "%s/Ocultos/%s" % (loc, segs(dentro_n))
         elif cat != "Nuvem" and eh_whatsapp(disp, name):
-            dono = local.split("/")[-1] if ctx in ("winuser", "linuxuser") and local else ""
+            dono = local.split("/")[-1] if ctx in ("winuser", "linuxuser", "macuser") and local else ""
             local = it.local = "WhatsApp (%s)" % dono if dono else "WhatsApp"  # o WhatsApp de cada usuário vira um "usuário" à parte
             mot = "WhatsApp (%s)" % cat
             it.rel = build_rel(local, cat, date, name, ext)
@@ -1636,6 +1891,7 @@ class App(object):
                 self.extras.extend(pl[0] for pl in planos)
                 self.extras_planos.extend(planos)
             self.log("Incluídas no backup: %s (%d arquivos, %s)." % (", ".join(inc["pastas"]), len(novos), fmt_bytes(inc["bytes"])))
+            self.salvar_varredura()  # com as pastas incluídas, antes de a tela saber que acabou
         except Cancelled:
             inc["erro"] = "cancelado"
         except Exception as e:
@@ -1651,6 +1907,7 @@ class App(object):
             self.items = [it for it in self.items if not (it.ctx == "extra" and _dentro(it.src, p))]
             self.extras = [q for q in self.extras if not _dentro(q, p)]
             self.extras_planos = [pl for pl in self.extras_planos if not _dentro(pl[0], p)]
+        self.agendar_salvar()
         return {"ok": True}
 
     # ------------------------------------------------------------------ onde está o resto do disco
@@ -1675,7 +1932,7 @@ class App(object):
                 unicos.append(a)
         discos, vistos = [], set()
         for src in (self.cfg or {}).get("sources", []):
-            if src["kind"] in ("windows", "linux") or os.path.ismount(src["path"]):
+            if src["kind"] in ("windows", "linux", "mac") or os.path.ismount(src["path"]):
                 total, livre = disk_usage(src["path"])
                 if total and (total, livre) not in vistos:
                     vistos.add((total, livre))
@@ -1686,30 +1943,84 @@ class App(object):
         self.medicao = {"rodando": True, "pct": 0, "total": sum(d[0] for d in discos), "usado": sum(d[1] for d in discos), "achado": achado,
                         "marcado": sum(it.size for it in self.items if it.inc), "fora": [], "grupos": {"Arquivos do sistema": sis_lidos} if sis_lidos else {}, "resto": 0, "parcial": False,
                         "desconto": dentro_sis}
-        threading.Thread(target=self._medir_thread, args=(unicos, self.med_parar), daemon=True).start()
+        self.medicao["regioes"] = {}
+        self.medicao["so"] = ""
+        raizes = []
+        for src in (self.cfg or {}).get("sources", []):
+            if src["kind"] == "mac":
+                raizes.append((src["path"], "mac"))
+            elif src["kind"] in ("windows", "linux"):
+                self.medicao["so"] = DADOS.so_nome(src["kind"]) if DADOS else ""
+            elif DADOS and _dentro(os.path.expanduser("~"), src["path"]) or DADOS and _dentro(src["path"], os.path.expanduser("~")):
+                raizes.append((DADOS.raiz_local(), DADOS.so_local()))  # pasta pessoal deste computador: o disco é o daqui
+        if raizes and DADOS:
+            self.medicao["so"] = DADOS.so_nome(raizes[0][1])
+        threading.Thread(target=self._medir_thread, args=(unicos, self.med_parar, raizes[:1]), daemon=True).start()
+
+    def faixas_disco(self):
+        """Faixas do cockpit (as mesmas do Gerenciamento): o que a varredura achou, por categoria, mais o que foi medido fora
+        dela (pastas puladas e, no Mac, Applications/System). O que ninguém mediu vira Dados do Sistema quando a medição termina."""
+        m = self.medicao or {}
+        fx = {k: 0 for k, _, _ in CLS.FAIXAS}
+        for it in self.items:
+            f = "dados" if it.act == "ignorar" else CLS.BACKUP_FAIXA.get(it.cat, "outros")
+            if f:
+                fx[f] += it.size
+        for x in m.get("fora") or []:
+            fx[faixa_fora(x["caminho"], x["motivo"])] += x["bytes"]
+        for k, v in (m.get("regioes") or {}).items():
+            fx[k] += v
+        fx["apps"] = max(0, fx["apps"] - (m.get("desconto") or 0))  # bancos de sistemas já contados como itens (Sistemas), e estão dentro de Program Files
+        usado = m.get("usado") or 0
+        soma = sum(fx.values())
+        resto = max(0, usado - soma)
+        if not m.get("rodando"):
+            fx["dados"] += resto
+            resto = 0
+        return {"faixas": fx, "resto": resto, "medindo": bool(m.get("rodando")), "so": m.get("so") or ""}
 
     def parar_medicao(self):
         ev = getattr(self, "med_parar", None)
         if ev:
             ev.set()
 
-    def _medir_thread(self, alvos, parar):
+    def _medir_thread(self, alvos, parar, raizes=()):
         m = self.medicao
-        ate = time.time() + 240
+        # progresso em passos: cada região de sistema (Applications, System…) e cada pasta pulada é um passo, com prazo próprio
+        regs = sum(len(DADOS.regioes_fora(r, so)) for r, so in raizes) if DADOS else 0
+        passos = max(1, regs + len(alvos))
+        m["estimadas"] = []
+        feitos = 0
+        for raiz, so in raizes:  # Applications, System… (Mac): não estão em pasta pulada nenhuma
+            if parar.is_set() or not DADOS:
+                break
+            base = feitos
+
+            def prog(p, base=base):
+                m["pct"] = int((base + p.get("i", 0)) * 100 / passos)
+                m["atual"] = p.get("atual") or ""
+                m["medido_sis"] = p.get("medido", 0)
+            u = DADOS.medicao_fora(raiz, so, parar, prog)
+            feitos += len(DADOS.regioes_fora(raiz, so))
+            if u:
+                m["regioes"] = u["fora"]
+                m["estimadas"] += u["estimadas"]
+                m["parcial"] = m["parcial"] or bool(u["estimadas"])
         for i, (real, disp, motivo) in enumerate(alvos):
             if parar.is_set():
                 break
-            b, n, ok = _medir_pasta(real, parar, ate)
-            if not ok:
+            m["atual"] = disp
+            m["pct"] = int((feitos + i) * 100 / passos)
+            b, n, ok = _medir_pasta(real, parar, time.time() + 60)
+            if not ok and not parar.is_set():
                 m["parcial"] = True
+                m["estimadas"].append(disp)
             if b:
                 grupo = next((g for k, g in GRUPO_FORA if k.lower() in motivo.lower()), "Outros pulados")
-                m["fora"].append({"caminho": disp, "real": real, "motivo": motivo, "bytes": b, "arquivos": n, "grupo": grupo, "explica": explica_pasta(real)})
+                m["fora"].append({"caminho": disp, "real": real, "motivo": motivo, "bytes": b, "arquivos": n, "grupo": grupo, "explica": explica_pasta(real), "estimado": not ok})
                 m["grupos"][grupo] = m["grupos"].get(grupo, 0) + b
-            m["pct"] = int((i + 1) * 100 / max(1, len(alvos)))
-            if time.time() > ate:
-                m["parcial"] = True
-                break
+        m["pct"] = 100
+        m["atual"] = ""
         if m["grupos"].get("Windows e programas"):
             m["grupos"]["Windows e programas"] = max(0, m["grupos"]["Windows e programas"] - m["desconto"])
         medido = sum(m["grupos"].values())
@@ -1733,12 +2044,16 @@ class App(object):
             self.items = items
             for it in items:  # varrer de novo no mesmo backup mantém o modo escolhido (as escolhas pasta a pasta recomeçam)
                 self._aplicar_copia(it)
+            self.salvar_varredura(pronta=True)  # guardada antes de a tela saber que acabou
             self.phase = "scanned"
             self.log("Escaneamento concluído: %d arquivos, %d pastas ignoradas." % (len(items), self.ign_dirs_total))
             try:
                 self.iniciar_medicao()
             except Exception:
                 pass
+            encadeado, self.encadeado = self.encadeado, False
+            if not encadeado:
+                self.encadear_gerenciamento()
         except Cancelled:
             self.phase = "idle"
             self.log("Escaneamento cancelado.")
@@ -1802,6 +2117,14 @@ class App(object):
         r = self.layout_resumo()
         return {"modo": r["modo"] or "ordenado", "nome": r["nome"] or "Ordenado", "espelhados": r["espelhar"]["n"], "ordenados": r["ordenar"]["n"]}
 
+    def destino(self, i):
+        """Onde um arquivo fica no backup em cada jeito de guardar (a prévia da faixa de baixo da Seleção)."""
+        if not 0 <= i < len(self.items):
+            raise ValueError("Arquivo não encontrado na lista: escaneie de novo.")
+        it = self.items[i]
+        return {"origem": it.disp, "espelho": rel_espelho(it) if it.eleg else it.rel, "ordenado": it.rel0 if it.eleg else it.rel,
+                "atual": it.rel, "copia": self.copia_de(it) if it.eleg else "fixo"}
+
     def layout_resumo(self):
         """Quanto vai espelhado e quanto ordenado (só o marcado para o backup) e um exemplo real de como fica."""
         r = {"modo": self.layout_modo, "nome": LAYOUT_NOME.get(self.layout_modo, ""), "editavel": self.layout_editavel(),
@@ -1827,7 +2150,10 @@ class App(object):
         """[(nome, ativo, teste(it), valores(it) ou None)]. "valores" alimenta as facetas (contagem por opção)."""
         hoje = datetime.date.today()
         tipo = lambda it: tipo_de(nome_de(it.disp))
+        grupo = lambda it: CLS.grupo_backup(it.cat, it.act)
+        pk = lambda it: it.pk or it.local0 or it.local  # a mesma chave de pasta de subpastas()
         G = [("cat", bool(f["cat"]), lambda it: it.cat in f["cat"], lambda it: (it.cat,)),
+             ("grupo", bool(f["grupo"]), lambda it: grupo(it) in f["grupo"], lambda it: (grupo(it),)),
              ("tipo", bool(f["tipo"]), lambda it: tipo(it) in f["tipo"], lambda it: (tipo(it),)),
              ("status", bool(f["status"]), lambda it: self.final_status(it) in f["status"], lambda it: (self.final_status(it),)),
              ("inc", f["inc"] is not None, lambda it: bool(it.inc) == f["inc"], lambda it: ("1" if it.inc else "0",)),
@@ -1840,7 +2166,7 @@ class App(object):
               lambda it: faixa_tam(it.size) in f["tam"] or ((f["smin"] is not None or f["smax"] is not None) and (f["smin"] is None or it.size >= f["smin"]) and (f["smax"] is None or it.size <= f["smax"])),
               lambda it: (faixa_tam(it.size),)),
              ("act", bool(f["act"]), lambda it: it.act == f["act"], None),
-             ("pasta", bool(f["pasta"]), lambda it: any(it.pk == p or it.pk.startswith(p + "/") for p in f["pasta"]), None),
+             ("pasta", bool(f["pasta"]), lambda it: any(pk(it) == p or (not f["direto"] and pk(it).startswith(p + "/")) for p in f["pasta"]), None),  # direto: só o que está na própria pasta (o Finder)
              ("copia", bool(f["copia"]), lambda it: it.eleg and self.copia_de(it) == f["copia"],
               lambda it: (self.copia_de(it) if it.eleg else "fixo",)),
              ("q", bool(f["q"]), lambda it: f["q"] in it.disp.lower() or f["q"] in tipo(it).lower(), None)]
@@ -1850,7 +2176,7 @@ class App(object):
         f = f if "facets" in f else parse_filtro(f)
         return all(teste(it) for _, ativo, teste, _v in self._grupos(f) if ativo)
 
-    def filtrar(self, f, facetas=False):
+    def filtrar(self, f, facetas=False, fbytes=None):
         """Índices que passam no filtro e, se pedido, as facetas: cada opção contada com os OUTROS filtros ativos (marcar PDF não zera Imagem)."""
         G = self._grupos(f)
         ativos = [g for g in G if g[1]]
@@ -1869,6 +2195,9 @@ class App(object):
                 d = fac[g[0]]
                 for v in g[3](it):
                     d[v] = d.get(v, 0) + 1
+                    if fbytes is not None:
+                        b = fbytes.setdefault(g[0], {})
+                        b[v] = b.get(v, 0) + it.size
         return idx, fac
 
     def select(self, d):
@@ -1941,7 +2270,8 @@ class App(object):
 
     ORDEM = {"nome": lambda it: nome_de(it.disp).lower(), "tipo": lambda it: (tipo_de(nome_de(it.disp)), nome_de(it.disp).lower()),
              "data": lambda it: it.date or (0, 0, 0), "tamanho": lambda it: it.size, "caminho": lambda it: it.disp.lower(),
-             "categoria": lambda it: PRIORIDADE.index(it.cat) if it.cat in PRIORIDADE else len(PRIORIDADE)}
+             "categoria": lambda it: PRIORIDADE.index(it.cat) if it.cat in PRIORIDADE else len(PRIORIDADE),
+             "grupo": lambda it: (CLS.grupo_backup(it.cat, it.act), nome_de(it.disp).lower()), "parado": lambda it: it.mtime or 0}
 
     def files(self, q):
         """Lista do backup: filtro, busca (caminho ou tipo), ordem (ord/dir), página e os totais do filtro. limit=0: só os totais."""
@@ -1949,7 +2279,8 @@ class App(object):
         f = {k: (v[0] if isinstance(v, list) else v) for k, v in q.items()}
         off = max(0, int(f.get("offset") or 0))
         lim = max(0, min(int(f.get("limit", 200)), 500))
-        idx, fac = self.filtrar(flt, flt["facets"])
+        fb = {}
+        idx, fac = self.filtrar(flt, flt["facets"], fb)
         sel = [self.items[i] for i in idx if self.items[i].inc]
         chave = (lambda it: self.final_status(it)) if f.get("ord") == "situacao" else self.ORDEM.get(f.get("ord") or "")
         if chave and lim:
@@ -1961,12 +2292,13 @@ class App(object):
             out.append([i, it.disp, it.size, ("%04d-%02d-%02d" % it.date) if it.date else "", it.cat, it.act, 1 if it.inc else 0,
                         it.err or it.motivo, self.final_status(it), it.tags, nome, tipo_de(nome), it.local,
                         "" if it.nuvem or not DADOS else (DADOS.tipo_previa(it.src) or ""),
-                        self.copia_de(it) if it.eleg else "", it.rel])
+                        self.copia_de(it) if it.eleg else "", it.rel, CLS.grupo_backup(it.cat, it.act), int(it.mtime or 0)])
         r = {"total": len(idx), "rows": out, "bytes": sum(self.items[i].size for i in idx), "sel_n": len(sel), "sel_bytes": sum(it.size for it in sel)}
         if str(f.get("pastas") or "") in ("1", "true"):
             r["pastas"] = self.subpastas(idx, (flt["pasta"] or [""])[0])
         if fac is not None:
             r["facets"] = fac
+            r["facets_bytes"] = fb
         return r
 
     def subpastas(self, idx, base=""):
@@ -1997,6 +2329,41 @@ class App(object):
         return {"base": base, "migalhas": [x for x in base.split("/") if x], "pastas": sorted(sub.values(), key=lambda x: -x["bytes"]),
                 "soltos": soltos}
 
+    def ponte_pasta(self, d):
+        """A mesma pasta nos dois modos do Finder (BKP Mode): nó do Gerenciamento <-> chave da Seleção (pk). Sem correspondência: a raiz."""
+        barra = lambda p: str(p).replace("\\", "/").rstrip("/")
+        if d.get("de") == "dados":
+            try:
+                n = DADOS.NOS.get(int(d.get("no") or 0)) if DADOS else None
+            except (TypeError, ValueError):
+                n = None
+            if not n:
+                return {"chave": ""}
+            base = barra(n["path"]) + "/"
+            for it in self.items:
+                pk = it.pk or it.local0 or it.local
+                if not pk or not barra(it.src).startswith(base):
+                    continue
+                meio = barra(os.path.dirname(it.src))[len(base) - 1:].strip("/")  # pastas entre a pasta e o arquivo
+                k = len(meio.split("/")) if meio else 0
+                partes = pk.split("/")
+                if k < len(partes):
+                    return {"chave": "/".join(partes[:len(partes) - k])}
+            return {"chave": ""}
+        chave = str(d.get("chave") or "").strip("/")
+        if not chave or not DADOS:
+            return {"no": 0}
+        for it in self.items:
+            pk = it.pk or it.local0 or it.local
+            if pk == chave or pk.startswith(chave + "/"):
+                p = os.path.dirname(it.src)
+                for _ in range(pk.count("/") - chave.count("/")):
+                    p = os.path.dirname(p)
+                if DADOS.dono_idx(p)[1] is None:  # fora das pastas que o Gerenciamento mostra
+                    return {"no": 0}
+                return {"no": DADOS.no_de(p)}
+        return {"no": 0}
+
     def previa(self, i):
         """Prévia de um arquivo da origem pelo índice da lista: a tela nunca manda caminho. Só na nuvem não abre (baixaria o arquivo)."""
         try:
@@ -2023,12 +2390,13 @@ class App(object):
                 b += it.size
                 if it.size > big:
                     big = it.size
-        total, free = disk_usage(self.cfg["dest"]) if self.cfg else (0, 0)
-        fs = fs_type(self.cfg["dest"]) if self.cfg else None
-        cabe = b * 1.02 + 256 * 1024 * 1024 <= free
+        dst = (self.cfg or {}).get("dest") or ""
+        total, free = disk_usage(dst) if dst else (0, 0)
+        fs = fs_type(dst) if dst else None
+        cabe = b * 1.02 + 256 * 1024 * 1024 <= free if dst else None  # sem destino ainda: não dá para dizer se cabe
         return {"sel_n": n, "sel_bytes": b, "free": free, "total": total, "fs": fs, "biggest": big, "cabe": cabe,
                 "fat32_problema": fs in ("vfat", "msdos") and big > 4 * 1024 ** 3 - 1,
-                "solucao": "" if cabe else "Faltam %s: desmarque categorias (Programas, Ocultos, Vídeos…) ou use um disco maior." % fmt_bytes(b * 1.02 + 256 * 1024 * 1024 - free)}
+                "solucao": "" if cabe is not False else "Faltam %s: desmarque categorias (Programas, Ocultos, Vídeos…) ou use um disco maior." % fmt_bytes(b * 1.02 + 256 * 1024 * 1024 - free)}
 
     def final_status(self, it):
         if it.inc:
@@ -2058,6 +2426,8 @@ class App(object):
                 raise Busy("Já existe um processo em andamento.")
             if not self.items:
                 raise ValueError("Escaneie antes de copiar.")
+            if not self.dest_root:
+                raise ValueError("Escolha o destino do backup antes de copiar.")
             t = self.totals()
             if not t["cabe"]:
                 raise ValueError("Não cabe no destino: precisa de %s e há %s livres." % (fmt_bytes(t["sel_bytes"]), fmt_bytes(t["free"])))
@@ -2435,11 +2805,14 @@ class App(object):
         with self.lock:
             if self.busy():
                 raise Busy("Aguarde o processo atual terminar.")
-            if self.phase not in ("verified", "done"):
+            if self.phase not in ("verified", "done") and not (SU["ligado"] and self.phase == "copied"):
                 raise ValueError("Rode a verificação antes de concluir.")
+            if self.phase == "copied":
+                self.log("SUPERUSUÁRIO: verificação pulada; o certificado sai como não verificado.")
             self.phase = "finishing"
         try:
             self._write_mapa()
+            self._relatorio_pdf()
             self.phase = "done"
             self.finished = True
             try:
@@ -2447,7 +2820,7 @@ class App(object):
                     c = self.cert
                     guardado = self._guardar_mapa(c["codigo"])
                     FICHA.hist_add(FICHA.machine_id_cache(), "backup", "Backup %s: %d arquivos (%s) · código %s" % ("sem falhas" if c["status"] == "sem_falhas" else "com ressalvas", c["copiados"], fmt_bytes(c["bytes"]), c["codigo"]),
-                                   {"destino": self.dest_root, "codigo": c["codigo"], "cliente": c.get("cliente", ""), "status": c["status"], "bytes": c["bytes"],
+                                   {"destino": self.dest_root, "codigo": c["codigo"], "cliente": c.get("cliente", ""), "status": c["status"], "bytes": c["bytes"], "copiados": c["copiados"],
                                     "tecnico": c.get("tecnico", ""), "tecnico_perfil": c.get("tecnico_perfil") or {}, "mapa_registro": guardado})
             except Exception:
                 pass
@@ -2457,15 +2830,37 @@ class App(object):
             self.phase = "error"
             raise
 
+    def _relatorio_pdf(self):
+        """Relatório em PDF ao lado do Mapa (Mapa/Relatorio-backup.pdf), feito das mesmas linhas de dados.js e da escolha
+        de programas. Um erro aqui não atrapalha o fim do backup: fica no registro."""
+        try:
+            import relatorio_pdf as RPDF
+            with open(os.path.join(self.mapa_dir, "dados.js"), encoding="utf-8") as fh:
+                txt = fh.read()
+            d = json.loads(txt[txt.index("=") + 1:].rstrip().rstrip(";"))
+            progs = []
+            if FICHA:
+                mid = FICHA.machine_id_cache()
+                rec = FICHA.receita_valida(mid) or {}
+                por = {g.get("nome"): g for g in (FICHA.programas_de(mid) or {}).get("itens") or []}
+                for i in rec.get("itens") or []:
+                    g = por.get(i.get("nome"), {})
+                    ic = os.path.join(FICHA.pasta(mid), "icones", PROG.nome_icone(i.get("nome", "")) + ".png")
+                    progs.append({"nome": i.get("nome", ""), "nota": i.get("nota", ""), "fabricante": g.get("fabricante", ""), "auto": bool(g.get("ids")),
+                                  "icone": ic if os.path.isfile(ic) else ""})
+            self.cert["relatorio_pdf"] = RPDF.gerar(os.path.join(self.mapa_dir, RELATORIO_PDF), d["meta"], d["f"], progs)
+            self.log("Relatório em PDF gerado: %s" % self.cert["relatorio_pdf"])
+        except Exception:
+            self.log("Não deu para gerar o relatório em PDF: " + traceback.format_exc().strip().splitlines()[-1])
+
     def retomar(self, mid):
         """Volta ao backup que ficou parado (programa fechado depois da verificação): recarrega o certificado do Mapa e
         só segue se o disco do backup está conectado e os arquivos continuam lá, com o mesmo tamanho."""
         if not FICHA or mid != FICHA.machine_id_cache():
             raise ValueError("Só dá para retomar o backup da máquina em que o Destrava! está aberto.")
-        rec = lambda: 6 if FICHA.receita_valida(mid) else 5
         with self.lock:
             if self.phase in ("verified", "done") and self.cert and self.cert.get("maquina_id") == mid:
-                return {"ok": True, "passo": rec() if self.phase == "done" else 5, "codigo": self.cert.get("codigo", "")}
+                return {"ok": True, "passo": 2 if self.phase == "done" else 1, "codigo": self.cert.get("codigo", "")}  # passos: 0 Selecionar, 1 Copiar, 2 Concluído
             if self.busy():
                 raise Busy("Já existe um processo em andamento.")
             ultimo = next((h for h in reversed(FICHA.hist_get(mid)) if h.get("tipo") == "backup"), None)
@@ -2493,13 +2888,15 @@ class App(object):
                 raise ValueError("%d arquivo(s) do backup sumiram ou mudaram (ex.: %s). Não é seguro formatar: encerre como incompleto e refaça o backup." % (len(ruins), ruins[0]))
             self.reset()
             self.dest_root, self.mapa_dir, self.cert = raiz, mp, cert
+            if os.path.isfile(os.path.join(mp, RELATORIO_PDF)):
+                cert["relatorio_pdf"] = os.path.join(mp, RELATORIO_PDF)
             self.checagens = meta.get("checagens") or []
             self.layout_modo = (meta.get("layout") or {}).get("modo") or self.layout_modo
             self.verified_mode = "completa" if str(meta.get("verificacao", "")).startswith("SHA-256") else "rapida"
             self.same_disk = any(str(c.get("titulo", "")).startswith("Destino no MESMO disco") for c in self.checagens)
             self.phase, self.finished = "done", True
             self.log("Backup retomado do Mapa guardado (código %s): %d arquivos conferidos." % (cert.get("codigo", ""), sum(1 for e in d.get("f") or [] if e[5] == "ok")))
-        return {"ok": True, "passo": rec(), "codigo": cert.get("codigo", "")}
+        return {"ok": True, "passo": 2, "codigo": cert.get("codigo", "")}
 
     def _guardar_mapa(self, codigo):
         """Cópia do Mapa no registro da máquina (pendrive), para abrir mesmo sem o disco do backup."""
@@ -2542,7 +2939,7 @@ class App(object):
         status = "sem_falhas" if ressalvas == 0 else "ressalvas"
         meta = {
             "pc": cfg["equip"], "data": datetime.date.today().isoformat(), "raiz": self.dest_root, "dstRel": True,
-            "verificacao": ("SHA-256 (completa, %s)" % disco.METODO) if self.verified_mode == "completa" else "Tamanho (rápida)",
+            "verificacao": ("SHA-256 (completa, %s)" % disco.METODO) if self.verified_mode == "completa" else "Tamanho (rápida)" if self.verified_mode else "Não verificado (pulado no modo Superusuário)",
             "campos": ["origem", "destino_relativo", "categoria", "tamanho_bytes", "data", "situacao", "etiquetas", "usuario", "motivo", "sha256", "mtime_epoch", "causa"],
             "checagens": self.checagens, "maes": sorted({"/".join(it.rel.split("/")[:2]) for it in self.items if it.inc and it.rel.startswith(PASTA_ORIGEM + "/")}),
             "layout": self._layout_registro(),
@@ -2632,15 +3029,22 @@ class App(object):
             return False, "Falta a etapa “O que manter”: escolha os programas a reinstalar (ou confirme que não vai manter nenhum)."
         return True, ""
 
-    def firmware_reboot(self):
+    def firmware_reboot(self, forcar=False):
         ok, why = self.firmware_gate()
         if not ok:
-            raise ValueError(why)
+            if not (forcar and SU["ligado"]):
+                raise ValueError(why)
+            self.log("SUPERUSUÁRIO: formatação liberada apesar do bloqueio: %s" % why)
+            try:
+                if FICHA:
+                    FICHA.hist_add(FICHA.machine_id_cache(), "superusuario", "Bloqueio de formatar ignorado no modo Superusuário: %s" % why)
+            except Exception:
+                pass
         if sys.platform == "darwin":
             raise ValueError("No Mac este botão não é suportado: reinicie segurando Command+R (Recuperação) ou Option (escolher disco).")
         try:
             if FICHA:
-                FICHA.hist_add(FICHA.machine_id_cache(), "formatacao", "Reinício para BIOS/UEFI solicitado para formatar (backup verificado, código %s)" % self.cert.get("codigo", ""))
+                FICHA.hist_add(FICHA.machine_id_cache(), "formatacao", "Reinício para BIOS/UEFI solicitado para formatar (%s, código %s)" % ("backup verificado" if ok else "liberado pelo Superusuário", (self.cert or {}).get("codigo", "")))
         except Exception:
             pass
         if os.environ.get("DD_TEST"):
@@ -2836,6 +3240,7 @@ Somos únicos. Somos diferentes. Somos D&D.
 # Ficha da máquina (Destrava!)
 # ----------------------------------------------------------------------------------------------
 FT = {"rodando": False, "etapa": "", "pct": 0, "erro": "", "o_que": "", "resultado": None}
+ICONES_BUSCANDO = {}  # máquina -> buscando os ícones dos programas por trás
 FT_LOCK = threading.Lock()
 
 
@@ -2873,7 +3278,7 @@ def atividades():
     fim: como cada fonte terminou da última vez (a tela usa na hora em que uma atividade some, para dizer se deu certo)."""
     out = []
     if FT["rodando"]:
-        out.append({"id": "ficha", "titulo": "Aplicando melhorias" if FT["o_que"] == "aplicar" else "Analisando a máquina", "detalhe": FT["etapa"],
+        out.append({"id": "ficha", "titulo": {"aplicar": "Aplicando melhorias", "programas": "Lendo os programas instalados"}.get(FT["o_que"], "Analisando a máquina"), "detalhe": FT["etapa"],
                     "pct": FT["pct"], "tela": "home"})
     bk = APP.andamento()
     if bk:
@@ -2897,9 +3302,18 @@ def atividades():
                     "info": "%d arquivos (%s)" % (inc.get("arquivos", 0), fmt_bytes(inc.get("bytes", 0))), "tela": "backup"})
     md = APP.medicao or {}
     if md.get("rodando"):
-        feito = sum(md.get("grupos", {}).values())
-        out.append({"id": "medicao", "titulo": "Medindo o restante do disco", "pct": md.get("pct", 0), "detalhe": "Windows, programas e caches: só para explicar o espaço usado",
+        feito = sum(md.get("grupos", {}).values()) + (md.get("medido_sis") or 0)
+        alvo = (md.get("usado") or 0) - (md.get("achado") or 0)  # o que a medição existe para explicar
+        pct = max(md.get("pct", 0), min(95, int(feito * 100 / alvo)) if alvo > 0 else 0, md.get("pct_max", 0))  # por bytes: não fica em 0% numa pasta enorme
+        md["pct_max"] = pct
+        out.append({"id": "medicao", "titulo": "Medindo o restante do disco", "pct": pct,
+                    "detalhe": ("Lendo %s…" % md["atual"]) if md.get("atual") else "Sistema, programas e caches: só para explicar o espaço usado",
                     "info": "%s medidos" % fmt_bytes(feito), "tela": "backup"})
+    elif DADOS and DADOS.FORA["rodando"]:
+        fp = DADOS.FORA["prog"] or {}
+        out.append({"id": "medicao", "titulo": "Medindo apps e sistema", "pct": fp.get("pct", 0),
+                    "detalhe": ("Lendo %s…" % fp["atual"]) if fp.get("atual") else "Fora das pastas dos usuários: só para explicar o espaço usado",
+                    "info": "%s medidos" % fmt_bytes(fp.get("medido", 0)), "tela": "dados"})
     cf = MAPA.CONF
     if cf.get("rodando"):
         out.append({"id": "conferencia", "titulo": "Conferindo o backup no disco", "pct": _pct(cf.get("feitos", 0), cf.get("total", 0)),
@@ -2943,6 +3357,150 @@ def ficha_aplicar(ids):
 # Servidor HTTP local
 # ----------------------------------------------------------------------------------------------
 APP = App()
+ENCADEADO = {"dados": False}  # varredura do Gerenciamento puxada pela Seleção: no fim não puxa a Seleção de volta
+
+
+def _gerenciamento_varreu():
+    if ENCADEADO["dados"]:
+        ENCADEADO["dados"] = False
+        return
+    APP.encadear_selecao()
+# Modo Superusuário (ligado na engrenagem): abre qualquer etapa e pula travas do fluxo. Tudo o que ele faz vai para o registro.
+SU = {"ligado": False}
+SU_CAMPOS_CERT = (("cliente", "Cliente"), ("tecnico", "Técnico"), ("equipamento", "Equipamento"), ("data", "Data"), ("hora", "Hora"), ("status", "Situação"))
+
+
+def exigir_su():
+    if not SU["ligado"]:
+        raise ValueError("Ligue o modo Superusuário em Configurações para fazer isto.")
+
+
+def modelo_rapido():
+    """Modelo comercial sem ficha (máquina ainda não analisada): Mac pelo hw.model, Linux pelo DMI. No Windows fica vazio
+    (pedir ao WMI demora): a ficha preenche depois."""
+    try:
+        if sys.platform == "darwin":
+            m = subprocess.run(["sysctl", "-n", "hw.model"], capture_output=True, text=True, timeout=3).stdout.strip()
+            return FICHA.MODELOS_MAC.get(m, m) if FICHA else m
+        if not IS_WIN:
+            ler = lambda n: open("/sys/class/dmi/id/" + n, encoding="utf-8", errors="replace").read().strip()
+            return (ler("sys_vendor") + " " + ler("product_name")).strip()
+    except Exception:
+        pass
+    return ""
+
+
+def identidade(para="dados", app=None):
+    """Quem é esta máquina para o cabeçalho do cockpit: nome, modelo, dono (particular ou cliente) e as contas do sistema."""
+    host = socket.gethostname()
+    if sys.platform == "darwin":  # o nome que a pessoa deu ao Mac ("MacBook Air de Ana"), não o de rede ("…local")
+        try:
+            host = subprocess.run(["scutil", "--get", "ComputerName"], capture_output=True, text=True, timeout=3).stdout.strip() or host
+        except Exception:
+            pass
+    out = {"host": host, "nome": host, "modelo": "", "dono": "", "dono_nome": "", "tecnico": "", "contas": []}
+    try:
+        mid = FICHA.machine_id_cache()
+        meta = FICHA.meta_ler(mid)
+        fichas = FICHA.listar_fichas(mid)
+        ult = FICHA.ler_ficha(mid, fichas[-1]) if fichas else None
+        out["modelo"] = (FICHA.modelo_comercial(ult) if ult else "") or modelo_rapido()
+        if out["modelo"] == host:
+            out["modelo"] = modelo_rapido()
+        out["nome"] = meta.get("nome") or host
+        st = TERMO.status(mid) if TERMO else {}
+        out.update(dono=st.get("dono", ""), dono_nome=st.get("terceiro_nome", ""), tecnico=(PERFIL.ler().get("nome") or st.get("tecnico") or "").strip())
+    except Exception:
+        out["modelo"] = out["modelo"] or modelo_rapido()
+    eu = os.path.basename(FICHA.user_home() if FICHA else os.path.expanduser("~"))
+    nomes = []
+    if para == "backup":
+        for src in ((app or APP).cfg or {}).get("sources", []):
+            nomes += detect_kind(src["path"])[1] if src["kind"] in ("windows", "linux", "mac") else [os.path.basename(src["path"].rstrip("/\\"))]
+    elif DADOS:
+        nomes = [u for u, _ in DADOS.homes()]
+    vistos = set()
+    for n in nomes:
+        if n and n not in vistos:
+            vistos.add(n)
+            out["contas"].append({"nome": n, "em_uso": n == eu})
+    return out
+
+
+def su_estado():
+    a = APP
+    return {"ligado": SU["ligado"], "admin": eh_admin(), "so": "mac" if sys.platform == "darwin" else "windows" if IS_WIN else "linux",
+            "phase": a.phase, "layout_modo": a.layout_modo, "layout_editavel": a.layout_editavel(), "verified_mode": a.verified_mode,
+            "mapa_dir": a.mapa_dir if os.path.isfile(os.path.join(a.mapa_dir or "", "certificado.json")) else ""}
+
+
+def su_certificado_ler():
+    exigir_su()
+    cj = os.path.join(APP.mapa_dir or "", "certificado.json")
+    if not os.path.isfile(cj):
+        raise ValueError("Ainda não há certificado gerado neste backup.")
+    with open(cj, encoding="utf-8") as fh:
+        c = json.load(fh)["cert"]
+    return {"campos": [{"id": k, "nome": n, "valor": c.get(k, "")} for k, n in SU_CAMPOS_CERT], "editado": c.get("editado") or [], "codigo": c.get("codigo", "")}
+
+
+def su_certificado_salvar(b):
+    """Corrige campos do certificado já emitido. Guarda cópia .bak dos originais e deixa a edição marcada no próprio
+    certificado (o código original não muda), para o cliente e o --verificar enxergarem que houve correção manual."""
+    exigir_su()
+    mp = APP.mapa_dir or ""
+    cj, dj = os.path.join(mp, "certificado.json"), os.path.join(mp, "dados.js")
+    if not (os.path.isfile(cj) and os.path.isfile(dj)):
+        raise ValueError("Ainda não há certificado gerado neste backup.")
+    with open(cj, encoding="utf-8") as fh:
+        cjson = json.load(fh)
+    with open(dj, encoding="utf-8") as fh:
+        dados = json.loads(fh.read().strip()[len("window.BKP="):].rstrip(";"))
+    cert, mudou = cjson["cert"], {}
+    for k, _ in SU_CAMPOS_CERT:
+        if k not in b:
+            continue
+        v = str(b[k]).strip()[:200]
+        if k == "status" and v not in ("sem_falhas", "ressalvas"):
+            raise ValueError("Situação inválida.")
+        if v != str(cert.get(k, "")):
+            mudou[k] = {"antes": cert.get(k, ""), "depois": v}
+            cert[k] = v
+    if not mudou:
+        return {"ok": True, "mudou": 0}
+    for p in (cj, dj):
+        bak = p + ".bak"
+        if not os.path.exists(bak):  # guarda só o original emitido
+            shutil.copyfile(p, bak)
+    cert.setdefault("editado", []).append({"quando": now_iso(), "por": "superusuário", "campos": mudou})
+    dados.setdefault("meta", {})["cert"] = cert
+    body = "window.BKP=" + json.dumps(dados, ensure_ascii=False, separators=(",", ":")) + ";"
+    with open(dj, "w", encoding="utf-8") as fh:
+        fh.write(body)
+    cert["base_hash"] = hashlib.sha256(body.encode("utf-8")).hexdigest()
+    cjson.update({"cert": cert, "dados_js_sha256": cert["base_hash"]})
+    with open(cj, "w", encoding="utf-8") as fh:
+        json.dump(cjson, fh, ensure_ascii=False, indent=1)
+    if APP.cert and APP.cert.get("codigo") == cert.get("codigo"):
+        APP.cert = cert
+    APP.log("SUPERUSUÁRIO: certificado %s editado (%s)." % (cert.get("codigo", ""), ", ".join(mudou)))
+    return {"ok": True, "mudou": len(mudou)}
+
+
+def dados_liberado(mid):
+    """Espaço que as limpezas desta máquina já devolveram ao disco, a partir do histórico (eventos antigos sem o campo `liberado` entram pelo resumo)."""
+    tot, n, ultima = 0, 0, ""
+    for e in FICHA.hist_get(mid):
+        if e.get("tipo") != "limpeza":
+            continue
+        x, r = e.get("extra") or {}, e.get("resumo", "")
+        if "liberado" in x:
+            lib = int(x["liberado"] or 0)
+        else:
+            lib = int(x.get("bytes") or 0) if ("removidos de vez" in r or "Lixeira esvaziada" in r or r.startswith("Arquivos movidos")) else 0
+        if lib > 0:
+            tot, n, ultima = tot + lib, n + 1, e.get("quando", "")
+    return {"bytes": tot, "n": n, "ultima": ultima}
 
 
 def dados_depois(tipo):
@@ -2959,7 +3517,8 @@ def dados_depois(tipo):
                 resumo = "%s: %d item(ns), %s para %s" % ("Arquivos movidos" if tipo == "mover" else "Arquivos copiados", res["itens"], fmt_bytes(moved), res.get("destino", ""))
             else:
                 resumo = "Offload: %d item(ns), %s copiados e conferidos para %s" % (res["itens"], fmt_bytes(moved), res.get("destino", ""))
-            FICHA.hist_add(mid, "limpeza", resumo, {"bytes": moved, "modo": res["modo"], "falhas": res["falhas"]})
+            lib = 0 if tipo == "copiar" or (tipo != "mover" and res["modo"] != "definitivo") else moved  # Lixeira só libera quando é esvaziada
+            FICHA.hist_add(mid, "limpeza", resumo, {"bytes": moved, "modo": res["modo"], "falhas": res["falhas"], "liberado": lib})
             TERMO.log_add("dados_" + tipo, mid, itens=res["itens"], bytes=moved, modo=res["modo"], falhas=res["falhas"])
         except Exception:
             pass
@@ -2968,6 +3527,13 @@ def dados_depois(tipo):
 
 if DADOS and FICHA:
     DADOS.set_helpers(physical_id=physical_id, fs_type=fs_type, user_home=FICHA.user_home)
+
+
+def ligar_varredura_unica():
+    """Só no programa de verdade (main): a varredura da Seleção fica guardada e cada modo, ao terminar de varrer, puxa o outro."""
+    APP.persistir = True
+    if DADOS:
+        DADOS.set_helpers(varredura_ok=_gerenciamento_varreu)
 MIME = {".html": "text/html; charset=utf-8", ".js": "application/javascript; charset=utf-8", ".svg": "image/svg+xml", ".csv": "text/csv; charset=utf-8",
         ".json": "application/json", ".png": "image/png", ".txt": "text/plain; charset=utf-8", ".log": "text/plain; charset=utf-8"}
 
@@ -3103,6 +3669,11 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError as e:
                 return self._json({"erro": str(e)}, 400)
             return self._arquivo(arq, mime, limite, pagina=(tipo == "pdf"))
+        if path == "/api/programas/icone":  # <img>: o token vem em ?t=
+            p = os.path.join(FICHA.pasta(FICHA.machine_id_cache()), "icones", PROG.nome_icone((q.get("nome") or [""])[0]) + ".png")
+            if not os.path.isfile(p):
+                return self._json({"erro": "sem ícone"}, 404)
+            return self._arquivo(p, "image/png")
         if path == "/api/dados/ver":  # <img>/<video> não mandam cabeçalho: o token vem em ?t=
             try:
                 arq, mime, tipo, limite = DADOS.previa((q.get("no") or [""])[0])
@@ -3204,21 +3775,31 @@ class Handler(BaseHTTPRequestHandler):
                     adm = bool(ctypes.windll.shell32.IsUserAnAdmin())
                 except Exception:
                     adm = False
-            return {"mac": mac, "win": IS_WIN, "linux": (not mac and not IS_WIN), "root": FICHA.is_root() if FICHA else False, "admin": adm,
-                    "acesso_total": DADOS.acesso_total_mac() if DADOS else True}
+            return {"mac": mac, "win": IS_WIN, "linux": (not mac and not IS_WIN), "root": FICHA.is_root() if FICHA else False, "admin": adm or eh_admin(),
+                    "acesso_total": DADOS.acesso_total_mac() if DADOS else True, "sempre_admin": bool(cfg_local().get("sempre_admin")),
+                    "elevar": IS_WIN or mac or bool(shutil.which("pkexec"))}
         if path == "/api/dados/estado":
-            return DADOS.estado()
+            est = DADOS.estado()
+            try:
+                est["liberado"] = dados_liberado(FICHA.machine_id_cache())
+            except Exception:
+                est["liberado"] = {"bytes": 0, "n": 0, "ultima": ""}
+            return est
         if path == "/api/dados/resultado":
             g = lambda k: (q.get(k) or [""])[0]
             return DADOS.resultado(g("zona"), g("cat"), g("q"), int(g("offset") or 0), int(g("limit") or 200), g("usuario"))
+        if path == "/api/dados/locais":
+            self.exigir(None)
+            return DADOS.indice_locais()
         if path == "/api/dados/panorama":
             self.exigir(None)
             return DADOS.indice_panorama((q.get("usuario") or [""])[0])
         if path == "/api/dados/indice":
             self.exigir(None)
             g = lambda k: (q.get(k) or [""])[0]
-            return DADOS.indice_consulta(g("bloco"), g("cat"), g("pasta") or None, g("usuario"), g("q"), g("ordem") or "maior",
-                                         int(g("offset") or 0), int(g("limit") or 200), g("visao") or "arquivos")
+            return DADOS.indice_consulta(faixa=g("faixa") or g("bloco"), cat=g("cat"), pasta=g("pasta") or None, usuario=g("usuario"), q=g("q"), ordem=g("ordem") or "maior",
+                                         offset=int(g("offset") or 0), limit=int(g("limit") if g("limit") != "" else 200), visao=g("visao") or "arquivos",
+                                         grupo=g("grupo"), sug=g("sug"), tipo=g("tipo"), tam=g("tam"), uso=g("uso"), facetas=g("facetas") in ("1", "true"))
         if path == "/api/mapa/lista":
             return {"mapas": mapas_conhecidos(), "aberto": MAPA.resumo() if MAPA.M["mapa"] else None}
         if path == "/api/mapa/arvore":
@@ -3230,6 +3811,16 @@ class Handler(BaseHTTPRequestHandler):
             return MAPA.estado_conferencia()
         if path == "/api/layout":
             return APP.layout_resumo()
+        if path == "/api/identidade":
+            return identidade((q.get("para") or ["dados"])[0])
+        if path == "/api/classes":
+            return CLS.para_tela()
+        if path == "/api/destino":
+            return APP.destino(int((q.get("i") or ["-1"])[0]))
+        if path == "/api/su":
+            return su_estado()
+        if path == "/api/su/certificado":
+            return su_certificado_ler()
         if path == "/api/mapa/certificado":
             return MAPA.certificado()
         if path == "/api/dados/explorar":
@@ -3279,7 +3870,7 @@ class Handler(BaseHTTPRequestHandler):
             g = lambda k, d="": (q.get(k) or [d])[0]
             return APP.falhas_agrupadas(g("grupo"), int(g("off", "0") or 0), min(200, int(g("limit", "50") or 50)))
         if path == "/api/medicao":
-            return dict(APP.medicao or {}, incluidas=list(APP.extras), incl=dict(APP.incl))
+            return dict(APP.medicao or {}, incluidas=list(APP.extras), incl=dict(APP.incl), **(APP.faixas_disco() if APP.medicao else {}))
         if path == "/api/totals":
             return APP.totals()
         if path == "/api/ficha/estado":
@@ -3296,11 +3887,23 @@ class Handler(BaseHTTPRequestHandler):
                 if reg:
                     rec = FICHA.receita_de(mid)
                     out["registro"] = dict(reg, etapas=FICHA.ETAPAS, receita=rec and {"n": len(rec.get("itens") or []), "automaticos": sum(1 for i in rec.get("itens") or [] if i.get("automatico")),
-                                                                                     "quando": rec.get("quando", ""), "tecnico": rec.get("tecnico", ""), "valida": bool(FICHA.receita_valida(mid))}, historico=[dict(e, etapa=FICHA.etapa_do_evento(e) or "") for e in FICHA.hist_get(mid)])
+                                                                                     "quando": rec.get("quando", ""), "tecnico": rec.get("tecnico", ""), "valida": bool(FICHA.receita_valida(mid))}, historico=[dict(e, etapa=FICHA.etapa_do_evento(e) or "") for e in FICHA.hist_get(mid)], backups=FICHA.backups_de(mid))
             return out
         if path == "/api/programas":
             mid = (q.get("mid") or [""])[0] or FICHA.machine_id_cache()
-            return {"mid": mid, "programas": PROG.com_sugestao(FICHA.programas_de(mid)), "receita": FICHA.receita_de(mid), "receita_valida": bool(FICHA.receita_valida(mid))}
+            doc = PROG.com_sugestao(FICHA.programas_de(mid))
+            pic = os.path.join(FICHA.pasta(mid), "icones")
+            if doc and not FICHA.simulando() and not (FT["rodando"] and FT["o_que"] == "programas"):  # lista de antes dos ícones: busca os que faltam por trás
+                faltam = [g["nome"] for g in doc.get("itens") or [] if not os.path.isfile(os.path.join(pic, PROG.nome_icone(g["nome"]) + ".png"))]
+                if faltam and not ICONES_BUSCANDO.get(mid):
+                    ICONES_BUSCANDO[mid] = True
+                    threading.Thread(target=lambda: (PROG.icones(faltam, pic), ICONES_BUSCANDO.pop(mid, None)), daemon=True).start()
+            ics = set(PROG.icones_existentes(pic))
+            for g in (doc or {}).get("itens") or []:
+                g["icone"] = PROG.nome_icone(g["nome"]) in ics
+            return {"mid": mid, "programas": doc, "receita": FICHA.receita_de(mid), "receita_valida": bool(FICHA.receita_valida(mid)),
+                    "icones": PROG.icones_existentes(pic), "buscando_icones": bool(ICONES_BUSCANDO.get(mid)),
+                    "coletando": bool(FT["rodando"] and FT["o_que"] == "programas"), "erro": FT["erro"] if FT["o_que"] == "programas" else ""}
         if path == "/api/atividades":
             return atividades()
         if path == "/api/painel":
@@ -3330,14 +3933,24 @@ class Handler(BaseHTTPRequestHandler):
             return {"checks": APP.preflight()}
         if path == "/api/scan":
             self.exigir("backup")
-            APP.start_scan()
-            return {"ok": True}
+            return {"ok": True, "restaurado": APP.start_scan(bool(b.get("reaproveitar"))) == "restaurado"}
         if path == "/api/select":
-            return {"n": APP.select(b)}
+            n = APP.select(b)
+            APP.agendar_salvar()
+            return {"n": n}
+        if path == "/api/su":
+            SU["ligado"] = bool(b.get("ligado"))
+            APP.log("Modo Superusuário %s." % ("ligado" if SU["ligado"] else "desligado"))
+            return su_estado()
+        if path == "/api/su/certificado":
+            return su_certificado_salvar(b)
         if path == "/api/copy":
             self.exigir("backup")
             if not APP.layout_modo:
-                raise ValueError("Escolha como guardar este backup (Espelho, Ordenado ou Misto) na Seleção antes de copiar.")
+                if not SU["ligado"]:
+                    raise ValueError("Escolha como guardar este backup (Espelho, Ordenado ou Misto) na Seleção antes de copiar.")
+                APP.set_modo("espelho")
+                APP.log("SUPERUSUÁRIO: cópia iniciada sem escolher o jeito de guardar; usado Espelho.")
             APP.start_copy()
             return {"ok": True}
         if path == "/api/retry":
@@ -3366,6 +3979,15 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError("O mapa ainda não foi gerado.")
             open_in_browser("file://" + p.replace("\\", "/") if IS_WIN is False else "file:///" + p.replace("\\", "/"))
             return {"ok": True}
+        if path == "/api/relatorio/abrir":
+            if b.get("codigo"):  # um backup antigo da máquina: a cópia guardada no registro
+                p = os.path.join(FICHA.pasta(b.get("mid") or FICHA.machine_id_cache()), "mapas", safe_seg(b["codigo"]), "Mapa", RELATORIO_PDF)
+            else:
+                p = os.path.join(APP.mapa_dir or "", RELATORIO_PDF)
+            if not os.path.isfile(p):
+                raise ValueError("O relatório em PDF ainda não foi gerado.")
+            abrir_no_sistema(p)
+            return {"ok": True}
         if path == "/api/firmware_gate":
             ok, why = APP.firmware_gate()
             return {"ok": ok, "motivo": why, "falta_receita": bool(FICHA and not FICHA.receita_valida(FICHA.machine_id_cache()))}
@@ -3375,7 +3997,7 @@ class Handler(BaseHTTPRequestHandler):
             self.exigir("formatar")
             if TERMO and TERMO.status(FICHA.machine_id_cache()).get("dono") == "terceiros" and (b.get("digitou") or "").strip().upper() != "FORMATAR":
                 raise ValueError("Máquina de terceiros: digite FORMATAR para confirmar.")
-            return APP.firmware_reboot()
+            return APP.firmware_reboot(bool(b.get("forcar")))
         if path == "/api/ficha/coletar":
             self.exigir("ficha")
             ficha_coletar("antes" if b.get("fase") != "depois" else "depois")
@@ -3466,6 +4088,15 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/maquina/receita":
             mid = str(b.get("mid") or "") or FICHA.machine_id_cache()
             return {"receita": FICHA.salvar_receita(mid, b.get("itens"), bool(b.get("nenhum")))}
+        if path == "/api/maquina/historico/corrigir":
+            if not SU["ligado"]:
+                raise ValueError("Corrigir o histórico só no modo Superusuário.")
+            mid = str(b.get("mid") or "")
+            ev = FICHA.hist_corrigir(mid, b.get("idx"), str(b.get("resumo") or ""))
+            c = ev["extra"]["corrigido"][-1]
+            TERMO.log_add("historico_corrigido", mid, quando_evento=ev.get("quando", ""), original=c["original"], novo=ev["resumo"])
+            APP.log("SUPERUSUÁRIO: histórico de %s corrigido (%s)." % (mid, ev.get("quando", "")))
+            return {"ok": True}
         if path == "/api/maquina/registro":
             return {"registro": FICHA.salvar_contato(str(b.get("mid") or ""), b.get("telefone", ""), b.get("email", ""), b.get("observacoes", ""), b.get("dono_nome"))}
         if path == "/api/maquina/apagar":
@@ -3477,6 +4108,23 @@ class Handler(BaseHTTPRequestHandler):
             TERMO.log_add("dados_apagados", mid, motivo="pedido do técnico")
             FICHA.apagar_maquina(mid)
             return {"ok": True}
+        if path == "/api/programas/coletar":
+            ficha_iniciar("programas", FICHA.coletar_programas)
+            return {"ok": True}
+        if path == "/api/permissoes/elevar":
+            if eh_admin():
+                return {"ok": True, "ja": True}
+            if APP.busy():
+                raise Busy("Aguarde a cópia, a conferência ou a varredura terminar antes de reabrir.")
+            try:
+                reabrir_como_admin()
+            except Negado as e:
+                return {"ok": False, "negado": True, "erro": str(e)}
+            APP.log("Reaberto como administrador a pedido do técnico.")
+            threading.Timer(2.0, lambda: os._exit(0)).start()  # a instância nova já abriu o navegador
+            return {"ok": True, "saindo": True}
+        if path == "/api/permissoes/sempre":
+            return {"ok": True, "sempre_admin": bool(cfg_local_set(sempre_admin=bool(b.get("ligado"))).get("sempre_admin"))}
         if path == "/api/permissoes/abrir":
             if sys.platform == "darwin":
                 subprocess.Popen(["open", "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"])
@@ -3498,9 +4146,15 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError("O sistema não conseguiu abrir.")
             return {"ok": True}
         if path == "/api/layout":
-            return APP.set_modo(b.get("modo", ""))
+            r = APP.set_modo(b.get("modo", ""))
+            APP.agendar_salvar()
+            return r
+        if path == "/api/pasta/ponte":
+            return APP.ponte_pasta(b)
         if path == "/api/layout/copia":
-            return APP.copia(b)
+            r = APP.copia(b)
+            APP.agendar_salvar()
+            return r
         if path == "/api/bitlocker":
             self.exigir("backup")
             return destravar_bitlocker(str(b.get("onde", "")), str(b.get("chave", "")))
@@ -3525,6 +4179,22 @@ class Handler(BaseHTTPRequestHandler):
             return {"ok": True}
         if path == "/api/dados/marcar":
             return {"id": DADOS.marcar(b.get("no"))}
+        if path == "/api/dados/desbloquear":  # sem confirmo devolve o risco; com confirmo destrava e vai para o histórico da máquina
+            self.exigir("limpeza")
+            r = DADOS.desbloquear(b.get("no"), b.get("confirmo") is True)
+            if r.get("liberado"):
+                try:
+                    FICHA.hist_add(FICHA.machine_id_cache(), "desbloqueio", "Destravado pelo técnico: %s (%s)" % (r["path"], r["motivo"]))
+                except Exception:
+                    registrar_erro("histórico do desbloqueio")
+            return r
+        if path == "/api/dados/bloquear":
+            r = DADOS.bloquear(b.get("no"))
+            try:
+                FICHA.hist_add(FICHA.machine_id_cache(), "desbloqueio", "Travado de novo: %s" % r["path"])
+            except Exception:
+                registrar_erro("histórico do bloqueio")
+            return r
         if path == "/api/dados/marcar_nos":
             return {"ids": DADOS.marcar_nos(b.get("nos") or [])}
         if path == "/api/dados/renomear":
@@ -3565,7 +4235,7 @@ class Handler(BaseHTTPRequestHandler):
             self.exigir("limpeza")
             r = DADOS.esvaziar_lixeira()
             REC["bytes"] += int(r.get("bytes") or 0)
-            FICHA.hist_add(FICHA.machine_id_cache(), "limpeza", "Lixeira esvaziada (%s liberados)" % fmt_bytes(r.get("bytes") or 0), {"bytes": r.get("bytes") or 0})
+            FICHA.hist_add(FICHA.machine_id_cache(), "limpeza", "Lixeira esvaziada (%s liberados)" % fmt_bytes(r.get("bytes") or 0), {"bytes": r.get("bytes") or 0, "liberado": r.get("bytes") or 0})
             return r
         if path == "/api/atualizar/aplicar":
             cam = b.get("caminho", "")
@@ -3600,6 +4270,7 @@ class Handler(BaseHTTPRequestHandler):
             if APP.busy():
                 raise Busy("Aguarde o processo atual terminar.")
             APP.reset()
+            APP.apagar_varredura()  # "Novo backup": começa do zero, sem as marcações do anterior
             return {"ok": True}
         raise ValueError("rota desconhecida")
 
@@ -3875,6 +4546,8 @@ def cli_verificar(pasta):
     if h == c.get("dados_js_sha256"):
         print("OK  - dados.js é idêntico ao do momento do certificado.")
         print("Certificado %s | %s | %s" % (c.get("codigo"), c["cert"].get("equipamento"), c["cert"].get("data")))
+        for e in c["cert"].get("editado") or []:
+            print("AVISO - editado manualmente (%s) em %s: %s" % (e.get("por", ""), e.get("quando", ""), ", ".join(e.get("campos") or {})))
         return 0
     print("ALERTA - o dados.js foi ALTERADO depois de o certificado ser emitido.")
     return 1
@@ -3921,6 +4594,7 @@ def main():
     ap.add_argument("--coleta-salva", metavar="ARQUIVO", help="reproduz uma coleta exportada; as ações só são simuladas")
     ap.add_argument("--servidor", metavar="URL", help="roda pelo servidor da loja: fichas, históricos e termos ficam lá")
     ap.add_argument("--chave-arquivo", metavar="ARQUIVO", help=argparse.SUPPRESS)
+    ap.add_argument("--elevado", action="store_true", help=argparse.SUPPRESS)  # já reaberto como administrador: não pede de novo
     a = ap.parse_args()
     if a.verificar:
         sys.exit(cli_verificar(a.verificar))
@@ -3934,9 +4608,17 @@ def main():
         return
     if a.servidor:
         conectar_servidor(a.servidor, a.chave_arquivo, a.dados)
+    if cfg_local().get("sempre_admin") and not eh_admin() and not a.elevado and not a.coleta_salva and not a.servidor:
+        try:  # "Abrir sempre como administrador" (Configurações): pede a senha/UAC do sistema e a instância nova segue
+            if reabrir_como_admin():
+                return
+        except Exception as e:
+            print("Seguindo sem administrador: %s" % e, flush=True)
     if a.coleta_salva:
         FICHA.carregar_coleta(a.coleta_salva)
         print("SIMULAÇÃO: reproduzindo a coleta de %s (%s). Nada é alterado neste computador." % (FICHA.REPLAY.get("host", "?"), FICHA.familia_atual()), flush=True)
+    else:
+        ligar_varredura_unica()
     serve(a.port, not a.no_browser, a.host, a.token_na_pagina)
 
 
